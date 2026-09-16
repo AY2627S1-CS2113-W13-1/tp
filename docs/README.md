@@ -1,4 +1,4 @@
-# Duke
+# snAp
 
 {Give product intro here}
 
