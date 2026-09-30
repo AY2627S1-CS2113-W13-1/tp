@@ -1,6 +1,6 @@
 # About us
 
-Display | Name | Github Profile | Portfolio 
+Display | Name | Github Profile | Portfolio | GPA
 --------|:----:|:--------------:|:---------:
 ![](https://via.placeholder.com/100.png?text=Photo) | John Doe | [Github](https://github.com/) | [Portfolio](docs/team/johndoe.md)
 ![](https://via.placeholder.com/100.png?text=Photo) | Don Joe | [Github](https://github.com/) | [Portfolio](docs/team/johndoe.md)
