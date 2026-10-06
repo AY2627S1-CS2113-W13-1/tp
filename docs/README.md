@@ -1,6 +1,6 @@
 # snAp
 
-<img width="244" height="244" alt="snAp" src="https://github.com/user-attachments/assets/217e0e61-5bb7-4f4b-9fd2-7a4c561df06a" />
+<img width="244" height="244" alt="snAp" src="https://i.imgur.com/cBTLckS.png" />
 
 Useful links:
 * [User Guide](UserGuide.md)
