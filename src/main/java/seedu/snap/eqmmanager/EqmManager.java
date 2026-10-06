@@ -1,6 +1,6 @@
-package seedu.EqmManager.EqmManager;
+package seedu.snap.eqmmanager;
 
-import seedu.EqmManager.Parser.Parser;
+import seedu.snap.parser.Parser;
 
 public class EqmManager {
     private Parser parser;

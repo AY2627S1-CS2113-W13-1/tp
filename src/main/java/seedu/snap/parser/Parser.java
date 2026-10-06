@@ -1,4 +1,4 @@
-package seedu.EqmManager.Parser;
+package seedu.snap.parser;
 
 import java.util.Scanner;
 

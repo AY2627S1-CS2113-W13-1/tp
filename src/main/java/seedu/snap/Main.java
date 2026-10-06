@@ -1,6 +1,6 @@
-package seedu.EqmManager;
+package seedu.snap;
 
-import seedu.EqmManager.EqmManager.EqmManager;
+import seedu.snap.eqmmanager.EqmManager;
 
 public class Main {
     private static EqmManager eqmManager;
