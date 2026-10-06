@@ -15,16 +15,20 @@ Prerequisites: JDK 25 (use the exact version), update Intellij to the most recen
    > Task :classes
    
    > Task :Duke.main()
-   Hello from
-    ____        _
-   |  _ \ _   _| | _____ 
-   | | | | | | | |/ / _ \
-   | |_| | |_| |   <  __/
-   |____/ \__,_|_|\_\___|
-   
-   What is your name?
+   ===============
+
+   Welcome to snAp. Loaded 0 equipment record(s).
+
+   Add: add i/[ITEM] id/[ITEM ID] type/[TYPE] cond/[CONDITION]
+   Delete: delete item/[ITEM ID]
+
+   Type bye to exit.
+
+   ===============
+
+   >
    ```
-   Type some word and press enter to let the execution proceed to the end.
+   Enter commands described in the [User Guide](docs/UserGuide.md), or type `bye` to exit.
 
 **Warning:** Keep the `src\main\java` folder as the root folder for Java files (i.e., don't rename those folders or move Java files to another folder outside of this folder path), as this is the default location some tools (e.g., Gradle) expect to find Java files.
 
