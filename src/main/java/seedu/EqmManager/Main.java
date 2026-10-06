@@ -1,10 +1,10 @@
-package seedu.duke;
+package seedu.EqmManager;
 
 import java.util.Scanner;
 
-public class Duke {
+public class Main {
     /**
-     * Main entry-point for the java.duke.Duke application.
+     * Main entry-point for the application.
      */
     public static void main(String[] args) {
         String banner = " ____        _        \n"
