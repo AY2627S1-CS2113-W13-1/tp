@@ -1,11 +1,15 @@
 package seedu.duke;
 
+import java.util.List;
+
 public class ListCommand extends Command{
     public static void execute() {
         System.out.printf(
             "%-4s %-24s | %-6s | %-15s | %-9s%n",
             "No.", "NAME", "ID", "TYPE", "CONDITION"
         );
+
+        List<String[]> equipmentList = getEquipmentList();
 
         for (int i = 0; i < equipmentList.size(); i++) {
             String[] item = equipmentList.get(i);
