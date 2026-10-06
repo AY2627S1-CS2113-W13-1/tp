@@ -2,9 +2,8 @@ package seedu.EqmManager.Parser;
 
 import java.util.Scanner;
 
-/** Reads commands from standard input for {@code EqmManager}. */
 public class Parser {
-    /** Reads and returns one command; {@code AbstractFella.run()} calls this method.
+    /** Reads and returns one command.
      * @return the next line entered by the user
      */
     public String getInput() {
@@ -15,5 +14,9 @@ public class Parser {
         input = scanner.nextLine();
 
         return input;
+    }
+
+    public void matchInput(String input) {
+        System.out.println("Success message.");
     }
 }
