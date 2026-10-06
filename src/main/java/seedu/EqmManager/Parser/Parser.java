@@ -16,7 +16,7 @@ public class Parser {
         return input;
     }
 
-    public void matchInput(String input) {
+    public void executeInput(String input) {
         System.out.println("Success message.");
     }
 }
