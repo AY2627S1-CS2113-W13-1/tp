@@ -4,15 +4,12 @@ import java.util.Scanner;
 
 public class ListCommandTest {
     public static void main(String[] args) {
-        String banner = " ____        _        \n"
-                + "|  _ \\ _   _| | _____ \n"
-                + "| | | | | | | |/ / _ \\\n"
-                + "| |_| | |_| |   <  __/\n"
-                + "|____/ \\__,_|_|\\_\\___|\n";
-        System.out.println(banner);
-        System.out.println("What is your name?");
         Scanner in = new Scanner(System.in);
-        System.out.println("Hello " + in.nextLine());
+
+        AddCommand.execute(new String[]{"Canon G7X", "001", "Camera", "8"});
+        AddCommand.execute(new String[]{"Canon G7X Mark III", "002", "Camera", "Poor"});
+        AddCommand.execute(new String[]{"Canon Tripod", "011", "Tripod", "Good"});
+        AddCommand.execute(new String[]{"Canon Tripod", "012", "Tripod", "Good"});
 
         while (true) {
             String command = in.nextLine().trim();
