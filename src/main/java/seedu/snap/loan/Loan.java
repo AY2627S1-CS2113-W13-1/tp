@@ -4,35 +4,35 @@ import java.time.LocalDateTime;
 
 /** Represents an item loaned to a borrower. */
 public class Loan {
-    private String itemID;
-    private String borrowerID;
+    private String itemId;
+    private String borrowerId;
     private LocalDateTime issuedDate;
     private LocalDateTime dueDate;
     private boolean isReturned;
 
     /** Creates a loan with an initially unreturned status. */
-    public Loan(String itemID, String borrowerID, LocalDateTime issuedDate, LocalDateTime dueDate) {
-        this.itemID = itemID;
-        this.borrowerID = borrowerID;
+    public Loan(String itemId, String borrowerId, LocalDateTime issuedDate, LocalDateTime dueDate) {
+        this.itemId = itemId;
+        this.borrowerId = borrowerId;
         this.issuedDate = issuedDate;
         this.dueDate = dueDate;
         this.isReturned = false;
     }
 
-    public String getItemID() {
-        return itemID;
+    public String getItemId() {
+        return itemId;
     }
 
-    public void setItemID(String itemID) {
-        this.itemID = itemID;
+    public void setItemId(String itemId) {
+        this.itemId = itemId;
     }
 
-    public String getBorrowerID() {
-        return borrowerID;
+    public String getBorrowerId() {
+        return borrowerId;
     }
 
-    public void setBorrowerID(String borrowerID) {
-        this.borrowerID = borrowerID;
+    public void setBorrowerId(String borrowerId) {
+        this.borrowerId = borrowerId;
     }
 
     /** Returns the date and time when the item was issued. */
