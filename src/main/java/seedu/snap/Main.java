@@ -2,12 +2,11 @@ package seedu.snap;
 
 import seedu.snap.eqmmanager.EqmManager;
 
+/** Starts the SNAP application. */
 public class Main {
-    private static EqmManager eqmManager;
-
+    /** Starts the application and hands control to the equipment manager. */
     public static void main(String[] args) {
-        eqmManager = new EqmManager();
-
+        EqmManager eqmManager = new EqmManager();
         eqmManager.run();
     }
 }
