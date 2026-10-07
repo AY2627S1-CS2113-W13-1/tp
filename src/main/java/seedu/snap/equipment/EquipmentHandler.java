@@ -1,40 +1,31 @@
-package seedu.duke;
+package seedu.snap.equipment;
 
 import java.util.ArrayList;
-import java.util.Scanner;
+import java.util.Collections;
+import java.util.List;
 
-public class Duke {
-
+/** Parses add commands and stores equipment for the current session. */
+public class EquipmentHandler {
     private static final String ADD_COMMAND = "add";
     private static final String ITEM_MARKER = "i/";
     private static final String ID_MARKER = "id/";
     private static final String TYPE_MARKER = "type/";
     private static final String CONDITION_MARKER = "cond/";
 
+    private final ArrayList<Equipment> inventory = new ArrayList<>();
+
     /**
-     * Represents an item of equipment in the inventory.
+     * Adds equipment when the command contains valid details.
+     *
+     * @param input complete add command
+     * @return the added equipment, or {@code null} for invalid input
      */
-    public static class Equipment {
-        private final String itemName;
-        private final String itemId;
-        private final String type;
-        private final int condition;
-
-        /**
-         * Creates an equipment item.
-         *
-         * @param name Name of the equipment.
-         * @param id Three-digit equipment ID.
-         * @param type Type of equipment.
-         * @param condition Condition of the equipment from 1 to 10.
-         */
-        public Equipment(String name, String id, String type, int condition) {
-            this.itemName = name;
-            this.itemId = id;
-            this.type = type;
-            this.condition = condition;
+    public Equipment addEquipment(String input) {
+        Equipment equipment = parseEquipment(input);
+        if (equipment != null) {
+            addEquipment(inventory, equipment);
         }
-
+        return equipment;
     }
 
     /**
@@ -45,6 +36,15 @@ public class Duke {
      */
     public static void addEquipment(ArrayList<Equipment> inventory, Equipment equipment) {
         inventory.add(equipment);
+    }
+
+    /**
+     * Returns the inventory for listing or inspecting stored equipment.
+     *
+     * @return an unmodifiable view of the inventory
+     */
+    public List<Equipment> getEquipmentList() {
+        return Collections.unmodifiableList(inventory);
     }
 
     /**
@@ -100,38 +100,4 @@ public class Duke {
         return new Equipment(itemString, id, type, condition);
     }
 
-    /**
-     * Main entry-point for the java.duke.Duke application.
-     *
-     * @param args Command-line arguments, which are not used.
-     */
-    public static void main(String[] args) {
-
-        String banner = " ____        _        \n"
-                + "|  _ \\ _   _| | _____ \n"
-                + "| | | | | | | |/ / _ \\\n"
-                + "| |_| | |_| |   <  __/\n"
-                + "|____/ \\__,_|_|\\_\\___|\n";
-        System.out.println(banner);
-        System.out.println("What is your name?");
-
-        Scanner in = new Scanner(System.in);
-        System.out.println("Hello " + in.nextLine());
-
-        ArrayList<Equipment> inventory = new ArrayList<>();
-
-        String userInput = in.nextLine();
-
-        while (!userInput.equals("quit")) {
-            if (userInput.startsWith("add ")) {
-                Equipment equipment = parseEquipment(userInput);
-                if (equipment != null) {
-                    addEquipment(inventory, equipment);
-                    System.out.println("Equipment added successfully.");
-                }
-            }
-
-            userInput = in.nextLine();
-        }
-    }
 }
