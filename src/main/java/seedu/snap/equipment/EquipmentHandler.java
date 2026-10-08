@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
+
 /** Parses add commands and stores equipment for the current session. */
 public class EquipmentHandler {
     private static final String ADD_COMMAND = "add";
@@ -18,13 +20,12 @@ public class EquipmentHandler {
      * Adds equipment when the command contains valid details.
      *
      * @param input complete add command
-     * @return the added equipment, or {@code null} for invalid input
+     * @return the added equipment
+     * @throws EquipmentAdditionUnsuccessful when the command is invalid
      */
-    public Equipment addEquipment(String input) {
+    public Equipment addEquipment(String input) throws EquipmentAdditionUnsuccessful {
         Equipment equipment = parseEquipment(input);
-        if (equipment != null) {
-            addEquipment(inventory, equipment);
-        }
+        addEquipment(inventory, equipment);
         return equipment;
     }
 
@@ -51,9 +52,14 @@ public class EquipmentHandler {
      * Parses and validates an add command.
      *
      * @param userInput Complete command entered by the user.
-     * @return The parsed equipment, or {@code null} if the command is invalid.
+     * @return The parsed equipment.
+     * @throws EquipmentAdditionUnsuccessful when the command is invalid
      */
-    static Equipment parseEquipment(String userInput) {
+    static Equipment parseEquipment(String userInput) throws EquipmentAdditionUnsuccessful {
+        if (userInput == null || !(userInput.equals(ADD_COMMAND) || userInput.startsWith(ADD_COMMAND + " "))) {
+            throw new EquipmentAdditionUnsuccessful("Invalid format. Use: add i/[ITEM] id/[ITEM ID] "
+                    + "type/[TYPE] cond/[CONDITION]");
+        }
         String addDetails = userInput.substring(ADD_COMMAND.length()).trim();
         int itemIndex = addDetails.indexOf(ITEM_MARKER);
         int idIndex = addDetails.indexOf(ID_MARKER);
@@ -65,9 +71,8 @@ public class EquipmentHandler {
                 && typeIndex > idIndex
                 && conditionIndex > typeIndex;
         if (!markersAreInOrder) {
-            System.out.println("Invalid format. Use: add i/[ITEM] id/[ITEM ID] "
+            throw new EquipmentAdditionUnsuccessful("Invalid format. Use: add i/[ITEM] id/[ITEM ID] "
                     + "type/[TYPE] cond/[CONDITION]");
-            return null;
         }
 
         String itemString = addDetails.substring(itemIndex + ITEM_MARKER.length(), idIndex).trim();
@@ -76,23 +81,19 @@ public class EquipmentHandler {
         String conditionString = addDetails.substring(conditionIndex + CONDITION_MARKER.length()).trim();
 
         if (itemString.isEmpty() || itemString.length() > 100) {
-            System.out.println("Item name must contain 1 to 100 characters.");
-            return null;
+            throw new EquipmentAdditionUnsuccessful("Item name must contain 1 to 100 characters.");
         }
 
         if (!id.matches("[0-9]{3}") || id.equals("000")) {
-            System.out.println("Item ID must be from 001 to 999.");
-            return null;
+            throw new EquipmentAdditionUnsuccessful("Item ID must be from 001 to 999.");
         }
 
         if (type.isEmpty()) {
-            System.out.println("Type cannot be empty.");
-            return null;
+            throw new EquipmentAdditionUnsuccessful("Type cannot be empty.");
         }
 
         if (!conditionString.matches("10|[1-9]")) {
-            System.out.println("Condition must be a whole number from 1 to 10.");
-            return null;
+            throw new EquipmentAdditionUnsuccessful("Condition must be a whole number from 1 to 10.");
         }
 
         int condition = Integer.parseInt(conditionString);
