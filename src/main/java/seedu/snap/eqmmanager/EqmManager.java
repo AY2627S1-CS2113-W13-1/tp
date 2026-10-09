@@ -1,8 +1,10 @@
 package seedu.snap.eqmmanager;
 
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
+import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 import seedu.snap.loan.LoanHandler;
 import seedu.snap.parser.Parser;
+import seedu.snap.loan.Loan;
 
 /** Coordinates command input and execution for the SNAP application. */
 public class EqmManager {
@@ -25,6 +27,13 @@ public class EqmManager {
     public void executeInput(String input) {
         if (input.equals("bye")) {
             isRunning = false;
+        } else if (input.equals("delete-loan")|| input.startsWith("delete-loan ")){
+            try{
+                Loan deletedLoan = loans.deleteLoan(input);
+                System.out.println("Loan for item ID " + deletedLoan.getItemID() + " deleted successfully.");
+            } catch (LoanDeletionUnsuccessful e){
+                System.out.println(e.getMessage());
+            }
         } else if (input.equals("loan") || input.startsWith("loan ")) {
             try {
                 loans.addLoan(input);
