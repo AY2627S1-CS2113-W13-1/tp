@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.List;
 
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
-import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 
 /** Parses add commands and stores equipment for the current session. */
 public class EquipmentHandler {

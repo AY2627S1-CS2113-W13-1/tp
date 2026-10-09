@@ -16,7 +16,7 @@ public class LoanHandler {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-uu")
             .withResolverStyle(ResolverStyle.STRICT);
 
-    private static final ArrayList<Loan> loans = new ArrayList<>();;
+    private static final ArrayList<Loan> loans = new ArrayList<>();
     private static int numLoans = 0;
 
     /**
