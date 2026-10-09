@@ -43,6 +43,8 @@ public class EqmManager {
             } catch (LoanAdditionUnsuccessful e) {
                 System.out.println(e.getMessage());
             }
+        } else if (input.equals("list loans")) {
+            LoanHandler.viewAllLoans();
         } else if (input.equals("list") || input.startsWith("list ")) {
             EquipmentHandler.viewAllEquipment();
         } else {

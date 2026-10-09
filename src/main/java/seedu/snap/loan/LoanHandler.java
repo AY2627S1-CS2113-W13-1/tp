@@ -6,7 +6,9 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
 import java.util.ArrayList;
+import java.util.List;
 
+import seedu.snap.equipment.Equipment;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 
 /** Parses loan commands and stores successfully created loans. */
@@ -16,14 +18,8 @@ public class LoanHandler {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-uu")
             .withResolverStyle(ResolverStyle.STRICT);
 
-    final ArrayList<Loan> loans;
-    int numLoans;
-
-    /** Creates an empty loan handler. */
-    public LoanHandler() {
-        this.loans = new ArrayList<>();
-        this.numLoans = 0;
-    }
+    private static final ArrayList<Loan> loans = new ArrayList<>();;
+    private static int numLoans = 0;
 
     /**
      * Adds a loan when the command contains valid IDs and dates.
@@ -135,5 +131,24 @@ public class LoanHandler {
             }
         }
         return false;
+    }
+
+    /**
+     * Prints out all equipment in inventory
+     */
+    public static void viewAllLoans() {
+        System.out.printf(
+                "%-4s %-12s | %-12s | %-16s | %-16s%n",
+                "No.", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE"
+        );
+
+        for (int i = 0; i < numLoans; i++) {
+            Loan item = loans.get(i);
+
+            System.out.printf(
+                    "%-4s %-12s | %-12s | %-16s | %-16s%n",
+                    (i + 1) + ")", item.getItemId(), item.getBorrowerId(), item.getIssuedDate(), item.getDueDate()
+            );
+        }
     }
 }
