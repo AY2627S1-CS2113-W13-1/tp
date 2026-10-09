@@ -25,18 +25,8 @@ public class EquipmentHandler {
      */
     public Equipment addEquipment(String input) throws EquipmentAdditionUnsuccessful {
         Equipment equipment = parseEquipment(input);
-        addEquipment(inventory, equipment);
-        return equipment;
-    }
-
-    /**
-     * Adds an equipment item to the inventory.
-     *
-     * @param inventory Inventory to add the equipment to.
-     * @param equipment Equipment to add.
-     */
-    public static void addEquipment(ArrayList<Equipment> inventory, Equipment equipment) {
         inventory.add(equipment);
+        return equipment;
     }
 
     /**
