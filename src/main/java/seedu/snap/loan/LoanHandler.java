@@ -8,10 +8,12 @@ import java.time.format.ResolverStyle;
 import java.util.ArrayList;
 
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
+import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 
 /** Parses loan commands and stores successfully created loans. */
 public class LoanHandler {
-    private static final int EXPECTED_ARGUMENT_COUNT = 5;
+    private static final int EXPECTED_ADD_ARGUMENT_COUNT = 5;
+    private static final int EXPECTED_DELETE_ARGUMENT_COUNT=2;
     private static final String ID_FORMAT = "\\d{3}";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-uu")
             .withResolverStyle(ResolverStyle.STRICT);
@@ -34,7 +36,7 @@ public class LoanHandler {
      */
     public Loan addLoan(String input) throws LoanAdditionUnsuccessful {
         String[] arguments = input == null ? new String[0] : input.trim().split("\\s+");
-        if (arguments.length != EXPECTED_ARGUMENT_COUNT) {
+        if (arguments.length != EXPECTED_ADD_ARGUMENT_COUNT) {
             throw new LoanAdditionUnsuccessful("Incorrect number of arguments.");
         }
 
@@ -61,6 +63,39 @@ public class LoanHandler {
         numLoans++;
         return loan;
     }
+    /**
+     * Deletes the first loan matching the item ID in the command.
+     *
+     * @param input complete delete-loan command entered by the user
+     * @return the deleted loan
+     * @throws LoanDeletionUnsuccessful when the command is invalid
+     *         or no matching loan is found
+     */
+    public Loan deleteLoan(String input)
+            throws LoanDeletionUnsuccessful {
+        String[] arguments = input == null
+                ? new String[0]
+                : input.trim().split("\\s+");
+
+        if (arguments.length != EXPECTED_DELETE_ARGUMENT_COUNT || !arguments[0].equals("delete-loan")) {
+            throw new LoanDeletionUnsuccessful("Invalid command format. Expected: " + "delete-loan id/[ITEM ID].");
+        }
+
+        String itemId = parseDeleteItemId(arguments[1]);
+
+        for (int i = 0; i < loans.size(); i++) {
+            Loan loan = loans.get(i);
+
+            if (loan.getItemID().equals(itemId)) {
+                loans.remove(i);
+                numLoans--;
+                return loan;
+            }
+        }
+
+        throw new LoanDeletionUnsuccessful("No loan found for item ID " + itemId + ".");
+    }
+
 
     /**
      * Extracts and validates an ID argument.
@@ -88,10 +123,42 @@ public class LoanHandler {
         return value;
     }
 
+    /**
+     * Extracts and validates the item ID from a delete-loan command.
+     *
+     * @param argument item ID argument, including its prefix
+     * @return the validated three-digit item ID
+     * @throws LoanDeletionUnsuccessful when the format is invalid
+     */
+    private String parseDeleteItemId(String argument) throws LoanDeletionUnsuccessful {
+        String itemId;
+
+        if (argument.startsWith("id/")) {
+            itemId = argument.substring("id/".length());
+        } else if (argument.startsWith("/id")) {
+            itemId = argument.substring("/id".length());
+        } else {
+            throw invalidDeleteItemId();
+        }
+
+        if (!itemId.matches(ID_FORMAT)) {
+            throw invalidDeleteItemId();
+        }
+
+        return itemId;
+    }
+
     /** Creates an error for an invalid ID argument. */
     private LoanAdditionUnsuccessful idFormatError(String prefix, String alternatePrefix, String name) {
         return new LoanAdditionUnsuccessful("Invalid " + name + " format. Expected "
                 + prefix + "[three digits] or " + alternatePrefix + "[three digits].");
+    }
+
+    /** Creates an error for an invalid delete-loan item ID. */
+    private LoanDeletionUnsuccessful invalidDeleteItemId() {
+        return new LoanDeletionUnsuccessful(
+                "Invalid item ID format. Expected id/[three digits] "
+                        + "or /id[three digits].");
     }
 
     /**
