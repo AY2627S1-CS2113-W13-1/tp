@@ -8,8 +8,8 @@ import seedu.snap.parser.Parser;
 
 /** Coordinates command input and execution for the SNAP application. */
 public class EqmManager {
-    private Parser parser;
-    private LoanHandler loans;
+    private final Parser parser;
+    private final LoanHandler loans;
     private final EquipmentHandler equipment;
     private boolean isRunning;
 
@@ -43,6 +43,8 @@ public class EqmManager {
             } catch (LoanAdditionUnsuccessful e) {
                 System.out.println(e.getMessage());
             }
+        } else if (input.equals("list") || input.startsWith("list ")) {
+            EquipmentHandler.viewAllEquipment();
         } else {
             System.out.println("Success message.");
         }

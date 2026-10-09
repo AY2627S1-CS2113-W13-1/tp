@@ -14,7 +14,7 @@ public class EquipmentHandler {
     private static final String TYPE_MARKER = "type/";
     private static final String CONDITION_MARKER = "cond/";
 
-    private final ArrayList<Equipment> inventory = new ArrayList<>();
+    private static final ArrayList<Equipment> inventory = new ArrayList<>();
 
     /**
      * Adds equipment when the command contains valid details.
@@ -44,7 +44,7 @@ public class EquipmentHandler {
      *
      * @return an unmodifiable view of the inventory
      */
-    public List<Equipment> getEquipmentList() {
+    public static List<Equipment> getEquipmentList() {
         return Collections.unmodifiableList(inventory);
     }
 
@@ -101,4 +101,21 @@ public class EquipmentHandler {
         return new Equipment(itemString, id, type, condition);
     }
 
+    public static void viewAllEquipment() {
+        System.out.printf(
+                "%-4s %-24s | %-6s | %-15s | %-9s%n",
+                "No.", "NAME", "ID", "TYPE", "CONDITION"
+        );
+
+        List<Equipment> equipmentList = getEquipmentList();
+
+        for (int i = 0; i < equipmentList.size(); i++) {
+            Equipment item = equipmentList.get(i);
+
+            System.out.printf(
+                    "%-4s %-24s | %-6s | %-15s | %-9d%n",
+                    (i + 1) + ")", item.getItemName(), item.getItemId(), item.getType(), item.getCondition()
+            );
+        }
+    }
 }
