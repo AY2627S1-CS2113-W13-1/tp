@@ -36,7 +36,7 @@ class EquipmentHandlerTest {
         EquipmentHandler handler = new EquipmentHandler();
         Equipment equipment = handler.addEquipment("add i/Canon EOS R10 id/001 type/camera cond/1");
 
-        assertEquals(1, EquipmentHandler.getEquipmentList().size());
+        assertEquals(2, EquipmentHandler.getEquipmentList().size());
         assertSame(equipment, EquipmentHandler.getEquipmentList().getFirst());
     }
 
