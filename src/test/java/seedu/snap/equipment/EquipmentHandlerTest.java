@@ -48,7 +48,7 @@ class EquipmentHandlerTest {
         assertThrows(EquipmentAdditionUnsuccessful.class,
                 () -> handler.addEquipment("add i/Tripod id/002 type/accessories cond/11"));
 
-        assertEquals(1, handler.getEquipmentList().size());
-        assertSame(equipment, handler.getEquipmentList().get(0));
+        assertEquals(1, EquipmentHandler.getEquipmentList().size());
+        assertSame(equipment, EquipmentHandler.getEquipmentList().getFirst());
     }
 }
