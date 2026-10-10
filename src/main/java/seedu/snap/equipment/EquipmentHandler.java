@@ -14,7 +14,8 @@ public class EquipmentHandler {
     private static final String TYPE_MARKER = "type/";
     private static final String CONDITION_MARKER = "cond/";
 
-    private static final ArrayList<Equipment> inventory = new ArrayList<>();
+    /** Equipment stored by this handler during the current application session. */
+    private final ArrayList<Equipment> inventory = new ArrayList<>();
 
     /**
      * Adds equipment when the command contains valid details.
@@ -44,7 +45,7 @@ public class EquipmentHandler {
      *
      * @return an unmodifiable view of the inventory
      */
-    public static List<Equipment> getEquipmentList() {
+    public List<Equipment> getEquipmentList() {
         return Collections.unmodifiableList(inventory);
     }
 
@@ -104,7 +105,7 @@ public class EquipmentHandler {
     /**
      * Prints out all equipment in inventory
      */
-    public static void viewAllEquipment() {
+    public void viewAllEquipment() {
         System.out.printf(
                 "%-4s %-24s | %-6s | %-15s | %-9s%n",
                 "No.", "NAME", "ID", "TYPE", "CONDITION"

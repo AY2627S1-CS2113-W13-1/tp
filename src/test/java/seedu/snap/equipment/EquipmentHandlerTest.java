@@ -36,8 +36,8 @@ class EquipmentHandlerTest {
         EquipmentHandler handler = new EquipmentHandler();
         Equipment equipment = handler.addEquipment("add i/Canon EOS R10 id/001 type/camera cond/1");
 
-        assertEquals(2, EquipmentHandler.getEquipmentList().size());
-        assertSame(equipment, EquipmentHandler.getEquipmentList().getFirst());
+        assertEquals(1, handler.getEquipmentList().size());
+        assertSame(equipment, handler.getEquipmentList().getFirst());
     }
 
     @Test
@@ -48,7 +48,7 @@ class EquipmentHandlerTest {
         assertThrows(EquipmentAdditionUnsuccessful.class,
                 () -> handler.addEquipment("add i/Tripod id/002 type/accessories cond/11"));
 
-        assertEquals(1, EquipmentHandler.getEquipmentList().size());
-        assertSame(equipment, EquipmentHandler.getEquipmentList().getFirst());
+        assertEquals(1, handler.getEquipmentList().size());
+        assertSame(equipment, handler.getEquipmentList().getFirst());
     }
 }

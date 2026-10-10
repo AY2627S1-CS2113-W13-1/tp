@@ -46,7 +46,7 @@ public class EqmManager {
         } else if (input.equals("list loans")) {
             LoanHandler.viewAllLoans();
         } else if (input.equals("list") || input.startsWith("list ")) {
-            EquipmentHandler.viewAllEquipment();
+            equipment.viewAllEquipment();
         } else {
             System.out.println("Success message.");
         }
