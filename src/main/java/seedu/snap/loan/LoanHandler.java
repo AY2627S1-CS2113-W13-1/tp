@@ -12,8 +12,6 @@ import java.util.logging.Level;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 
-
-
 /** Parses loan commands and stores successfully created loans. */
 public class LoanHandler {
     private static final int EXPECTED_ADD_ARGUMENT_COUNT = 5;
@@ -68,7 +66,7 @@ public class LoanHandler {
         return loan;
     }
     /**
-     * Deletes the first loan matching the item ID in the command.
+     *  * Deletes the loan matching the item ID, and the issued date if one is given.
      *
      * @param input complete delete-loan command entered by the user
      * @return the deleted loan
