@@ -24,4 +24,19 @@ public class Equipment {
         this.condition = condition;
     }
 
+    public String getItemName() {
+        return itemName;
+    }
+
+    public String getItemId() {
+        return itemId;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public int getCondition() {
+        return condition;
+    }
 }

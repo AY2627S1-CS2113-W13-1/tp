@@ -37,7 +37,7 @@ class EquipmentHandlerTest {
         Equipment equipment = handler.addEquipment("add i/Canon EOS R10 id/001 type/camera cond/1");
 
         assertEquals(1, handler.getEquipmentList().size());
-        assertSame(equipment, handler.getEquipmentList().get(0));
+        assertSame(equipment, handler.getEquipmentList().getFirst());
     }
 
     @Test
@@ -49,6 +49,6 @@ class EquipmentHandlerTest {
                 () -> handler.addEquipment("add i/Tripod id/002 type/accessories cond/11"));
 
         assertEquals(1, handler.getEquipmentList().size());
-        assertSame(equipment, handler.getEquipmentList().get(0));
+        assertSame(equipment, handler.getEquipmentList().getFirst());
     }
 }

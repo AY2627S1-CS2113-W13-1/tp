@@ -14,6 +14,7 @@ public class EquipmentHandler {
     private static final String TYPE_MARKER = "type/";
     private static final String CONDITION_MARKER = "cond/";
 
+    /** Equipment stored by this handler during the current application session. */
     private final ArrayList<Equipment> inventory = new ArrayList<>();
 
     /**
@@ -101,4 +102,24 @@ public class EquipmentHandler {
         return new Equipment(itemString, id, type, condition);
     }
 
+    /**
+     * Prints out all equipment in inventory
+     */
+    public void viewAllEquipment() {
+        System.out.printf(
+                "%-4s %-24s | %-6s | %-15s | %-9s%n",
+                "No.", "NAME", "ID", "TYPE", "CONDITION"
+        );
+
+        List<Equipment> equipmentList = getEquipmentList();
+
+        for (int i = 0; i < equipmentList.size(); i++) {
+            Equipment item = equipmentList.get(i);
+
+            System.out.printf(
+                    "%-4s %-24s | %-6s | %-15s | %-9d%n",
+                    (i + 1) + ")", item.getItemName(), item.getItemId(), item.getType(), item.getCondition()
+            );
+        }
+    }
 }
