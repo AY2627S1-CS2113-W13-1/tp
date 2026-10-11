@@ -1,5 +1,7 @@
 package seedu.snap.eqmmanager;
 
+import seedu.snap.equipment.EquipmentHandler;
+import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 import seedu.snap.loan.LoanHandler;
@@ -8,14 +10,16 @@ import seedu.snap.loan.Loan;
 
 /** Coordinates command input and execution for the SNAP application. */
 public class EqmManager {
-    private Parser parser;
-    private LoanHandler loans;
+    private final Parser parser;
+    private final LoanHandler loans;
+    private final EquipmentHandler equipment;
     private boolean isRunning;
 
     /** Creates an equipment manager ready to accept commands. */
     public EqmManager() {
         this.parser = new Parser();
         this.loans = new LoanHandler();
+        this.equipment = new EquipmentHandler();
         this.isRunning = true;
     }
 
@@ -27,11 +31,18 @@ public class EqmManager {
     public void executeInput(String input) {
         if (input.equals("bye")) {
             isRunning = false;
-        } else if (input.equals("delete-loan")|| input.startsWith("delete-loan ")){
+        } else if (input.equals("delete-loan") || input.startsWith("delete-loan ")){
             try{
                 Loan deletedLoan = loans.deleteLoan(input);
-                System.out.println("Loan for item ID " + deletedLoan.getItemID() + " deleted successfully.");
+                System.out.println("Loan for item ID " + deletedLoan.getItemId() + " deleted successfully.");
             } catch (LoanDeletionUnsuccessful e){
+                System.out.println(e.getMessage());
+            }
+        } else if (input.equals("add") || input.startsWith("add ")) {
+            try {
+                equipment.addEquipment(input);
+                System.out.println("Equipment added successfully.");
+            } catch (EquipmentAdditionUnsuccessful e) {
                 System.out.println(e.getMessage());
             }
         } else if (input.equals("loan") || input.startsWith("loan ")) {
@@ -41,6 +52,10 @@ public class EqmManager {
             } catch (LoanAdditionUnsuccessful e) {
                 System.out.println(e.getMessage());
             }
+        } else if (input.equals("list loans")) {
+            LoanHandler.viewAllLoans();
+        } else if (input.equals("list") || input.startsWith("list ")) {
+            equipment.viewAllEquipment();
         } else {
             System.out.println("Success message.");
         }

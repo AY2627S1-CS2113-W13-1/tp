@@ -14,20 +14,15 @@ import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 
 /** Parses loan commands and stores successfully created loans. */
 public class LoanHandler {
+    static ArrayList<Loan> loans = new ArrayList<>();
+    static int numLoans = 0;
+
     private static final int EXPECTED_ADD_ARGUMENT_COUNT = 5;
     private static final Logger logger = Logger.getLogger(LoanHandler.class.getName());
     private static final String ID_FORMAT = "\\d{3}";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-uu")
             .withResolverStyle(ResolverStyle.STRICT);
 
-    final ArrayList<Loan> loans;
-    int numLoans;
-
-    /** Creates an empty loan handler. */
-    public LoanHandler() {
-        this.loans = new ArrayList<>();
-        this.numLoans = 0;
-    }
 
     /**
      * Adds a loan when the command contains valid IDs and dates.
@@ -65,13 +60,14 @@ public class LoanHandler {
         numLoans++;
         return loan;
     }
+
     /**
-     *  * Deletes the loan matching the item ID, and the issued date if one is given.
+     * * Deletes the loan matching the item ID, and the issued date if one is given.
      *
      * @param input complete delete-loan command entered by the user
      * @return the deleted loan
      * @throws LoanDeletionUnsuccessful when the command is invalid
-     *         or no matching loan is found
+     *                                  or no matching loan is found
      */
     public Loan deleteLoan(String input) throws LoanDeletionUnsuccessful {
         String[] arguments = input == null ? new String[0] : input.trim().split("\\s+");
@@ -86,7 +82,7 @@ public class LoanHandler {
 
         ArrayList<Loan> matches = new ArrayList<>();
         for (Loan loan : loans) {
-            boolean isSameItem = loan.getItemID().equals(itemId);
+            boolean isSameItem = loan.getItemId().equals(itemId);
             boolean isSameDate = issuedDate == null || loan.getIssuedDate().equals(issuedDate);
             if (isSameItem && isSameDate) {
                 matches.add(loan);
@@ -115,10 +111,10 @@ public class LoanHandler {
     /**
      * Extracts and validates an ID argument.
      *
-     * @param argument complete argument, including its prefix
-     * @param prefix required prefix for the documented argument format
+     * @param argument        complete argument, including its prefix
+     * @param prefix          required prefix for the documented argument format
      * @param alternatePrefix required prefix for the alternate argument format
-     * @param name human-readable argument name for the error message
+     * @param name            human-readable argument name for the error message
      * @return the validated three-digit ID
      */
     private String parseArgument(String argument, String prefix, String alternatePrefix, String name)
@@ -163,7 +159,9 @@ public class LoanHandler {
         return itemId;
     }
 
-    /** Creates an error for an invalid ID argument. */
+    /**
+     * Creates an error for an invalid ID argument.
+     */
     private LoanAdditionUnsuccessful idFormatError(String prefix, String alternatePrefix, String name) {
         return new LoanAdditionUnsuccessful("Invalid " + name + " format. Expected "
                 + prefix + "[three digits] or " + alternatePrefix + "[three digits].");
@@ -172,8 +170,8 @@ public class LoanHandler {
     /**
      * Extracts and parses a date argument as a {@link LocalDateTime} at midnight.
      *
-     * @param argument complete date argument, including its prefix
-     * @param prefix required prefix for the documented date format
+     * @param argument        complete date argument, including its prefix
+     * @param prefix          required prefix for the documented date format
      * @param alternatePrefix required prefix for the alternate date format
      * @return the parsed date at midnight
      */
@@ -196,16 +194,20 @@ public class LoanHandler {
         }
     }
 
-    /** Creates an error for an invalid date argument. */
+    /**
+     * Creates an error for an invalid date argument.
+     */
     private LoanAdditionUnsuccessful dateFormatError(String prefix, String alternatePrefix) {
         return new LoanAdditionUnsuccessful("Invalid date format. Expected " + prefix + "DD-MM-YY or "
                 + alternatePrefix + "DD-MM-YY.");
     }
 
-    /** Checks whether an item currently has an unreturned loan. */
+    /**
+     * Checks whether an item currently has an unreturned loan.
+     */
     private boolean hasActiveLoanForItem(String itemId) {
         for (Loan loan : loans) {
-            if (loan.getItemID().equals(itemId) && !loan.isReturned()) {
+            if (loan.getItemId().equals(itemId) && !loan.isReturned()) {
                 return true;
             }
         }
@@ -217,6 +219,25 @@ public class LoanHandler {
             return parseDateArgument(argument, "issued/", "/issued");
         } catch (LoanAdditionUnsuccessful e) {
             throw new LoanDeletionUnsuccessful(e.getMessage());
+        }
+    }
+
+    /**
+     * Prints out all equipment in inventory
+     */
+    public static void viewAllLoans() {
+        System.out.printf(
+                "%-4s %-12s | %-12s | %-16s | %-16s%n",
+                "No.", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE"
+        );
+
+        for (int i = 0; i < numLoans; i++) {
+            Loan item = loans.get(i);
+
+            System.out.printf(
+                    "%-4s %-12s | %-12s | %-16s | %-16s%n",
+                    (i + 1) + ")", item.getItemId(), item.getBorrowerId(), item.getIssuedDate(), item.getDueDate()
+            );
         }
     }
 }

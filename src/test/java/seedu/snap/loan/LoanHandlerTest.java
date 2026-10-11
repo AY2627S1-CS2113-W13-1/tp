@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
 
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
@@ -16,6 +17,12 @@ public class LoanHandlerTest {
     private static final String SECOND_LOAN =
             "loan id/003 b/004 issued/03-10-26 due/04-10-26";
 
+    @BeforeEach
+    public void resetLoans() {
+        LoanHandler.loans.clear();
+        LoanHandler.numLoans = 0;
+    }
+
     @Test
     public void deleteLoan_existingItemId_deletesCorrectLoan()
             throws LoanAdditionUnsuccessful,
@@ -27,11 +34,11 @@ public class LoanHandlerTest {
         Loan deletedLoan =
                 loanHandler.deleteLoan("delete-loan id/001");
 
-        assertEquals("001", deletedLoan.getItemID());
+        assertEquals("001", deletedLoan.getItemId());
         assertEquals(1, loanHandler.numLoans);
         assertEquals(
                 "003",
-                loanHandler.loans.get(0).getItemID());
+                loanHandler.loans.get(0).getItemId());
     }
 
     @Test
@@ -51,7 +58,7 @@ public class LoanHandlerTest {
         assertEquals(1, loanHandler.numLoans);
         assertEquals(
                 "001",
-                loanHandler.loans.get(0).getItemID());
+                loanHandler.loans.get(0).getItemId());
     }
 
     @Test
@@ -114,7 +121,7 @@ public class LoanHandlerTest {
         assertEquals(2, loanHandler.numLoans);
 
         Loan deletedLoan = loanHandler.deleteLoan("delete-loan id/001 issued/05-10-26");
-        assertEquals("005", deletedLoan.getBorrowerID());
+        assertEquals("005", deletedLoan.getBorrowerId());
         assertEquals(1, loanHandler.numLoans);
     }
 }
