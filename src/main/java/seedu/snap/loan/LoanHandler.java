@@ -6,14 +6,18 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
 import java.util.ArrayList;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 
+
+
 /** Parses loan commands and stores successfully created loans. */
 public class LoanHandler {
     private static final int EXPECTED_ADD_ARGUMENT_COUNT = 5;
-    private static final int EXPECTED_DELETE_ARGUMENT_COUNT=2;
+    private static final Logger logger = Logger.getLogger(LoanHandler.class.getName());
     private static final String ID_FORMAT = "\\d{3}";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-uu")
             .withResolverStyle(ResolverStyle.STRICT);
@@ -71,29 +75,42 @@ public class LoanHandler {
      * @throws LoanDeletionUnsuccessful when the command is invalid
      *         or no matching loan is found
      */
-    public Loan deleteLoan(String input)
-            throws LoanDeletionUnsuccessful {
-        String[] arguments = input == null
-                ? new String[0]
-                : input.trim().split("\\s+");
-
-        if (arguments.length != EXPECTED_DELETE_ARGUMENT_COUNT || !arguments[0].equals("delete-loan")) {
-            throw new LoanDeletionUnsuccessful("Invalid command format. Expected: " + "delete-loan id/[ITEM ID].");
+    public Loan deleteLoan(String input) throws LoanDeletionUnsuccessful {
+        String[] arguments = input == null ? new String[0] : input.trim().split("\\s+");
+        boolean hasValidCount = arguments.length == 2 || arguments.length == 3;
+        if (!hasValidCount || !arguments[0].equals("delete-loan")) {
+            throw new LoanDeletionUnsuccessful("Invalid command format. Expected: "
+                    + "delete-loan id/[ITEM ID] [issued/DD-MM-YY].");
         }
 
         String itemId = parseDeleteItemId(arguments[1]);
+        LocalDateTime issuedDate = arguments.length == 3 ? parseDeleteIssuedDate(arguments[2]) : null;
 
-        for (int i = 0; i < loans.size(); i++) {
-            Loan loan = loans.get(i);
-
-            if (loan.getItemID().equals(itemId)) {
-                loans.remove(i);
-                numLoans--;
-                return loan;
+        ArrayList<Loan> matches = new ArrayList<>();
+        for (Loan loan : loans) {
+            boolean isSameItem = loan.getItemID().equals(itemId);
+            boolean isSameDate = issuedDate == null || loan.getIssuedDate().equals(issuedDate);
+            if (isSameItem && isSameDate) {
+                matches.add(loan);
             }
         }
 
-        throw new LoanDeletionUnsuccessful("No loan found for item ID " + itemId + ".");
+        if (matches.isEmpty()) {
+            logger.log(Level.WARNING, "No loan found for item ID " + itemId);
+            throw new LoanDeletionUnsuccessful("No loan found for item ID " + itemId + ".");
+        }
+        if (matches.size() > 1) {
+            logger.log(Level.WARNING, "Multiple loans found for item ID " + itemId);
+            throw new LoanDeletionUnsuccessful(matches.size() + " loans found for item ID " + itemId
+                    + ". Specify which one: delete-loan id/" + itemId + " issued/DD-MM-YY.");
+        }
+
+        Loan loan = matches.get(0);
+        loans.remove(loan);
+        numLoans--;
+        assert numLoans == loans.size() : "numLoans should match the size of the loans list";
+        logger.log(Level.INFO, "Deleted loan for item ID " + itemId);
+        return loan;
     }
 
 
@@ -132,19 +149,19 @@ public class LoanHandler {
      */
     private String parseDeleteItemId(String argument) throws LoanDeletionUnsuccessful {
         String itemId;
-
         if (argument.startsWith("id/")) {
             itemId = argument.substring("id/".length());
         } else if (argument.startsWith("/id")) {
             itemId = argument.substring("/id".length());
         } else {
-            throw invalidDeleteItemId();
+            throw new LoanDeletionUnsuccessful(
+                    "Missing item ID prefix. Expected id/[three digits] or /id[three digits].");
         }
 
         if (!itemId.matches(ID_FORMAT)) {
-            throw invalidDeleteItemId();
+            throw new LoanDeletionUnsuccessful("Invalid item ID \"" + itemId
+                    + "\". Item ID must be exactly three digits, e.g. 001.");
         }
-
         return itemId;
     }
 
@@ -152,13 +169,6 @@ public class LoanHandler {
     private LoanAdditionUnsuccessful idFormatError(String prefix, String alternatePrefix, String name) {
         return new LoanAdditionUnsuccessful("Invalid " + name + " format. Expected "
                 + prefix + "[three digits] or " + alternatePrefix + "[three digits].");
-    }
-
-    /** Creates an error for an invalid delete-loan item ID. */
-    private LoanDeletionUnsuccessful invalidDeleteItemId() {
-        return new LoanDeletionUnsuccessful(
-                "Invalid item ID format. Expected id/[three digits] "
-                        + "or /id[three digits].");
     }
 
     /**
@@ -202,5 +212,13 @@ public class LoanHandler {
             }
         }
         return false;
+    }
+
+    private LocalDateTime parseDeleteIssuedDate(String argument) throws LoanDeletionUnsuccessful {
+        try {
+            return parseDateArgument(argument, "issued/", "/issued");
+        } catch (LoanAdditionUnsuccessful e) {
+            throw new LoanDeletionUnsuccessful(e.getMessage());
+        }
     }
 }

@@ -66,8 +66,7 @@ public class LoanHandlerTest {
                         "delete-loan id/01"));
 
         assertEquals(
-                "Invalid item ID format. Expected id/[three digits] "
-                        + "or /id[three digits].",
+                "Invalid item ID \"01\". Item ID must be exactly three digits, e.g. 001.",
                 exception.getMessage());
         assertEquals(1, loanHandler.numLoans);
     }
@@ -83,8 +82,7 @@ public class LoanHandlerTest {
                 () -> loanHandler.deleteLoan("delete-loan"));
 
         assertEquals(
-                "Invalid command format. Expected: "
-                        + "delete-loan id/[ITEM ID].",
+                "Invalid command format. Expected: delete-loan id/[ITEM ID] [issued/DD-MM-YY].",
                 exception.getMessage());
         assertEquals(1, loanHandler.numLoans);
     }
@@ -100,6 +98,23 @@ public class LoanHandlerTest {
                 () -> loanHandler.deleteLoan(
                         "delete-loan item/001"));
 
+        assertEquals(1, loanHandler.numLoans);
+    }
+
+    @Test
+    public void deleteLoan_duplicateItemId_requiresIssuedDate()
+            throws LoanAdditionUnsuccessful, LoanDeletionUnsuccessful {
+        LoanHandler loanHandler = new LoanHandler();
+        loanHandler.addLoan(FIRST_LOAN);
+        loanHandler.loans.get(0).setReturned(true);
+        loanHandler.addLoan("loan id/001 b/005 issued/05-10-26 due/06-10-26");
+
+        assertThrows(LoanDeletionUnsuccessful.class,
+                () -> loanHandler.deleteLoan("delete-loan id/001"));
+        assertEquals(2, loanHandler.numLoans);
+
+        Loan deletedLoan = loanHandler.deleteLoan("delete-loan id/001 issued/05-10-26");
+        assertEquals("005", deletedLoan.getBorrowerID());
         assertEquals(1, loanHandler.numLoans);
     }
 }
