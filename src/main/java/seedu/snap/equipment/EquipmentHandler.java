@@ -3,6 +3,8 @@ package seedu.snap.equipment;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -11,6 +13,8 @@ import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
 
 /** Parses add commands and stores equipment for the current session. */
 public class EquipmentHandler {
+    /** Diagnostic logger; FINE messages are hidden by default to preserve CLI output. */
+    private static final Logger logger = Logger.getLogger(EquipmentHandler.class.getName());
     private static final String ADD_COMMAND = "add";
     private static final Pattern DELETE_PATTERN = Pattern.compile("delete\\s+item/([0-9]{3})");
     private static final String ITEM_MARKER = "i/";
@@ -29,11 +33,18 @@ public class EquipmentHandler {
      * @throws EquipmentAdditionUnsuccessful when the command is invalid
      */
     public Equipment addEquipment(String input) throws EquipmentAdditionUnsuccessful {
-        Equipment equipment = parseEquipment(input);
+        Equipment equipment;
+        try {
+            equipment = parseEquipment(input);
+        } catch (EquipmentAdditionUnsuccessful e) {
+            logger.log(Level.FINE, "Equipment addition rejected: {0}", e.getMessage());
+            throw e;
+        }
         assert equipment != null : "Successful parsing must return equipment";
         int previousSize = inventory.size();
         inventory.add(equipment);
         assert inventory.size() == previousSize + 1 : "Adding equipment must increase inventory size by one";
+        logger.log(Level.FINE, "Added equipment with item ID {0}", equipment.getItemId());
         return equipment;
     }
 
