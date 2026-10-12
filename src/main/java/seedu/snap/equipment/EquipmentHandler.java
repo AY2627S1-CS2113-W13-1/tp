@@ -30,7 +30,10 @@ public class EquipmentHandler {
      */
     public Equipment addEquipment(String input) throws EquipmentAdditionUnsuccessful {
         Equipment equipment = parseEquipment(input);
+        assert equipment != null : "Successful parsing must return equipment";
+        int previousSize = inventory.size();
         inventory.add(equipment);
+        assert inventory.size() == previousSize + 1 : "Adding equipment must increase inventory size by one";
         return equipment;
     }
 
