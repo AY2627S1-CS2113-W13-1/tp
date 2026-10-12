@@ -3,12 +3,16 @@ package seedu.snap.equipment;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
+import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
 
 /** Parses add commands and stores equipment for the current session. */
 public class EquipmentHandler {
     private static final String ADD_COMMAND = "add";
+    private static final Pattern DELETE_PATTERN = Pattern.compile("delete\\s+item/([0-9]{3})");
     private static final String ITEM_MARKER = "i/";
     private static final String ID_MARKER = "id/";
     private static final String TYPE_MARKER = "type/";
@@ -37,6 +41,36 @@ public class EquipmentHandler {
      */
     public List<Equipment> getEquipmentList() {
         return Collections.unmodifiableList(inventory);
+    }
+
+    /**
+     * Finds the equipment targeted by a delete command without changing the inventory.
+     *
+     * @param input complete delete command
+     * @return the equipment that matches the command's item ID
+     * @throws EquipmentDeletionUnsuccessful when the command or item ID is invalid
+     */
+    public Equipment getEquipmentForDeletion(String input) throws EquipmentDeletionUnsuccessful {
+        String itemId = parseDeleteItemId(input);
+        for (Equipment equipment : inventory) {
+            if (equipment.getItemId().equals(itemId)) {
+                return equipment;
+            }
+        }
+        throw new EquipmentDeletionUnsuccessful("Equipment ID " + itemId + " does not exist.");
+    }
+
+    /**
+     * Removes the equipment identified by a valid delete command.
+     *
+     * @param input complete delete command
+     * @return the removed equipment
+     * @throws EquipmentDeletionUnsuccessful when the command or item ID is invalid
+     */
+    public Equipment deleteEquipment(String input) throws EquipmentDeletionUnsuccessful {
+        Equipment equipment = getEquipmentForDeletion(input);
+        inventory.remove(equipment);
+        return equipment;
     }
 
     /**
@@ -90,6 +124,22 @@ public class EquipmentHandler {
         int condition = Integer.parseInt(conditionString);
 
         return new Equipment(itemString, id, type, condition);
+    }
+
+    /**
+     * Extracts and validates the item ID from a delete command.
+     *
+     * @param input complete delete command
+     * @return the validated item ID
+     * @throws EquipmentDeletionUnsuccessful when the command does not match the delete syntax
+     */
+    private String parseDeleteItemId(String input) throws EquipmentDeletionUnsuccessful {
+        Matcher matcher = input == null ? null : DELETE_PATTERN.matcher(input.trim());
+        if (matcher == null || !matcher.matches() || matcher.group(1).equals("000")) {
+            throw new EquipmentDeletionUnsuccessful(
+                    "Invalid delete syntax. ITEM ID must be from 001 to 999.");
+        }
+        return matcher.group(1);
     }
 
     /**
