@@ -54,6 +54,31 @@ class EquipmentHandlerTest {
     }
 
     @Test
+    public void addEquipment_malformedCommands_keepInventoryUnchanged() {
+        EquipmentHandler handler = new EquipmentHandler();
+        String[] invalidCommands = {
+            null,
+            "",
+            "add",
+            "add id/001 type/camera cond/1",
+            "add i/Camera type/camera cond/1",
+            "add i/Camera id/001 cond/1",
+            "add i/ id/001 type/camera cond/1",
+            "add i/Camera id/000 type/camera cond/1",
+            "add i/Camera id/001 type/ cond/1",
+            "add i/Camera id/001 type/camera cond/0",
+            "add i/Camera id/001 type/camera cond/11"
+        };
+
+        for (String command : invalidCommands) {
+            assertThrows(EquipmentAdditionUnsuccessful.class,
+                    () -> handler.addEquipment(command), command);
+        }
+
+        assertEquals(0, handler.getEquipmentList().size());
+    }
+
+    @Test
     public void deleteEquipment_validCommand_removesMatchingEquipment()
             throws EquipmentAdditionUnsuccessful, EquipmentDeletionUnsuccessful {
         EquipmentHandler handler = new EquipmentHandler();
