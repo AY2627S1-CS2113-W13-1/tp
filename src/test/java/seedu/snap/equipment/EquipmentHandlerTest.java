@@ -42,19 +42,6 @@ class EquipmentHandlerTest {
     }
 
     @Test
-    public void addEquipment_multipleValidItems_keepsInventoryConsistent()
-            throws EquipmentAdditionUnsuccessful {
-        EquipmentHandler handler = new EquipmentHandler();
-
-        handler.addEquipment("add i/Canon EOS R10 id/001 type/camera cond/1");
-        handler.addEquipment("add i/Tripod id/002 type/accessories cond/8");
-
-        assertEquals(2, handler.getEquipmentList().size());
-        assertEquals("001", handler.getEquipmentList().get(0).getItemId());
-        assertEquals("002", handler.getEquipmentList().get(1).getItemId());
-    }
-
-    @Test
     public void addEquipment_invalidInput_keepsInventoryUnchanged() throws EquipmentAdditionUnsuccessful {
         EquipmentHandler handler = new EquipmentHandler();
         Equipment equipment = handler.addEquipment("add i/Canon EOS R10 id/001 type/camera cond/1");

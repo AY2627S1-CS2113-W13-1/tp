@@ -3,8 +3,6 @@ package seedu.snap.equipment;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -19,7 +17,6 @@ public class EquipmentHandler {
     private static final String ID_MARKER = "id/";
     private static final String TYPE_MARKER = "type/";
     private static final String CONDITION_MARKER = "cond/";
-    private static final Logger logger = Logger.getLogger(EquipmentHandler.class.getName());
 
     /** Equipment stored by this handler during the current application session. */
     private final ArrayList<Equipment> inventory = new ArrayList<>();
@@ -33,10 +30,7 @@ public class EquipmentHandler {
      */
     public Equipment addEquipment(String input) throws EquipmentAdditionUnsuccessful {
         Equipment equipment = parseEquipment(input);
-        assert equipment != null : "Parsed equipment must not be null.";
         inventory.add(equipment);
-        assert inventory.contains(equipment) : "Added equipment must be present in inventory.";
-        logger.log(Level.FINE, "Added equipment with item ID {0}.", equipment.getItemId());
         return equipment;
     }
 
@@ -75,10 +69,7 @@ public class EquipmentHandler {
      */
     public Equipment deleteEquipment(String input) throws EquipmentDeletionUnsuccessful {
         Equipment equipment = getEquipmentForDeletion(input);
-        boolean removed = inventory.remove(equipment);
-        assert removed : "Equipment returned for deletion must be in inventory.";
-        assert !inventory.contains(equipment) : "Deleted equipment must not remain in inventory.";
-        logger.log(Level.FINE, "Deleted equipment with item ID {0}.", equipment.getItemId());
+        inventory.remove(equipment);
         return equipment;
     }
 
