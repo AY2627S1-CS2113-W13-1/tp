@@ -24,6 +24,16 @@ public class LoanHandlerTest {
     }
 
     @Test
+    public void addLoan_validLoan_keepsCountConsistent() throws LoanAdditionUnsuccessful {
+        LoanHandler loanHandler = new LoanHandler();
+
+        loanHandler.addLoan(FIRST_LOAN);
+
+        assertEquals(1, loanHandler.numLoans);
+        assertEquals(1, loanHandler.loans.size());
+    }
+
+    @Test
     public void deleteLoan_existingItemId_deletesCorrectLoan()
             throws LoanAdditionUnsuccessful,
             LoanDeletionUnsuccessful {
