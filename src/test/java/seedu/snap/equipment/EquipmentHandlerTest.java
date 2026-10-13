@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.logging.Handler;
@@ -88,6 +89,35 @@ class EquipmentHandlerTest {
 
         assertEquals(1, handler.getEquipmentList().size());
         assertSame(equipment, handler.getEquipmentList().getFirst());
+    }
+
+    @Test
+    public void addEquipment_multipleItems_increasesInventoryOneAtATime() throws EquipmentAdditionUnsuccessful {
+        EquipmentHandler handler = new EquipmentHandler();
+        Equipment camera = handler.addEquipment("add i/Canon EOS R10 id/001 type/camera cond/1");
+        assertEquals(1, handler.getEquipmentList().size());
+
+        Equipment tripod = handler.addEquipment("add i/Tripod id/002 type/accessories cond/10");
+        assertEquals(2, handler.getEquipmentList().size());
+        assertSame(camera, handler.getEquipmentList().get(0));
+        assertSame(tripod, handler.getEquipmentList().get(1));
+    }
+
+    @Test
+    public void addEquipment_invalidInputsWithAssertionsEnabled_throwValidationException() {
+        assertTrue(EquipmentHandler.class.desiredAssertionStatus(), "Run this test with Java assertions enabled");
+        EquipmentHandler handler = new EquipmentHandler();
+        String[] invalidInputs = {
+            null,
+            "add",
+            "add i/Camera id/000 type/camera cond/1",
+            "add i/Camera id/001 type/camera cond/11"
+        };
+
+        for (String input : invalidInputs) {
+            assertThrows(EquipmentAdditionUnsuccessful.class, () -> handler.addEquipment(input));
+            assertEquals(0, handler.getEquipmentList().size());
+        }
     }
 
     @Test
