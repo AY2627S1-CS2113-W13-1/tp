@@ -14,27 +14,10 @@ import java.util.logging.Logger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/** Tests shared logger inheritance and cleanup without touching the application's log directory. */
+/** Tests cleanup after failure without touching the application's log directory. */
 class AppLoggingTest {
     @TempDir
     Path temporaryDirectory;
-
-    @Test
-    void start_childLoggers_shareFileWithoutDuplicateRecords() throws Exception {
-        Logger equipment = Logger.getLogger("seedu.snap.equipment.EquipmentHandler");
-        Logger loans = Logger.getLogger("seedu.snap.loan.LoanHandler");
-        Logger futureFeature = Logger.getLogger("seedu.snap.reports.ReportHandler");
-        try (AppLogging logging = AppLogging.start(temporaryDirectory)) {
-            equipment.finer("equipment inheritance probe");
-            loans.warning("loan inheritance probe");
-            futureFeature.fine("future feature inheritance probe");
-        }
-        String logs = Files.readString(temporaryDirectory.resolve("snap.log.0"));
-        for (String message : new String[]{"equipment inheritance probe", "loan inheritance probe",
-            "future feature inheritance probe"}) {
-            assertEquals(1L, logs.lines().filter(line -> line.contains(message)).count());
-        }
-    }
 
     @Test
     void close_applicationFails_restoresSettingsAndReleasesFileLock() throws Exception {

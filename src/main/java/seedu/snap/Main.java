@@ -7,7 +7,8 @@ import seedu.snap.logging.AppLogging;
 public class Main {
     /** Starts the application and hands control to the equipment manager. */
     public static void main(String[] args) {
-        try (AppLogging logging = AppLogging.start()) {
+        AppLogging logging = AppLogging.start();
+        try (logging) {
             EqmManager eqmManager = new EqmManager();
             eqmManager.run();
         }
