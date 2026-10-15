@@ -12,6 +12,8 @@ import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
 /** Parses add commands and stores equipment for the current session. */
 public class EquipmentHandler {
     private static final String ADD_COMMAND = "add";
+    private static final String ADD_FORMAT_ERROR = "Invalid format. Use: add i/[ITEM] id/[ITEM ID] "
+            + "type/[TYPE] cond/[CONDITION]";
     private static final Pattern DELETE_PATTERN = Pattern.compile("delete\\s+item/([0-9]{3})");
     private static final String ITEM_MARKER = "i/";
     private static final String ID_MARKER = "id/";
@@ -26,10 +28,15 @@ public class EquipmentHandler {
      *
      * @param input complete add command
      * @return the added equipment
-     * @throws EquipmentAdditionUnsuccessful when the command is invalid
+     * @throws EquipmentAdditionUnsuccessful when the command is invalid or the item ID already exists
      */
     public Equipment addEquipment(String input) throws EquipmentAdditionUnsuccessful {
         Equipment equipment = parseEquipment(input);
+        for (Equipment existing : inventory) {
+            if (existing.getItemId().equals(equipment.getItemId())) {
+                throw new EquipmentAdditionUnsuccessful("Equipment ID " + equipment.getItemId() + " already exists.");
+            }
+        }
         inventory.add(equipment);
         return equipment;
     }
@@ -82,22 +89,26 @@ public class EquipmentHandler {
      */
     static Equipment parseEquipment(String userInput) throws EquipmentAdditionUnsuccessful {
         if (userInput == null || !(userInput.equals(ADD_COMMAND) || userInput.startsWith(ADD_COMMAND + " "))) {
-            throw new EquipmentAdditionUnsuccessful("Invalid format. Use: add i/[ITEM] id/[ITEM ID] "
-                    + "type/[TYPE] cond/[CONDITION]");
+            throw new EquipmentAdditionUnsuccessful(ADD_FORMAT_ERROR);
         }
         String addDetails = userInput.substring(ADD_COMMAND.length()).trim();
-        int itemIndex = addDetails.indexOf(ITEM_MARKER);
-        int idIndex = addDetails.indexOf(ID_MARKER);
-        int typeIndex = addDetails.indexOf(TYPE_MARKER);
-        int conditionIndex = addDetails.indexOf(CONDITION_MARKER);
+        int itemIndex = findFieldMarker(addDetails, ITEM_MARKER, 0);
+        int idIndex = findFieldMarker(addDetails, ID_MARKER, 0);
+        int typeIndex = findFieldMarker(addDetails, TYPE_MARKER, 0);
+        int conditionIndex = findFieldMarker(addDetails, CONDITION_MARKER, 0);
 
         boolean markersAreInOrder = itemIndex == 0
                 && idIndex > itemIndex
                 && typeIndex > idIndex
                 && conditionIndex > typeIndex;
         if (!markersAreInOrder) {
-            throw new EquipmentAdditionUnsuccessful("Invalid format. Use: add i/[ITEM] id/[ITEM ID] "
-                    + "type/[TYPE] cond/[CONDITION]");
+            throw new EquipmentAdditionUnsuccessful(ADD_FORMAT_ERROR);
+        }
+        for (String marker : new String[]{ITEM_MARKER, ID_MARKER, TYPE_MARKER, CONDITION_MARKER}) {
+            int firstIndex = findFieldMarker(addDetails, marker, 0);
+            if (findFieldMarker(addDetails, marker, firstIndex + marker.length()) != -1) {
+                throw new EquipmentAdditionUnsuccessful(ADD_FORMAT_ERROR);
+            }
         }
 
         String itemString = addDetails.substring(itemIndex + ITEM_MARKER.length(), idIndex).trim();
@@ -105,7 +116,7 @@ public class EquipmentHandler {
         String type = addDetails.substring(typeIndex + TYPE_MARKER.length(), conditionIndex).trim();
         String conditionString = addDetails.substring(conditionIndex + CONDITION_MARKER.length()).trim();
 
-        if (itemString.isEmpty() || itemString.length() > 100) {
+        if (itemString.isBlank() || itemString.length() > 100) {
             throw new EquipmentAdditionUnsuccessful("Item name must contain 1 to 100 characters.");
         }
 
@@ -113,7 +124,7 @@ public class EquipmentHandler {
             throw new EquipmentAdditionUnsuccessful("Item ID must be from 001 to 999.");
         }
 
-        if (type.isEmpty()) {
+        if (type.isBlank()) {
             throw new EquipmentAdditionUnsuccessful("Type cannot be empty.");
         }
 
@@ -124,6 +135,21 @@ public class EquipmentHandler {
         int condition = Integer.parseInt(conditionString);
 
         return new Equipment(itemString, id, type, condition);
+    }
+
+    /**
+     * Finds a field prefix at the start or after whitespace, ignoring prefix-like text inside words.
+     * The starting index also allows callers to detect repeated prefixes.
+     */
+    private static int findFieldMarker(String details, String marker, int startIndex) {
+        int index = details.indexOf(marker, startIndex);
+        while (index != -1) {
+            if (index == 0 || Character.isWhitespace(details.charAt(index - 1))) {
+                return index;
+            }
+            index = details.indexOf(marker, index + marker.length());
+        }
+        return -1;
     }
 
     /**
