@@ -13,6 +13,12 @@ import java.util.logging.Level;
 import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
@@ -20,6 +26,20 @@ import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
 
 /** Tests equipment command parsing, insertion, and deletion. */
 class EquipmentHandlerTest {
+    private final ByteArrayOutputStream output = new ByteArrayOutputStream();
+    private PrintStream originalOutput;
+
+    @BeforeEach
+    void redirectOutput() {
+        originalOutput = System.out;
+        System.setOut(new PrintStream(output, true, StandardCharsets.UTF_8));
+    }
+
+    @AfterEach
+    void restoreOutput() {
+        System.setOut(originalOutput);
+    }
+
     @Test
     public void addEquipment_unicodeWhitespaceFields_throwValidationException() {
         EquipmentHandler handler = new EquipmentHandler();
@@ -246,5 +266,39 @@ class EquipmentHandlerTest {
 
         assertEquals("Invalid delete syntax. ITEM ID must be from 001 to 999.", exception.getMessage());
         assertEquals(1, handler.getEquipmentList().size());
+    }
+
+    @Test
+    void viewAllEquipment_emptyInventory_printsHeaderOnly() {
+        EquipmentHandler handler = new EquipmentHandler();
+
+        handler.viewAllEquipment();
+
+        String expected = String.format(
+                "%-4s %-24s | %-6s | %-15s | %-9s%n",
+                "No.", "NAME", "ID", "TYPE", "CONDITION");
+        assertEquals(expected, output.toString(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void viewAllEquipment_populatedInventory_printsHeaderAndRows()
+            throws EquipmentAdditionUnsuccessful {
+        EquipmentHandler handler = new EquipmentHandler();
+        handler.addEquipment("add i/Canon EOS R10 id/001 type/camera cond/1");
+        handler.addEquipment("add i/Manfrotto Tripod id/002 type/accessories cond/8");
+
+        handler.viewAllEquipment();
+
+        String expected = String.format(
+                "%-4s %-24s | %-6s | %-15s | %-9s%n",
+                "No.", "NAME", "ID", "TYPE", "CONDITION");
+        expected += String.format(
+                "%-4s %-24s | %-6s | %-15s | %-9d%n",
+                "1)", "Canon EOS R10", "001", "camera", 1);
+        expected += String.format(
+                "%-4s %-24s | %-6s | %-15s | %-9d%n",
+                "2)", "Manfrotto Tripod", "002", "accessories", 8);
+
+        assertEquals(expected, output.toString(StandardCharsets.UTF_8));
     }
 }
