@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
+import java.util.Random;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
@@ -20,6 +21,58 @@ import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
 /** Tests equipment command parsing, insertion, and deletion. */
 class EquipmentHandlerTest {
     @Test
+    public void addEquipment_unicodeWhitespaceFields_throwValidationException() {
+        EquipmentHandler handler = new EquipmentHandler();
+        String[] invalidCommands = {
+            "add i/\u2003 id/001 type/camera cond/1",
+            "add i/Camera id/001 type/\u2003 cond/1"
+        };
+        for (String command : invalidCommands) {
+            assertThrows(EquipmentAdditionUnsuccessful.class, () -> handler.addEquipment(command));
+            assertEquals(0, handler.getEquipmentList().size());
+        }
+    }
+
+    @Test
+    public void addEquipment_repeatedValidAndInvalidInputs_preservesInventory()
+            throws EquipmentAdditionUnsuccessful {
+        EquipmentHandler handler = new EquipmentHandler();
+        ArrayList<Equipment> expected = new ArrayList<>();
+        Random random = new Random(25);
+        String[] invalidCommands = {
+            null, "", "add", "ADD i/Camera id/001 type/camera cond/1",
+            "add i/Camera id/000 type/camera cond/1",
+            "add i/Camera id/1000 type/camera cond/1",
+            "add i/Camera id/001 type/camera cond/-1",
+            "add i/Camera id/001 type/camera cond/2147483648",
+            "add i/Camera id/001 type/camera cond/1.0",
+            "add i/Camera id/001 type/camera cond/01",
+            "add i/Camera id/001 type/camera cond/1 extra",
+            "add i/Camera id/001 type/ cond/1",
+            "add i/" + "A".repeat(101) + " id/001 type/camera cond/1",
+            "add id/001 i/Camera type/camera cond/1"
+        };
+        for (int i = 1; i <= 999; i++) {
+            String invalidCommand = invalidCommands[random.nextInt(invalidCommands.length)];
+            assertThrows(EquipmentAdditionUnsuccessful.class, () -> handler.addEquipment(invalidCommand));
+            assertEquals(expected, handler.getEquipmentList());
+
+            String name = i % 2 == 0 ? "A".repeat(100) : "Camera \u76f8\u673a";
+            String id = String.format(java.util.Locale.ROOT, "%03d", i);
+            int condition = random.nextInt(10) + 1;
+            Equipment equipment = handler.addEquipment("add i/" + name + " id/" + id
+                    + " type/camera accessories cond/" + condition);
+            expected.add(equipment);
+            assertEquals(name, equipment.getItemName());
+            assertEquals(id, equipment.getItemId());
+            assertEquals(condition, equipment.getCondition());
+            assertEquals(expected, handler.getEquipmentList());
+        }
+        assertThrows(UnsupportedOperationException.class, () -> handler.getEquipmentList().clear());
+        assertEquals(expected, handler.getEquipmentList());
+    }
+
+    @Test
     public void addEquipment_validAndInvalidInputs_logsOutcome() throws EquipmentAdditionUnsuccessful {
         Logger logger = Logger.getLogger(EquipmentHandler.class.getName());
         Level originalLevel = logger.getLevel();
@@ -32,7 +85,7 @@ class EquipmentHandlerTest {
 
             @Override
             public void flush() {
-                // Records are captured immediately; nothing needs flushing.
+                // Records are captured immediately. Nothing needs flushing.
             }
 
             @Override
