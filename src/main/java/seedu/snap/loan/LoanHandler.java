@@ -237,6 +237,7 @@ public class LoanHandler {
 
         for (int i = 0; i < numLoans; i++) {
             Loan item = loans.get(i);
+            assert item != null : "Loan list must not contain null items";
 
             System.out.printf(
                     "%-4s %-12s | %-12s | %-16s | %-16s%n",
