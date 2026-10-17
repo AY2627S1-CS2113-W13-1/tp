@@ -230,6 +230,7 @@ public class LoanHandler {
      */
     public static void viewAllLoans() {
         assert numLoans == loans.size() : "numLoans should match the size of the loans list";
+        logger.log(Level.INFO, "Viewing {0} loan(s)", numLoans);
         System.out.printf(
                 "%-4s %-12s | %-12s | %-16s | %-16s%n",
                 "No.", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE"
