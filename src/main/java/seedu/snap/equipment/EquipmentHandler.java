@@ -3,6 +3,8 @@ package seedu.snap.equipment;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -11,6 +13,8 @@ import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
 
 /** Parses add commands and stores equipment for the current session. */
 public class EquipmentHandler {
+    /** Diagnostic logger; the application sends outcomes and detailed traces to local files. */
+    private static final Logger logger = Logger.getLogger(EquipmentHandler.class.getName());
     private static final String ADD_COMMAND = "add";
     private static final Pattern DELETE_PATTERN = Pattern.compile("delete\\s+item/([0-9]{3})");
     private static final String ITEM_MARKER = "i/";
@@ -29,8 +33,20 @@ public class EquipmentHandler {
      * @throws EquipmentAdditionUnsuccessful when the command is invalid
      */
     public Equipment addEquipment(String input) throws EquipmentAdditionUnsuccessful {
-        Equipment equipment = parseEquipment(input);
+        int previousSize = inventory.size();
+        Equipment equipment;
+        try {
+            equipment = parseEquipment(input);
+        } catch (EquipmentAdditionUnsuccessful e) {
+            assert inventory.size() == previousSize : "Rejected additions must not change inventory size";
+            logger.log(Level.FINE, "Equipment addition rejected: {0}", e.getMessage());
+            throw e;
+        }
+        assert equipment != null : "Successful parsing must return equipment";
         inventory.add(equipment);
+        assert inventory.size() == previousSize + 1 : "Adding equipment must increase inventory size by one";
+        assert inventory.getLast() == equipment : "The newly added equipment must be last in the inventory";
+        logger.log(Level.FINE, "Added equipment with item ID {0}", equipment.getItemId());
         return equipment;
     }
 
@@ -105,7 +121,7 @@ public class EquipmentHandler {
         String type = addDetails.substring(typeIndex + TYPE_MARKER.length(), conditionIndex).trim();
         String conditionString = addDetails.substring(conditionIndex + CONDITION_MARKER.length()).trim();
 
-        if (itemString.isEmpty() || itemString.length() > 100) {
+        if (itemString.isBlank() || itemString.length() > 100) {
             throw new EquipmentAdditionUnsuccessful("Item name must contain 1 to 100 characters.");
         }
 
@@ -113,7 +129,7 @@ public class EquipmentHandler {
             throw new EquipmentAdditionUnsuccessful("Item ID must be from 001 to 999.");
         }
 
-        if (type.isEmpty()) {
+        if (type.isBlank()) {
             throw new EquipmentAdditionUnsuccessful("Type cannot be empty.");
         }
 

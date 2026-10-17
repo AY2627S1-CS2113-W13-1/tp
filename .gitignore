@@ -16,6 +16,9 @@ bin/
 # Temp files
 _temp/
 
+# Generated runtime logs
+/logs/
+
 # Local equipment records
 /data/equipment.txt
 
