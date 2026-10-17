@@ -168,6 +168,7 @@ public class EquipmentHandler {
         );
 
         List<Equipment> equipmentList = getEquipmentList();
+        logger.log(Level.INFO, "Viewing {0} equipment item(s)", equipmentList.size());
 
         for (int i = 0; i < equipmentList.size(); i++) {
             Equipment item = equipmentList.get(i);
