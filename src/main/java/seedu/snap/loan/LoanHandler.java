@@ -225,7 +225,7 @@ public class LoanHandler {
     /**
      * Prints out all equipment in inventory
      */
-    public static void viewAllLoans() {
+    public void viewAllLoans() {
         System.out.printf(
                 "%-4s %-12s | %-12s | %-16s | %-16s%n",
                 "No.", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE"
