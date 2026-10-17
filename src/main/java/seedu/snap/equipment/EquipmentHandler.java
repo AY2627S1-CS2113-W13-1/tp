@@ -171,6 +171,7 @@ public class EquipmentHandler {
 
         for (int i = 0; i < equipmentList.size(); i++) {
             Equipment item = equipmentList.get(i);
+            assert item != null : "Equipment list must not contain null items";
 
             System.out.printf(
                     "%-4s %-24s | %-6s | %-15s | %-9d%n",
