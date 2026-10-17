@@ -3,8 +3,13 @@ package seedu.snap.loan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import org.junit.jupiter.api.Test;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
+
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
@@ -17,10 +22,20 @@ public class LoanHandlerTest {
     private static final String SECOND_LOAN =
             "loan id/003 b/004 issued/03-10-26 due/04-10-26";
 
+    private final ByteArrayOutputStream output = new ByteArrayOutputStream();
+    private PrintStream originalOutput;
+
     @BeforeEach
     public void resetLoans() {
         LoanHandler.loans.clear();
         LoanHandler.numLoans = 0;
+        originalOutput = System.out;
+        System.setOut(new PrintStream(output, true, StandardCharsets.UTF_8));
+    }
+
+    @AfterEach
+    public void restoreOutput() {
+        System.setOut(originalOutput);
     }
 
     @Test
@@ -133,5 +148,37 @@ public class LoanHandlerTest {
         Loan deletedLoan = loanHandler.deleteLoan("delete-loan id/001 issued/05-10-26");
         assertEquals("005", deletedLoan.getBorrowerId());
         assertEquals(1, loanHandler.numLoans);
+    }
+
+    @Test
+    void viewAllLoans_noLoans_printsHeaderOnly() {
+        LoanHandler.viewAllLoans();
+
+        String expected = String.format(
+                "%-4s %-12s | %-12s | %-16s | %-16s%n",
+                "No.", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE");
+        assertEquals(expected, output.toString(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void viewAllLoans_existingLoans_printsHeaderAndRows()
+            throws LoanAdditionUnsuccessful {
+        LoanHandler loanHandler = new LoanHandler();
+        loanHandler.addLoan(FIRST_LOAN);
+        loanHandler.addLoan(SECOND_LOAN);
+
+        LoanHandler.viewAllLoans();
+
+        String expected = String.format(
+                "%-4s %-12s | %-12s | %-16s | %-16s%n",
+                "No.", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE");
+        expected += String.format(
+                "%-4s %-12s | %-12s | %-16s | %-16s%n",
+                "1)", "001", "002", "2026-10-01T00:00", "2026-10-02T00:00");
+        expected += String.format(
+                "%-4s %-12s | %-12s | %-16s | %-16s%n",
+                "2)", "003", "004", "2026-10-03T00:00", "2026-10-04T00:00");
+
+        assertEquals(expected, output.toString(StandardCharsets.UTF_8));
     }
 }
