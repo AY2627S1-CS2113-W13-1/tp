@@ -13,7 +13,8 @@ import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
 
 /** Parses add and delete commands and stores equipment for the current session. */
 public class EquipmentHandler {
-    private static final Logger LOGGER = Logger.getLogger(EquipmentHandler.class.getName());
+    /** Diagnostic logger; the application sends outcomes and detailed traces to local files. */
+    private static final Logger logger = Logger.getLogger(EquipmentHandler.class.getName());
     private static final String ADD_COMMAND = "add";
     private static final Pattern DELETE_PATTERN = Pattern.compile("delete\\s+item/([0-9]{3})");
     private static final String ITEM_MARKER = "i/";
@@ -32,8 +33,20 @@ public class EquipmentHandler {
      * @throws EquipmentAdditionUnsuccessful when the command is invalid
      */
     public Equipment addEquipment(String input) throws EquipmentAdditionUnsuccessful {
-        Equipment equipment = parseEquipment(input);
+        int previousSize = inventory.size();
+        Equipment equipment;
+        try {
+            equipment = parseEquipment(input);
+        } catch (EquipmentAdditionUnsuccessful e) {
+            assert inventory.size() == previousSize : "Rejected additions must not change inventory size";
+            logger.log(Level.FINE, "Equipment addition rejected: {0}", e.getMessage());
+            throw e;
+        }
+        assert equipment != null : "Successful parsing must return equipment";
         inventory.add(equipment);
+        assert inventory.size() == previousSize + 1 : "Adding equipment must increase inventory size by one";
+        assert inventory.getLast() == equipment : "The newly added equipment must be last in the inventory";
+        logger.log(Level.FINE, "Added equipment with item ID {0}", equipment.getItemId());
         return equipment;
     }
 
@@ -59,7 +72,7 @@ public class EquipmentHandler {
         for (Equipment equipment : inventory) {
             if (equipment.getItemId().equals(itemId)) {
                 if (match != null) {
-                    LOGGER.log(Level.WARNING, "Equipment deletion rejected: duplicate ID {0}.", itemId);
+                    logger.log(Level.WARNING, "Equipment deletion rejected: duplicate ID {0}.", itemId);
                     throw new EquipmentDeletionUnsuccessful(
                             "Equipment ID " + itemId + " is not unique. No equipment was deleted.");
                 }
@@ -67,7 +80,7 @@ public class EquipmentHandler {
             }
         }
         if (match == null) {
-            LOGGER.log(Level.FINE, "Equipment deletion rejected: ID {0} does not exist.", itemId);
+            logger.log(Level.FINE, "Equipment deletion rejected: ID {0} does not exist.", itemId);
             throw new EquipmentDeletionUnsuccessful("Equipment ID " + itemId + " does not exist.");
         }
         return match;
@@ -87,7 +100,7 @@ public class EquipmentHandler {
         boolean removed = inventory.remove(equipment);
         assert removed : "Equipment found for deletion must still be in the inventory";
         assert inventory.size() == previousSize - 1 : "Deletion must remove exactly one equipment record";
-        LOGGER.log(Level.INFO, "Deleted equipment with ID {0}.", equipment.getItemId());
+        logger.log(Level.INFO, "Deleted equipment with ID {0}.", equipment.getItemId());
         return equipment;
     }
 
@@ -123,7 +136,7 @@ public class EquipmentHandler {
         String type = addDetails.substring(typeIndex + TYPE_MARKER.length(), conditionIndex).trim();
         String conditionString = addDetails.substring(conditionIndex + CONDITION_MARKER.length()).trim();
 
-        if (itemString.isEmpty() || itemString.length() > 100) {
+        if (itemString.isBlank() || itemString.length() > 100) {
             throw new EquipmentAdditionUnsuccessful("Item name must contain 1 to 100 characters.");
         }
 
@@ -131,7 +144,7 @@ public class EquipmentHandler {
             throw new EquipmentAdditionUnsuccessful("Item ID must be from 001 to 999.");
         }
 
-        if (type.isEmpty()) {
+        if (type.isBlank()) {
             throw new EquipmentAdditionUnsuccessful("Type cannot be empty.");
         }
 
@@ -154,7 +167,7 @@ public class EquipmentHandler {
     private String parseDeleteItemId(String input) throws EquipmentDeletionUnsuccessful {
         Matcher matcher = input == null ? null : DELETE_PATTERN.matcher(input.trim());
         if (matcher == null || !matcher.matches() || matcher.group(1).equals("000")) {
-            LOGGER.fine("Equipment deletion rejected: invalid command syntax.");
+            logger.fine("Equipment deletion rejected: invalid command syntax.");
             throw new EquipmentDeletionUnsuccessful(
                     "Invalid delete syntax. ITEM ID must be from 001 to 999.");
         }

@@ -11,6 +11,7 @@ public class Equipment {
 
     /**
      * Creates an equipment item.
+     * Callers must validate user input before construction; assertions detect programming mistakes.
      *
      * @param name Name of the equipment.
      * @param id Three-digit equipment ID.
@@ -18,6 +19,12 @@ public class Equipment {
      * @param condition Condition of the equipment from 1 to 10.
      */
     public Equipment(String name, String id, String type, int condition) {
+        assert name != null && !name.isBlank() && name.length() <= 100
+                : "Equipment name must contain 1 to 100 characters";
+        assert id != null && id.matches("[0-9]{3}") && !id.equals("000")
+                : "Equipment ID must be from 001 to 999";
+        assert type != null && !type.isBlank() : "Equipment type must contain text";
+        assert condition >= 1 && condition <= 10 : "Equipment condition must be from 1 to 10";
         this.itemName = name;
         this.itemId = id;
         this.type = type;
