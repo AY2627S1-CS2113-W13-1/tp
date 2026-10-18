@@ -103,17 +103,18 @@ class EqmManagerTest {
     }
 
     @Test
-    void deleteEquipment_duplicateId_printsErrorAndAcceptsNextCommand() {
+    void deleteEquipment_sameNameDifferentIds_deletesOnlyRequestedId() {
         EqmManager manager = new EqmManager();
         manager.executeInput(ADD_CAMERA);
-        manager.executeInput("add i/Tripod id/001 type/accessories cond/5");
-        manager.executeInput("add i/Microphone id/002 type/audio cond/10");
+        manager.executeInput("add i/Canon EOS R10 id/002 type/camera cond/5");
         output.reset();
 
         manager.executeInput("delete item/001");
+        manager.executeInput("delete item/001");
         manager.executeInput("delete item/002");
 
-        assertEquals("Equipment ID 001 is not unique. No equipment was deleted." + System.lineSeparator()
+        assertEquals("Equipment with item ID 001 deleted successfully." + System.lineSeparator()
+                + "Equipment ID 001 does not exist." + System.lineSeparator()
                 + "Equipment with item ID 002 deleted successfully." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
     }

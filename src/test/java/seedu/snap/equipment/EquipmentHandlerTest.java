@@ -16,6 +16,7 @@ import java.util.logging.Logger;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.AfterEach;
@@ -276,18 +277,36 @@ class EquipmentHandlerTest {
     }
 
     @Test
-    public void deleteEquipment_duplicateId_keepsInventoryUnchanged()
-            throws EquipmentAdditionUnsuccessful {
-        EquipmentHandler handler = new EquipmentHandler();
-        Equipment first = handler.addEquipment("add i/Camera id/001 type/camera cond/1");
-        Equipment second = handler.addEquipment("add i/Tripod id/001 type/accessories cond/5");
-        Equipment unrelated = handler.addEquipment("add i/Microphone id/002 type/audio cond/10");
+    public void deleteEquipment_corruptedDuplicateIds_preservesRecordsAndAllowsOtherDeletion()
+            throws ReflectiveOperationException, EquipmentDeletionUnsuccessful {
+        Equipment first = new Equipment("Camera", "001", "camera", 1);
+        Equipment second = new Equipment("Tripod", "001", "accessories", 5);
+        Equipment unrelated = new Equipment("Microphone", "002", "audio", 10);
+        EquipmentHandler handler = handlerWithCorruptedInventory(first, second, unrelated);
 
         EquipmentDeletionUnsuccessful exception = assertThrows(EquipmentDeletionUnsuccessful.class,
                 () -> handler.deleteEquipment("delete item/001"));
 
         assertEquals("Equipment ID 001 is not unique. No equipment was deleted.", exception.getMessage());
         assertEquals(List.of(first, second, unrelated), handler.getEquipmentList());
+
+        assertSame(unrelated, handler.deleteEquipment("delete item/002"));
+        assertEquals(List.of(first, second), handler.getEquipmentList());
+    }
+
+    /**
+     * Creates invalid stored data without relying on add commands accepting duplicate IDs.
+     * Reflection stays in this test fixture so production code does not expose mutable inventory.
+     */
+    @SuppressWarnings("unchecked")
+    private EquipmentHandler handlerWithCorruptedInventory(Equipment... equipment)
+            throws ReflectiveOperationException {
+        EquipmentHandler handler = new EquipmentHandler();
+        Field inventoryField = EquipmentHandler.class.getDeclaredField("inventory");
+        inventoryField.setAccessible(true);
+        List<Equipment> inventory = (List<Equipment>) inventoryField.get(handler);
+        inventory.addAll(List.of(equipment));
+        return handler;
     }
 
     @Test
