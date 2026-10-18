@@ -74,4 +74,31 @@ class EqmManagerTest {
         assertEquals("Equipment ID 999 does not exist." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
     }
+
+    @Test
+    void deleteEquipment_repeatedCommand_printsMissingIdError() {
+        EqmManager manager = new EqmManager();
+        manager.executeInput(ADD_CAMERA);
+        manager.executeInput("delete item/001");
+        output.reset();
+
+        manager.executeInput("delete item/001");
+
+        assertEquals("Equipment ID 001 does not exist." + System.lineSeparator(),
+                output.toString(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void deleteEquipment_afterInvalidCommands_stillDeletesEquipment() {
+        EqmManager manager = new EqmManager();
+        manager.executeInput(ADD_CAMERA);
+        manager.executeInput("delete item/000");
+        manager.executeInput("delete item/999");
+        output.reset();
+
+        manager.executeInput("delete item/001");
+
+        assertEquals("Equipment with item ID 001 deleted successfully." + System.lineSeparator(),
+                output.toString(StandardCharsets.UTF_8));
+    }
 }
