@@ -25,6 +25,7 @@ dependencies {
 
 test {
     useJUnitPlatform()
+    enableAssertions = true
 
     testLogging {
         events 'passed', 'skipped', 'failed'
@@ -39,6 +40,7 @@ test {
 
 application {
     mainClass = 'seedu.snap.Main'
+    applicationDefaultJvmArgs = ['-ea']
 }
 
 jar {

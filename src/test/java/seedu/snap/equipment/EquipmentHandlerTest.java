@@ -125,6 +125,21 @@ class EquipmentHandlerTest {
     }
 
     @Test
+    public void deleteEquipment_duplicateId_keepsInventoryUnchanged()
+            throws EquipmentAdditionUnsuccessful {
+        EquipmentHandler handler = new EquipmentHandler();
+        Equipment first = handler.addEquipment("add i/Camera id/001 type/camera cond/1");
+        Equipment second = handler.addEquipment("add i/Tripod id/001 type/accessories cond/5");
+        Equipment unrelated = handler.addEquipment("add i/Microphone id/002 type/audio cond/10");
+
+        EquipmentDeletionUnsuccessful exception = assertThrows(EquipmentDeletionUnsuccessful.class,
+                () -> handler.deleteEquipment("delete item/001"));
+
+        assertEquals("Equipment ID 001 is not unique. No equipment was deleted.", exception.getMessage());
+        assertEquals(List.of(first, second, unrelated), handler.getEquipmentList());
+    }
+
+    @Test
     public void deleteEquipment_repeatedDeletion_preservesRemainingEquipment()
             throws EquipmentAdditionUnsuccessful, EquipmentDeletionUnsuccessful {
         EquipmentHandler handler = new EquipmentHandler();
