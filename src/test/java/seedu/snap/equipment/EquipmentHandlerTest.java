@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 import java.util.logging.Handler;
 import java.util.logging.Level;
@@ -15,6 +16,7 @@ import java.util.logging.Logger;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 
 import org.junit.jupiter.api.AfterEach;
@@ -218,54 +220,180 @@ class EquipmentHandlerTest {
     }
 
     @Test
+    public void deleteEquipment_middleItem_preservesOtherEquipment()
+            throws EquipmentAdditionUnsuccessful, EquipmentDeletionUnsuccessful {
+        EquipmentHandler handler = new EquipmentHandler();
+        Equipment first = handler.addEquipment("add i/Camera id/003 type/camera cond/1");
+        Equipment target = handler.addEquipment("add i/Tripod id/001 type/accessories cond/5");
+        Equipment last = handler.addEquipment("add i/Microphone id/002 type/audio cond/10");
+
+        Equipment deleted = handler.deleteEquipment("delete item/001");
+
+        assertSame(target, deleted);
+        assertEquals(List.of(first, last), handler.getEquipmentList());
+    }
+
+    @Test
+    public void deleteEquipment_boundaryIds_removesMatchingEquipment()
+            throws EquipmentAdditionUnsuccessful, EquipmentDeletionUnsuccessful {
+        for (String itemId : List.of("001", "999")) {
+            EquipmentHandler handler = new EquipmentHandler();
+            Equipment equipment = handler.addEquipment("add i/Camera id/" + itemId + " type/camera cond/1");
+
+            assertSame(equipment, handler.deleteEquipment("delete item/" + itemId));
+            assertEquals(List.of(), handler.getEquipmentList());
+        }
+    }
+
+    @Test
+    public void deleteEquipment_extraWhitespace_removesMatchingEquipment()
+            throws EquipmentAdditionUnsuccessful, EquipmentDeletionUnsuccessful {
+        EquipmentHandler handler = new EquipmentHandler();
+        Equipment equipment = handler.addEquipment("add i/Camera id/001 type/camera cond/1");
+
+        assertSame(equipment, handler.deleteEquipment("  delete   item/001  "));
+        assertEquals(List.of(), handler.getEquipmentList());
+    }
+
+    @Test
+    public void getEquipmentForDeletion_validCommand_preservesInventory()
+            throws EquipmentAdditionUnsuccessful, EquipmentDeletionUnsuccessful {
+        EquipmentHandler handler = new EquipmentHandler();
+        Equipment equipment = handler.addEquipment("add i/Camera id/001 type/camera cond/1");
+
+        assertSame(equipment, handler.getEquipmentForDeletion("delete item/001"));
+        assertEquals(List.of(equipment), handler.getEquipmentList());
+    }
+
+    @Test
+    public void deleteEquipment_emptyInventory_throwsException() {
+        EquipmentHandler handler = new EquipmentHandler();
+
+        EquipmentDeletionUnsuccessful exception = assertThrows(EquipmentDeletionUnsuccessful.class,
+                () -> handler.deleteEquipment("delete item/001"));
+
+        assertEquals("Equipment ID 001 does not exist.", exception.getMessage());
+        assertEquals(List.of(), handler.getEquipmentList());
+    }
+
+    @Test
+    public void deleteEquipment_corruptedDuplicateIds_preservesRecordsAndAllowsOtherDeletion()
+            throws ReflectiveOperationException, EquipmentDeletionUnsuccessful {
+        Equipment first = new Equipment("Camera", "001", "camera", 1);
+        Equipment second = new Equipment("Tripod", "001", "accessories", 5);
+        Equipment unrelated = new Equipment("Microphone", "002", "audio", 10);
+        EquipmentHandler handler = handlerWithCorruptedInventory(first, second, unrelated);
+
+        EquipmentDeletionUnsuccessful exception = assertThrows(EquipmentDeletionUnsuccessful.class,
+                () -> handler.deleteEquipment("delete item/001"));
+
+        assertEquals("Equipment ID 001 is not unique. No equipment was deleted.", exception.getMessage());
+        assertEquals(List.of(first, second, unrelated), handler.getEquipmentList());
+
+        assertSame(unrelated, handler.deleteEquipment("delete item/002"));
+        assertEquals(List.of(first, second), handler.getEquipmentList());
+    }
+
+    /**
+     * Creates invalid stored data without relying on add commands accepting duplicate IDs.
+     * Reflection stays in this test fixture so production code does not expose mutable inventory.
+     */
+    @SuppressWarnings("unchecked")
+    private EquipmentHandler handlerWithCorruptedInventory(Equipment... equipment)
+            throws ReflectiveOperationException {
+        EquipmentHandler handler = new EquipmentHandler();
+        Field inventoryField = EquipmentHandler.class.getDeclaredField("inventory");
+        inventoryField.setAccessible(true);
+        List<Equipment> inventory = (List<Equipment>) inventoryField.get(handler);
+        inventory.addAll(List.of(equipment));
+        return handler;
+    }
+
+    @Test
+    public void deleteEquipment_repeatedDeletion_preservesRemainingEquipment()
+            throws EquipmentAdditionUnsuccessful, EquipmentDeletionUnsuccessful {
+        EquipmentHandler handler = new EquipmentHandler();
+        handler.addEquipment("add i/Camera id/001 type/camera cond/1");
+        Equipment remaining = handler.addEquipment("add i/Tripod id/002 type/accessories cond/5");
+        handler.deleteEquipment("delete item/001");
+
+        EquipmentDeletionUnsuccessful exception = assertThrows(EquipmentDeletionUnsuccessful.class,
+                () -> handler.deleteEquipment("delete item/001"));
+
+        assertEquals("Equipment ID 001 does not exist.", exception.getMessage());
+        assertEquals(List.of(remaining), handler.getEquipmentList());
+    }
+
+    @Test
+    public void deleteEquipment_reusedId_removesReplacement()
+            throws EquipmentAdditionUnsuccessful, EquipmentDeletionUnsuccessful {
+        EquipmentHandler handler = new EquipmentHandler();
+        handler.addEquipment("add i/Camera id/001 type/camera cond/1");
+        handler.deleteEquipment("delete item/001");
+        Equipment replacement = handler.addEquipment("add i/Tripod id/001 type/accessories cond/5");
+
+        assertSame(replacement, handler.deleteEquipment("delete item/001"));
+        assertEquals(List.of(), handler.getEquipmentList());
+    }
+
+    @Test
     public void deleteEquipment_unknownId_keepsInventoryUnchanged()
             throws EquipmentAdditionUnsuccessful {
         EquipmentHandler handler = new EquipmentHandler();
-        handler.addEquipment("add i/Canon EOS R10 id/001 type/camera cond/1");
+        Equipment equipment = handler.addEquipment("add i/Canon EOS R10 id/001 type/camera cond/1");
 
         EquipmentDeletionUnsuccessful exception = assertThrows(EquipmentDeletionUnsuccessful.class,
                 () -> handler.deleteEquipment("delete item/999"));
 
         assertEquals("Equipment ID 999 does not exist.", exception.getMessage());
-        assertEquals(1, handler.getEquipmentList().size());
+        assertEquals(List.of(equipment), handler.getEquipmentList());
     }
 
     @Test
-    public void deleteEquipment_invalidCommands_printExpectedErrors()
+    public void deleteEquipment_invalidCommands_throwExpectedErrors()
             throws EquipmentAdditionUnsuccessful {
         EquipmentHandler handler = new EquipmentHandler();
-        handler.addEquipment("add i/Canon EOS R10 id/001 type/camera cond/1");
+        Equipment equipment = handler.addEquipment("add i/Canon EOS R10 id/001 type/camera cond/1");
 
         String expectedMessage = "Invalid delete syntax. ITEM ID must be from 001 to 999.";
         String[] invalidCommands = {
+            "",
+            "   ",
             "delete",
             "delete loan/001",
             "delete item/1",
+            "delete item/01",
+            "delete item/-01",
+            "delete item/+01",
             "delete item/000",
             "delete item/1000",
             "delete item/abc",
-            "delete item/001 extra"
+            "delete item/001 extra",
+            "delete item/001 item/002",
+            "delete item/ 001",
+            "delete item/",
+            "deleteitem/001",
+            "DELETE item/001"
         };
         for (String command : invalidCommands) {
             EquipmentDeletionUnsuccessful exception = assertThrows(EquipmentDeletionUnsuccessful.class,
                     () -> handler.deleteEquipment(command), command);
             assertEquals(expectedMessage, exception.getMessage(), command);
+            assertEquals(List.of(equipment), handler.getEquipmentList(), command);
         }
-
-        assertEquals(1, handler.getEquipmentList().size());
     }
 
     @Test
-    public void deleteEquipment_nullCommand_printsExpectedError()
+    public void deleteEquipment_nullCommand_throwsExpectedError()
             throws EquipmentAdditionUnsuccessful {
         EquipmentHandler handler = new EquipmentHandler();
-        handler.addEquipment("add i/Canon EOS R10 id/001 type/camera cond/1");
+        Equipment equipment = handler.addEquipment("add i/Canon EOS R10 id/001 type/camera cond/1");
 
         EquipmentDeletionUnsuccessful exception = assertThrows(EquipmentDeletionUnsuccessful.class,
                 () -> handler.deleteEquipment(null));
 
         assertEquals("Invalid delete syntax. ITEM ID must be from 001 to 999.", exception.getMessage());
-        assertEquals(1, handler.getEquipmentList().size());
+        assertEquals(List.of(equipment), handler.getEquipmentList());
     }
 
     @Test
