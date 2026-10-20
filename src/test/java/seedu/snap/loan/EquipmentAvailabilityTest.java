@@ -8,8 +8,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.ArrayList;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -83,8 +85,13 @@ class EquipmentAvailabilityTest {
 
     @Test
     void addLoan_ambiguousEquipmentId_rejectsWithoutReservingEitherItem()
-            throws EquipmentAdditionUnsuccessful {
-        Equipment duplicate = equipment.addEquipment("add i/Tripod id/001 type/accessory cond/2");
+            throws Exception {
+        Equipment duplicate = new Equipment("Tripod", "001", "accessory", 2);
+        Field field = EquipmentHandler.class.getDeclaredField("inventory");
+        field.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        ArrayList<Equipment> inventory = (ArrayList<Equipment>) field.get(equipment);
+        inventory.add(duplicate);
         assertThrows(LoanAdditionUnsuccessful.class, () -> loans.addLoan(LOAN));
         assertFalse(camera.isLoaned());
         assertFalse(duplicate.isLoaned());
