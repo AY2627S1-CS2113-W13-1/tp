@@ -45,7 +45,7 @@ Examples:
 * `update id/001 i/Film Camera type/camera kit`
 
 Supply an existing ID and at least one detail to change. Fields may appear in any order, once each.
-The ID stays fixed and omitted details keep their current values. Names contain 1–100 characters, types
+The ID stays fixed and omitted details keep their current values. Names contain 1-100 characters, types
 must contain text, and conditions are whole numbers from 1 to 10. Condition ranges are not accepted for updates.
 
 Prefixes `id/`, `i/`, `type/`, `cond/`, and `status/` after whitespace are reserved separators; `status/`
