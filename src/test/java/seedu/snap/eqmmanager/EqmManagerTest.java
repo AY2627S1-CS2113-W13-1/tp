@@ -14,7 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-/** Tests command routing and output for equipment deletion. */
+/** Tests command routing and output for equipment additions and deletions. */
 class EqmManagerTest {
     private static final String ADD_CAMERA = "add i/Canon EOS R10 id/001 type/camera cond/1";
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -31,6 +31,56 @@ class EqmManagerTest {
     @AfterEach
     void restoreOutput() {
         System.setOut(originalOutput);
+    }
+
+    @Test
+    void addEquipment_duplicateId_printsErrorAndAcceptsNextValidCommand() {
+        EqmManager manager = new EqmManager(temporaryDirectory);
+        manager.executeInput(ADD_CAMERA);
+        output.reset();
+
+        manager.executeInput("add i/Tripod id/001 type/accessories cond/5");
+        manager.executeInput("add i/Tripod id/002 type/accessories cond/5");
+
+        assertEquals("Item ID 001 already exists." + System.lineSeparator()
+                + "Equipment added successfully." + System.lineSeparator(), output.toString(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void addEquipment_malformedCommands_recoversAndPreservesInventory() {
+        EqmManager manager = new EqmManager(temporaryDirectory);
+        manager.executeInput(ADD_CAMERA);
+        output.reset();
+        String[] commands = {
+            "add i/Tripod id/002",
+            "add i/Tripod id/002 type/accessories cond/11",
+            "add i/Tripodid/002 type/accessories cond/5",
+            "add i/Tripod i/Lens id/002 type/accessories cond/5",
+            "add i/\u2003 id/002 type/accessories cond/5",
+            "add i/Tripod id/001 type/accessories cond/5"
+        };
+        String formatError = "Invalid format. Use: add i/[ITEM] id/[ITEM ID] type/[TYPE] cond/[CONDITION]";
+        String[] errors = {
+            formatError, "Condition must be a whole number from 1 to 10.", formatError, formatError,
+            "Item name must contain 1 to 100 characters.", "Item ID 001 already exists."
+        };
+        for (int i = 0; i < commands.length; i++) {
+            manager.executeInput(commands[i]);
+            assertEquals(errors[i] + System.lineSeparator(), output.toString(StandardCharsets.UTF_8), commands[i]);
+            output.reset();
+        }
+        manager.executeInput("add i/Tripod id/002 type/accessories cond/5");
+        assertEquals("Equipment added successfully." + System.lineSeparator(), output.toString(StandardCharsets.UTF_8));
+        output.reset();
+
+        manager.executeInput("list");
+        String expected = String.format("%-4s %-24s | %-6s | %-15s | %-9s%n",
+                "No.", "NAME", "ID", "TYPE", "CONDITION")
+                + String.format("%-4s %-24s | %-6s | %-15s | %-9d%n",
+                        "1)", "Canon EOS R10", "001", "camera", 1)
+                + String.format("%-4s %-24s | %-6s | %-15s | %-9d%n",
+                        "2)", "Tripod", "002", "accessories", 5);
+        assertEquals(expected, output.toString(StandardCharsets.UTF_8));
     }
 
     @Test

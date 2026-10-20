@@ -82,6 +82,11 @@ public class EqmManager {
             }
         } else if (input.equals("delete") || input.startsWith("delete ")) {
             try {
+                Equipment target = equipment.getEquipmentForDeletion(input);
+                if (loans.hasActiveLoanForItem(target.getItemId())) {
+                    throw new EquipmentDeletionUnsuccessful("Cannot delete item ID " + target.getItemId()
+                            + " while it has an active loan.");
+                }
                 Equipment deletedEquipment = equipment.deleteEquipment(input);
                 System.out.println("Equipment with item ID " + deletedEquipment.getItemId()
                         + " deleted successfully.");

@@ -18,6 +18,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
+import seedu.snap.eqmmanager.EqmManager;
 
 /** Tests the deletion of loans using item IDs. */
 public class LoanHandlerTest {
@@ -96,6 +97,81 @@ public class LoanHandlerTest {
 
         assertEquals(1, loaded.size());
         assertEquals("001", loaded.getFirst().getItemId());
+    }
+
+    @Test
+    void deleteEquipment_activeLoan_blocksDeletionAndIdReuse() throws Exception {
+        EqmManager manager = new EqmManager(temporaryDirectory);
+        manager.executeInput("add i/Camera id/001 type/camera cond/1");
+        manager.executeInput("add i/Tripod id/002 type/accessories cond/5");
+        manager.executeInput(FIRST_LOAN);
+        output.reset();
+
+        manager.executeInput("delete item/001");
+        manager.executeInput("add i/Replacement id/001 type/audio cond/3");
+        manager.executeInput("delete item/002");
+
+        assertEquals("Cannot delete item ID 001 while it has an active loan." + System.lineSeparator()
+                + "Item ID 001 already exists." + System.lineSeparator()
+                + "Equipment with item ID 002 deleted successfully." + System.lineSeparator(),
+                output.toString(StandardCharsets.UTF_8));
+        assertTrue(Files.readString(temporaryDirectory.resolve("loans.txt"))
+                .contains("loan id/001 b/002 issued/01-10-26 due/02-10-26 returned/false"));
+    }
+
+    @Test
+    void deleteEquipment_returnedLoan_allowsDeletionAndIdReuse() throws Exception {
+        writeLoanRecords("loan id/001 b/002 issued/01-10-26 due/02-10-26 returned/true");
+        EqmManager manager = new EqmManager(temporaryDirectory);
+        manager.executeInput("add i/Camera id/001 type/camera cond/1");
+        output.reset();
+
+        manager.executeInput("delete item/001");
+        manager.executeInput("add i/Replacement id/001 type/audio cond/3");
+
+        assertEquals("Equipment with item ID 001 deleted successfully." + System.lineSeparator()
+                + "Equipment added successfully." + System.lineSeparator(), output.toString(StandardCharsets.UTF_8));
+        assertTrue(Files.readString(temporaryDirectory.resolve("loans.txt"))
+                .contains("loan id/001 b/002 issued/01-10-26 due/02-10-26 returned/true"));
+    }
+
+    @Test
+    void deleteEquipment_olderReturnedLoanAndNewActiveLoan_stillBlocksDeletion()
+            throws Exception {
+        writeLoanRecords("loan id/001 b/002 issued/01-10-26 due/02-10-26 returned/true",
+                "loan id/001 b/003 issued/03-10-26 due/04-10-26 returned/false");
+        EqmManager manager = new EqmManager(temporaryDirectory);
+        manager.executeInput("add i/Camera id/001 type/camera cond/1");
+        output.reset();
+
+        manager.executeInput("delete item/001");
+
+        assertEquals("Cannot delete item ID 001 while it has an active loan." + System.lineSeparator(),
+                output.toString(StandardCharsets.UTF_8));
+        assertEquals(2, Files.readAllLines(temporaryDirectory.resolve("loans.txt")).size());
+    }
+
+    @Test
+    void deleteEquipment_loanDeleted_allowsDeletionAndIdReuse() throws Exception {
+        EqmManager manager = new EqmManager(temporaryDirectory);
+        manager.executeInput("add i/Camera id/001 type/camera cond/1");
+        manager.executeInput(FIRST_LOAN);
+        output.reset();
+
+        manager.executeInput("delete-loan id/001");
+        manager.executeInput("delete item/001");
+        manager.executeInput("add i/Replacement id/001 type/audio cond/3");
+
+        assertEquals("Loan for item ID 001 deleted successfully." + System.lineSeparator()
+                + "Equipment with item ID 001 deleted successfully." + System.lineSeparator()
+                + "Equipment added successfully." + System.lineSeparator(), output.toString(StandardCharsets.UTF_8));
+        assertTrue(Files.readString(temporaryDirectory.resolve("loans.txt")).isBlank());
+    }
+
+    /** Writes loan records in the same format used by the persistence layer. */
+    private void writeLoanRecords(String... records) throws Exception {
+        Files.writeString(temporaryDirectory.resolve("loans.txt"),
+                String.join(System.lineSeparator(), records) + System.lineSeparator());
     }
 
     @Test

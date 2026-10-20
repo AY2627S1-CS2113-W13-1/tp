@@ -28,12 +28,12 @@ class MainTest {
     }
 
     /** Verifies that user validation and diagnostic logging work independently of Java assertions. */
-    private void verifyEquipmentDiagnostics(boolean assertionsEnabled) throws Exception {
+    private void verifyEquipmentDiagnostics(boolean areAssertionsEnabled) throws Exception {
         String commands = "add i/Camera id/001 type/camera cond/1\n"
                 + "add i/Tripod id/002 type/accessories cond/11\n"
                 + "add i/\u2003 id/002 type/camera cond/1\n"
                 + "add i/Camera id/002 type/\u2003 cond/1\nbye\n";
-        String output = runApplication(commands, assertionsEnabled);
+        String output = runApplication(commands, areAssertionsEnabled);
         assertTrue(output.contains("Equipment added successfully."));
         assertTrue(output.contains("Condition must be a whole number from 1 to 10."));
         assertTrue(output.contains("Item name must contain 1 to 100 characters."));
@@ -115,13 +115,13 @@ class MainTest {
     }
 
     /** Runs the application with isolated files and a timeout so tests cannot hang on console I/O. */
-    private String runApplication(String commands, boolean assertionsEnabled) throws Exception {
+    private String runApplication(String commands, boolean areAssertionsEnabled) throws Exception {
         Path inputFile = temporaryDirectory.resolve("input.txt");
         Path outputFile = temporaryDirectory.resolve("output.txt");
         Files.writeString(inputFile, commands, StandardCharsets.UTF_8);
         Path javaExecutable = Path.of(System.getProperty("java.home"), "bin", "java");
         Path classes = Path.of(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI());
-        String assertionOption = assertionsEnabled ? "-ea" : "-da";
+        String assertionOption = areAssertionsEnabled ? "-ea" : "-da";
         Process process = new ProcessBuilder(javaExecutable.toString(), assertionOption, "-cp", classes.toString(),
                 Main.class.getName()).directory(temporaryDirectory.toFile()).redirectErrorStream(true)
                 .redirectInput(inputFile.toFile()).redirectOutput(outputFile.toFile()).start();
