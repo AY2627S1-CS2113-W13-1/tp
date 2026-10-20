@@ -1,6 +1,7 @@
 package seedu.snap.equipment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import org.junit.jupiter.api.Test;
 
@@ -43,5 +44,6 @@ class EquipmentSubclassTest {
         assertEquals(expectedName, equipment.getItemName());
         assertEquals(expectedId, equipment.getItemId());
         assertEquals(expectedCondition, equipment.getCondition());
+        assertFalse(equipment.isLoaned());
     }
 }
