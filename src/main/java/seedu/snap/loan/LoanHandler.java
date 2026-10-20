@@ -58,10 +58,12 @@ public class LoanHandler {
         LocalDateTime dueDate = parseDateArgument(arguments[4], "due/", "/due");
 
         if (hasActiveLoanForItem(itemId)) {
+            logger.log(Level.WARNING, "Loan rejected: item ID {0} already has an active loan.", itemId);
             throw new LoanAdditionUnsuccessful("An active loan already exists for item ID " + itemId + ".");
         }
 
         if (issuedDate.isAfter(dueDate)) {
+            logger.log(Level.WARNING, "Loan rejected: issue date is after due date for item ID {0}.", itemId);
             throw new LoanAdditionUnsuccessful("Issued date must not be later than the due date.");
         }
 
@@ -70,8 +72,10 @@ public class LoanHandler {
         assert loan != null : "Created loan must not be null.";
         loans.add(loan);
         numLoans++;
+        item.setLoaned(true);
+        assert item.isLoaned() : "A successfully added loan must mark equipment as loaned";
         assert numLoans == loans.size() : "numLoans should match the size of the loans list";
-        logger.log(Level.FINE, "Added loan for item ID {0}.", itemId);
+        logger.log(Level.INFO, "Added loan for item ID {0}.", itemId);
         return loan;
     }
 
@@ -81,15 +85,18 @@ public class LoanHandler {
         for (Equipment item : equipment.getEquipmentList()) {
             if (item.getItemId().equals(itemId)) {
                 if (match != null) {
+                    logger.log(Level.WARNING, "Loan rejected: item ID {0} is ambiguous.", itemId);
                     throw new LoanAdditionUnsuccessful("Item ID " + itemId + " is not unique.");
                 }
                 match = item;
             }
         }
         if (match == null) {
+            logger.log(Level.WARNING, "Loan rejected: item ID {0} does not exist.", itemId);
             throw new LoanAdditionUnsuccessful("Item ID " + itemId + " does not exist.");
         }
         if (match.isLoaned()) {
+            logger.log(Level.WARNING, "Loan rejected: item ID {0} is already loaned out.", itemId);
             throw new LoanAdditionUnsuccessful("Item ID " + itemId + " is already loaned out.");
         }
         return match;
@@ -244,6 +251,7 @@ public class LoanHandler {
      * @return whether deletion must be blocked to preserve an active loan's equipment association
      */
     public boolean hasActiveLoanForItem(String itemId) {
+        assert itemId != null : "Active-loan checks require an item ID";
         for (Loan loan : loans) {
             if (loan.getItemId().equals(itemId) && !loan.isReturned()) {
                 return true;
