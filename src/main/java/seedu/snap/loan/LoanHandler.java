@@ -221,16 +221,14 @@ public class LoanHandler {
         }
 
         loans.remove(loan);
+        loan.detachEquipment();
         if (equipment != null) {
-            loan.detachEquipment();
             try {
                 equipment.saveToStorage();
             } catch (IOException e) {
                 logger.log(Level.WARNING, "Returned equipment state could not be saved", e);
                 throw new LoanDeletionUnsuccessful("Could not save equipment availability: " + e.getMessage());
             }
-        } else if (!loan.isReturned()) {
-            loan.setReturned(true);
         }
         numLoans--;
         assert numLoans == loans.size() : "numLoans should match the size of the loans list";

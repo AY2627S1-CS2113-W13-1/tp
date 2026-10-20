@@ -82,7 +82,7 @@ public class Loan {
         }
     }
 
-    /** Detaches a deleted loan so that old records cannot alter a newer loan's state. */
+    /** Releases an active loan's item and prevents deleted records from changing its future availability. */
     void detachEquipment() {
         if (equipment != null && !isReturned) {
             equipment.setLoaned(false);
@@ -100,6 +100,8 @@ public class Loan {
             throw new IllegalStateException("Equipment already has an active loan.");
         }
         this.isReturned = isReturned;
-        equipment.setLoaned(!isReturned);
+        if (equipment != null) {
+            equipment.setLoaned(!isReturned);
+        }
     }
 }
