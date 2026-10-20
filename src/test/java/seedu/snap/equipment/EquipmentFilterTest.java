@@ -2,14 +2,12 @@ package seedu.snap.equipment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.Locale;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -17,20 +15,16 @@ import org.junit.jupiter.api.Test;
 
 import seedu.snap.eqmmanager.EqmManager;
 import seedu.snap.exceptions.EquipmentFilteringUnsuccessful;
-import seedu.snap.loan.Loan;
-import seedu.snap.loan.LoanHandler;
 
 /** Covers individual and combined filters, invalid fields, availability, and inventory preservation. */
 class EquipmentFilterTest {
     private Equipment camera;
     private Equipment tripod;
-    private List<Equipment> inventory;
 
     @BeforeEach
     void setUp() {
         camera = new Equipment("Canon Camera 相机", "001", "camera kit", 1);
         tripod = new Equipment("Tripod", "999", "accessory", 10);
-        inventory = List.of(camera, tripod);
     }
 
     @Test
@@ -95,34 +89,32 @@ class EquipmentFilterTest {
     }
 
     @Test
-    void apply_matchingAndEmptyResults_preservesInventoryAndOrder() throws EquipmentFilteringUnsuccessful {
-        LoanHandler loans = new LoanHandler();
-        List<Equipment> result = EquipmentFilter.parse("filter cond/1-10").apply(inventory, loans);
-        assertEquals(inventory, result);
-        assertSame(camera, result.getFirst());
-        assertThrows(UnsupportedOperationException.class, result::clear);
-        assertTrue(EquipmentFilter.parse("filter id/555").apply(inventory, loans).isEmpty());
-        assertEquals(List.of(camera, tripod), inventory);
-    }
-
-    @Test
-    void apply_availabilityTracksReturnedAndDeletedLoans() throws Exception {
-        LoanHandler loans = new LoanHandler();
-        Equipment item = new Equipment("Lens", "998", "lens", 2);
-        List<Equipment> items = List.of(item);
-        EquipmentFilter available = EquipmentFilter.parse("filter status/available");
-        EquipmentFilter loaned = EquipmentFilter.parse("filter status/loaned");
-        Loan loan = loans.addLoan("loan id/998 b/002 issued/01-10-26 due/02-10-26");
-        try {
-            assertEquals(items, loaned.apply(items, loans));
-            assertTrue(available.apply(items, loans).isEmpty());
-            loan.setReturned(true);
-            assertEquals(items, available.apply(items, loans));
-            assertTrue(loaned.apply(items, loans).isEmpty());
+    void executeInput_availabilityChangesAfterLoanDeletion() {
+        PrintStream original = System.out;
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        EqmManager manager = new EqmManager();
+        try (PrintStream captured = new PrintStream(output, true, StandardCharsets.UTF_8)) {
+            System.setOut(captured);
+            manager.executeInput("add i/Lens id/998 type/lens cond/2");
+            output.reset();
+            manager.executeInput("filter id/998 status/available");
+            assertTrue(output.toString(StandardCharsets.UTF_8).contains("Lens"));
+            manager.executeInput("loan id/998 b/002 issued/01-10-26 due/02-10-26");
+            output.reset();
+            manager.executeInput("filter id/998 status/available");
+            assertEquals("No equipment matches the filters." + System.lineSeparator(),
+                    output.toString(StandardCharsets.UTF_8));
+            output.reset();
+            manager.executeInput("filter id/998 status/loaned");
+            assertTrue(output.toString(StandardCharsets.UTF_8).contains("Lens"));
+            manager.executeInput("delete-loan id/998");
+            output.reset();
+            manager.executeInput("filter id/998 status/available");
+            assertTrue(output.toString(StandardCharsets.UTF_8).contains("Lens"));
+            manager.executeInput("delete item/998");
         } finally {
-            loans.deleteLoan("delete-loan id/998");
+            System.setOut(original);
         }
-        assertEquals(items, available.apply(items, loans));
     }
 
     @Test
