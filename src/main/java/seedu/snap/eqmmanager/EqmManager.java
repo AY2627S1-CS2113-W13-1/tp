@@ -20,8 +20,8 @@ public class EqmManager {
     /** Creates an equipment manager ready to accept commands. */
     public EqmManager() {
         this.parser = new Parser();
-        this.loans = new LoanHandler();
         this.equipment = new EquipmentHandler();
+        this.loans = new LoanHandler(equipment);
         this.isRunning = true;
     }
 

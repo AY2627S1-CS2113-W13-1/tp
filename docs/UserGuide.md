@@ -45,6 +45,14 @@ loans for that ID; returned loan records do not block deletion.
 Invalid delete syntax produces an error followed by the delete command format.
 An ID that does not exist produces an error without changing the saved records.
 
+## Equipment availability
+
+The equipment list shows `Available` or `Loaned` for each item. A loan can only be added for equipment
+that exists and is available. Rejected loan commands leave the item's status unchanged.
+
+Equipment with an active loan cannot be deleted. Returning or deleting the active loan makes the item
+available again; removing an older returned loan does not affect a newer active loan.
+
 ## Saving equipment
 
 Successful additions and deletions are saved automatically in `data/equipment.txt`, relative to the directory
