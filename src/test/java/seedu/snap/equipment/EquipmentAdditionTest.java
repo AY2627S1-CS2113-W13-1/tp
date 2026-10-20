@@ -61,6 +61,36 @@ class EquipmentAdditionTest {
     }
 
     @Test
+    void parseEquipment_textIdPrefixesInName_preservesName() throws EquipmentAdditionUnsuccessful {
+        String[] names = {"USB id/card reader", "id/card reader", "USB id/card id/tag reader"};
+        for (String name : names) {
+            Equipment item = EquipmentHandler.parseEquipment(command(name, "002", "accessory", "1"));
+            assertEquals(name, item.getItemName());
+            assertEquals("002", item.getItemId());
+            assertEquals("accessory", item.getType());
+        }
+    }
+
+    @Test
+    void addEquipment_reservedIdSyntaxAndMisplacedText_preservesInventory()
+            throws EquipmentAdditionUnsuccessful {
+        EquipmentHandler handler = seededInventory();
+        String[] inputs = {
+            "add i/USB id/003 reader id/002 type/accessory cond/1",
+            "add i/USB id/+03 reader id/002 type/accessory cond/1",
+            "add i/USB id/-03 reader id/002 type/accessory cond/1",
+            "add i/USB id/ reader id/002 type/accessory cond/1",
+            "add i/USB id/002 id/card type/accessory cond/1",
+            "add i/USB id/002 type/accessory id/card cond/1"
+        };
+        for (String input : inputs) {
+            assertRejected(handler, input, FORMAT_ERROR);
+        }
+        assertRejected(handler, command("USB reader", "card", "accessory", "1"),
+                "Item ID must be from 001 to 999.");
+    }
+
+    @Test
     void parseEquipment_allValidConditions_acceptsEach() throws EquipmentAdditionUnsuccessful {
         for (int condition = 1; condition <= 10; condition++) {
             Equipment item = EquipmentHandler.parseEquipment(command("Camera", "001", "camera", "" + condition));
@@ -146,7 +176,7 @@ class EquipmentAdditionTest {
         EquipmentHandler handler = seededInventory();
         for (int i = 0; i < 3; i++) {
             assertRejected(handler, command("Replacement", "001", "audio", "5"),
-                    "Equipment ID 001 already exists.");
+                    "Item ID 001 already exists.");
             assertRejected(handler, command("Tripod", "002", "accessories", "11"),
                     "Condition must be a whole number from 1 to 10.");
         }

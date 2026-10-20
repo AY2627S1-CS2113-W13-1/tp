@@ -36,7 +36,7 @@ class EqmManagerTest {
         manager.executeInput("add i/Tripod id/001 type/accessories cond/5");
         manager.executeInput("add i/Tripod id/002 type/accessories cond/5");
 
-        assertEquals("Equipment ID 001 already exists." + System.lineSeparator()
+        assertEquals("Item ID 001 already exists." + System.lineSeparator()
                 + "Equipment added successfully." + System.lineSeparator(), output.toString(StandardCharsets.UTF_8));
     }
 
@@ -56,7 +56,7 @@ class EqmManagerTest {
         String formatError = "Invalid format. Use: add i/[ITEM] id/[ITEM ID] type/[TYPE] cond/[CONDITION]";
         String[] errors = {
             formatError, "Condition must be a whole number from 1 to 10.", formatError, formatError,
-            "Item name must contain 1 to 100 characters.", "Equipment ID 001 already exists."
+            "Item name must contain 1 to 100 characters.", "Item ID 001 already exists."
         };
         for (int i = 0; i < commands.length; i++) {
             manager.executeInput(commands[i]);
@@ -122,6 +122,50 @@ class EqmManagerTest {
         manager.executeInput("delete item/999");
 
         assertEquals("Equipment ID 999 does not exist." + System.lineSeparator(),
+                output.toString(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void deleteEquipment_repeatedCommand_printsMissingIdError() {
+        EqmManager manager = new EqmManager();
+        manager.executeInput(ADD_CAMERA);
+        manager.executeInput("delete item/001");
+        output.reset();
+
+        manager.executeInput("delete item/001");
+
+        assertEquals("Equipment ID 001 does not exist." + System.lineSeparator(),
+                output.toString(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void deleteEquipment_afterInvalidCommands_stillDeletesEquipment() {
+        EqmManager manager = new EqmManager();
+        manager.executeInput(ADD_CAMERA);
+        manager.executeInput("delete item/000");
+        manager.executeInput("delete item/999");
+        output.reset();
+
+        manager.executeInput("delete item/001");
+
+        assertEquals("Equipment with item ID 001 deleted successfully." + System.lineSeparator(),
+                output.toString(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void deleteEquipment_sameNameDifferentIds_deletesOnlyRequestedId() {
+        EqmManager manager = new EqmManager();
+        manager.executeInput(ADD_CAMERA);
+        manager.executeInput("add i/Canon EOS R10 id/002 type/camera cond/5");
+        output.reset();
+
+        manager.executeInput("delete item/001");
+        manager.executeInput("delete item/001");
+        manager.executeInput("delete item/002");
+
+        assertEquals("Equipment with item ID 001 deleted successfully." + System.lineSeparator()
+                + "Equipment ID 001 does not exist." + System.lineSeparator()
+                + "Equipment with item ID 002 deleted successfully." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
     }
 }

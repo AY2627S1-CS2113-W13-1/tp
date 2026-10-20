@@ -3,14 +3,18 @@ package seedu.snap.equipment;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
 
-/** Parses add commands and stores equipment for the current session. */
+/** Parses add and delete commands and stores equipment for the current session. */
 public class EquipmentHandler {
+    /** Diagnostic logger; the application sends outcomes and detailed traces to local files. */
+    private static final Logger logger = Logger.getLogger(EquipmentHandler.class.getName());
     private static final String ADD_COMMAND = "add";
     private static final String ADD_FORMAT_ERROR = "Invalid format. Use: add i/[ITEM] id/[ITEM ID] "
             + "type/[TYPE] cond/[CONDITION]";
@@ -31,13 +35,26 @@ public class EquipmentHandler {
      * @throws EquipmentAdditionUnsuccessful when the command is invalid or the item ID already exists
      */
     public Equipment addEquipment(String input) throws EquipmentAdditionUnsuccessful {
-        Equipment equipment = parseEquipment(input);
-        for (Equipment existing : inventory) {
-            if (existing.getItemId().equals(equipment.getItemId())) {
-                throw new EquipmentAdditionUnsuccessful("Equipment ID " + equipment.getItemId() + " already exists.");
+        int previousSize = inventory.size();
+        Equipment equipment;
+        try {
+            equipment = parseEquipment(input);
+            assert equipment != null : "Successful parsing must return equipment";
+            for (Equipment existing : inventory) {
+                if (existing.getItemId().equals(equipment.getItemId())) {
+                    throw new EquipmentAdditionUnsuccessful("Item ID " + equipment.getItemId()
+                            + " already exists.");
+                }
             }
+        } catch (EquipmentAdditionUnsuccessful e) {
+            assert inventory.size() == previousSize : "Rejected additions must not change inventory size";
+            logger.log(Level.FINE, "Equipment addition rejected: {0}", e.getMessage());
+            throw e;
         }
         inventory.add(equipment);
+        assert inventory.size() == previousSize + 1 : "Adding equipment must increase inventory size by one";
+        assert inventory.getLast() == equipment : "The newly added equipment must be last in the inventory";
+        logger.log(Level.FINE, "Added equipment with item ID {0}", equipment.getItemId());
         return equipment;
     }
 
@@ -55,16 +72,26 @@ public class EquipmentHandler {
      *
      * @param input complete delete command
      * @return the equipment that matches the command's item ID
-     * @throws EquipmentDeletionUnsuccessful when the command or item ID is invalid
+     * @throws EquipmentDeletionUnsuccessful when the command is invalid or the ID is missing or duplicated
      */
     public Equipment getEquipmentForDeletion(String input) throws EquipmentDeletionUnsuccessful {
         String itemId = parseDeleteItemId(input);
+        Equipment match = null;
         for (Equipment equipment : inventory) {
             if (equipment.getItemId().equals(itemId)) {
-                return equipment;
+                if (match != null) {
+                    logger.log(Level.WARNING, "Equipment deletion rejected: duplicate ID {0}.", itemId);
+                    throw new EquipmentDeletionUnsuccessful(
+                            "Equipment ID " + itemId + " is not unique. No equipment was deleted.");
+                }
+                match = equipment;
             }
         }
-        throw new EquipmentDeletionUnsuccessful("Equipment ID " + itemId + " does not exist.");
+        if (match == null) {
+            logger.log(Level.FINE, "Equipment deletion rejected: ID {0} does not exist.", itemId);
+            throw new EquipmentDeletionUnsuccessful("Equipment ID " + itemId + " does not exist.");
+        }
+        return match;
     }
 
     /**
@@ -72,11 +99,16 @@ public class EquipmentHandler {
      *
      * @param input complete delete command
      * @return the removed equipment
-     * @throws EquipmentDeletionUnsuccessful when the command or item ID is invalid
+     * @throws EquipmentDeletionUnsuccessful when the command is invalid or the ID is missing or duplicated
      */
     public Equipment deleteEquipment(String input) throws EquipmentDeletionUnsuccessful {
         Equipment equipment = getEquipmentForDeletion(input);
-        inventory.remove(equipment);
+        int previousSize = inventory.size();
+        // Removal must still run when assertions are disabled.
+        boolean removed = inventory.remove(equipment);
+        assert removed : "Equipment found for deletion must still be in the inventory";
+        assert inventory.size() == previousSize - 1 : "Deletion must remove exactly one equipment record";
+        logger.log(Level.INFO, "Deleted equipment with ID {0}.", equipment.getItemId());
         return equipment;
     }
 
@@ -96,6 +128,11 @@ public class EquipmentHandler {
         int idIndex = findFieldMarker(addDetails, ID_MARKER, 0);
         int typeIndex = findFieldMarker(addDetails, TYPE_MARKER, 0);
         int conditionIndex = findFieldMarker(addDetails, CONDITION_MARKER, 0);
+        int nextIdIndex = findFieldMarker(addDetails, ID_MARKER, idIndex + ID_MARKER.length());
+        while (nextIdIndex != -1 && nextIdIndex < typeIndex) {
+            idIndex = nextIdIndex;
+            nextIdIndex = findFieldMarker(addDetails, ID_MARKER, idIndex + ID_MARKER.length());
+        }
 
         boolean markersAreInOrder = itemIndex == 0
                 && idIndex > itemIndex
@@ -106,6 +143,14 @@ public class EquipmentHandler {
         }
         for (String marker : new String[]{ITEM_MARKER, ID_MARKER, TYPE_MARKER, CONDITION_MARKER}) {
             int firstIndex = findFieldMarker(addDetails, marker, 0);
+            if (marker.equals(ID_MARKER)) {
+                while (firstIndex < idIndex) {
+                    if (!isNameIdText(addDetails, firstIndex)) {
+                        throw new EquipmentAdditionUnsuccessful(ADD_FORMAT_ERROR);
+                    }
+                    firstIndex = findFieldMarker(addDetails, marker, firstIndex + marker.length());
+                }
+            }
             if (findFieldMarker(addDetails, marker, firstIndex + marker.length()) != -1) {
                 throw new EquipmentAdditionUnsuccessful(ADD_FORMAT_ERROR);
             }
@@ -152,6 +197,17 @@ public class EquipmentHandler {
         return -1;
     }
 
+    /** Allows id/card-like name text, reserving empty, numeric, and signed ID values for command syntax. */
+    private static boolean isNameIdText(String details, int markerIndex) {
+        int valueIndex = markerIndex + ID_MARKER.length();
+        if (valueIndex >= details.length()) {
+            return false;
+        }
+        char firstCharacter = details.charAt(valueIndex);
+        return !Character.isWhitespace(firstCharacter) && !Character.isDigit(firstCharacter)
+                && firstCharacter != '+' && firstCharacter != '-';
+    }
+
     /**
      * Extracts and validates the item ID from a delete command.
      *
@@ -162,6 +218,7 @@ public class EquipmentHandler {
     private String parseDeleteItemId(String input) throws EquipmentDeletionUnsuccessful {
         Matcher matcher = input == null ? null : DELETE_PATTERN.matcher(input.trim());
         if (matcher == null || !matcher.matches() || matcher.group(1).equals("000")) {
+            logger.fine("Equipment deletion rejected: invalid command syntax.");
             throw new EquipmentDeletionUnsuccessful(
                     "Invalid delete syntax. ITEM ID must be from 001 to 999.");
         }
@@ -178,9 +235,11 @@ public class EquipmentHandler {
         );
 
         List<Equipment> equipmentList = getEquipmentList();
+        logger.log(Level.INFO, "Viewing {0} equipment item(s)", equipmentList.size());
 
         for (int i = 0; i < equipmentList.size(); i++) {
             Equipment item = equipmentList.get(i);
+            assert item != null : "Equipment list must not contain null items";
 
             System.out.printf(
                     "%-4s %-24s | %-6s | %-15s | %-9d%n",

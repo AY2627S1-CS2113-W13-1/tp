@@ -56,8 +56,11 @@ public class LoanHandler {
         }
 
         Loan loan = new Loan(itemId, borrowerId, issuedDate, dueDate);
+        assert loan != null : "Created loan must not be null.";
         loans.add(loan);
         numLoans++;
+        assert numLoans == loans.size() : "numLoans should match the size of the loans list";
+        logger.log(Level.FINE, "Added loan for item ID {0}.", itemId);
         return loan;
     }
 
@@ -204,8 +207,11 @@ public class LoanHandler {
 
     /**
      * Checks whether an item currently has an unreturned loan.
+     *
+     * @param itemId equipment ID to check
+     * @return whether deletion must be blocked to preserve an active loan's equipment association
      */
-    private boolean hasActiveLoanForItem(String itemId) {
+    public boolean hasActiveLoanForItem(String itemId) {
         for (Loan loan : loans) {
             if (loan.getItemId().equals(itemId) && !loan.isReturned()) {
                 return true;
@@ -226,6 +232,8 @@ public class LoanHandler {
      * Prints out all equipment in inventory
      */
     public static void viewAllLoans() {
+        assert numLoans == loans.size() : "numLoans should match the size of the loans list";
+        logger.log(Level.INFO, "Viewing {0} loan(s)", numLoans);
         System.out.printf(
                 "%-4s %-12s | %-12s | %-16s | %-16s%n",
                 "No.", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE"
@@ -233,6 +241,7 @@ public class LoanHandler {
 
         for (int i = 0; i < numLoans; i++) {
             Loan item = loans.get(i);
+            assert item != null : "Loan list must not contain null items";
 
             System.out.printf(
                     "%-4s %-12s | %-12s | %-16s | %-16s%n",

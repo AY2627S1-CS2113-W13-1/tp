@@ -22,6 +22,13 @@ Example: `add i/Canon EOS R10 id/001 type/camera cond/1`
 * `CONDITION` is a whole number from `1` to `10`. We recommend `1` for pristine and `10` for non-functional.
 * Enter the fields in the order shown above. Names and types can contain spaces.
 * Equipment with the same name can be added separately using different IDs.
+* Names can contain text such as `USB id/card reader` or `fluid/head tripod`.
+  The actual `id/` field is the last one before `type/`. Earlier whitespace-prefixed `id/` text in the name must
+  have a non-empty value starting with a non-whitespace character other than a digit, `+`, or `-`.
+  Whitespace-prefixed numeric ID-like text such as `id/001` is reserved and cannot be part of the name.
+* Prefixes `i/`, `type/`, and `cond/` at the start or after whitespace are reserved command delimiters.
+  They must occur once each, in the documented order; fields must be separated by whitespace.
+  There is no quoting or escaping syntax. Prefix-like text inside words remains valid.
 
 ## Deleting equipment: `delete`
 
@@ -29,8 +36,11 @@ Format: `delete item/[ITEM ID]`
 
 Example: `delete item/001`
 
-The application asks for confirmation. Enter `yes` to delete the item; any other response cancels the deletion.
-It prints a confirmation message after the deletion is saved. The deleted ID can then be used for another item.
+The item is deleted immediately and a success message is printed. The deleted ID can then be used for another item.
+
+Equipment with an active (unreturned) loan cannot be deleted. This prevents its ID from being reused
+for a different item while the original loan is still active. Deletion is allowed once there are no active
+loans for that ID; returned loan records do not block deletion.
 
 Invalid delete syntax produces an error followed by the delete command format.
 An ID that does not exist produces an error without changing the saved records.
