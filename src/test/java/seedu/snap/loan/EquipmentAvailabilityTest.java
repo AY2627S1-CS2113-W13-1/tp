@@ -47,6 +47,11 @@ class EquipmentAvailabilityTest {
     }
 
     @Test
+    void newlyAddedEquipment_isAvailable() {
+        assertFalse(camera.isLoaned());
+    }
+
+    @Test
     void addLoan_existingItem_marksItLoaned() throws LoanAdditionUnsuccessful {
         assertFalse(camera.isLoaned());
         loans.addLoan(LOAN);
