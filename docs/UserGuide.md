@@ -35,6 +35,27 @@ It prints a confirmation message after the deletion is saved. The deleted ID can
 Invalid delete syntax produces an error followed by the delete command format.
 An ID that does not exist produces an error without changing the saved records.
 
+## Filtering equipment: `filter`
+
+Format: `filter [id/ITEM ID] [i/NAME] [type/TYPE] [cond/CONDITION] [status/STATUS]`
+
+Examples:
+
+* `filter type/camera cond/1-3 status/available`
+* `filter i/canon`
+* `filter id/001`
+
+Supply at least one filter, in any order. Each prefix can appear only once. All supplied filters must match.
+Names use case-insensitive partial matching; types use case-insensitive full matching. Spaces in names and
+types are allowed. `id/` uses an exact three-digit ID from `001` to `999`.
+
+`cond/` accepts a value from `1` to `10` or an inclusive range such as `1-3`. Ranges cannot be reversed.
+`status/` accepts `available` or `loaned` and checks the current active loans. Returned loans do not block availability.
+
+Prefixes `id/`, `i/`, `type/`, `cond/`, and `status/` after whitespace are reserved field separators.
+Text like `id/card` within a name is allowed. Empty or repeated fields are rejected. Filtering leaves equipment
+unchanged and prints matches in inventory order, or `No equipment matches the filters.` when none match.
+
 ## Saving equipment
 
 Successful additions and deletions are saved automatically in `data/equipment.txt`, relative to the directory
@@ -65,4 +86,5 @@ If the file cannot be read or contains invalid or duplicate records, the applica
 | --- | --- |
 | Add equipment | `add i/[ITEM] id/[ITEM ID] type/[TYPE] cond/[CONDITION]` |
 | Delete equipment | `delete item/[ITEM ID]` |
+| Filter equipment | `filter [id/ID] [i/NAME] [type/TYPE] [cond/1-3] [status/available]` |
 | Exit | `bye` |

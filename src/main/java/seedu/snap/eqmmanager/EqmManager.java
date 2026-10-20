@@ -1,5 +1,9 @@
 package seedu.snap.eqmmanager;
 
+import java.util.List;
+
+import seedu.snap.equipment.EquipmentFilter;
+import seedu.snap.exceptions.EquipmentFilteringUnsuccessful;
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.equipment.Equipment;
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
@@ -62,12 +66,29 @@ public class EqmManager {
             } catch (LoanAdditionUnsuccessful e) {
                 System.out.println(e.getMessage());
             }
+        } else if (input.equals("filter") || input.startsWith("filter ")) {
+            filterEquipment(input);
         } else if (input.equals("list loans")) {
             LoanHandler.viewAllLoans();
         } else if (input.equals("list") || input.startsWith("list ")) {
             equipment.viewAllEquipment();
         } else {
             System.out.println("Success message.");
+        }
+    }
+
+    /** Handles filter errors without changing equipment or stopping the command loop. */
+    private void filterEquipment(String input) {
+        try {
+            EquipmentFilter filter = EquipmentFilter.parse(input);
+            List<Equipment> matches = filter.apply(equipment.getEquipmentList(), loans);
+            if (matches.isEmpty()) {
+                System.out.println("No equipment matches the filters.");
+            } else {
+                equipment.viewEquipment(matches);
+            }
+        } catch (EquipmentFilteringUnsuccessful e) {
+            System.out.println(e.getMessage());
         }
     }
 

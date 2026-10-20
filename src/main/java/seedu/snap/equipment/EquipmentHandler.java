@@ -178,12 +178,16 @@ public class EquipmentHandler {
      * Prints out all equipment in inventory
      */
     public void viewAllEquipment() {
+        viewEquipment(getEquipmentList());
+    }
+
+    /** Prints supplied equipment in its existing order, using the normal equipment table. */
+    public void viewEquipment(List<Equipment> equipmentList) {
         System.out.printf(
                 "%-4s %-24s | %-6s | %-15s | %-9s%n",
                 "No.", "NAME", "ID", "TYPE", "CONDITION"
         );
 
-        List<Equipment> equipmentList = getEquipmentList();
         logger.log(Level.INFO, "Viewing {0} equipment item(s)", equipmentList.size());
 
         for (int i = 0; i < equipmentList.size(); i++) {

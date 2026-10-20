@@ -208,7 +208,7 @@ public class LoanHandler {
     /**
      * Checks whether an item currently has an unreturned loan.
      */
-    private boolean hasActiveLoanForItem(String itemId) {
+    public boolean hasActiveLoanForItem(String itemId) {
         for (Loan loan : loans) {
             if (loan.getItemId().equals(itemId) && !loan.isReturned()) {
                 return true;
