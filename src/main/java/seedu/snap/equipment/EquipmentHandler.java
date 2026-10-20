@@ -105,8 +105,8 @@ public class EquipmentHandler {
         Equipment equipment = getEquipmentForDeletion(input);
         int previousSize = inventory.size();
         // Removal must still run when assertions are disabled.
-        boolean removed = inventory.remove(equipment);
-        assert removed : "Equipment found for deletion must still be in the inventory";
+        boolean wasRemoved = inventory.remove(equipment);
+        assert wasRemoved : "Equipment found for deletion must still be in the inventory";
         assert inventory.size() == previousSize - 1 : "Deletion must remove exactly one equipment record";
         logger.log(Level.INFO, "Deleted equipment with ID {0}.", equipment.getItemId());
         return equipment;
@@ -125,15 +125,33 @@ public class EquipmentHandler {
         }
         String addDetails = userInput.substring(ADD_COMMAND.length()).trim();
         int itemIndex = findFieldMarker(addDetails, ITEM_MARKER, 0);
-        int idIndex = findFieldMarker(addDetails, ID_MARKER, 0);
         int typeIndex = findFieldMarker(addDetails, TYPE_MARKER, 0);
         int conditionIndex = findFieldMarker(addDetails, CONDITION_MARKER, 0);
-        int nextIdIndex = findFieldMarker(addDetails, ID_MARKER, idIndex + ID_MARKER.length());
+        int idIndex = findIdFieldMarker(addDetails, typeIndex);
+        validateFieldMarkers(addDetails, itemIndex, idIndex, typeIndex, conditionIndex);
+
+        String itemName = addDetails.substring(itemIndex + ITEM_MARKER.length(), idIndex).trim();
+        String id = addDetails.substring(idIndex + ID_MARKER.length(), typeIndex).trim();
+        String type = addDetails.substring(typeIndex + TYPE_MARKER.length(), conditionIndex).trim();
+        String condition = addDetails.substring(conditionIndex + CONDITION_MARKER.length()).trim();
+
+        return createValidatedEquipment(itemName, id, type, condition);
+    }
+
+    /** Finds the last ID prefix before the type field, allowing earlier id/card-like name text. */
+    private static int findIdFieldMarker(String details, int typeIndex) {
+        int idIndex = findFieldMarker(details, ID_MARKER, 0);
+        int nextIdIndex = findFieldMarker(details, ID_MARKER, idIndex + ID_MARKER.length());
         while (nextIdIndex != -1 && nextIdIndex < typeIndex) {
             idIndex = nextIdIndex;
-            nextIdIndex = findFieldMarker(addDetails, ID_MARKER, idIndex + ID_MARKER.length());
+            nextIdIndex = findFieldMarker(details, ID_MARKER, idIndex + ID_MARKER.length());
         }
+        return idIndex;
+    }
 
+    /** Rejects missing, reordered, or repeated delimiters, except permitted ID text within the name. */
+    private static void validateFieldMarkers(String details, int itemIndex, int idIndex, int typeIndex,
+            int conditionIndex) throws EquipmentAdditionUnsuccessful {
         boolean markersAreInOrder = itemIndex == 0
                 && idIndex > itemIndex
                 && typeIndex > idIndex
@@ -142,26 +160,25 @@ public class EquipmentHandler {
             throw new EquipmentAdditionUnsuccessful(ADD_FORMAT_ERROR);
         }
         for (String marker : new String[]{ITEM_MARKER, ID_MARKER, TYPE_MARKER, CONDITION_MARKER}) {
-            int firstIndex = findFieldMarker(addDetails, marker, 0);
+            int firstIndex = findFieldMarker(details, marker, 0);
             if (marker.equals(ID_MARKER)) {
                 while (firstIndex < idIndex) {
-                    if (!isNameIdText(addDetails, firstIndex)) {
+                    if (!isNameIdText(details, firstIndex)) {
                         throw new EquipmentAdditionUnsuccessful(ADD_FORMAT_ERROR);
                     }
-                    firstIndex = findFieldMarker(addDetails, marker, firstIndex + marker.length());
+                    firstIndex = findFieldMarker(details, marker, firstIndex + marker.length());
                 }
             }
-            if (findFieldMarker(addDetails, marker, firstIndex + marker.length()) != -1) {
+            if (findFieldMarker(details, marker, firstIndex + marker.length()) != -1) {
                 throw new EquipmentAdditionUnsuccessful(ADD_FORMAT_ERROR);
             }
         }
+    }
 
-        String itemString = addDetails.substring(itemIndex + ITEM_MARKER.length(), idIndex).trim();
-        String id = addDetails.substring(idIndex + ID_MARKER.length(), typeIndex).trim();
-        String type = addDetails.substring(typeIndex + TYPE_MARKER.length(), conditionIndex).trim();
-        String conditionString = addDetails.substring(conditionIndex + CONDITION_MARKER.length()).trim();
-
-        if (itemString.isBlank() || itemString.length() > 100) {
+    /** Validates extracted values before construction, preserving field-specific error messages. */
+    private static Equipment createValidatedEquipment(String itemName, String id, String type,
+            String conditionString) throws EquipmentAdditionUnsuccessful {
+        if (itemName.isBlank() || itemName.length() > 100) {
             throw new EquipmentAdditionUnsuccessful("Item name must contain 1 to 100 characters.");
         }
 
@@ -179,7 +196,7 @@ public class EquipmentHandler {
 
         int condition = Integer.parseInt(conditionString);
 
-        return new Equipment(itemString, id, type, condition);
+        return new Equipment(itemName, id, type, condition);
     }
 
     /**

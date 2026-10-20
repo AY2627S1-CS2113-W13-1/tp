@@ -20,13 +20,13 @@ public final class AppLogging implements AutoCloseable {
     private final FileHandler fileHandler;
     /** Logger settings restored on close so later runs in the same JVM do not inherit stale configuration. */
     private final Level previousLevel;
-    private final boolean previousUseParentHandlers;
+    private final boolean wereParentHandlersEnabled;
 
     /** Creates a session responsible for closing the supplied handler. */
     private AppLogging(FileHandler fileHandler) {
         this.fileHandler = fileHandler;
         previousLevel = logger.getLevel();
-        previousUseParentHandlers = logger.getUseParentHandlers();
+        wereParentHandlersEnabled = logger.getUseParentHandlers();
     }
 
     /**
@@ -64,7 +64,7 @@ public final class AppLogging implements AutoCloseable {
             logger.removeHandler(fileHandler);
             fileHandler.close();
             logger.setLevel(previousLevel);
-            logger.setUseParentHandlers(previousUseParentHandlers);
+            logger.setUseParentHandlers(wereParentHandlersEnabled);
         }
     }
 }
