@@ -63,7 +63,8 @@ public class LoanHandlerTest {
         EqmManager manager = new EqmManager();
         manager.executeInput("add i/Camera id/001 type/camera cond/1");
         manager.executeInput("add i/Tripod id/002 type/accessories cond/5");
-        Loan active = new LoanHandler().addLoan(FIRST_LOAN);
+        manager.executeInput(FIRST_LOAN);
+        Loan active = LoanHandler.loans.getFirst();
         output.reset();
 
         manager.executeInput("delete item/001");
@@ -82,7 +83,8 @@ public class LoanHandlerTest {
     void deleteEquipment_returnedLoan_allowsDeletionAndIdReuse() throws LoanAdditionUnsuccessful {
         EqmManager manager = new EqmManager();
         manager.executeInput("add i/Camera id/001 type/camera cond/1");
-        Loan returned = new LoanHandler().addLoan(FIRST_LOAN);
+        manager.executeInput(FIRST_LOAN);
+        Loan returned = LoanHandler.loans.getFirst();
         returned.setReturned(true);
         output.reset();
 
@@ -99,9 +101,9 @@ public class LoanHandlerTest {
             throws LoanAdditionUnsuccessful {
         EqmManager manager = new EqmManager();
         manager.executeInput("add i/Camera id/001 type/camera cond/1");
-        LoanHandler handler = new LoanHandler();
-        handler.addLoan(FIRST_LOAN).setReturned(true);
-        handler.addLoan("loan id/001 b/003 issued/03-10-26 due/04-10-26");
+        manager.executeInput(FIRST_LOAN);
+        LoanHandler.loans.getFirst().setReturned(true);
+        manager.executeInput("loan id/001 b/003 issued/03-10-26 due/04-10-26");
         output.reset();
 
         manager.executeInput("delete item/001");
@@ -115,7 +117,7 @@ public class LoanHandlerTest {
     void deleteEquipment_loanDeleted_allowsDeletionAndIdReuse() throws LoanAdditionUnsuccessful {
         EqmManager manager = new EqmManager();
         manager.executeInput("add i/Camera id/001 type/camera cond/1");
-        new LoanHandler().addLoan(FIRST_LOAN);
+        manager.executeInput(FIRST_LOAN);
         output.reset();
 
         manager.executeInput("delete-loan id/001");
