@@ -118,4 +118,16 @@ class EqmManagerTest {
                 + "Equipment with item ID 002 deleted successfully." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
     }
+
+    @Test
+    void executeInput_unrecognizedCommand_printsErrorMessage() {
+        EqmManager manager = new EqmManager();
+
+        manager.executeInput("gibberish");
+
+        assertEquals(
+                "Command not recognised. Please try again." + System.lineSeparator(),
+                output.toString(StandardCharsets.UTF_8)
+        );
+    }
 }

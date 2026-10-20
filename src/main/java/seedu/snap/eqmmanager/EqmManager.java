@@ -67,7 +67,7 @@ public class EqmManager {
         } else if (input.equals("list") || input.startsWith("list ")) {
             equipment.viewAllEquipment();
         } else {
-            System.out.println("Error message. Command not recognised.");
+            System.out.println("Command not recognised. Please try again.");
         }
     }
 
