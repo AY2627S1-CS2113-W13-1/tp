@@ -8,6 +8,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -19,14 +20,16 @@ import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 
 /** Parses loan commands and stores successfully created loans. */
 public class LoanHandler {
-    static ArrayList<Loan> loans = new ArrayList<>();
-    static int numLoans = 0;
-
     private static final int EXPECTED_ADD_ARGUMENT_COUNT = 5;
     private static final Logger logger = Logger.getLogger(LoanHandler.class.getName());
     private static final String ID_FORMAT = "\\d{3}";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-uu")
             .withResolverStyle(ResolverStyle.STRICT);
+
+    /** Loans managed by this handler instance. */
+    private final ArrayList<Loan> loans = new ArrayList<>();
+    /** Cached loan count kept in sync with {@link #loans}. */
+    private int numLoans = 0;
     /** File used for persistence, or null when the handler is intentionally in-memory only. */
     private final Path storageFile;
 
@@ -44,6 +47,11 @@ public class LoanHandler {
     public int getLoanCount() {
         assert numLoans == loans.size() : "numLoans should match the size of the loans list";
         return numLoans;
+    }
+
+    /** Returns a read-only view of this handler's loans for inspection and display. */
+    public List<Loan> getLoanList() {
+        return Collections.unmodifiableList(loans);
     }
 
     /**
@@ -310,7 +318,7 @@ public class LoanHandler {
     /**
      * Prints out all equipment in inventory
      */
-    public static void viewAllLoans() {
+    public void viewAllLoans() {
         assert numLoans == loans.size() : "numLoans should match the size of the loans list";
         logger.log(Level.INFO, "Viewing {0} loan(s)", numLoans);
         System.out.printf(

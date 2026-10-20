@@ -32,9 +32,7 @@ public class LoanHandlerTest {
     private Path temporaryDirectory;
 
     @BeforeEach
-    public void resetLoans() {
-        LoanHandler.loans.clear();
-        LoanHandler.numLoans = 0;
+    public void redirectOutput() {
         originalOutput = System.out;
         System.setOut(new PrintStream(output, true, StandardCharsets.UTF_8));
     }
@@ -50,8 +48,8 @@ public class LoanHandlerTest {
 
         loanHandler.addLoan(FIRST_LOAN);
 
-        assertEquals(1, loanHandler.numLoans);
-        assertEquals(1, loanHandler.loans.size());
+        assertEquals(1, loanHandler.getLoanCount());
+        assertEquals(1, loanHandler.getLoanList().size());
     }
 
     @Test
@@ -63,8 +61,8 @@ public class LoanHandlerTest {
         LoanHandler secondHandler = new LoanHandler(file);
         secondHandler.loadFromStorage();
         assertEquals(1, secondHandler.getLoanCount());
-        assertEquals("001", secondHandler.loans.getFirst().getItemId());
-        assertEquals("002", secondHandler.loans.getFirst().getBorrowerId());
+        assertEquals("001", secondHandler.getLoanList().getFirst().getItemId());
+        assertEquals("002", secondHandler.getLoanList().getFirst().getBorrowerId());
 
         secondHandler.deleteLoan("delete-loan id/001");
         LoanHandler thirdHandler = new LoanHandler(file);
@@ -97,10 +95,10 @@ public class LoanHandlerTest {
                 loanHandler.deleteLoan("delete-loan id/001");
 
         assertEquals("001", deletedLoan.getItemId());
-        assertEquals(1, loanHandler.numLoans);
+        assertEquals(1, loanHandler.getLoanCount());
         assertEquals(
                 "003",
-                loanHandler.loans.get(0).getItemId());
+                loanHandler.getLoanList().get(0).getItemId());
     }
 
     @Test
@@ -117,10 +115,10 @@ public class LoanHandlerTest {
         assertEquals(
                 "No loan found for item ID 999.",
                 exception.getMessage());
-        assertEquals(1, loanHandler.numLoans);
+        assertEquals(1, loanHandler.getLoanCount());
         assertEquals(
                 "001",
-                loanHandler.loans.get(0).getItemId());
+                loanHandler.getLoanList().get(0).getItemId());
     }
 
     @Test
@@ -137,7 +135,7 @@ public class LoanHandlerTest {
         assertEquals(
                 "Invalid item ID \"01\". Item ID must be exactly three digits, e.g. 001.",
                 exception.getMessage());
-        assertEquals(1, loanHandler.numLoans);
+        assertEquals(1, loanHandler.getLoanCount());
     }
 
     @Test
@@ -153,7 +151,7 @@ public class LoanHandlerTest {
         assertEquals(
                 "Invalid command format. Expected: delete-loan id/[ITEM ID] [issued/DD-MM-YY].",
                 exception.getMessage());
-        assertEquals(1, loanHandler.numLoans);
+        assertEquals(1, loanHandler.getLoanCount());
     }
 
     @Test
@@ -167,7 +165,7 @@ public class LoanHandlerTest {
                 () -> loanHandler.deleteLoan(
                         "delete-loan item/001"));
 
-        assertEquals(1, loanHandler.numLoans);
+        assertEquals(1, loanHandler.getLoanCount());
     }
 
     @Test
@@ -175,21 +173,21 @@ public class LoanHandlerTest {
             throws LoanAdditionUnsuccessful, LoanDeletionUnsuccessful {
         LoanHandler loanHandler = new LoanHandler();
         loanHandler.addLoan(FIRST_LOAN);
-        loanHandler.loans.get(0).setReturned(true);
+        loanHandler.getLoanList().get(0).setReturned(true);
         loanHandler.addLoan("loan id/001 b/005 issued/05-10-26 due/06-10-26");
 
         assertThrows(LoanDeletionUnsuccessful.class,
                 () -> loanHandler.deleteLoan("delete-loan id/001"));
-        assertEquals(2, loanHandler.numLoans);
+        assertEquals(2, loanHandler.getLoanCount());
 
         Loan deletedLoan = loanHandler.deleteLoan("delete-loan id/001 issued/05-10-26");
         assertEquals("005", deletedLoan.getBorrowerId());
-        assertEquals(1, loanHandler.numLoans);
+        assertEquals(1, loanHandler.getLoanCount());
     }
 
     @Test
     void viewAllLoans_noLoans_printsHeaderOnly() {
-        LoanHandler.viewAllLoans();
+        new LoanHandler().viewAllLoans();
 
         String expected = String.format(
                 "%-4s %-12s | %-12s | %-16s | %-16s%n",
@@ -204,7 +202,7 @@ public class LoanHandlerTest {
         loanHandler.addLoan(FIRST_LOAN);
         loanHandler.addLoan(SECOND_LOAN);
 
-        LoanHandler.viewAllLoans();
+        loanHandler.viewAllLoans();
 
         String expected = String.format(
                 "%-4s %-12s | %-12s | %-16s | %-16s%n",
