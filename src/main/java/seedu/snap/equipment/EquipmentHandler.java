@@ -109,6 +109,11 @@ public class EquipmentHandler {
         return Collections.unmodifiableList(inventory);
     }
 
+    /** Persists the current inventory when this handler has a backing file. */
+    public void saveToStorage() throws IOException {
+        save(inventory);
+    }
+
     /**
      * Finds the equipment targeted by a delete command without changing the inventory.
      *

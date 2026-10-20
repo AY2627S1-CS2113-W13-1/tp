@@ -2,6 +2,7 @@ package seedu.snap.loan;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -68,6 +69,20 @@ public class LoanHandlerTest {
         LoanHandler thirdHandler = new LoanHandler(file);
         thirdHandler.loadFromStorage();
         assertEquals(0, thirdHandler.getLoanCount());
+    }
+
+    @Test
+    public void saveToStorage_persistsInMemoryLoanStatus() throws Exception {
+        Path file = temporaryDirectory.resolve("data/loans.txt");
+        LoanHandler loanHandler = new LoanHandler(file);
+        loanHandler.addLoan(FIRST_LOAN);
+        loanHandler.getLoanList().getFirst().setReturned(true);
+
+        loanHandler.saveToStorage();
+
+        LoanHandler reloadedHandler = new LoanHandler(file);
+        reloadedHandler.loadFromStorage();
+        assertTrue(reloadedHandler.getLoanList().getFirst().isReturned());
     }
 
     @Test

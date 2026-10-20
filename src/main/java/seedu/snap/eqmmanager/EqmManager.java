@@ -72,7 +72,7 @@ public class EqmManager {
             return;
         }
         if (input.equals("bye")) {
-            isRunning = false;
+            isRunning = !saveBeforeExit();
         } else if (input.equals("delete-loan") || input.startsWith("delete-loan ")){
             try{
                 Loan deletedLoan = loans.deleteLoan(input);
@@ -129,5 +129,33 @@ public class EqmManager {
         }
 
         System.out.println("Goodbye.");
+    }
+
+    /**
+     * Performs a final save for both data files before ending the session.
+     *
+     * @return true when both files were saved successfully, or false when the user should retry
+     */
+    private boolean saveBeforeExit() {
+        List<String> saveErrors = new ArrayList<>();
+        try {
+            equipment.saveToStorage();
+        } catch (IOException e) {
+            saveErrors.add("equipment.txt: " + e.getMessage());
+            logger.log(Level.SEVERE, "Could not save equipment data before exit", e);
+        }
+        try {
+            loans.saveToStorage();
+        } catch (IOException e) {
+            saveErrors.add("loans.txt: " + e.getMessage());
+            logger.log(Level.SEVERE, "Could not save loan data before exit", e);
+        }
+
+        if (!saveErrors.isEmpty()) {
+            System.out.println("Could not save data: " + String.join(System.lineSeparator(), saveErrors));
+            return false;
+        }
+        logger.log(Level.FINE, "Saved application data before exit");
+        return true;
     }
 }

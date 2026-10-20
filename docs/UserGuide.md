@@ -39,8 +39,9 @@ An ID that does not exist produces an error without changing the saved records.
 
 Successful equipment additions and deletions are saved automatically in `data/equipment.txt`, relative to the
 directory from which the application is run. Successful loan additions and deletions are saved in
-`data/loans.txt`. Records are loaded when the application starts again.
-The directory and each file are created when the first corresponding record is saved.
+`data/loans.txt`. Records are loaded when the application starts again. A final save of both files is also attempted
+when `bye` is entered; if it fails, the application reports the affected file and lets you retry.
+The directory and both files are created on the first save, including the final save performed by `bye`.
 
 The text file contains one equipment record per line, using the add command format. For example:
 

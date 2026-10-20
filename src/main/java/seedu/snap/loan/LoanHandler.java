@@ -54,6 +54,11 @@ public class LoanHandler {
         return Collections.unmodifiableList(loans);
     }
 
+    /** Persists the current loans when this handler has a backing file. */
+    public void saveToStorage() throws IOException {
+        save(loans);
+    }
+
     /**
      * Replaces the current loan list with records loaded from the backing file.
      * A missing file represents an empty loan list.
