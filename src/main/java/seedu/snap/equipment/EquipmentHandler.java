@@ -3,6 +3,7 @@ package seedu.snap.equipment;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -10,6 +11,7 @@ import java.util.regex.Pattern;
 
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
+import seedu.snap.exceptions.EquipmentUpdateUnsuccessful;
 
 /** Parses add and delete commands and stores equipment for the current session. */
 public class EquipmentHandler {
@@ -48,6 +50,57 @@ public class EquipmentHandler {
         assert inventory.getLast() == equipment : "The newly added equipment must be last in the inventory";
         logger.log(Level.FINE, "Added equipment with item ID {0}", equipment.getItemId());
         return equipment;
+    }
+
+    /**
+     * Updates supplied details after validating every value; the ID, object, and inventory order stay the same.
+     *
+     * @param input update command with an ID and at least one detail
+     * @return the updated equipment
+     * @throws EquipmentUpdateUnsuccessful when the command or new details are invalid
+     */
+    public Equipment updateEquipment(String input) throws EquipmentUpdateUnsuccessful {
+        try {
+            Map<String, String> fields = EquipmentFields.parse(input, "update", "id", "i", "type", "cond");
+            String id = fields.get("id");
+            if (id == null || !id.matches("[0-9]{3}") || id.equals("000")) {
+                throw new EquipmentUpdateUnsuccessful("Item ID must be from 001 to 999.");
+            }
+            if (fields.size() == 1) {
+                throw new EquipmentUpdateUnsuccessful("Supply a name, type, or condition to update.");
+            }
+            Equipment target = findEquipmentForUpdate(id);
+            String name = fields.getOrDefault("i", target.getItemName());
+            String type = fields.getOrDefault("type", target.getType());
+            String condition = fields.getOrDefault("cond", Integer.toString(target.getCondition()));
+            validateEquipmentDetails(name, id, type, condition);
+            int previousSize = inventory.size();
+            target.updateDetails(name, type, Integer.parseInt(condition));
+            assert inventory.size() == previousSize : "Updates must not add or remove equipment";
+            assert target.getItemId().equals(id) : "Updates must preserve Item ID";
+            logger.log(Level.FINE, "Updated equipment with item ID {0}", id);
+            return target;
+        } catch (IllegalArgumentException | EquipmentAdditionUnsuccessful | EquipmentUpdateUnsuccessful e) {
+            logger.log(Level.FINE, "Equipment update rejected: {0}", e.getMessage());
+            throw new EquipmentUpdateUnsuccessful(e.getMessage());
+        }
+    }
+
+    /** Finds exactly one target so malformed inventories cannot cause an update to the wrong item. */
+    private Equipment findEquipmentForUpdate(String id) throws EquipmentUpdateUnsuccessful {
+        Equipment match = null;
+        for (Equipment item : inventory) {
+            if (item.getItemId().equals(id)) {
+                if (match != null) {
+                    throw new EquipmentUpdateUnsuccessful("Item ID " + id + " is not unique.");
+                }
+                match = item;
+            }
+        }
+        if (match == null) {
+            throw new EquipmentUpdateUnsuccessful("Item ID " + id + " does not exist.");
+        }
+        return match;
     }
 
     /**
@@ -136,7 +189,14 @@ public class EquipmentHandler {
         String type = addDetails.substring(typeIndex + TYPE_MARKER.length(), conditionIndex).trim();
         String conditionString = addDetails.substring(conditionIndex + CONDITION_MARKER.length()).trim();
 
-        if (itemString.isBlank() || itemString.length() > 100) {
+        validateEquipmentDetails(itemString, id, type, conditionString);
+        return new Equipment(itemString, id, type, Integer.parseInt(conditionString));
+    }
+
+    /** Shares field rules between adding and updating, before either operation changes the inventory. */
+    private static void validateEquipmentDetails(String itemName, String id, String type, String conditionString)
+            throws EquipmentAdditionUnsuccessful {
+        if (itemName.isBlank() || itemName.length() > 100) {
             throw new EquipmentAdditionUnsuccessful("Item name must contain 1 to 100 characters.");
         }
 
@@ -151,10 +211,6 @@ public class EquipmentHandler {
         if (!conditionString.matches("10|[1-9]")) {
             throw new EquipmentAdditionUnsuccessful("Condition must be a whole number from 1 to 10.");
         }
-
-        int condition = Integer.parseInt(conditionString);
-
-        return new Equipment(itemString, id, type, condition);
     }
 
     /**

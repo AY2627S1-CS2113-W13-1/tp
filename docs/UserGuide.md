@@ -35,6 +35,23 @@ It prints a confirmation message after the deletion is saved. The deleted ID can
 Invalid delete syntax produces an error followed by the delete command format.
 An ID that does not exist produces an error without changing the saved records.
 
+## Updating equipment: `update`
+
+Format: `update id/ITEM ID [i/NAME] [type/TYPE] [cond/CONDITION]`
+
+Examples:
+
+* `update id/001 cond/5`
+* `update id/001 i/Film Camera type/camera kit`
+
+Supply an existing ID and at least one detail to change. Fields may appear in any order, once each.
+The ID stays fixed and omitted details keep their current values. Names contain 1–100 characters, types
+must contain text, and conditions are whole numbers from 1 to 10. Condition ranges are not accepted for updates.
+
+Prefixes `id/`, `i/`, `type/`, `cond/`, and `status/` after whitespace are reserved separators; `status/`
+cannot be updated manually. Text such as `USB id/card reader` within a name is allowed. Updates preserve the
+same equipment record and its position in the list. Invalid commands leave all existing details unchanged.
+
 ## Saving equipment
 
 Successful additions and deletions are saved automatically in `data/equipment.txt`, relative to the directory
@@ -65,4 +82,5 @@ If the file cannot be read or contains invalid or duplicate records, the applica
 | --- | --- |
 | Add equipment | `add i/[ITEM] id/[ITEM ID] type/[TYPE] cond/[CONDITION]` |
 | Delete equipment | `delete item/[ITEM ID]` |
+| Update equipment | `update id/ID [i/NAME] [type/TYPE] [cond/CONDITION]` |
 | Exit | `bye` |

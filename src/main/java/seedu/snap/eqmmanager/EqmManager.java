@@ -3,6 +3,7 @@ package seedu.snap.eqmmanager;
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.equipment.Equipment;
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
+import seedu.snap.exceptions.EquipmentUpdateUnsuccessful;
 import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
@@ -53,6 +54,13 @@ public class EqmManager {
                 equipment.addEquipment(input);
                 System.out.println("Equipment added successfully.");
             } catch (EquipmentAdditionUnsuccessful e) {
+                System.out.println(e.getMessage());
+            }
+        } else if (input.equals("update") || input.startsWith("update ")) {
+            try {
+                Equipment updated = equipment.updateEquipment(input);
+                System.out.println("Equipment with item ID " + updated.getItemId() + " updated successfully.");
+            } catch (EquipmentUpdateUnsuccessful e) {
                 System.out.println(e.getMessage());
             }
         } else if (input.equals("loan") || input.startsWith("loan ")) {

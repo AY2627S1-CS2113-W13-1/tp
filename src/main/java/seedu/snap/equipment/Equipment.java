@@ -4,10 +4,10 @@ package seedu.snap.equipment;
  * Represents an item of equipment in the inventory.
  */
 public class Equipment {
-    private final String itemName;
+    private String itemName;
     private final String itemId;
-    private final String type;
-    private final int condition;
+    private String type;
+    private int condition;
 
     /**
      * Creates an equipment item.
@@ -27,6 +27,17 @@ public class Equipment {
         assert condition >= 1 && condition <= 10 : "Equipment condition must be from 1 to 10";
         this.itemName = name;
         this.itemId = id;
+        this.type = type;
+        this.condition = condition;
+    }
+
+    /** Applies already validated details together, preserving this item's identity and other state. */
+    public void updateDetails(String itemName, String type, int condition) {
+        assert itemName != null && !itemName.isBlank() && itemName.length() <= 100
+                : "Equipment name must contain 1 to 100 characters";
+        assert type != null && !type.isBlank() : "Equipment type must contain text";
+        assert condition >= 1 && condition <= 10 : "Equipment condition must be from 1 to 10";
+        this.itemName = itemName;
         this.type = type;
         this.condition = condition;
     }
