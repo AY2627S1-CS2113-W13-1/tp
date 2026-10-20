@@ -19,7 +19,7 @@ final class EquipmentStorage {
     }
 
     /**
-     * Loads one add command per line from the supplied file.
+     * Loads one add command per non-blank line from the supplied file.
      * A missing file represents an empty inventory.
      *
      * @param file file containing saved equipment
@@ -36,6 +36,9 @@ final class EquipmentStorage {
         int lineNumber = 0;
         for (String line : Files.readAllLines(file, StandardCharsets.UTF_8)) {
             lineNumber++;
+            if (line.isBlank()) {
+                continue;
+            }
             try {
                 Equipment equipment = EquipmentHandler.parseEquipment(line);
                 if (!ids.add(equipment.getItemId())) {

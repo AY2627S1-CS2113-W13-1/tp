@@ -20,7 +20,7 @@ final class LoanStorage {
     }
 
     /**
-     * Loads loan records from the supplied file.
+     * Loads loan records from each non-blank line in the supplied file.
      * The optional returned field is accepted for compatibility with older files;
      * newly saved records always include it.
      *
@@ -37,6 +37,9 @@ final class LoanStorage {
         int lineNumber = 0;
         for (String line : Files.readAllLines(file, StandardCharsets.UTF_8)) {
             lineNumber++;
+            if (line.isBlank()) {
+                continue;
+            }
             try {
                 String[] fields = line.trim().split("\\s+");
                 if (fields.length != 5 && fields.length != 6) {

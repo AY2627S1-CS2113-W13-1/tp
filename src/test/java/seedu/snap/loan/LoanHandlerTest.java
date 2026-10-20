@@ -6,7 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
@@ -68,6 +70,19 @@ public class LoanHandlerTest {
         LoanHandler thirdHandler = new LoanHandler(file);
         thirdHandler.loadFromStorage();
         assertEquals(0, thirdHandler.getLoanCount());
+    }
+
+    @Test
+    public void storage_blankLines_areIgnoredDuringLoad() throws Exception {
+        Path file = temporaryDirectory.resolve("loans.txt");
+        Files.writeString(file, System.lineSeparator()
+                + "  " + System.lineSeparator()
+                + "loan id/001 b/002 issued/01-10-26 due/02-10-26" + System.lineSeparator());
+
+        List<Loan> loaded = LoanStorage.load(file);
+
+        assertEquals(1, loaded.size());
+        assertEquals("001", loaded.getFirst().getItemId());
     }
 
     @Test

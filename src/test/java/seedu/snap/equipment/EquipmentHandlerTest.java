@@ -18,6 +18,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.junit.jupiter.api.AfterEach;
@@ -199,6 +200,19 @@ class EquipmentHandlerTest {
 
         assertEquals("Equipment ID 001 already exists.", exception.getMessage());
         assertEquals(1, EquipmentStorage.load(file).size());
+    }
+
+    @Test
+    public void storage_blankLines_areIgnoredDuringLoad() throws Exception {
+        Path file = temporaryDirectory.resolve("equipment.txt");
+        Files.writeString(file, System.lineSeparator()
+                + "  " + System.lineSeparator()
+                + "add i/Camera id/001 type/camera cond/1" + System.lineSeparator());
+
+        List<Equipment> loaded = EquipmentStorage.load(file);
+
+        assertEquals(1, loaded.size());
+        assertEquals("001", loaded.getFirst().getItemId());
     }
 
     @Test
