@@ -2,6 +2,8 @@ package seedu.snap.eqmmanager;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -42,15 +44,20 @@ public class EqmManager {
         this.parser = new Parser();
         this.loans = new LoanHandler(dataDirectory.resolve("loans.txt"));
         this.equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
-        String loadError = null;
+        List<String> loadErrors = new ArrayList<>();
         try {
             equipment.loadFromStorage();
+        } catch (IOException e) {
+            loadErrors.add("equipment.txt: " + e.getMessage());
+            logger.log(Level.SEVERE, "Could not load saved equipment data", e);
+        }
+        try {
             loans.loadFromStorage();
         } catch (IOException e) {
-            loadError = e.getMessage();
-            logger.log(Level.SEVERE, "Could not load saved application data", e);
+            loadErrors.add("loans.txt: " + e.getMessage());
+            logger.log(Level.SEVERE, "Could not load saved loan data", e);
         }
-        this.startupError = loadError;
+        this.startupError = loadErrors.isEmpty() ? null : String.join(System.lineSeparator(), loadErrors);
         this.isRunning = true;
     }
 

@@ -96,6 +96,24 @@ class MainTest {
         assertTrue(secondRun.contains("002"));
     }
 
+    @Test
+    void main_invalidStorageFiles_reportBothLoadErrorsAndLogEachFailure() throws Exception {
+        Path dataDirectory = temporaryDirectory.resolve("data");
+        Files.createDirectories(dataDirectory);
+        Files.writeString(dataDirectory.resolve("equipment.txt"), "not an equipment record\n");
+        Files.writeString(dataDirectory.resolve("loans.txt"), "not a loan record\n");
+
+        String output = runApplication("list\n", true);
+
+        assertTrue(output.contains("Could not load saved data: equipment.txt:"));
+        assertTrue(output.contains("loans.txt: Invalid loan record on line 1:"));
+        assertFalse(output.contains("Welcome to snAp."));
+
+        String logs = Files.readString(temporaryDirectory.resolve("logs/snap.log.0"));
+        assertTrue(logs.contains("Could not load saved equipment data"));
+        assertTrue(logs.contains("Could not load saved loan data"));
+    }
+
     /** Runs the application with isolated files and a timeout so tests cannot hang on console I/O. */
     private String runApplication(String commands, boolean assertionsEnabled) throws Exception {
         Path inputFile = temporaryDirectory.resolve("input.txt");
