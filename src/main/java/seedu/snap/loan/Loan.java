@@ -7,7 +7,7 @@ import seedu.snap.equipment.Equipment;
 /** Represents an item loaned to a borrower. */
 public class Loan {
     private final String itemId;
-    private final Equipment equipment;
+    private Equipment equipment;
     private String borrowerId;
     private LocalDateTime issuedDate;
     private LocalDateTime dueDate;
@@ -63,15 +63,25 @@ public class Loan {
         return isReturned;
     }
 
+    /** Releases an active loan's item and prevents deleted records from changing its future availability. */
+    void detachEquipment() {
+        if (equipment != null && !isReturned) {
+            equipment.setLoaned(false);
+        }
+        equipment = null;
+    }
+
     /** Updates return status and availability together; an existing active loan cannot be overwritten. */
     public void setReturned(boolean isReturned) {
         if (this.isReturned == isReturned) {
             return;
         }
-        if (!isReturned && equipment.isLoaned()) {
+        if (!isReturned && equipment != null && equipment.isLoaned()) {
             throw new IllegalStateException("Equipment already has an active loan.");
         }
         this.isReturned = isReturned;
-        equipment.setLoaned(!isReturned);
+        if (equipment != null) {
+            equipment.setLoaned(!isReturned);
+        }
     }
 }

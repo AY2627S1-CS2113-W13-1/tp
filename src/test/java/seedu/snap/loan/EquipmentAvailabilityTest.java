@@ -124,6 +124,18 @@ class EquipmentAvailabilityTest {
     }
 
     @Test
+    void deleteLoan_oldReference_cannotChangeNewLoansAvailability() throws Exception {
+        Loan deleted = loans.addLoan(LOAN);
+        loans.deleteLoan("delete-loan id/001");
+        Loan current = loans.addLoan(LOAN);
+        deleted.setReturned(true);
+        assertTrue(camera.isLoaned());
+        assertSame(current, LoanHandler.loans.getFirst());
+        deleted.setReturned(false);
+        assertTrue(camera.isLoaned());
+    }
+
+    @Test
     void deleteLoan_oldReturnedLoan_doesNotReleaseNewActiveLoan() throws Exception {
         loans.addLoan(LOAN).setReturned(true);
         loans.addLoan(LOAN.replace("01-10-26", "02-10-26"));
