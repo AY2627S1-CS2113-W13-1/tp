@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
+import seedu.snap.equipment.Equipment;
+import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 
@@ -22,6 +24,24 @@ public class LoanHandler {
     private static final String ID_FORMAT = "\\d{3}";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-uu")
             .withResolverStyle(ResolverStyle.STRICT);
+    private final EquipmentHandler equipmentHandler;
+
+    /** Creates a loan handler with its own equipment inventory. */
+    public LoanHandler() {
+        this(new EquipmentHandler());
+    }
+
+    /**
+     * Creates a loan handler that uses the supplied equipment inventory.
+     *
+     * @param equipmentHandler inventory containing the equipment being loaned
+     */
+    public LoanHandler(EquipmentHandler equipmentHandler) {
+        if (equipmentHandler == null) {
+            throw new IllegalArgumentException("Equipment handler cannot be null.");
+        }
+        this.equipmentHandler = equipmentHandler;
+    }
 
 
     /**
@@ -46,8 +66,15 @@ public class LoanHandler {
         String borrowerId = parseArgument(arguments[2], "b/", "/b", "borrower ID");
         LocalDateTime issuedDate = parseDateArgument(arguments[3], "issued/", "/issued");
         LocalDateTime dueDate = parseDateArgument(arguments[4], "due/", "/due");
+        Equipment equipment = equipmentHandler.getEquipmentById(itemId);
 
-        if (hasActiveLoanForItem(itemId)) {
+        if (equipment == null) {
+            logger.log(Level.WARNING, "Cannot loan unknown equipment with item ID {0}.", itemId);
+            throw new LoanAdditionUnsuccessful("Equipment ID " + itemId + " does not exist.");
+        }
+
+        if (equipment.isLoaned()) {
+            logger.log(Level.WARNING, "Equipment with item ID {0} is already loaned.", itemId);
             throw new LoanAdditionUnsuccessful("An active loan already exists for item ID " + itemId + ".");
         }
 
@@ -58,6 +85,9 @@ public class LoanHandler {
         Loan loan = new Loan(itemId, borrowerId, issuedDate, dueDate);
         loans.add(loan);
         numLoans++;
+        assert loans.contains(loan) : "Successfully added loan must be stored.";
+        equipment.markLoaned();
+        logger.log(Level.INFO, "Added loan for equipment with item ID {0}.", itemId);
         return loan;
     }
 
@@ -103,6 +133,11 @@ public class LoanHandler {
         loans.remove(loan);
         numLoans--;
         assert numLoans == loans.size() : "numLoans should match the size of the loans list";
+        Equipment equipment = equipmentHandler.getEquipmentById(itemId);
+        assert equipment != null : "Every loan must have a corresponding equipment item.";
+        if (equipment != null) {
+            equipment.markReturned();
+        }
         logger.log(Level.INFO, "Deleted loan for item ID " + itemId);
         return loan;
     }
@@ -200,18 +235,6 @@ public class LoanHandler {
     private LoanAdditionUnsuccessful dateFormatError(String prefix, String alternatePrefix) {
         return new LoanAdditionUnsuccessful("Invalid date format. Expected " + prefix + "DD-MM-YY or "
                 + alternatePrefix + "DD-MM-YY.");
-    }
-
-    /**
-     * Checks whether an item currently has an unreturned loan.
-     */
-    private boolean hasActiveLoanForItem(String itemId) {
-        for (Loan loan : loans) {
-            if (loan.getItemId().equals(itemId) && !loan.isReturned()) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private LocalDateTime parseDeleteIssuedDate(String argument) throws LoanDeletionUnsuccessful {
