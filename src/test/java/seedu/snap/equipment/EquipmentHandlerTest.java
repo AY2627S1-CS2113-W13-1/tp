@@ -1,6 +1,7 @@
 package seedu.snap.equipment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -18,6 +19,25 @@ class EquipmentHandlerTest {
                 "add i/Canon EOS R10 id/001 type/camera cond/1");
 
         assertNotNull(equipment);
+        assertInstanceOf(Camera.class, equipment);
+    }
+
+    @Test
+    public void parseEquipment_supportedTypes_returnsMatchingSubclasses() throws EquipmentAdditionUnsuccessful {
+        assertInstanceOf(Camera.class, EquipmentHandler.parseEquipment(
+                "add i/Camera id/001 type/camera cond/1"));
+        assertInstanceOf(Tripod.class, EquipmentHandler.parseEquipment(
+                "add i/Tripod id/002 type/tripod cond/2"));
+        assertInstanceOf(Lens.class, EquipmentHandler.parseEquipment(
+                "add i/Lens id/003 type/lens cond/3"));
+        assertInstanceOf(Battery.class, EquipmentHandler.parseEquipment(
+                "add i/Battery id/004 type/battery cond/4"));
+    }
+
+    @Test
+    public void parseEquipment_unsupportedType_throwsException() {
+        assertThrows(EquipmentAdditionUnsuccessful.class, () -> EquipmentHandler.parseEquipment(
+                "add i/Flash id/001 type/flash cond/1"));
     }
 
     @Test
