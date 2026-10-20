@@ -3,6 +3,9 @@ package seedu.snap.equipment;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -17,6 +20,7 @@ public class EquipmentHandler {
     private static final String ID_MARKER = "id/";
     private static final String TYPE_MARKER = "type/";
     private static final String CONDITION_MARKER = "cond/";
+    private static final Logger LOGGER = Logger.getLogger(EquipmentHandler.class.getName());
 
     /** Equipment stored by this handler during the current application session. */
     private final ArrayList<Equipment> inventory = new ArrayList<>();
@@ -30,7 +34,11 @@ public class EquipmentHandler {
      */
     public Equipment addEquipment(String input) throws EquipmentAdditionUnsuccessful {
         Equipment equipment = parseEquipment(input);
+        assert equipment != null : "Parsed equipment must not be null.";
         inventory.add(equipment);
+        assert inventory.contains(equipment) : "Added equipment must be present in inventory.";
+        LOGGER.log(Level.INFO, "Added {0} with item ID {1}.",
+                new Object[] {equipment.getType(), equipment.getItemId()});
         return equipment;
     }
 
@@ -54,9 +62,12 @@ public class EquipmentHandler {
         String itemId = parseDeleteItemId(input);
         for (Equipment equipment : inventory) {
             if (equipment.getItemId().equals(itemId)) {
+                LOGGER.log(Level.INFO, "Found {0} with item ID {1} for deletion.",
+                        new Object[] {equipment.getType(), itemId});
                 return equipment;
             }
         }
+        LOGGER.log(Level.WARNING, "No equipment found for item ID {0}.", itemId);
         throw new EquipmentDeletionUnsuccessful("Equipment ID " + itemId + " does not exist.");
     }
 
@@ -69,7 +80,10 @@ public class EquipmentHandler {
      */
     public Equipment deleteEquipment(String input) throws EquipmentDeletionUnsuccessful {
         Equipment equipment = getEquipmentForDeletion(input);
-        inventory.remove(equipment);
+        boolean removed = inventory.remove(equipment);
+        assert removed : "Equipment selected for deletion must be in inventory.";
+        LOGGER.log(Level.INFO, "Deleted {0} with item ID {1}.",
+                new Object[] {equipment.getType(), equipment.getItemId()});
         return equipment;
     }
 
@@ -117,13 +131,48 @@ public class EquipmentHandler {
             throw new EquipmentAdditionUnsuccessful("Type cannot be empty.");
         }
 
+        String normalizedType = type.toLowerCase(Locale.ROOT);
+
         if (!conditionString.matches("10|[1-9]")) {
             throw new EquipmentAdditionUnsuccessful("Condition must be a whole number from 1 to 10.");
         }
 
         int condition = Integer.parseInt(conditionString);
+        assert condition >= 1 && condition <= 10 : "Parsed condition must be between 1 and 10.";
 
-        return new Equipment(itemString, id, type, condition);
+        Equipment equipment = createEquipment(normalizedType, itemString, id, condition);
+        assert equipment.getType().equals(normalizedType)
+                : "Created equipment type must match the requested type.";
+        LOGGER.log(Level.INFO, "Parsed {0} equipment with item ID {1}.",
+                new Object[] {equipment.getType(), equipment.getItemId()});
+        return equipment;
+    }
+
+    /**
+     * Creates the concrete equipment subclass selected by a command's type.
+     *
+     * @param type normalized equipment type
+     * @param itemName equipment name
+     * @param id equipment ID
+     * @param condition equipment condition
+     * @return the concrete equipment instance
+     * @throws EquipmentAdditionUnsuccessful when the type is unsupported
+     */
+    private static Equipment createEquipment(String type, String itemName, String id, int condition)
+            throws EquipmentAdditionUnsuccessful {
+        Equipment equipment = switch (type) {
+        case "camera" -> new Camera(itemName, id, condition);
+        case "tripod" -> new Tripod(itemName, id, condition);
+        case "lens" -> new Lens(itemName, id, condition);
+        case "battery" -> new Battery(itemName, id, condition);
+        default -> {
+            LOGGER.log(Level.WARNING, "Unsupported equipment type: {0}.", type);
+            throw new EquipmentAdditionUnsuccessful(
+                    "Unsupported type. Choose camera, tripod, lens, or battery.");
+        }
+        };
+        assert equipment.getType().equals(type) : "Factory returned the wrong equipment subtype.";
+        return equipment;
     }
 
     /**
