@@ -2,8 +2,11 @@ package seedu.snap.eqmmanager;
 
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.equipment.Equipment;
+import seedu.snap.bundle.Bundle;
+import seedu.snap.bundle.BundleHandler;
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
+import seedu.snap.exceptions.BundleAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 import seedu.snap.loan.LoanHandler;
@@ -15,6 +18,7 @@ public class EqmManager {
     private final Parser parser;
     private final LoanHandler loans;
     private final EquipmentHandler equipment;
+    private final BundleHandler bundles;
     private boolean isRunning;
 
     /** Creates an equipment manager ready to accept commands. */
@@ -22,6 +26,7 @@ public class EqmManager {
         this.parser = new Parser();
         this.equipment = new EquipmentHandler();
         this.loans = new LoanHandler(equipment);
+        this.bundles = new BundleHandler(equipment);
         this.isRunning = true;
     }
 
@@ -55,6 +60,21 @@ public class EqmManager {
             } catch (EquipmentAdditionUnsuccessful e) {
                 System.out.println(e.getMessage());
             }
+        } else if (input.equals("add-bundle") || input.startsWith("add-bundle ")) {
+            try {
+                Bundle bundle = bundles.addBundle(input);
+                System.out.println("Bundle " + bundle.getBundleId() + " added successfully.");
+            } catch (BundleAdditionUnsuccessful e) {
+                System.out.println(e.getMessage());
+            }
+        } else if (input.equals("add-to-bundle") || input.startsWith("add-to-bundle ")) {
+            try {
+                for (String message : bundles.addItemsToBundle(input)) {
+                    System.out.println(message);
+                }
+            } catch (BundleAdditionUnsuccessful e) {
+                System.out.println(e.getMessage());
+            }
         } else if (input.equals("loan") || input.startsWith("loan ")) {
             try {
                 loans.addLoan(input);
@@ -64,6 +84,12 @@ public class EqmManager {
             }
         } else if (input.equals("list loans")) {
             loans.viewAllLoans();
+        } else if (input.equals("list bundles")) {
+            try {
+                bundles.viewAllBundles(input);
+            } catch (BundleAdditionUnsuccessful e) {
+                System.out.println(e.getMessage());
+            }
         } else if (input.equals("list") || input.startsWith("list ")) {
             equipment.viewAllEquipment();
         } else {
