@@ -74,4 +74,22 @@ class EqmManagerTest {
         assertEquals("Equipment ID 999 does not exist." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
     }
+
+    @Test
+    void bundleCommands_addAndListBundle() {
+        EqmManager manager = new EqmManager();
+        manager.executeInput("add i/Canon EOS R10 id/001 type/camera cond/1");
+        manager.executeInput("add i/Canon Battery id/002 type/battery cond/1");
+        manager.executeInput("add-bundle name/Travel Kit");
+        output.reset();
+
+        manager.executeInput("add-to-bundle id/001 001 002");
+        manager.executeInput("list bundles");
+
+        String listing = output.toString(StandardCharsets.UTF_8);
+        assertEquals(true, listing.contains("Equipment ID 001 added to bundle 001 successfully."));
+        assertEquals(true, listing.contains("Travel Kit"));
+        assertEquals(true, listing.contains("camera"));
+        assertEquals(true, listing.contains("battery"));
+    }
 }
