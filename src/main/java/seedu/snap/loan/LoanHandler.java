@@ -207,8 +207,11 @@ public class LoanHandler {
 
     /**
      * Checks whether an item currently has an unreturned loan.
+     *
+     * @param itemId equipment ID to check
+     * @return whether deletion must be blocked to preserve an active loan's equipment association
      */
-    private boolean hasActiveLoanForItem(String itemId) {
+    public boolean hasActiveLoanForItem(String itemId) {
         for (Loan loan : loans) {
             if (loan.getItemId().equals(itemId) && !loan.isReturned()) {
                 return true;
