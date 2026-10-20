@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 
+import seedu.snap.equipment.Equipment;
+import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 
@@ -22,6 +24,14 @@ public class LoanHandler {
     private static final String ID_FORMAT = "\\d{3}";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-uu")
             .withResolverStyle(ResolverStyle.STRICT);
+
+    private final EquipmentHandler equipment;
+
+    /** Connects this handler to the inventory used by the application. */
+    public LoanHandler(EquipmentHandler equipment) {
+        assert equipment != null : "Loan handler requires an inventory";
+        this.equipment = equipment;
+    }
 
 
     /**
@@ -55,13 +65,34 @@ public class LoanHandler {
             throw new LoanAdditionUnsuccessful("Issued date must not be later than the due date.");
         }
 
-        Loan loan = new Loan(itemId, borrowerId, issuedDate, dueDate);
+        Equipment item = findAvailableEquipment(itemId);
+        Loan loan = new Loan(item, borrowerId, issuedDate, dueDate);
         assert loan != null : "Created loan must not be null.";
         loans.add(loan);
         numLoans++;
         assert numLoans == loans.size() : "numLoans should match the size of the loans list";
         logger.log(Level.FINE, "Added loan for item ID {0}.", itemId);
         return loan;
+    }
+
+    /** Finds one available item, rejecting missing or ambiguous IDs before a loan changes any state. */
+    private Equipment findAvailableEquipment(String itemId) throws LoanAdditionUnsuccessful {
+        Equipment match = null;
+        for (Equipment item : equipment.getEquipmentList()) {
+            if (item.getItemId().equals(itemId)) {
+                if (match != null) {
+                    throw new LoanAdditionUnsuccessful("Item ID " + itemId + " is not unique.");
+                }
+                match = item;
+            }
+        }
+        if (match == null) {
+            throw new LoanAdditionUnsuccessful("Item ID " + itemId + " does not exist.");
+        }
+        if (match.isLoaned()) {
+            throw new LoanAdditionUnsuccessful("Item ID " + itemId + " is already loaned out.");
+        }
+        return match;
     }
 
     /**
@@ -104,6 +135,9 @@ public class LoanHandler {
 
         Loan loan = matches.get(0);
         loans.remove(loan);
+        if (!loan.isReturned()) {
+            loan.setReturned(true);
+        }
         numLoans--;
         assert numLoans == loans.size() : "numLoans should match the size of the loans list";
         logger.log(Level.INFO, "Deleted loan for item ID " + itemId);
@@ -208,7 +242,7 @@ public class LoanHandler {
     /**
      * Checks whether an item currently has an unreturned loan.
      */
-    private boolean hasActiveLoanForItem(String itemId) {
+    public boolean hasActiveLoanForItem(String itemId) {
         for (Loan loan : loans) {
             if (loan.getItemId().equals(itemId) && !loan.isReturned()) {
                 return true;
