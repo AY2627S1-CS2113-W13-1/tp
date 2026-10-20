@@ -1,14 +1,18 @@
 package seedu.snap.equipment;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  * Represents an item of equipment in the inventory.
  */
 public class Equipment {
+    private static final Logger logger = Logger.getLogger(Equipment.class.getName());
     private final String itemName;
     private final String itemId;
     private final String type;
     private final int condition;
-    private boolean isLoaned;
+    private boolean isLoaned = false;
 
     /**
      * Creates an equipment item.
@@ -51,7 +55,17 @@ public class Equipment {
 
     /** Updates availability when an associated loan changes status. */
     public void setLoaned(boolean isLoaned) {
+        assert itemId != null : "Equipment must have an ID before its availability changes";
+        if (this.isLoaned == isLoaned) {
+            logger.log(Level.FINE, "Equipment with item ID {0} remains {1}.",
+                    new Object[]{itemId, isLoaned ? "loaned" : "available"});
+            return;
+        }
+        boolean previousState = this.isLoaned;
         this.isLoaned = isLoaned;
+        logger.log(Level.INFO, "Equipment with item ID {0} changed from {1} to {2}.",
+                new Object[]{itemId, previousState ? "loaned" : "available",
+                    isLoaned ? "loaned" : "available"});
     }
 
     public int getCondition() {

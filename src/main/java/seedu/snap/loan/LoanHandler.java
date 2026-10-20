@@ -119,6 +119,7 @@ public class LoanHandler {
         String itemId = parsedLoan.getItemId();
 
         if (hasActiveLoanForItem(itemId)) {
+            logger.log(Level.WARNING, "Loan rejected: item ID {0} already has an active loan.", itemId);
             throw new LoanAdditionUnsuccessful("An active loan already exists for item ID " + itemId + ".");
         }
 
@@ -148,7 +149,7 @@ public class LoanHandler {
         }
         numLoans++;
         assert numLoans == loans.size() : "numLoans should match the size of the loans list";
-        logger.log(Level.FINE, "Added loan for item ID {0}.", itemId);
+        logger.log(Level.INFO, "Added loan for item ID {0}.", itemId);
         return loan;
     }
 
@@ -158,15 +159,18 @@ public class LoanHandler {
         for (Equipment item : equipment.getEquipmentList()) {
             if (item.getItemId().equals(itemId)) {
                 if (match != null) {
+                    logger.log(Level.WARNING, "Loan rejected: item ID {0} is ambiguous.", itemId);
                     throw new LoanAdditionUnsuccessful("Item ID " + itemId + " is not unique.");
                 }
                 match = item;
             }
         }
         if (match == null) {
+            logger.log(Level.WARNING, "Loan rejected: item ID {0} does not exist.", itemId);
             throw new LoanAdditionUnsuccessful("Item ID " + itemId + " does not exist.");
         }
         if (match.isLoaned()) {
+            logger.log(Level.WARNING, "Loan rejected: item ID {0} is already loaned out.", itemId);
             throw new LoanAdditionUnsuccessful("Item ID " + itemId + " is already loaned out.");
         }
         return match;
@@ -372,6 +376,7 @@ public class LoanHandler {
      * @return whether deletion must be blocked to preserve an active loan's equipment association
      */
     public boolean hasActiveLoanForItem(String itemId) {
+        assert itemId != null : "Active-loan checks require an item ID";
         for (Loan loan : loans) {
             if (loan.getItemId().equals(itemId) && !loan.isReturned()) {
                 return true;

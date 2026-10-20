@@ -1,11 +1,14 @@
 package seedu.snap.loan;
 
 import java.time.LocalDateTime;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import seedu.snap.equipment.Equipment;
 
 /** Represents an item loaned to a borrower. */
 public class Loan {
+    private static final Logger logger = Logger.getLogger(Loan.class.getName());
     private final String itemId;
     private Equipment equipment;
     private String borrowerId;
@@ -27,12 +30,17 @@ public class Loan {
         if (equipment == null || equipment.isLoaned()) {
             throw new IllegalArgumentException("A loan requires available equipment.");
         }
-        this.itemId = equipment.getItemId();
+        assert !equipment.isLoaned() : "A new loan must target available equipment";
+        assert borrowerId != null && !borrowerId.isBlank() : "A loan must have a borrower ID";
+        assert issuedDate != null && dueDate != null : "A loan must have issue and due dates";
+        assert !issuedDate.isAfter(dueDate) : "A loan issue date must not be after its due date";
         this.equipment = equipment;
+        this.itemId = equipment.getItemId();
         this.borrowerId = borrowerId;
         this.issuedDate = issuedDate;
         this.dueDate = dueDate;
         this.isReturned = false;
+        logger.log(Level.FINE, "Created loan candidate for item ID {0}.", itemId);
     }
 
     public String getItemId() {
@@ -86,6 +94,7 @@ public class Loan {
     void detachEquipment() {
         if (equipment != null && !isReturned) {
             equipment.setLoaned(false);
+            logger.log(Level.INFO, "Released equipment with item ID {0} after loan deletion.", itemId);
         }
         equipment = null;
         assert equipment == null : "Deleted loans must not retain equipment references";
@@ -97,11 +106,14 @@ public class Loan {
             return;
         }
         if (!isReturned && equipment != null && equipment.isLoaned()) {
+            logger.log(Level.WARNING, "Rejected reactivation of loan for already-loaned item ID {0}.", itemId);
             throw new IllegalStateException("Equipment already has an active loan.");
         }
         this.isReturned = isReturned;
         if (equipment != null) {
             equipment.setLoaned(!isReturned);
         }
+        logger.log(Level.INFO, "Loan for item ID {0} marked as {1}.",
+                new Object[]{itemId, isReturned ? "returned" : "active"});
     }
 }
