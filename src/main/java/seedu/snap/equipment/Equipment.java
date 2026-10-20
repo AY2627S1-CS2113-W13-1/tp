@@ -1,5 +1,8 @@
 package seedu.snap.equipment;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  * Represents an item of equipment in the inventory.
  *
@@ -8,9 +11,11 @@ package seedu.snap.equipment;
  * common equipment properties.</p>
  */
 public abstract class Equipment {
+    private static final Logger LOGGER = Logger.getLogger(Equipment.class.getName());
     private final String itemName;
     private final String itemId;
     private final int condition;
+    private boolean isLoaned;
 
     /**
      * Creates an equipment item.
@@ -23,7 +28,9 @@ public abstract class Equipment {
         this.itemName = name;
         this.itemId = id;
         this.condition = condition;
+        this.isLoaned = false;
         assert hasValidState() : "Equipment fields must contain valid values.";
+        assert !isLoaned : "New equipment must not be loaned.";
     }
 
     public String getItemName() {
@@ -43,6 +50,29 @@ public abstract class Equipment {
 
     public int getCondition() {
         return condition;
+    }
+
+    /**
+     * Returns whether this equipment currently has an active loan.
+     *
+     * @return true when the equipment is currently loaned
+     */
+    public boolean isLoaned() {
+        return isLoaned;
+    }
+
+    /** Marks this equipment as currently loaned. */
+    public void markLoaned() {
+        assert !isLoaned : "Equipment cannot be loaned twice without being returned.";
+        isLoaned = true;
+        LOGGER.log(Level.INFO, "Marked equipment with item ID {0} as loaned.", itemId);
+    }
+
+    /** Marks this equipment as returned and available for another loan. */
+    public void markReturned() {
+        assert isLoaned : "Only loaned equipment can be marked as returned.";
+        isLoaned = false;
+        LOGGER.log(Level.INFO, "Marked equipment with item ID {0} as returned.", itemId);
     }
 
     /**
