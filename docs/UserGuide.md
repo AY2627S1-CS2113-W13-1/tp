@@ -2,7 +2,8 @@
 
 ## Introduction
 
-snAp tracks individual pieces of equipment. You can add equipment and delete records by their unique identifiers.
+snAp tracks individual pieces of equipment and the loans made for those items. You can add equipment, loan it to
+borrowers, view current loan records, and delete equipment or loan records by their unique identifiers.
 
 ## Quick Start
 
@@ -35,6 +36,38 @@ It prints a confirmation message after the deletion is saved. The deleted ID can
 Invalid delete syntax produces an error followed by the delete command format.
 An ID that does not exist produces an error without changing the saved records.
 
+## Loaning out equipment: `loan`
+
+Format: `loan id/[ITEM ID] b/[BORROWER ID] issued/[DD-MM-YY] due/[DD-MM-YY]`
+
+Example: `loan id/001 b/002 issued/01-10-26 due/08-10-26`
+
+* `ITEM ID` is the three-digit identifier of the equipment being loaned.
+* `BORROWER ID` is the three-digit identifier of the borrower.
+* `issued` and `due` use the `DD-MM-YY` format. The issue date must not be later than the due date.
+* An item cannot have more than one active loan at the same time.
+
+## Viewing loans: `list loans`
+
+Format: `list loans`
+
+This displays all recorded loans with their item ID, borrower ID, issue date, and due date.
+
+## Deleting a loan: `delete-loan`
+
+Format: `delete-loan id/[ITEM ID] [issued/DD-MM-YY]`
+
+Example: `delete-loan id/001`
+
+Use the optional issue date when more than one loan exists for the same item ID:
+
+```text
+delete-loan id/001 issued/01-10-26
+```
+
+If no matching loan exists, or if the command does not identify a unique loan, the application reports an error and
+keeps the existing loan records unchanged.
+
 ## Saving equipment
 
 Successful additions and deletions are saved automatically in `data/equipment.txt`, relative to the directory
@@ -65,4 +98,7 @@ If the file cannot be read or contains invalid or duplicate records, the applica
 | --- | --- |
 | Add equipment | `add i/[ITEM] id/[ITEM ID] type/[TYPE] cond/[CONDITION]` |
 | Delete equipment | `delete item/[ITEM ID]` |
+| Loan equipment | `loan id/[ITEM ID] b/[BORROWER ID] issued/[DD-MM-YY] due/[DD-MM-YY]` |
+| View loans | `list loans` |
+| Delete loan | `delete-loan id/[ITEM ID] [issued/DD-MM-YY]` |
 | Exit | `bye` |
