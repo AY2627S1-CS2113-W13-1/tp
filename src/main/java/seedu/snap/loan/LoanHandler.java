@@ -15,6 +15,8 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import seedu.snap.equipment.Equipment;
+import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 
@@ -32,14 +34,27 @@ public class LoanHandler {
     private int numLoans = 0;
     /** File used for persistence, or null when the handler is intentionally in-memory only. */
     private final Path storageFile;
+    /** Equipment inventory used to validate and update availability. */
+    private final EquipmentHandler equipment;
 
     /** Creates an in-memory loan handler, mainly useful for isolated unit tests. */
     public LoanHandler() {
-        this(null);
+        this(null, null);
     }
 
     /** Creates a loan handler backed by the supplied text file. */
     public LoanHandler(Path storageFile) {
+        this(null, storageFile);
+    }
+
+    /** Creates an in-memory loan handler connected to an equipment inventory. */
+    public LoanHandler(EquipmentHandler equipment) {
+        this(equipment, null);
+    }
+
+    /** Creates a loan handler connected to an inventory and optional storage file. */
+    public LoanHandler(EquipmentHandler equipment, Path storageFile) {
+        this.equipment = equipment;
         this.storageFile = storageFile;
     }
 
@@ -75,6 +90,14 @@ public class LoanHandler {
             if (!loan.isReturned() && !activeItemIds.add(loan.getItemId())) {
                 throw new IOException("Multiple active loans found for item ID " + loan.getItemId() + ".");
             }
+            if (equipment != null) {
+                try {
+                    loan.attachEquipment(findStoredEquipment(loan.getItemId()));
+                } catch (LoanAdditionUnsuccessful e) {
+                    throw new IOException("Could not associate saved loan for item ID "
+                            + loan.getItemId() + ": " + e.getMessage(), e);
+                }
+            }
         }
         loans.clear();
         loans.addAll(loaded);
@@ -92,13 +115,16 @@ public class LoanHandler {
      * @throws LoanAdditionUnsuccessful when the command cannot be added
      */
     public Loan addLoan(String input) throws LoanAdditionUnsuccessful {
-        Loan loan = parseLoanRecord(input);
-        String itemId = loan.getItemId();
+        Loan parsedLoan = parseLoanRecord(input);
+        String itemId = parsedLoan.getItemId();
 
         if (hasActiveLoanForItem(itemId)) {
             throw new LoanAdditionUnsuccessful("An active loan already exists for item ID " + itemId + ".");
         }
 
+        Equipment item = equipment == null ? null : findAvailableEquipment(itemId);
+        Loan loan = item == null ? parsedLoan : new Loan(item, parsedLoan.getBorrowerId(),
+                parsedLoan.getIssuedDate(), parsedLoan.getDueDate());
         assert loan != null : "Created loan must not be null.";
         ArrayList<Loan> updatedLoans = new ArrayList<>(loans);
         updatedLoans.add(loan);
@@ -110,10 +136,40 @@ public class LoanHandler {
         }
 
         loans.add(loan);
+        if (item != null) {
+            item.setLoaned(true);
+            assert item.isLoaned() : "A successfully added loan must mark equipment as loaned";
+            try {
+                equipment.saveToStorage();
+            } catch (IOException e) {
+                logger.log(Level.WARNING, "Loaned equipment state could not be saved", e);
+                throw new LoanAdditionUnsuccessful("Could not save equipment availability: " + e.getMessage());
+            }
+        }
         numLoans++;
         assert numLoans == loans.size() : "numLoans should match the size of the loans list";
         logger.log(Level.FINE, "Added loan for item ID {0}.", itemId);
         return loan;
+    }
+
+    /** Finds one available item, rejecting missing or ambiguous IDs before a loan changes any state. */
+    private Equipment findAvailableEquipment(String itemId) throws LoanAdditionUnsuccessful {
+        Equipment match = null;
+        for (Equipment item : equipment.getEquipmentList()) {
+            if (item.getItemId().equals(itemId)) {
+                if (match != null) {
+                    throw new LoanAdditionUnsuccessful("Item ID " + itemId + " is not unique.");
+                }
+                match = item;
+            }
+        }
+        if (match == null) {
+            throw new LoanAdditionUnsuccessful("Item ID " + itemId + " does not exist.");
+        }
+        if (match.isLoaned()) {
+            throw new LoanAdditionUnsuccessful("Item ID " + itemId + " is already loaned out.");
+        }
+        return match;
     }
 
     /**
@@ -165,6 +221,17 @@ public class LoanHandler {
         }
 
         loans.remove(loan);
+        if (equipment != null) {
+            loan.detachEquipment();
+            try {
+                equipment.saveToStorage();
+            } catch (IOException e) {
+                logger.log(Level.WARNING, "Returned equipment state could not be saved", e);
+                throw new LoanDeletionUnsuccessful("Could not save equipment availability: " + e.getMessage());
+            }
+        } else if (!loan.isReturned()) {
+            loan.setReturned(true);
+        }
         numLoans--;
         assert numLoans == loans.size() : "numLoans should match the size of the loans list";
         logger.log(Level.INFO, "Deleted loan for item ID " + itemId);
@@ -313,6 +380,23 @@ public class LoanHandler {
             }
         }
         return false;
+    }
+
+    /** Finds a uniquely identified equipment item while restoring saved loan associations. */
+    private Equipment findStoredEquipment(String itemId) throws LoanAdditionUnsuccessful {
+        Equipment match = null;
+        for (Equipment item : equipment.getEquipmentList()) {
+            if (item.getItemId().equals(itemId)) {
+                if (match != null) {
+                    throw new LoanAdditionUnsuccessful("Item ID " + itemId + " is not unique.");
+                }
+                match = item;
+            }
+        }
+        if (match == null) {
+            throw new LoanAdditionUnsuccessful("Item ID " + itemId + " does not exist.");
+        }
+        return match;
     }
 
     private LocalDateTime parseDeleteIssuedDate(String argument) throws LoanDeletionUnsuccessful {

@@ -16,6 +16,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import seedu.snap.equipment.EquipmentHandler;
+import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 import seedu.snap.eqmmanager.EqmManager;
@@ -34,11 +36,20 @@ public class LoanHandlerTest {
     private Path temporaryDirectory;
 
     @BeforeEach
-    public void redirectOutput() {
+    public void resetLoans() throws EquipmentAdditionUnsuccessful {
+        equipment = new EquipmentHandler();
+        equipment.addEquipment("add i/Camera id/001 type/camera cond/1");
+        equipment.addEquipment("add i/Tripod id/003 type/accessory cond/2");
         originalOutput = System.out;
         System.setOut(new PrintStream(output, true, StandardCharsets.UTF_8));
     }
 
+    private EquipmentHandler equipment;
+
+    /*
+     * In-memory availability tests use the fixture inventory above. Persistence tests use
+     * the temporary directory so that each test has its own files.
+     */
     @AfterEach
     public void restoreOutput() {
         System.setOut(originalOutput);
@@ -46,7 +57,7 @@ public class LoanHandlerTest {
 
     @Test
     public void addLoan_validLoan_keepsCountConsistent() throws LoanAdditionUnsuccessful {
-        LoanHandler loanHandler = new LoanHandler();
+        LoanHandler loanHandler = new LoanHandler(equipment);
 
         loanHandler.addLoan(FIRST_LOAN);
 
@@ -178,7 +189,7 @@ public class LoanHandlerTest {
     public void deleteLoan_existingItemId_deletesCorrectLoan()
             throws LoanAdditionUnsuccessful,
             LoanDeletionUnsuccessful {
-        LoanHandler loanHandler = new LoanHandler();
+        LoanHandler loanHandler = new LoanHandler(equipment);
         loanHandler.addLoan(FIRST_LOAN);
         loanHandler.addLoan(SECOND_LOAN);
 
@@ -195,7 +206,7 @@ public class LoanHandlerTest {
     @Test
     public void deleteLoan_unknownItemId_keepsLoansUnchanged()
             throws LoanAdditionUnsuccessful {
-        LoanHandler loanHandler = new LoanHandler();
+        LoanHandler loanHandler = new LoanHandler(equipment);
         loanHandler.addLoan(FIRST_LOAN);
 
         LoanDeletionUnsuccessful exception = assertThrows(
@@ -215,7 +226,7 @@ public class LoanHandlerTest {
     @Test
     public void deleteLoan_invalidItemId_keepsLoansUnchanged()
             throws LoanAdditionUnsuccessful {
-        LoanHandler loanHandler = new LoanHandler();
+        LoanHandler loanHandler = new LoanHandler(equipment);
         loanHandler.addLoan(FIRST_LOAN);
 
         LoanDeletionUnsuccessful exception = assertThrows(
@@ -232,7 +243,7 @@ public class LoanHandlerTest {
     @Test
     public void deleteLoan_missingItemId_keepsLoansUnchanged()
             throws LoanAdditionUnsuccessful {
-        LoanHandler loanHandler = new LoanHandler();
+        LoanHandler loanHandler = new LoanHandler(equipment);
         loanHandler.addLoan(FIRST_LOAN);
 
         LoanDeletionUnsuccessful exception = assertThrows(
@@ -248,7 +259,7 @@ public class LoanHandlerTest {
     @Test
     public void deleteLoan_invalidPrefix_keepsLoansUnchanged()
             throws LoanAdditionUnsuccessful {
-        LoanHandler loanHandler = new LoanHandler();
+        LoanHandler loanHandler = new LoanHandler(equipment);
         loanHandler.addLoan(FIRST_LOAN);
 
         assertThrows(
@@ -262,7 +273,7 @@ public class LoanHandlerTest {
     @Test
     public void deleteLoan_duplicateItemId_requiresIssuedDate()
             throws LoanAdditionUnsuccessful, LoanDeletionUnsuccessful {
-        LoanHandler loanHandler = new LoanHandler();
+        LoanHandler loanHandler = new LoanHandler(equipment);
         loanHandler.addLoan(FIRST_LOAN);
         loanHandler.getLoanList().get(0).setReturned(true);
         loanHandler.addLoan("loan id/001 b/005 issued/05-10-26 due/06-10-26");
@@ -289,7 +300,7 @@ public class LoanHandlerTest {
     @Test
     void viewAllLoans_existingLoans_printsHeaderAndRows()
             throws LoanAdditionUnsuccessful {
-        LoanHandler loanHandler = new LoanHandler();
+        LoanHandler loanHandler = new LoanHandler(equipment);
         loanHandler.addLoan(FIRST_LOAN);
         loanHandler.addLoan(SECOND_LOAN);
 

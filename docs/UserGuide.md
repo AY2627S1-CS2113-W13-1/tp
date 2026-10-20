@@ -77,6 +77,14 @@ delete-loan id/001 issued/01-10-26
 If no matching loan exists, or if the command does not identify a unique loan, the application reports an error and
 keeps the existing loan records unchanged.
 
+## Equipment availability
+
+The equipment list shows `Available` or `Loaned` for each item. A loan can only be added for equipment
+that exists and is available. Rejected loan commands leave the item's status unchanged.
+
+Equipment with an active loan cannot be deleted. Returning or deleting the active loan makes the item
+available again; removing an older returned loan does not affect a newer active loan.
+
 ## Saving equipment
 
 Successful equipment additions and deletions are saved automatically in `data/equipment.txt`, relative to the

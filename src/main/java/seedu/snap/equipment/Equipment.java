@@ -8,6 +8,7 @@ public class Equipment {
     private final String itemId;
     private final String type;
     private final int condition;
+    private boolean isLoaned;
 
     /**
      * Creates an equipment item.
@@ -41,6 +42,16 @@ public class Equipment {
 
     public String getType() {
         return type;
+    }
+
+    /** Returns whether this item currently has an active loan. */
+    public boolean isLoaned() {
+        return isLoaned;
+    }
+
+    /** Updates availability when an associated loan changes status. */
+    public void setLoaned(boolean isLoaned) {
+        this.isLoaned = isLoaned;
     }
 
     public int getCondition() {
