@@ -1,5 +1,10 @@
 package seedu.snap.eqmmanager;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.equipment.Equipment;
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
@@ -12,16 +17,40 @@ import seedu.snap.loan.Loan;
 
 /** Coordinates command input and execution for the SNAP application. */
 public class EqmManager {
+    private static final Logger logger = Logger.getLogger(EqmManager.class.getName());
     private final Parser parser;
     private final LoanHandler loans;
     private final EquipmentHandler equipment;
+    private final String startupError;
     private boolean isRunning;
 
     /** Creates an equipment manager ready to accept commands. */
     public EqmManager() {
+        this(Path.of("data"));
+    }
+
+    /**
+     * Creates a manager using the supplied directory for persistent equipment and loan files.
+     * A missing directory or file is treated as an empty data set.
+     *
+     * @param dataDirectory directory containing equipment.txt and loans.txt
+     */
+    public EqmManager(Path dataDirectory) {
+        if (dataDirectory == null) {
+            throw new IllegalArgumentException("Data directory must not be null.");
+        }
         this.parser = new Parser();
-        this.loans = new LoanHandler();
-        this.equipment = new EquipmentHandler();
+        this.loans = new LoanHandler(dataDirectory.resolve("loans.txt"));
+        this.equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
+        String loadError = null;
+        try {
+            equipment.loadFromStorage();
+            loans.loadFromStorage();
+        } catch (IOException e) {
+            loadError = e.getMessage();
+            logger.log(Level.SEVERE, "Could not load saved application data", e);
+        }
+        this.startupError = loadError;
         this.isRunning = true;
     }
 
@@ -31,6 +60,10 @@ public class EqmManager {
      * @param input command to execute
      */
     public void executeInput(String input) {
+        if (startupError != null) {
+            System.out.println("Could not load saved data: " + startupError);
+            return;
+        }
         if (input.equals("bye")) {
             isRunning = false;
         } else if (input.equals("delete-loan") || input.startsWith("delete-loan ")){
@@ -73,7 +106,13 @@ public class EqmManager {
 
     /** Runs the main input and execution loop until the user exits. */
     public void run() {
-        System.out.println("Greeting message.");
+        if (startupError != null) {
+            System.out.println("Could not load saved data: " + startupError);
+            return;
+        }
+
+        System.out.println("Welcome to snAp. Loaded " + equipment.getEquipmentList().size()
+                + " equipment record(s) and " + loans.getLoanCount() + " loan(s).");
 
         // main process
         String input;
@@ -82,6 +121,6 @@ public class EqmManager {
             executeInput(input);
         }
 
-        System.out.println("Goodbye message.");
+        System.out.println("Goodbye.");
     }
 }

@@ -74,6 +74,28 @@ class MainTest {
         }
     }
 
+    @Test
+    void main_restart_loadsPersistedEquipmentAndLoans() throws Exception {
+        String firstRun = runApplication("add i/Camera id/001 type/camera cond/1\n"
+                + "loan id/001 b/002 issued/01-10-26 due/02-10-26\nbye\n", true);
+
+        assertTrue(firstRun.contains("Equipment added successfully."));
+        assertTrue(firstRun.contains("Loan added successfully."));
+        assertTrue(Files.exists(temporaryDirectory.resolve("data/equipment.txt")));
+        assertTrue(Files.exists(temporaryDirectory.resolve("data/loans.txt")));
+        assertTrue(Files.readString(temporaryDirectory.resolve("data/equipment.txt"))
+                .contains("add i/Camera id/001 type/camera cond/1"));
+        assertTrue(Files.readString(temporaryDirectory.resolve("data/loans.txt"))
+                .contains("loan id/001 b/002 issued/01-10-26 due/02-10-26 returned/false"));
+
+        String secondRun = runApplication("list\nlist loans\nbye\n", true);
+
+        assertTrue(secondRun.contains("Welcome to snAp. Loaded 1 equipment record(s) and 1 loan(s)."));
+        assertTrue(secondRun.contains("Camera"));
+        assertTrue(secondRun.contains("001"));
+        assertTrue(secondRun.contains("002"));
+    }
+
     /** Runs the application with isolated files and a timeout so tests cannot hang on console I/O. */
     private String runApplication(String commands, boolean assertionsEnabled) throws Exception {
         Path inputFile = temporaryDirectory.resolve("input.txt");

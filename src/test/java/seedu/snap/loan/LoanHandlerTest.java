@@ -6,10 +6,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
@@ -24,6 +26,8 @@ public class LoanHandlerTest {
 
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
     private PrintStream originalOutput;
+    @TempDir
+    private Path temporaryDirectory;
 
     @BeforeEach
     public void resetLoans() {
@@ -46,6 +50,24 @@ public class LoanHandlerTest {
 
         assertEquals(1, loanHandler.numLoans);
         assertEquals(1, loanHandler.loans.size());
+    }
+
+    @Test
+    public void persistence_addDeleteAndReload_preservesLoansAcrossHandlers() throws Exception {
+        Path file = temporaryDirectory.resolve("data/loans.txt");
+        LoanHandler firstHandler = new LoanHandler(file);
+        firstHandler.addLoan(FIRST_LOAN);
+
+        LoanHandler secondHandler = new LoanHandler(file);
+        secondHandler.loadFromStorage();
+        assertEquals(1, secondHandler.getLoanCount());
+        assertEquals("001", secondHandler.loans.getFirst().getItemId());
+        assertEquals("002", secondHandler.loans.getFirst().getBorrowerId());
+
+        secondHandler.deleteLoan("delete-loan id/001");
+        LoanHandler thirdHandler = new LoanHandler(file);
+        thirdHandler.loadFromStorage();
+        assertEquals(0, thirdHandler.getLoanCount());
     }
 
     @Test
