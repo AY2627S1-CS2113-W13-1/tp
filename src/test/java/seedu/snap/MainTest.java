@@ -59,7 +59,7 @@ class MainTest {
     void main_equipmentAndLoanCommands_shareLogsWithoutConsoleDiagnostics() throws Exception {
         String output = runApplication("add i/Camera id/001 type/camera cond/1\n"
                 + "loan id/001 b/001 issued/15-10-26 due/16-10-26\n"
-                + "delete-loan id/001\ndelete-loan id/999\nbye\n", true);
+                + "delete loan/001\ndelete loan/999\nbye\n", true);
         assertTrue(output.contains("Equipment added successfully."));
         assertTrue(output.contains("Loan for item ID 001 deleted successfully."));
         assertTrue(output.contains("No loan found for item ID 999."));

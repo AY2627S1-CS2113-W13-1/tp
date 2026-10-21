@@ -73,11 +73,13 @@ public class EqmManager {
         }
         if (input.equals("bye")) {
             isRunning = !saveBeforeExit();
-        } else if (input.equals("delete-loan") || input.startsWith("delete-loan ")){
-            try{
+        } else if (input.equals("delete loan")
+                || input.startsWith("delete loan/")
+                || input.startsWith("delete loan ")) {
+            try {
                 Loan deletedLoan = loans.deleteLoan(input);
                 System.out.println("Loan for item ID " + deletedLoan.getItemId() + " deleted successfully.");
-            } catch (LoanDeletionUnsuccessful e){
+            } catch (LoanDeletionUnsuccessful e) {
                 System.out.println(e.getMessage());
             }
         } else if (input.equals("delete") || input.startsWith("delete ")) {

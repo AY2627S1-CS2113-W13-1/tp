@@ -66,7 +66,7 @@ public class LoanHandlerTest {
         assertEquals("001", secondHandler.getLoanList().getFirst().getItemId());
         assertEquals("002", secondHandler.getLoanList().getFirst().getBorrowerId());
 
-        secondHandler.deleteLoan("delete-loan id/001");
+        secondHandler.deleteLoan("delete loan/001");
         LoanHandler thirdHandler = new LoanHandler(file);
         thirdHandler.loadFromStorage();
         assertEquals(0, thirdHandler.getLoanCount());
@@ -158,7 +158,7 @@ public class LoanHandlerTest {
         manager.executeInput(FIRST_LOAN);
         output.reset();
 
-        manager.executeInput("delete-loan id/001");
+        manager.executeInput("delete loan/001");
         manager.executeInput("delete item/001");
         manager.executeInput("add i/Replacement id/001 type/audio cond/3");
 
@@ -183,7 +183,7 @@ public class LoanHandlerTest {
         loanHandler.addLoan(SECOND_LOAN);
 
         Loan deletedLoan =
-                loanHandler.deleteLoan("delete-loan id/001");
+                loanHandler.deleteLoan("delete loan/001");
 
         assertEquals("001", deletedLoan.getItemId());
         assertEquals(1, loanHandler.getLoanCount());
@@ -201,7 +201,7 @@ public class LoanHandlerTest {
         LoanDeletionUnsuccessful exception = assertThrows(
                 LoanDeletionUnsuccessful.class,
                 () -> loanHandler.deleteLoan(
-                        "delete-loan id/999"));
+                        "delete loan/999"));
 
         assertEquals(
                 "No loan found for item ID 999.",
@@ -221,7 +221,7 @@ public class LoanHandlerTest {
         LoanDeletionUnsuccessful exception = assertThrows(
                 LoanDeletionUnsuccessful.class,
                 () -> loanHandler.deleteLoan(
-                        "delete-loan id/01"));
+                        "delete loan/01"));
 
         assertEquals(
                 "Invalid item ID \"01\". Item ID must be exactly three digits, e.g. 001.",
@@ -237,10 +237,10 @@ public class LoanHandlerTest {
 
         LoanDeletionUnsuccessful exception = assertThrows(
                 LoanDeletionUnsuccessful.class,
-                () -> loanHandler.deleteLoan("delete-loan"));
+                () -> loanHandler.deleteLoan("delete loan"));
 
         assertEquals(
-                "Invalid command format. Expected: delete-loan id/[ITEM ID] [issued/DD-MM-YY].",
+                "Invalid command format. Expected: delete loan/[ITEM ID] [issued/DD-MM-YY].",
                 exception.getMessage());
         assertEquals(1, loanHandler.getLoanCount());
     }
@@ -254,7 +254,7 @@ public class LoanHandlerTest {
         assertThrows(
                 LoanDeletionUnsuccessful.class,
                 () -> loanHandler.deleteLoan(
-                        "delete-loan item/001"));
+                        "delete loan item/001"));
 
         assertEquals(1, loanHandler.getLoanCount());
     }
@@ -268,10 +268,10 @@ public class LoanHandlerTest {
         loanHandler.addLoan("loan id/001 b/005 issued/05-10-26 due/06-10-26");
 
         assertThrows(LoanDeletionUnsuccessful.class,
-                () -> loanHandler.deleteLoan("delete-loan id/001"));
+                () -> loanHandler.deleteLoan("delete loan/001"));
         assertEquals(2, loanHandler.getLoanCount());
 
-        Loan deletedLoan = loanHandler.deleteLoan("delete-loan id/001 issued/05-10-26");
+        Loan deletedLoan = loanHandler.deleteLoan("delete loan/001 issued/05-10-26");
         assertEquals("005", deletedLoan.getBorrowerId());
         assertEquals(1, loanHandler.getLoanCount());
     }
