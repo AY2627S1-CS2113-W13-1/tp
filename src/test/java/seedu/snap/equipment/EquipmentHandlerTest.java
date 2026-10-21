@@ -17,10 +17,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -31,6 +34,8 @@ import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
 class EquipmentHandlerTest {
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
     private PrintStream originalOutput;
+    @TempDir
+    private Path temporaryDirectory;
 
     @BeforeEach
     void redirectOutput() {
@@ -193,6 +198,50 @@ class EquipmentHandlerTest {
 
         assertEquals(1, handler.getEquipmentList().size());
         assertSame(equipment, handler.getEquipmentList().getFirst());
+    }
+
+    @Test
+    public void persistence_addDeleteAndReload_preservesInventoryAcrossHandlers() throws Exception {
+        Path file = temporaryDirectory.resolve("data/equipment.txt");
+        EquipmentHandler firstHandler = new EquipmentHandler(file);
+        firstHandler.addEquipment("add i/Canon EOS R10 id/001 type/camera cond/1");
+
+        EquipmentHandler secondHandler = new EquipmentHandler(file);
+        secondHandler.loadFromStorage();
+        assertEquals(1, secondHandler.getEquipmentList().size());
+        assertEquals("Canon EOS R10", secondHandler.getEquipmentList().getFirst().getItemName());
+
+        secondHandler.deleteEquipment("delete item/001");
+        EquipmentHandler thirdHandler = new EquipmentHandler(file);
+        thirdHandler.loadFromStorage();
+        assertTrue(thirdHandler.getEquipmentList().isEmpty());
+    }
+
+    @Test
+    public void persistence_duplicateId_isRejectedWithoutChangingSavedRecords() throws Exception {
+        Path file = temporaryDirectory.resolve("equipment.txt");
+        EquipmentHandler handler = new EquipmentHandler(file);
+        handler.addEquipment("add i/Camera id/001 type/camera cond/1");
+
+        EquipmentAdditionUnsuccessful exception = org.junit.jupiter.api.Assertions.assertThrows(
+                EquipmentAdditionUnsuccessful.class,
+                () -> handler.addEquipment("add i/Tripod id/001 type/accessories cond/5"));
+
+        assertEquals("Item ID 001 already exists.", exception.getMessage());
+        assertEquals(1, EquipmentStorage.load(file).size());
+    }
+
+    @Test
+    public void storage_blankLines_areIgnoredDuringLoad() throws Exception {
+        Path file = temporaryDirectory.resolve("equipment.txt");
+        Files.writeString(file, System.lineSeparator()
+                + "  " + System.lineSeparator()
+                + "add i/Camera id/001 type/camera cond/1" + System.lineSeparator());
+
+        List<Equipment> loaded = EquipmentStorage.load(file);
+
+        assertEquals(1, loaded.size());
+        assertEquals("001", loaded.getFirst().getItemId());
     }
 
     @Test

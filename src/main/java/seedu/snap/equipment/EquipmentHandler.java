@@ -1,5 +1,7 @@
 package seedu.snap.equipment;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -26,6 +28,36 @@ public class EquipmentHandler {
 
     /** Equipment stored by this handler during the current application session. */
     private final ArrayList<Equipment> inventory = new ArrayList<>();
+    /** File used for persistence, or null when the handler is intentionally in-memory only. */
+    private final Path storageFile;
+
+    /** Creates an in-memory equipment handler, mainly useful for isolated unit tests. */
+    public EquipmentHandler() {
+        this(null);
+    }
+
+    /** Creates an equipment handler backed by the supplied text file. */
+    public EquipmentHandler(Path storageFile) {
+        this.storageFile = storageFile;
+    }
+
+    /**
+     * Replaces the current inventory with records loaded from the backing file.
+     * A missing file is treated as an empty inventory.
+     *
+     * @throws IOException if saved data cannot be read or is invalid
+     */
+    public void loadFromStorage() throws IOException {
+        if (storageFile == null) {
+            return;
+        }
+        List<Equipment> loaded = EquipmentStorage.load(storageFile);
+        inventory.clear();
+        inventory.addAll(loaded);
+        assert inventory.size() == loaded.size() : "Loaded inventory size must be preserved";
+        logger.log(Level.INFO, "Loaded {0} equipment item(s) from {1}",
+                new Object[]{inventory.size(), storageFile});
+    }
 
     /**
      * Adds equipment when the command contains valid details.
@@ -51,6 +83,18 @@ public class EquipmentHandler {
             logger.log(Level.FINE, "Equipment addition rejected: {0}", e.getMessage());
             throw e;
         }
+        // Persist the candidate state before mutating memory so a failed write cannot
+        // leave the in-memory inventory ahead of the saved inventory.
+        ArrayList<Equipment> updatedInventory = new ArrayList<>(inventory);
+        updatedInventory.add(equipment);
+        try {
+            save(updatedInventory);
+        } catch (IOException e) {
+            EquipmentAdditionUnsuccessful exception = new EquipmentAdditionUnsuccessful(
+                    "Could not save equipment: " + e.getMessage());
+            logger.log(Level.WARNING, "Equipment addition could not be saved", e);
+            throw exception;
+        }
         inventory.add(equipment);
         assert inventory.size() == previousSize + 1 : "Adding equipment must increase inventory size by one";
         assert inventory.getLast() == equipment : "The newly added equipment must be last in the inventory";
@@ -65,6 +109,11 @@ public class EquipmentHandler {
      */
     public List<Equipment> getEquipmentList() {
         return Collections.unmodifiableList(inventory);
+    }
+
+    /** Persists the current inventory when this handler has a backing file. */
+    public void saveToStorage() throws IOException {
+        save(inventory);
     }
 
     /**
@@ -104,12 +153,31 @@ public class EquipmentHandler {
     public Equipment deleteEquipment(String input) throws EquipmentDeletionUnsuccessful {
         Equipment equipment = getEquipmentForDeletion(input);
         int previousSize = inventory.size();
+
+        ArrayList<Equipment> updatedInventory = new ArrayList<>(inventory);
+        updatedInventory.remove(equipment);
+        try {
+            save(updatedInventory);
+        } catch (IOException e) {
+            logger.log(Level.WARNING, "Equipment deletion could not be saved", e);
+            throw new EquipmentDeletionUnsuccessful("Could not save equipment deletion: " + e.getMessage());
+        }
+
         // Removal must still run when assertions are disabled.
         boolean wasRemoved = inventory.remove(equipment);
         assert wasRemoved : "Equipment found for deletion must still be in the inventory";
         assert inventory.size() == previousSize - 1 : "Deletion must remove exactly one equipment record";
         logger.log(Level.INFO, "Deleted equipment with ID {0}.", equipment.getItemId());
         return equipment;
+    }
+
+    /** Saves the supplied inventory when this handler has a backing file. */
+    private void save(List<Equipment> equipment) throws IOException {
+        if (storageFile != null) {
+            EquipmentStorage.save(storageFile, equipment);
+            logger.log(Level.FINE, "Saved {0} equipment item(s) to {1}",
+                    new Object[]{equipment.size(), storageFile});
+        }
     }
 
     /**

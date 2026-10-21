@@ -74,6 +74,46 @@ class MainTest {
         }
     }
 
+    @Test
+    void main_restart_loadsPersistedEquipmentAndLoans() throws Exception {
+        String firstRun = runApplication("add i/Camera id/001 type/camera cond/1\n"
+                + "loan id/001 b/002 issued/01-10-26 due/02-10-26\nbye\n", true);
+
+        assertTrue(firstRun.contains("Equipment added successfully."));
+        assertTrue(firstRun.contains("Loan added successfully."));
+        assertTrue(Files.exists(temporaryDirectory.resolve("data/equipment.txt")));
+        assertTrue(Files.exists(temporaryDirectory.resolve("data/loans.txt")));
+        assertTrue(Files.readString(temporaryDirectory.resolve("data/equipment.txt"))
+                .contains("add i/Camera id/001 type/camera cond/1"));
+        assertTrue(Files.readString(temporaryDirectory.resolve("data/loans.txt"))
+                .contains("loan id/001 b/002 issued/01-10-26 due/02-10-26 returned/false"));
+
+        String secondRun = runApplication("list\nlist loans\nbye\n", true);
+
+        assertTrue(secondRun.contains("Welcome to snAp. Loaded 1 equipment record(s) and 1 loan(s)."));
+        assertTrue(secondRun.contains("Camera"));
+        assertTrue(secondRun.contains("001"));
+        assertTrue(secondRun.contains("002"));
+    }
+
+    @Test
+    void main_invalidStorageFiles_reportBothLoadErrorsAndLogEachFailure() throws Exception {
+        Path dataDirectory = temporaryDirectory.resolve("data");
+        Files.createDirectories(dataDirectory);
+        Files.writeString(dataDirectory.resolve("equipment.txt"), "not an equipment record\n");
+        Files.writeString(dataDirectory.resolve("loans.txt"), "not a loan record\n");
+
+        String output = runApplication("list\n", true);
+
+        assertTrue(output.contains("Could not load saved data: equipment.txt:"));
+        assertTrue(output.contains("loans.txt: Invalid loan record on line 1:"));
+        assertFalse(output.contains("Welcome to snAp."));
+
+        String logs = Files.readString(temporaryDirectory.resolve("logs/snap.log.0"));
+        assertTrue(logs.contains("Could not load saved equipment data"));
+        assertTrue(logs.contains("Could not load saved loan data"));
+    }
+
     /** Runs the application with isolated files and a timeout so tests cannot hang on console I/O. */
     private String runApplication(String commands, boolean areAssertionsEnabled) throws Exception {
         Path inputFile = temporaryDirectory.resolve("input.txt");
