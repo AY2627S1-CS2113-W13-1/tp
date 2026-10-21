@@ -60,22 +60,17 @@ Example: `loan id/001 b/002 issued/01-10-26 due/08-10-26`
 
 Format: `list loans`
 
-This displays all recorded loans with their item ID, borrower ID, issue date, and due date.
+This displays all recorded loans with their unique loan ID, item ID, borrower ID, issue date, and due date.
 
 ## Deleting a loan: `delete-loan`
 
-Format: `delete-loan id/[ITEM ID] [issued/DD-MM-YY]`
+Format: `delete-loan id/[LOAN ID]`
 
 Example: `delete-loan id/001`
 
-Use the optional issue date when more than one loan exists for the same item ID:
-
-```text
-delete-loan id/001 issued/01-10-26
-```
-
-If no matching loan exists, or if the command does not identify a unique loan, the application reports an error and
-keeps the existing loan records unchanged.
+Every loan receives a three-digit ID from `001` through `999`. Deletion accepts only that loan ID, so
+equipment IDs and dates cannot accidentally select a different loan. If no matching loan exists, the application
+reports an error and keeps the existing loan records unchanged.
 
 ## Equipment availability
 
@@ -89,20 +84,23 @@ available again; removing an older returned loan does not affect a newer active 
 
 Successful equipment additions and deletions are saved automatically in `data/equipment.txt`, relative to the
 directory from which the application is run. Successful loan additions and deletions are saved in
-`data/loans.txt`. Records are loaded when the application starts again. A final save of both files is also attempted
+`data/loans.txt`, and the next unused loan ID is saved in `data/loan-sequence.txt`. Records are loaded when the
+application starts again. A final save of both files is also attempted
 when `bye` is entered; if it fails, the application reports the affected file and lets you retry.
 The directory and both files are created on the first save, including the final save performed by `bye`.
 
 The text file contains one equipment record per line, using the add command format. For example:
 
 ```text
-add i/Canon EOS R10 id/001 type/camera cond/1
+add i/Canon EOS R10 id/001 type/camera cond/1 loanId/none
 ```
 
 To transfer your records, copy `data/equipment.txt` to the same location on the other computer.
-Copy `data/loans.txt` as well when transferring loan records. Loan records include the item ID, borrower ID,
-issue date, due date, and returned status. If either file cannot be read or contains invalid or duplicate records,
-the application reports the problem and stops.
+Copy `data/loans.txt` and `data/loan-sequence.txt` as well when transferring loan records. Loan records include the
+loan ID, item ID, borrower ID, issue date, due date, and returned status. Older files without loan IDs are migrated
+in file order, and deleted loan IDs are never reused. Legacy equipment `loaned/true|false` fields are accepted and
+reconciled against the active loan records. If a file cannot be read or contains invalid or duplicate records, the
+application reports the problem and stops.
 
 ## Errors
 
@@ -120,7 +118,7 @@ the application reports the problem and stops.
 | Add equipment | `add i/[ITEM] id/[ITEM ID] type/[TYPE] cond/[CONDITION]` |
 | Delete equipment | `delete item/[ITEM ID]` |
 | Add loan | `loan id/[ITEM ID] b/[BORROWER ID] issued/[DD-MM-YY] due/[DD-MM-YY]` |
-| Delete loan | `delete-loan id/[ITEM ID] [issued/DD-MM-YY]` |
+| Delete loan | `delete-loan id/[LOAN ID]` |
 | List equipment | `list` |
 | List loans | `list loans` |
 | Exit | `bye` |
