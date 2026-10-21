@@ -95,9 +95,11 @@ public class EqmManager {
             }
         } else if (input.equals("add") || input.startsWith("add ")) {
             try {
-                equipment.addEquipment(input);
+                Equipment addedEquipment = equipment.addEquipment(input);
+                loans.synchronizeEquipment(addedEquipment);
+                equipment.saveToStorage();
                 System.out.println("Equipment added successfully.");
-            } catch (EquipmentAdditionUnsuccessful e) {
+            } catch (EquipmentAdditionUnsuccessful | IOException e) {
                 System.out.println(e.getMessage());
             }
         } else if (input.equals("loan") || input.startsWith("loan ")) {

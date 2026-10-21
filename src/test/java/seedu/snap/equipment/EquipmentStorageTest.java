@@ -40,6 +40,26 @@ class EquipmentStorageTest {
     }
 
     @Test
+    void load_persistsLoanedState() throws IOException {
+        Path file = temporaryDirectory.resolve("equipment.txt");
+        Files.writeString(file, "add i/Camera id/001 type/camera cond/1 loaned/true\n");
+
+        Equipment equipment = EquipmentStorage.load(file).getFirst();
+
+        assertTrue(equipment.isLoaned());
+    }
+
+    @Test
+    void load_invalidLoanedState_reportsTheLineNumber() throws IOException {
+        Path file = temporaryDirectory.resolve("equipment.txt");
+        Files.writeString(file, "add i/Camera id/001 type/camera cond/1 loaned/maybe\n");
+
+        IOException exception = assertThrows(IOException.class, () -> EquipmentStorage.load(file));
+
+        assertTrue(exception.getMessage().contains("line 1"));
+    }
+
+    @Test
     void save_failedReplacement_preservesDestinationAndCleansTemporaryFile() throws IOException {
         Path destination = temporaryDirectory.resolve("equipment.txt");
         Files.createDirectory(destination);

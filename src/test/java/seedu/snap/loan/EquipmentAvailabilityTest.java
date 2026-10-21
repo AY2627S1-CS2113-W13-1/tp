@@ -10,12 +10,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.ArrayList;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.EquipmentHandler;
@@ -30,11 +32,11 @@ class EquipmentAvailabilityTest {
     private EquipmentHandler equipment;
     private Equipment camera;
     private LoanHandler loans;
+    @TempDir
+    private Path temporaryDirectory;
 
     @BeforeEach
     void setUp() throws EquipmentAdditionUnsuccessful {
-        LoanHandler.loans.clear();
-        LoanHandler.numLoans = 0;
         equipment = new EquipmentHandler();
         camera = equipment.addEquipment("add i/Camera id/001 type/camera cond/1");
         loans = new LoanHandler(equipment);
@@ -42,8 +44,7 @@ class EquipmentAvailabilityTest {
 
     @AfterEach
     void clearLoans() {
-        LoanHandler.loans.clear();
-        LoanHandler.numLoans = 0;
+        // Each test uses an independent LoanHandler instance.
     }
 
     @Test
@@ -52,11 +53,31 @@ class EquipmentAvailabilityTest {
     }
 
     @Test
+    void persistedLoanedState_survivesReload() throws Exception {
+        Path equipmentFile = temporaryDirectory.resolve("equipment.txt");
+        Path loanFile = temporaryDirectory.resolve("loans.txt");
+        EquipmentHandler firstEquipment = new EquipmentHandler(equipmentFile);
+        Equipment firstCamera = firstEquipment.addEquipment("add i/Camera id/001 type/camera cond/1");
+        LoanHandler firstLoans = new LoanHandler(firstEquipment, loanFile);
+
+        firstLoans.addLoan(LOAN);
+
+        EquipmentHandler reloadedEquipment = new EquipmentHandler(equipmentFile);
+        reloadedEquipment.loadFromStorage();
+        LoanHandler reloadedLoans = new LoanHandler(reloadedEquipment, loanFile);
+        reloadedLoans.loadFromStorage();
+
+        assertTrue(firstCamera.isLoaned());
+        assertTrue(reloadedEquipment.getEquipmentList().getFirst().isLoaned());
+        assertEquals(1, reloadedLoans.getLoanCount());
+    }
+
+    @Test
     void addLoan_existingItem_marksItLoaned() throws LoanAdditionUnsuccessful {
         assertFalse(camera.isLoaned());
         loans.addLoan(LOAN);
         assertTrue(camera.isLoaned());
-        assertEquals(1, LoanHandler.numLoans);
+        assertEquals(1, loans.getLoanCount());
     }
 
     @Test
@@ -65,7 +86,7 @@ class EquipmentAvailabilityTest {
                 () -> loans.addLoan(LOAN.replace("id/001", "id/999")));
         assertEquals("Item ID 999 does not exist.", error.getMessage());
         assertFalse(camera.isLoaned());
-        assertTrue(LoanHandler.loans.isEmpty());
+        assertTrue(loans.getLoanList().isEmpty());
     }
 
     @Test
@@ -74,7 +95,7 @@ class EquipmentAvailabilityTest {
             LOAN.replace("02-10-26", "01-09-26"), LOAN + " extra"}) {
             assertThrows(LoanAdditionUnsuccessful.class, () -> loans.addLoan(command));
             assertFalse(camera.isLoaned());
-            assertEquals(0, LoanHandler.numLoans);
+            assertEquals(0, loans.getLoanCount());
         }
         loans.addLoan(LOAN);
         assertTrue(camera.isLoaned());
@@ -84,7 +105,7 @@ class EquipmentAvailabilityTest {
     void addLoan_alreadyLoaned_preservesOriginalLoan() throws LoanAdditionUnsuccessful {
         Loan original = loans.addLoan(LOAN);
         assertThrows(LoanAdditionUnsuccessful.class, () -> loans.addLoan(LOAN));
-        assertEquals(List.of(original), LoanHandler.loans);
+        assertEquals(List.of(original), loans.getLoanList());
         assertTrue(camera.isLoaned());
     }
 
@@ -100,7 +121,7 @@ class EquipmentAvailabilityTest {
         assertThrows(LoanAdditionUnsuccessful.class, () -> loans.addLoan(LOAN));
         assertFalse(camera.isLoaned());
         assertFalse(duplicate.isLoaned());
-        assertTrue(LoanHandler.loans.isEmpty());
+        assertTrue(loans.getLoanList().isEmpty());
     }
 
     @Test
@@ -123,7 +144,7 @@ class EquipmentAvailabilityTest {
         loans.addLoan(LOAN);
         loans.deleteLoan("delete-loan id/001");
         assertFalse(camera.isLoaned());
-        assertEquals(0, LoanHandler.numLoans);
+        assertEquals(0, loans.getLoanCount());
         loans.addLoan(LOAN);
         assertTrue(camera.isLoaned());
     }
@@ -135,7 +156,7 @@ class EquipmentAvailabilityTest {
         Loan current = loans.addLoan(LOAN);
         deleted.setReturned(true);
         assertTrue(camera.isLoaned());
-        assertSame(current, LoanHandler.loans.getFirst());
+        assertSame(current, loans.getLoanList().getFirst());
         deleted.setReturned(false);
         assertTrue(camera.isLoaned());
     }
@@ -146,7 +167,7 @@ class EquipmentAvailabilityTest {
         loans.addLoan(LOAN.replace("01-10-26", "02-10-26"));
         loans.deleteLoan("delete-loan id/001 issued/01-10-26");
         assertTrue(camera.isLoaned());
-        assertEquals(1, LoanHandler.numLoans);
+        assertEquals(1, loans.getLoanCount());
     }
 
     @Test
@@ -155,7 +176,7 @@ class EquipmentAvailabilityTest {
         assertThrows(seedu.snap.exceptions.LoanDeletionUnsuccessful.class,
                 () -> loans.deleteLoan("delete-loan id/999"));
         assertTrue(camera.isLoaned());
-        assertSame(original, LoanHandler.loans.getFirst());
+        assertSame(original, loans.getLoanList().getFirst());
     }
 
     @Test
@@ -173,7 +194,7 @@ class EquipmentAvailabilityTest {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         try (PrintStream captured = new PrintStream(output, true, StandardCharsets.UTF_8)) {
             System.setOut(captured);
-            EqmManager manager = new EqmManager();
+            EqmManager manager = new EqmManager(temporaryDirectory);
             manager.executeInput(LOAN);
             manager.executeInput("add i/Camera id/001 type/camera cond/1");
             manager.executeInput(LOAN);

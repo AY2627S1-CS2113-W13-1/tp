@@ -91,11 +91,12 @@ public class LoanHandler {
                 throw new IOException("Multiple active loans found for item ID " + loan.getItemId() + ".");
             }
             if (equipment != null) {
-                try {
-                    loan.attachEquipment(findStoredEquipment(loan.getItemId()));
-                } catch (LoanAdditionUnsuccessful e) {
-                    throw new IOException("Could not associate saved loan for item ID "
-                            + loan.getItemId() + ": " + e.getMessage(), e);
+                Equipment item = findStoredEquipment(loan.getItemId());
+                if (item != null) {
+                    loan.attachEquipment(item);
+                } else if (!loan.isReturned()) {
+                    logger.log(Level.WARNING, "Saved active loan for item ID {0} has no equipment yet.",
+                            loan.getItemId());
                 }
             }
         }
@@ -385,19 +386,28 @@ public class LoanHandler {
         return false;
     }
 
+    /** Associates a newly loaded equipment item with any matching active loan. */
+    public void synchronizeEquipment(Equipment item) {
+        assert item != null : "Equipment synchronization requires an item";
+        for (Loan loan : loans) {
+            if (loan.getItemId().equals(item.getItemId()) && !loan.isReturned()) {
+                loan.attachEquipment(item);
+                logger.log(Level.INFO, "Reconnected active loan for item ID {0}.", item.getItemId());
+                return;
+            }
+        }
+    }
+
     /** Finds a uniquely identified equipment item while restoring saved loan associations. */
-    private Equipment findStoredEquipment(String itemId) throws LoanAdditionUnsuccessful {
+    private Equipment findStoredEquipment(String itemId) throws IOException {
         Equipment match = null;
         for (Equipment item : equipment.getEquipmentList()) {
             if (item.getItemId().equals(itemId)) {
                 if (match != null) {
-                    throw new LoanAdditionUnsuccessful("Item ID " + itemId + " is not unique.");
+                    throw new IOException("Item ID " + itemId + " is not unique.");
                 }
                 match = item;
             }
-        }
-        if (match == null) {
-            throw new LoanAdditionUnsuccessful("Item ID " + itemId + " does not exist.");
         }
         return match;
     }

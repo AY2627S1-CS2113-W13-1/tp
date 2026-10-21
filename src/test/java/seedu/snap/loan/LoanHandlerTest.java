@@ -32,6 +32,7 @@ public class LoanHandlerTest {
 
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
     private PrintStream originalOutput;
+    private EquipmentHandler equipment;
     @TempDir
     private Path temporaryDirectory;
 
@@ -43,8 +44,6 @@ public class LoanHandlerTest {
         originalOutput = System.out;
         System.setOut(new PrintStream(output, true, StandardCharsets.UTF_8));
     }
-
-    private EquipmentHandler equipment;
 
     /*
      * In-memory availability tests use the fixture inventory above. Persistence tests use

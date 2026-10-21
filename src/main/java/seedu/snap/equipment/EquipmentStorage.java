@@ -40,7 +40,16 @@ final class EquipmentStorage {
                 continue;
             }
             try {
-                Equipment equipment = EquipmentHandler.parseEquipment(line);
+                int stateMarker = line.lastIndexOf(" loaned/");
+                String equipmentRecord = stateMarker < 0 ? line : line.substring(0, stateMarker);
+                Equipment equipment = EquipmentHandler.parseEquipment(equipmentRecord);
+                if (stateMarker >= 0) {
+                    String state = line.substring(stateMarker + " loaned/".length());
+                    if (!state.equals("true") && !state.equals("false")) {
+                        throw new IllegalArgumentException("Expected loaned/true or loaned/false.");
+                    }
+                    equipment.setLoaned(Boolean.parseBoolean(state));
+                }
                 if (!ids.add(equipment.getItemId())) {
                     throw new IllegalArgumentException("Duplicate equipment ID " + equipment.getItemId() + ".");
                 }
@@ -83,6 +92,7 @@ final class EquipmentStorage {
         return "add i/" + equipment.getItemName()
                 + " id/" + equipment.getItemId()
                 + " type/" + equipment.getType()
-                + " cond/" + equipment.getCondition();
+                + " cond/" + equipment.getCondition()
+                + " loaned/" + equipment.isLoaned();
     }
 }
