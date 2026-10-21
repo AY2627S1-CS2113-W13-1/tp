@@ -30,7 +30,35 @@ class EquipmentAdditionTest {
     }
 
     @Test
-    void parseEquipment_prefixTextInsideWords_preservesNames()
+    void addEquipment_withoutRemarks_usesEmptyDefault() throws EquipmentAdditionUnsuccessful {
+        Equipment item = new EquipmentHandler().addEquipment(command("Camera", "001", "camera", "1"));
+
+        assertEquals("", item.getRemarks());
+    }
+
+    @Test
+    void addEquipment_withRemarks_preservesFreeFormText() throws EquipmentAdditionUnsuccessful {
+        String remarks = "Lens has a small scratch; handle with care.";
+
+        Equipment item = new EquipmentHandler().addEquipment(
+                command("Lens", "001", "lens", "3", remarks));
+
+        assertEquals(remarks, item.getRemarks());
+    }
+
+    @Test
+    void addEquipment_invalidRemarks_rejectsWithoutChangingInventory() throws EquipmentAdditionUnsuccessful {
+        EquipmentHandler handler = seededInventory();
+        String expectedMessage = "Remarks must contain at most 200 characters and no line breaks.";
+
+        assertRejected(handler, command("Tripod", "002", "tripod", "5", "r".repeat(201)),
+                expectedMessage);
+        assertRejected(handler, command("Tripod", "002", "tripod", "5", "line one\nline two"),
+                expectedMessage);
+    }
+
+    @Test
+    void parseEquipment_prefixTextInsideWords_preservesNamesAndTypes()
             throws EquipmentAdditionUnsuccessful {
         String[] values = {
             "mini/camera", "fluid/head", "prototype/body", "second/hand",
@@ -194,7 +222,13 @@ class EquipmentAdditionTest {
 
     /** Builds the documented command format while keeping boundary values readable in tests. */
     private String command(String name, String id, String type, String condition) {
-        return "add i/" + name + " id/" + id + " type/" + type + " cond/" + condition;
+        return command(name, id, type, condition, "");
+    }
+
+    /** Builds an add command with optional remarks. */
+    private String command(String name, String id, String type, String condition, String remarks) {
+        String remarkField = remarks.isEmpty() ? "" : " remarks/" + remarks;
+        return "add i/" + name + " id/" + id + " type/" + type + " cond/" + condition + remarkField;
     }
 
     /** Checks the error reason and protects the inventory's contents and order on every rejection. */

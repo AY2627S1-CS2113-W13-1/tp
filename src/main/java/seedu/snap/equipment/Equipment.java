@@ -18,6 +18,8 @@ public abstract class Equipment {
     public static final int MIN_CONDITION = 1;
     /** Inclusive upper bound of the equipment condition scale. */
     public static final int MAX_CONDITION = 10;
+    /** Maximum number of characters allowed in a single-line equipment remark. */
+    public static final int MAX_REMARKS_LENGTH = 200;
     private static final String ITEM_ID_PATTERN = "[0-9]{3}";
     private static final String RESERVED_ITEM_ID = "000";
     private static final Pattern BLANK_TEXT = Pattern.compile("\\s*", Pattern.UNICODE_CHARACTER_CLASS);
@@ -27,6 +29,8 @@ public abstract class Equipment {
     private final String itemId;
     private int condition;
     private boolean isLoaned = false;
+    /** Optional single-line remarks retained with this equipment record. */
+    private final String remarks;
 
     /**
      * Creates an equipment item.
@@ -37,9 +41,30 @@ public abstract class Equipment {
      * @param condition Condition of the equipment from 1 to 10.
      */
     protected Equipment(String name, String id, int condition) {
+        this(name, id, condition, "");
+    }
+
+    /**
+     * Creates an equipment item with optional remarks.
+     *
+     * @param name Name of the equipment.
+     * @param id Three-digit equipment ID.
+     * @param condition Condition of the equipment from 1 to 10.
+     * @param remarks Optional single-line remarks, up to 200 characters.
+     */
+    protected Equipment(String name, String id, int condition, String remarks) {
+        assert hasText(name) && name.length() <= MAX_NAME_LENGTH
+                : "Equipment name must contain 1 to 100 characters";
+        assert isValidItemId(id) : "Equipment ID must be from 001 to 999";
+        assert condition >= MIN_CONDITION && condition <= MAX_CONDITION
+                : "Equipment condition must be from 1 to 10";
+        assert remarks != null && remarks.length() <= MAX_REMARKS_LENGTH
+                && !remarks.contains("\n") && !remarks.contains("\r")
+                : "Equipment remarks must be a single line of at most 200 characters";
         this.itemName = name;
         this.itemId = id;
         this.condition = condition;
+        this.remarks = remarks.trim();
         assert hasValidState() : "Equipment fields must contain valid values.";
     }
 
@@ -117,6 +142,17 @@ public abstract class Equipment {
     private boolean hasValidState() {
         return hasText(itemName) && itemName.length() <= MAX_NAME_LENGTH
                 && isValidItemId(itemId)
-                && condition >= MIN_CONDITION && condition <= MAX_CONDITION;
+                && condition >= MIN_CONDITION && condition <= MAX_CONDITION
+                && remarks != null && remarks.length() <= MAX_REMARKS_LENGTH
+                && !remarks.contains("\n") && !remarks.contains("\r");
+    }
+
+    /**
+     * Returns the optional remarks associated with this equipment.
+     *
+     * @return remarks, or an empty string when none were provided
+     */
+    public String getRemarks() {
+        return remarks;
     }
 }

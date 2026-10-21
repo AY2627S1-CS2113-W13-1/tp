@@ -31,6 +31,7 @@ public class EquipmentHandler {
     private static final String CONDITION_MARKER = "cond/";
     private static final String DAMAGE_MARKER = "damage/";
     private static final String[] DETAIL_MARKERS = {"sensor/", "zoom/", "capacity/", "thread/", DAMAGE_MARKER};
+    private static final String REMARKS_MARKER = "remarks/";
 
     /** Optional command fields after the common equipment fields. */
     private record EquipmentDetails(String attribute, String damage) {
@@ -186,7 +187,7 @@ public class EquipmentHandler {
      * @throws EquipmentAdditionUnsuccessful when the command is invalid
      */
     static Equipment parseEquipment(String userInput) throws EquipmentAdditionUnsuccessful {
-        if (userInput == null || !userInput.matches("(?U)" + ADD_COMMAND + "(?:\\s.*)?")) {
+        if (userInput == null || !userInput.matches("(?sU)" + ADD_COMMAND + "(?:\\s.*)?")) {
             throw new EquipmentAdditionUnsuccessful(ADD_FORMAT_ERROR);
         }
         String addDetails = EquipmentFields.trimWhitespace(userInput.substring(ADD_COMMAND.length()));
@@ -201,25 +202,51 @@ public class EquipmentHandler {
         String id = EquipmentFields.trimWhitespace(addDetails.substring(idIndex + ID_MARKER.length(), typeIndex));
         String type = EquipmentFields.trimWhitespace(
                 addDetails.substring(typeIndex + TYPE_MARKER.length(), conditionIndex));
-        int detailsIndex = findDetailsStart(addDetails, conditionIndex + CONDITION_MARKER.length());
-        int conditionEnd = detailsIndex == -1 ? addDetails.length() : detailsIndex;
+        int conditionValueStart = conditionIndex + CONDITION_MARKER.length();
+        int remarksIndex = findFieldMarker(addDetails, REMARKS_MARKER, conditionValueStart);
+        int detailsIndex = findDetailsStart(addDetails, conditionValueStart, remarksIndex);
+        if (remarksIndex != -1 && detailsIndex != -1 && remarksIndex < detailsIndex) {
+            throw new EquipmentAdditionUnsuccessful(
+                    "Remarks must appear after optional equipment details.");
+        }
+        int conditionEnd = firstFieldIndex(detailsIndex, remarksIndex, addDetails.length());
         String condition = EquipmentFields.trimWhitespace(
                 addDetails.substring(conditionIndex + CONDITION_MARKER.length(), conditionEnd));
-        String details = detailsIndex == -1 ? "" : EquipmentFields.trimWhitespace(addDetails.substring(detailsIndex));
+        int detailsEnd = remarksIndex == -1 ? addDetails.length() : remarksIndex;
+        String details = detailsIndex == -1
+                ? ""
+                : EquipmentFields.trimWhitespace(addDetails.substring(detailsIndex, detailsEnd));
+        String remarks = remarksIndex == -1
+                ? ""
+                : EquipmentFields.trimWhitespace(addDetails.substring(remarksIndex + REMARKS_MARKER.length()));
 
-        return createValidatedEquipment(itemName, id, type, condition, details);
+        return createValidatedEquipment(itemName, id, type, condition, details, remarks);
     }
 
     /** Finds optional fields after the condition, leaving existing names containing these prefixes valid. */
-    private static int findDetailsStart(String details, int startIndex) {
+    private static int findDetailsStart(String details, int startIndex, int endIndex) {
         int firstIndex = -1;
         for (String marker : DETAIL_MARKERS) {
             int index = findFieldMarker(details, marker, startIndex);
+            if (index != -1 && endIndex != -1 && index >= endIndex) {
+                index = -1;
+            }
             if (index != -1 && (firstIndex == -1 || index < firstIndex)) {
                 firstIndex = index;
             }
         }
         return firstIndex;
+    }
+
+    /** Returns the earliest optional-field index, or the supplied end when neither field exists. */
+    private static int firstFieldIndex(int firstIndex, int secondIndex, int endIndex) {
+        if (firstIndex == -1) {
+            return secondIndex == -1 ? endIndex : secondIndex;
+        }
+        if (secondIndex == -1) {
+            return firstIndex;
+        }
+        return Math.min(firstIndex, secondIndex);
     }
 
     /** Finds the last ID prefix before the type field, allowing earlier id/card-like name text. */
@@ -256,8 +283,9 @@ public class EquipmentHandler {
 
     /** Validates extracted values before construction, preserving field-specific error messages. */
     private static Equipment createValidatedEquipment(String itemName, String id, String type,
-            String conditionString, String detailsString) throws EquipmentAdditionUnsuccessful {
+            String conditionString, String detailsString, String remarks) throws EquipmentAdditionUnsuccessful {
         validateEquipmentDetails(itemName, id, type, conditionString);
+        validateRemarks(remarks);
         int condition = Integer.parseInt(conditionString);
 
         String normalisedType = type.toLowerCase(Locale.ROOT);
@@ -272,13 +300,13 @@ public class EquipmentHandler {
         EquipmentDetails details = parseDetails(detailsString, attributeMarker);
         return switch (normalisedType) {
         case "camera" -> new Camera(itemName, id, condition, details.attribute(),
-                parseDamage(details.damage(), Camera.CameraDamage.class, normalisedType));
+                parseDamage(details.damage(), Camera.CameraDamage.class, normalisedType), remarks);
         case "lens" -> new Lens(itemName, id, condition, details.attribute(),
-                parseDamage(details.damage(), Lens.LensDamage.class, normalisedType));
+                parseDamage(details.damage(), Lens.LensDamage.class, normalisedType), remarks);
         case "battery" -> new Battery(itemName, id, condition, details.attribute(),
-                parseDamage(details.damage(), Battery.BatteryDamage.class, normalisedType));
+                parseDamage(details.damage(), Battery.BatteryDamage.class, normalisedType), remarks);
         case "tripod" -> new Tripod(itemName, id, condition, details.attribute(),
-                parseDamage(details.damage(), Tripod.TripodDamage.class, normalisedType));
+                parseDamage(details.damage(), Tripod.TripodDamage.class, normalisedType), remarks);
         default -> throw new AssertionError("Validated equipment type must have a subclass");
         };
     }
@@ -297,6 +325,15 @@ public class EquipmentHandler {
         }
         if (!conditionString.matches("10|[1-9]")) {
             throw new EquipmentAdditionUnsuccessful("Condition must be a whole number from 1 to 10.");
+        }
+    }
+
+    /** Validates remarks before they are stored in an equipment object or written to disk. */
+    private static void validateRemarks(String remarks) throws EquipmentAdditionUnsuccessful {
+        if (remarks == null || remarks.length() > Equipment.MAX_REMARKS_LENGTH
+                || remarks.contains("\n") || remarks.contains("\r")) {
+            throw new EquipmentAdditionUnsuccessful(
+                    "Remarks must contain at most 200 characters and no line breaks.");
         }
     }
 
@@ -397,15 +434,15 @@ public class EquipmentHandler {
 
     /** Prints matching items in their existing order using the normal equipment table. */
     public void viewEquipment(List<Equipment> equipmentList) {
-        System.out.printf("%-4s %-24s | %-6s | %-15s | %-9s | %-10s | %s%n",
-                "No.", "NAME", "ID", "TYPE", "CONDITION", "STATUS", "DETAILS");
+        System.out.printf("%-4s %-24s | %-6s | %-15s | %-9s | %-10s | %-30s | %-30s%n",
+                "No.", "NAME", "ID", "TYPE", "CONDITION", "STATUS", "DETAILS", "REMARKS");
         logger.log(Level.INFO, "Viewing {0} equipment item(s)", equipmentList.size());
         for (int index = 0; index < equipmentList.size(); index++) {
             Equipment item = equipmentList.get(index);
             assert item != null : "Equipment list must not contain null items";
-            System.out.printf("%-4s %-24s | %-6s | %-15s | %-9d | %-10s | %s%n",
+            System.out.printf("%-4s %-24s | %-6s | %-15s | %-9d | %-10s | %-30s | %-30s%n",
                     (index + 1) + ")", item.getItemName(), item.getItemId(), item.getType(), item.getCondition(),
-                    item.isLoaned() ? "Loaned" : "Available", item.getDetails());
+                    item.isLoaned() ? "Loaned" : "Available", item.getDetails(), item.getRemarks());
         }
     }
 
@@ -487,7 +524,7 @@ public class EquipmentHandler {
     private void saveUpdate(Equipment target, String name, int condition)
             throws EquipmentAdditionUnsuccessful, EquipmentUpdateUnsuccessful {
         Equipment proposed = createValidatedEquipment(name, target.getItemId(), target.getType(),
-                Integer.toString(condition), target.getDetails());
+                Integer.toString(condition), target.getDetails(), target.getRemarks());
         ArrayList<Equipment> updatedInventory = new ArrayList<>(inventory);
         updatedInventory.set(inventory.indexOf(target), proposed);
         try {

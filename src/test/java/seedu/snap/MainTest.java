@@ -147,8 +147,8 @@ class MainTest {
     /** Formats one complete row so restart checks associate each status with its equipment ID. */
     private String equipmentRow(String number, String name, String id, String type, int condition,
             String status, String details) {
-        return String.format("%-4s %-24s | %-6s | %-15s | %-9d | %-10s | %s%n",
-                number, name, id, type, condition, status, details);
+        return String.format("%-4s %-24s | %-6s | %-15s | %-9d | %-10s | %-30s | %-30s%n",
+                number, name, id, type, condition, status, details, "");
     }
 
     @Test

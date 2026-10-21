@@ -40,7 +40,12 @@ public class Battery extends Equipment {
      * @param damage Damage recorded for the battery.
      */
     public Battery(String name, String id, int condition, String capacity, BatteryDamage damage) {
-        super(name, id, condition);
+        this(name, id, condition, capacity, damage, "");
+    }
+
+    /** Creates a battery with type-specific details and optional remarks. */
+    public Battery(String name, String id, int condition, String capacity, BatteryDamage damage, String remarks) {
+        super(name, id, condition, remarks);
         assert capacity != null && !capacity.isBlank() && capacity.length() <= 100
                 && !capacity.matches("(?s).*\\R.*")
                 : "Battery capacity must contain 1 to 100 characters without line breaks.";
