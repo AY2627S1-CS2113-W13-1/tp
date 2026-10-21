@@ -239,6 +239,27 @@ class LoanIdPersistenceTest {
     }
 
     @Test
+    void failedEquipmentSave_rollsBackLoanFileStateAndCounter() throws Exception {
+        Path equipmentFile = temporaryDirectory.resolve("equipment.txt");
+        Path loanFile = temporaryDirectory.resolve("loans.txt");
+        EquipmentHandler persistentEquipment = new EquipmentHandler(equipmentFile);
+        Equipment persistentCamera = persistentEquipment.addEquipment(
+                "add i/Camera id/001 type/camera cond/1");
+        Files.delete(equipmentFile);
+        Files.createDirectory(equipmentFile);
+        Files.writeString(equipmentFile.resolve("keep.txt"), "keep equipment data");
+        LoanHandler handler = new LoanHandler(persistentEquipment, loanFile);
+
+        assertThrows(LoanAdditionUnsuccessful.class, () -> handler.addLoan(FIRST_LOAN));
+
+        assertEquals(0, handler.getLoanCount());
+        assertEquals("001", handler.getNextLoanId());
+        assertNull(persistentCamera.getLoanId());
+        assertFalse(Files.exists(loanFile));
+        assertEquals("keep equipment data", Files.readString(equipmentFile.resolve("keep.txt")));
+    }
+
+    @Test
     void viewAllLoans_displaysLoanId() throws Exception {
         LoanHandler handler = new LoanHandler(equipment);
         handler.addLoan(FIRST_LOAN);

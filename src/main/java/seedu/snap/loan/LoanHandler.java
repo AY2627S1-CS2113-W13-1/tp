@@ -1,6 +1,7 @@
 package seedu.snap.loan;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -180,6 +181,8 @@ public class LoanHandler {
         assert loan != null : "Created loan must not be null.";
         ArrayList<Loan> updatedLoans = new ArrayList<>(loans);
         updatedLoans.add(loan);
+        boolean hadLoanFile = storageFile != null && Files.exists(storageFile);
+        boolean hadSequenceFile = sequenceFile != null && Files.exists(sequenceFile);
         String previousLoanId = item == null ? null : item.getLoanId();
         if (item != null) {
             item.setLoanId(loanId);
@@ -198,6 +201,7 @@ public class LoanHandler {
             } catch (IOException rollbackException) {
                 e.addSuppressed(rollbackException);
             }
+            removeNewStorageFiles(hadLoanFile, hadSequenceFile);
             logger.log(Level.WARNING, "Loan addition could not be saved", e);
             throw new LoanAdditionUnsuccessful("Could not save loan: " + e.getMessage());
         }
@@ -513,6 +517,20 @@ public class LoanHandler {
     /** Returns the next loan identifier in canonical three-digit form. */
     private static String formatLoanId(int loanNumber) {
         return String.format("%03d", loanNumber);
+    }
+
+    /** Removes files created only by an addition that failed after loan persistence succeeded. */
+    private void removeNewStorageFiles(boolean hadLoanFile, boolean hadSequenceFile) {
+        try {
+            if (!hadLoanFile && storageFile != null && Files.isRegularFile(storageFile)) {
+                Files.deleteIfExists(storageFile);
+            }
+            if (!hadSequenceFile && sequenceFile != null && Files.isRegularFile(sequenceFile)) {
+                Files.deleteIfExists(sequenceFile);
+            }
+        } catch (IOException rollbackException) {
+            logger.log(Level.WARNING, "Could not remove files created by a failed loan addition.", rollbackException);
+        }
     }
 
     /** Returns the default sequence file beside a loan storage file. */
