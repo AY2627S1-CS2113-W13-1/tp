@@ -9,11 +9,14 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 
 /** Loads and saves equipment records in a readable UTF-8 text file. */
 final class EquipmentStorage {
+    private static final Logger logger = Logger.getLogger(EquipmentStorage.class.getName());
     private EquipmentStorage() {
         // Utility class; do not instantiate.
     }
@@ -40,15 +43,28 @@ final class EquipmentStorage {
                 continue;
             }
             try {
-                int stateMarker = line.lastIndexOf(" loaned/");
+                int loanIdMarker = line.lastIndexOf(" loanId/");
+                int legacyStateMarker = line.lastIndexOf(" loaned/");
+                int stateMarker = Math.max(loanIdMarker, legacyStateMarker);
                 String equipmentRecord = stateMarker < 0 ? line : line.substring(0, stateMarker);
                 Equipment equipment = EquipmentHandler.parseEquipment(equipmentRecord);
-                if (stateMarker >= 0) {
-                    String state = line.substring(stateMarker + " loaned/".length());
+                if (loanIdMarker >= 0) {
+                    String loanId = line.substring(loanIdMarker + " loanId/".length());
+                    if (!loanId.equals("none") && !isValidLoanId(loanId)) {
+                        throw new IllegalArgumentException("Expected loanId/NNN or loanId/none.");
+                    }
+                    equipment.setLoanId(loanId.equals("none") ? null : loanId);
+                } else if (legacyStateMarker >= 0) {
+                    String state = line.substring(legacyStateMarker + " loaned/".length());
                     if (!state.equals("true") && !state.equals("false")) {
                         throw new IllegalArgumentException("Expected loaned/true or loaned/false.");
                     }
-                    equipment.setLoaned(Boolean.parseBoolean(state));
+                    if (Boolean.parseBoolean(state)) {
+                        // Legacy records do not identify which loan owns the item. The loan file is
+                        // authoritative and LoanHandler reconciles this state after both files load.
+                        logger.log(Level.WARNING, "Legacy equipment record for item ID {0} says loaned=true; "
+                                + "waiting for an active loan ID during reconciliation.", equipment.getItemId());
+                    }
                 }
                 if (!ids.add(equipment.getItemId())) {
                     throw new IllegalArgumentException("Duplicate equipment ID " + equipment.getItemId() + ".");
@@ -93,6 +109,11 @@ final class EquipmentStorage {
                 + " id/" + equipment.getItemId()
                 + " type/" + equipment.getType()
                 + " cond/" + equipment.getCondition()
-                + " loaned/" + equipment.isLoaned();
+                + " loanId/" + (equipment.getLoanId() == null ? "none" : equipment.getLoanId());
+    }
+
+    /** Returns whether an equipment record contains a usable persisted loan identifier. */
+    private static boolean isValidLoanId(String loanId) {
+        return loanId.matches("[0-9]{3}") && !loanId.equals("000");
     }
 }

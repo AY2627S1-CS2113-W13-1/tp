@@ -43,7 +43,8 @@ public class EqmManager {
         }
         this.parser = new Parser();
         this.equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
-        this.loans = new LoanHandler(this.equipment, dataDirectory.resolve("loans.txt"));
+        this.loans = new LoanHandler(this.equipment, dataDirectory.resolve("loans.txt"),
+                dataDirectory.resolve("loan-sequence.txt"));
         List<String> loadErrors = new ArrayList<>();
         try {
             equipment.loadFromStorage();
@@ -73,17 +74,18 @@ public class EqmManager {
         }
         if (input.equals("bye")) {
             isRunning = !saveBeforeExit();
-        } else if (input.equals("delete-loan") || input.startsWith("delete-loan ")){
-            try{
+        } else if (input.equals("delete-loan") || input.startsWith("delete-loan ")) {
+            try {
                 Loan deletedLoan = loans.deleteLoan(input);
-                System.out.println("Loan for item ID " + deletedLoan.getItemId() + " deleted successfully.");
-            } catch (LoanDeletionUnsuccessful e){
+                System.out.println("Loan ID " + deletedLoan.getLoanId() + " for item ID "
+                        + deletedLoan.getItemId() + " deleted successfully.");
+            } catch (LoanDeletionUnsuccessful e) {
                 System.out.println(e.getMessage());
             }
         } else if (input.equals("delete") || input.startsWith("delete ")) {
             try {
                 Equipment target = equipment.getEquipmentForDeletion(input);
-                if (loans.hasActiveLoanForItem(target.getItemId())) {
+                if (target.getLoanId() != null) {
                     throw new EquipmentDeletionUnsuccessful("Cannot delete item ID " + target.getItemId()
                             + " while it has an active loan.");
                 }

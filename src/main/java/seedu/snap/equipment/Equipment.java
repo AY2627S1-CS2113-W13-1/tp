@@ -1,5 +1,6 @@
 package seedu.snap.equipment;
 
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -12,7 +13,8 @@ public class Equipment {
     private final String itemId;
     private final String type;
     private final int condition;
-    private boolean isLoaned = false;
+    /** The active loan identifier, or null when the item is available. */
+    private String loanId;
 
     /**
      * Creates an equipment item.
@@ -34,6 +36,7 @@ public class Equipment {
         this.itemId = id;
         this.type = type;
         this.condition = condition;
+        this.loanId = null;
     }
 
     public String getItemName() {
@@ -50,25 +53,35 @@ public class Equipment {
 
     /** Returns whether this item currently has an active loan. */
     public boolean isLoaned() {
-        return isLoaned;
+        return loanId != null;
     }
 
-    /** Updates availability when an associated loan changes status. */
-    public void setLoaned(boolean isLoaned) {
-        assert itemId != null : "Equipment must have an ID before its availability changes";
-        if (this.isLoaned == isLoaned) {
+    /** Returns the active loan identifier, or null when this item is available. */
+    public String getLoanId() {
+        return loanId;
+    }
+
+    /** Updates the active loan identifier and therefore the equipment availability. */
+    public void setLoanId(String loanId) {
+        assert loanId == null || isValidLoanId(loanId) : "Equipment loan ID must be three digits.";
+        if (Objects.equals(this.loanId, loanId)) {
             logger.log(Level.FINE, "Equipment with item ID {0} remains {1}.",
-                    new Object[]{itemId, isLoaned ? "loaned" : "available"});
+                    new Object[]{itemId, loanId == null ? "available" : "loaned"});
             return;
         }
-        boolean previousState = this.isLoaned;
-        this.isLoaned = isLoaned;
-        logger.log(Level.INFO, "Equipment with item ID {0} changed from {1} to {2}.",
-                new Object[]{itemId, previousState ? "loaned" : "available",
-                    isLoaned ? "loaned" : "available"});
+        String previousLoanId = this.loanId;
+        this.loanId = loanId;
+        logger.log(Level.INFO, "Equipment with item ID {0} changed loan ID from {1} to {2}.",
+                new Object[]{itemId, previousLoanId == null ? "none" : previousLoanId,
+                    loanId == null ? "none" : loanId});
     }
 
     public int getCondition() {
         return condition;
+    }
+
+    /** Returns whether a loan identifier has the canonical three-digit format. */
+    private static boolean isValidLoanId(String loanId) {
+        return loanId.matches("[0-9]{3}") && !loanId.equals("000");
     }
 }
