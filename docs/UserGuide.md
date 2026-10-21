@@ -62,16 +62,16 @@ Format: `list loans`
 
 This displays all recorded loans with their item ID, borrower ID, issue date, and due date.
 
-## Deleting a loan: `delete-loan`
+## Deleting a loan: `delete loan`
 
-Format: `delete-loan id/[ITEM ID] [issued/DD-MM-YY]`
+Format: `delete loan/[ITEM ID] [issued/DD-MM-YY]`
 
-Example: `delete-loan id/001`
+Example: `delete loan/001`
 
 Use the optional issue date when more than one loan exists for the same item ID:
 
 ```text
-delete-loan id/001 issued/01-10-26
+delete loan/001 issued/01-10-26
 ```
 
 If no matching loan exists, or if the command does not identify a unique loan, the application reports an error and
@@ -112,7 +112,7 @@ the application reports the problem and stops.
 | Add equipment | `add i/[ITEM] id/[ITEM ID] type/[TYPE] cond/[CONDITION]` |
 | Delete equipment | `delete item/[ITEM ID]` |
 | Add loan | `loan id/[ITEM ID] b/[BORROWER ID] issued/[DD-MM-YY] due/[DD-MM-YY]` |
-| Delete loan | `delete-loan id/[ITEM ID] [issued/DD-MM-YY]` |
+| Delete loan | `delete loan/[ITEM ID] [issued/DD-MM-YY]` |
 | List equipment | `list` |
 | List loans | `list loans` |
 | Exit | `bye` |
