@@ -40,13 +40,24 @@ class EquipmentStorageTest {
     }
 
     @Test
-    void load_persistsLoanedState() throws IOException {
+    void load_legacyLoanedState_waitsForLoanReconciliation() throws IOException {
         Path file = temporaryDirectory.resolve("equipment.txt");
         Files.writeString(file, "add i/Camera id/001 type/camera cond/1 loaned/true\n");
 
         Equipment equipment = EquipmentStorage.load(file).getFirst();
 
+        assertTrue(!equipment.isLoaned());
+    }
+
+    @Test
+    void load_persistsLoanIdState() throws IOException {
+        Path file = temporaryDirectory.resolve("equipment.txt");
+        Files.writeString(file, "add i/Camera id/001 type/camera cond/1 loanId/021\n");
+
+        Equipment equipment = EquipmentStorage.load(file).getFirst();
+
         assertTrue(equipment.isLoaned());
+        assertEquals("021", equipment.getLoanId());
     }
 
     @Test

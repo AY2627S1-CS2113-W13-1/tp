@@ -1,6 +1,8 @@
 package seedu.snap.equipment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -17,9 +19,32 @@ class EquipmentTest {
         assertEquals("001", first.getItemId());
         assertEquals("camera", first.getType());
         assertEquals(1, first.getCondition());
+        assertNull(first.getLoanId());
+        assertFalse(first.isLoaned());
         assertEquals(100, last.getItemName().length());
         assertEquals("999", last.getItemId());
         assertEquals(10, last.getCondition());
+    }
+
+    @Test
+    void loanId_transitionsKeepCompatibilityAvailabilityQueryDerived() {
+        Equipment equipment = new Equipment("Camera", "001", "camera", 1);
+
+        equipment.setLoanId("021");
+        assertEquals("021", equipment.getLoanId());
+        assertTrue(equipment.isLoaned());
+
+        equipment.setLoanId(null);
+        assertNull(equipment.getLoanId());
+        assertFalse(equipment.isLoaned());
+    }
+
+    @Test
+    void loanId_invalidValuesFailAssertions() {
+        Equipment equipment = new Equipment("Camera", "001", "camera", 1);
+
+        assertThrows(AssertionError.class, () -> equipment.setLoanId("01"));
+        assertThrows(AssertionError.class, () -> equipment.setLoanId("000"));
     }
 
     @Test

@@ -61,15 +61,15 @@ class MainTest {
                 + "loan id/001 b/001 issued/15-10-26 due/16-10-26\n"
                 + "delete-loan id/001\ndelete-loan id/999\nbye\n", true);
         assertTrue(output.contains("Equipment added successfully."));
-        assertTrue(output.contains("Loan for item ID 001 deleted successfully."));
-        assertTrue(output.contains("No loan found for item ID 999."));
+        assertTrue(output.contains("Loan ID 001 for item ID 001 deleted successfully."));
+        assertTrue(output.contains("No loan found for loan ID 999."));
         assertFalse(output.contains("Added equipment with item ID"));
         assertFalse(output.contains("Deleted loan for item ID"));
         assertFalse(output.contains("WARNING:"));
         assertFalse(output.contains("INFO:"));
         String logs = Files.readString(temporaryDirectory.resolve("logs/snap.log.0"));
-        for (String message : new String[]{"Added equipment with item ID 001", "Deleted loan for item ID 001",
-            "No loan found for item ID 999"}) {
+        for (String message : new String[]{"Added equipment with item ID 001", "Deleted loan 001 for item ID 001",
+            "No loan found for loan ID 999"}) {
             assertEquals(1L, logs.lines().filter(line -> line.contains(message)).count());
         }
     }
@@ -86,7 +86,7 @@ class MainTest {
         assertTrue(Files.readString(temporaryDirectory.resolve("data/equipment.txt"))
                 .contains("add i/Camera id/001 type/camera cond/1"));
         assertTrue(Files.readString(temporaryDirectory.resolve("data/loans.txt"))
-                .contains("loan id/001 b/002 issued/01-10-26 due/02-10-26 returned/false"));
+                .contains("loan loanId/001 id/001 b/002 issued/01-10-26 due/02-10-26 returned/false"));
 
         String secondRun = runApplication("list\nlist loans\nbye\n", true);
 

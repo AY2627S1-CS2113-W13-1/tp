@@ -126,7 +126,7 @@ public class LoanHandlerTest {
                 + "Equipment with item ID 002 deleted successfully." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
         assertTrue(Files.readString(temporaryDirectory.resolve("loans.txt"))
-                .contains("loan id/001 b/002 issued/01-10-26 due/02-10-26 returned/false"));
+                .contains("loan loanId/001 id/001 b/002 issued/01-10-26 due/02-10-26 returned/false"));
     }
 
     @Test
@@ -142,7 +142,7 @@ public class LoanHandlerTest {
         assertEquals("Equipment with item ID 001 deleted successfully." + System.lineSeparator()
                 + "Equipment added successfully." + System.lineSeparator(), output.toString(StandardCharsets.UTF_8));
         assertTrue(Files.readString(temporaryDirectory.resolve("loans.txt"))
-                .contains("loan id/001 b/002 issued/01-10-26 due/02-10-26 returned/true"));
+                .contains("loan loanId/001 id/001 b/002 issued/01-10-26 due/02-10-26 returned/true"));
     }
 
     @Test
@@ -172,7 +172,7 @@ public class LoanHandlerTest {
         manager.executeInput("delete item/001");
         manager.executeInput("add i/Replacement id/001 type/audio cond/3");
 
-        assertEquals("Loan for item ID 001 deleted successfully." + System.lineSeparator()
+        assertEquals("Loan ID 001 for item ID 001 deleted successfully." + System.lineSeparator()
                 + "Equipment with item ID 001 deleted successfully." + System.lineSeparator()
                 + "Equipment added successfully." + System.lineSeparator(), output.toString(StandardCharsets.UTF_8));
         assertTrue(Files.readString(temporaryDirectory.resolve("loans.txt")).isBlank());
@@ -214,7 +214,7 @@ public class LoanHandlerTest {
                         "delete-loan id/999"));
 
         assertEquals(
-                "No loan found for item ID 999.",
+                "No loan found for loan ID 999.",
                 exception.getMessage());
         assertEquals(1, loanHandler.getLoanCount());
         assertEquals(
@@ -234,7 +234,7 @@ public class LoanHandlerTest {
                         "delete-loan id/01"));
 
         assertEquals(
-                "Invalid item ID \"01\". Item ID must be exactly three digits, e.g. 001.",
+                "Invalid loan ID \"01\". Loan ID must be exactly three digits from 001 to 999.",
                 exception.getMessage());
         assertEquals(1, loanHandler.getLoanCount());
     }
@@ -250,7 +250,7 @@ public class LoanHandlerTest {
                 () -> loanHandler.deleteLoan("delete-loan"));
 
         assertEquals(
-                "Invalid command format. Expected: delete-loan id/[ITEM ID] [issued/DD-MM-YY].",
+                "Invalid command format. Expected: delete-loan id/[LOAN ID].",
                 exception.getMessage());
         assertEquals(1, loanHandler.getLoanCount());
     }
@@ -270,19 +270,16 @@ public class LoanHandlerTest {
     }
 
     @Test
-    public void deleteLoan_duplicateItemId_requiresIssuedDate()
+    public void deleteLoan_duplicateItemId_deletesByUniqueLoanId()
             throws LoanAdditionUnsuccessful, LoanDeletionUnsuccessful {
         LoanHandler loanHandler = new LoanHandler(equipment);
         loanHandler.addLoan(FIRST_LOAN);
         loanHandler.getLoanList().get(0).setReturned(true);
         loanHandler.addLoan("loan id/001 b/005 issued/05-10-26 due/06-10-26");
 
-        assertThrows(LoanDeletionUnsuccessful.class,
-                () -> loanHandler.deleteLoan("delete-loan id/001"));
-        assertEquals(2, loanHandler.getLoanCount());
-
-        Loan deletedLoan = loanHandler.deleteLoan("delete-loan id/001 issued/05-10-26");
+        Loan deletedLoan = loanHandler.deleteLoan("delete-loan id/002");
         assertEquals("005", deletedLoan.getBorrowerId());
+        assertEquals("002", deletedLoan.getLoanId());
         assertEquals(1, loanHandler.getLoanCount());
     }
 
@@ -291,8 +288,8 @@ public class LoanHandlerTest {
         new LoanHandler().viewAllLoans();
 
         String expected = String.format(
-                "%-4s %-12s | %-12s | %-16s | %-16s%n",
-                "No.", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE");
+                "%-4s %-10s | %-12s | %-12s | %-16s | %-16s%n",
+                "No.", "LOAN ID", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE");
         assertEquals(expected, output.toString(StandardCharsets.UTF_8));
     }
 
@@ -306,14 +303,14 @@ public class LoanHandlerTest {
         loanHandler.viewAllLoans();
 
         String expected = String.format(
-                "%-4s %-12s | %-12s | %-16s | %-16s%n",
-                "No.", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE");
+                "%-4s %-10s | %-12s | %-12s | %-16s | %-16s%n",
+                "No.", "LOAN ID", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE");
         expected += String.format(
-                "%-4s %-12s | %-12s | %-16s | %-16s%n",
-                "1)", "001", "002", "2026-10-01T00:00", "2026-10-02T00:00");
+                "%-4s %-10s | %-12s | %-12s | %-16s | %-16s%n",
+                "1)", "001", "001", "002", "2026-10-01T00:00", "2026-10-02T00:00");
         expected += String.format(
-                "%-4s %-12s | %-12s | %-16s | %-16s%n",
-                "2)", "003", "004", "2026-10-03T00:00", "2026-10-04T00:00");
+                "%-4s %-10s | %-12s | %-12s | %-16s | %-16s%n",
+                "2)", "002", "003", "004", "2026-10-03T00:00", "2026-10-04T00:00");
 
         assertEquals(expected, output.toString(StandardCharsets.UTF_8));
     }

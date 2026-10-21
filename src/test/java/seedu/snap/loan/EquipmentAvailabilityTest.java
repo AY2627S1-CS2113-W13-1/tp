@@ -165,7 +165,7 @@ class EquipmentAvailabilityTest {
     void deleteLoan_oldReturnedLoan_doesNotReleaseNewActiveLoan() throws Exception {
         loans.addLoan(LOAN).setReturned(true);
         loans.addLoan(LOAN.replace("01-10-26", "02-10-26"));
-        loans.deleteLoan("delete-loan id/001 issued/01-10-26");
+        loans.deleteLoan("delete-loan id/001");
         assertTrue(camera.isLoaned());
         assertEquals(1, loans.getLoanCount());
     }
