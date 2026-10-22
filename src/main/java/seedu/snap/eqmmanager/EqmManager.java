@@ -32,6 +32,7 @@ public class EqmManager {
      * @param input command to execute
      */
     public void executeInput(String input) {
+        input = input == null ? "" : input.replaceAll("(?U)^\\s+|\\s+$", "");
         if (input.equals("bye")) {
             isRunning = false;
         } else if (input.equals("delete-loan") || input.startsWith("delete-loan ")){
@@ -56,7 +57,7 @@ public class EqmManager {
             } catch (EquipmentAdditionUnsuccessful e) {
                 System.out.println(e.getMessage());
             }
-        } else if (input.equals("update") || input.startsWith("update ")) {
+        } else if (input.matches("(?U)update(?:\\s.*)?")) {
             try {
                 Equipment updated = equipment.updateEquipment(input);
                 System.out.println("Equipment with item ID " + updated.getItemId() + " updated successfully.");

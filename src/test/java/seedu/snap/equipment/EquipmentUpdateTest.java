@@ -130,10 +130,43 @@ class EquipmentUpdateTest {
     }
 
     @Test
-    void updateDetails_invalidInternalValues_failBeforeAssignment() {
-        assertThrows(AssertionError.class, () -> camera.updateDetails("Changed", "camera", 11));
-        assertEquals("Camera", camera.getItemName());
-        assertEquals(1, camera.getCondition());
+    void updateDetails_invalidNames_preserveAllOriginalDetails() {
+        for (String name : new String[]{null, "", "\u2003", "A".repeat(101)}) {
+            assertThrows(AssertionError.class, () -> camera.updateDetails(name, "Changed", 5));
+            assertEquals("Camera", camera.getItemName());
+            assertEquals("camera", camera.getType());
+            assertEquals(1, camera.getCondition());
+        }
+    }
+
+    @Test
+    void updateDetails_invalidTypes_preserveAllOriginalDetails() {
+        for (String type : new String[]{null, "", "\u2003"}) {
+            assertThrows(AssertionError.class, () -> camera.updateDetails("Changed", type, 5));
+            assertEquals("Camera", camera.getItemName());
+            assertEquals("camera", camera.getType());
+            assertEquals(1, camera.getCondition());
+        }
+    }
+
+    @Test
+    void updateDetails_conditionOutsideEitherBoundary_preservesAllOriginalDetails() {
+        for (int condition : new int[]{Integer.MIN_VALUE, 0, 11, Integer.MAX_VALUE}) {
+            assertThrows(AssertionError.class, () -> camera.updateDetails("Changed", "Changed", condition));
+            assertEquals("Camera", camera.getItemName());
+            assertEquals("camera", camera.getType());
+            assertEquals(1, camera.getCondition());
+        }
+    }
+
+    @Test
+    void updateEquipment_reservedIdSyntaxInsideName_cannotHideDuplicateOrEmptyId() {
+        for (String suffix : new String[]{"", " ", "001", "+01", "-01", " 999"}) {
+            assertThrows(EquipmentUpdateUnsuccessful.class,
+                    () -> handler.updateEquipment("update id/001 i/Camera id/" + suffix), suffix);
+            assertEquals("Camera", camera.getItemName());
+            assertEquals(List.of(camera, tripod), handler.getEquipmentList());
+        }
     }
 
     @Test
