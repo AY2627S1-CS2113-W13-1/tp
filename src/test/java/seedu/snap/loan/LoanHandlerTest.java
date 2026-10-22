@@ -27,28 +27,25 @@ public class LoanHandlerTest {
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
     private PrintStream originalOutput;
     private EquipmentHandler equipment;
+    private LoanHandler loanHandler;
 
     @BeforeEach
     public void resetLoans() throws EquipmentAdditionUnsuccessful {
         equipment = new EquipmentHandler();
         equipment.addEquipment("add i/Camera id/001 type/camera cond/1");
         equipment.addEquipment("add i/Tripod id/003 type/accessory cond/2");
-        LoanHandler.loans.clear();
-        LoanHandler.numLoans = 0;
+        loanHandler = new LoanHandler(equipment);
         originalOutput = System.out;
         System.setOut(new PrintStream(output, true, StandardCharsets.UTF_8));
     }
 
     @AfterEach
     public void restoreOutput() {
-        LoanHandler.loans.clear();
-        LoanHandler.numLoans = 0;
         System.setOut(originalOutput);
     }
 
     @Test
     public void addLoan_validLoan_keepsCountConsistent() throws LoanAdditionUnsuccessful {
-        LoanHandler loanHandler = new LoanHandler(equipment);
 
         loanHandler.addLoan(FIRST_LOAN);
 
@@ -60,7 +57,6 @@ public class LoanHandlerTest {
     public void deleteLoan_existingItemId_deletesCorrectLoan()
             throws LoanAdditionUnsuccessful,
             LoanDeletionUnsuccessful {
-        LoanHandler loanHandler = new LoanHandler(equipment);
         loanHandler.addLoan(FIRST_LOAN);
         loanHandler.addLoan(SECOND_LOAN);
 
@@ -77,7 +73,6 @@ public class LoanHandlerTest {
     @Test
     public void deleteLoan_unknownItemId_keepsLoansUnchanged()
             throws LoanAdditionUnsuccessful {
-        LoanHandler loanHandler = new LoanHandler(equipment);
         loanHandler.addLoan(FIRST_LOAN);
 
         LoanDeletionUnsuccessful exception = assertThrows(
@@ -97,7 +92,6 @@ public class LoanHandlerTest {
     @Test
     public void deleteLoan_invalidItemId_keepsLoansUnchanged()
             throws LoanAdditionUnsuccessful {
-        LoanHandler loanHandler = new LoanHandler(equipment);
         loanHandler.addLoan(FIRST_LOAN);
 
         LoanDeletionUnsuccessful exception = assertThrows(
@@ -114,7 +108,6 @@ public class LoanHandlerTest {
     @Test
     public void deleteLoan_missingItemId_keepsLoansUnchanged()
             throws LoanAdditionUnsuccessful {
-        LoanHandler loanHandler = new LoanHandler(equipment);
         loanHandler.addLoan(FIRST_LOAN);
 
         LoanDeletionUnsuccessful exception = assertThrows(
@@ -130,7 +123,6 @@ public class LoanHandlerTest {
     @Test
     public void deleteLoan_invalidPrefix_keepsLoansUnchanged()
             throws LoanAdditionUnsuccessful {
-        LoanHandler loanHandler = new LoanHandler(equipment);
         loanHandler.addLoan(FIRST_LOAN);
 
         assertThrows(
@@ -144,7 +136,6 @@ public class LoanHandlerTest {
     @Test
     public void deleteLoan_duplicateItemId_requiresIssuedDate()
             throws LoanAdditionUnsuccessful, LoanDeletionUnsuccessful {
-        LoanHandler loanHandler = new LoanHandler(equipment);
         loanHandler.addLoan(FIRST_LOAN);
         loanHandler.loans.get(0).setReturned(true);
         loanHandler.addLoan("loan id/001 b/005 issued/05-10-26 due/06-10-26");
@@ -160,7 +151,7 @@ public class LoanHandlerTest {
 
     @Test
     void viewAllLoans_noLoans_printsHeaderOnly() {
-        LoanHandler.viewAllLoans();
+        loanHandler.viewAllLoans();
 
         String expected = String.format(
                 "%-4s %-12s | %-12s | %-16s | %-16s%n",
@@ -171,11 +162,10 @@ public class LoanHandlerTest {
     @Test
     void viewAllLoans_existingLoans_printsHeaderAndRows()
             throws LoanAdditionUnsuccessful {
-        LoanHandler loanHandler = new LoanHandler(equipment);
         loanHandler.addLoan(FIRST_LOAN);
         loanHandler.addLoan(SECOND_LOAN);
 
-        LoanHandler.viewAllLoans();
+        loanHandler.viewAllLoans();
 
         String expected = String.format(
                 "%-4s %-12s | %-12s | %-16s | %-16s%n",

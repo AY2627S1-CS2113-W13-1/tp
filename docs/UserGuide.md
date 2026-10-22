@@ -42,6 +42,7 @@ that exists and is available. Rejected loan commands leave the item's status unc
 
 Equipment with an active loan cannot be deleted. Returning or deleting the active loan makes the item
 available again; removing an older returned loan does not affect a newer active loan.
+Returned loan records remain historical; borrowing an item again requires a new loan record.
 
 ## Saving equipment
 

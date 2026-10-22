@@ -13,7 +13,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.ArrayList;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -33,17 +32,9 @@ class EquipmentAvailabilityTest {
 
     @BeforeEach
     void setUp() throws EquipmentAdditionUnsuccessful {
-        LoanHandler.loans.clear();
-        LoanHandler.numLoans = 0;
         equipment = new EquipmentHandler();
         camera = equipment.addEquipment("add i/Camera id/001 type/camera cond/1");
         loans = new LoanHandler(equipment);
-    }
-
-    @AfterEach
-    void clearLoans() {
-        LoanHandler.loans.clear();
-        LoanHandler.numLoans = 0;
     }
 
     @Test
@@ -51,7 +42,7 @@ class EquipmentAvailabilityTest {
         assertFalse(camera.isLoaned());
         loans.addLoan(LOAN);
         assertTrue(camera.isLoaned());
-        assertEquals(1, LoanHandler.numLoans);
+        assertEquals(1, loans.numLoans);
     }
 
     @Test
@@ -60,7 +51,7 @@ class EquipmentAvailabilityTest {
                 () -> loans.addLoan(LOAN.replace("id/001", "id/999")));
         assertEquals("Item ID 999 does not exist.", error.getMessage());
         assertFalse(camera.isLoaned());
-        assertTrue(LoanHandler.loans.isEmpty());
+        assertTrue(loans.loans.isEmpty());
     }
 
     @Test
@@ -69,7 +60,7 @@ class EquipmentAvailabilityTest {
             LOAN.replace("02-10-26", "01-09-26"), LOAN + " extra"}) {
             assertThrows(LoanAdditionUnsuccessful.class, () -> loans.addLoan(command));
             assertFalse(camera.isLoaned());
-            assertEquals(0, LoanHandler.numLoans);
+            assertEquals(0, loans.numLoans);
         }
         loans.addLoan(LOAN);
         assertTrue(camera.isLoaned());
@@ -79,7 +70,7 @@ class EquipmentAvailabilityTest {
     void addLoan_alreadyLoaned_preservesOriginalLoan() throws LoanAdditionUnsuccessful {
         Loan original = loans.addLoan(LOAN);
         assertThrows(LoanAdditionUnsuccessful.class, () -> loans.addLoan(LOAN));
-        assertEquals(List.of(original), LoanHandler.loans);
+        assertEquals(List.of(original), loans.loans);
         assertTrue(camera.isLoaned());
     }
 
@@ -95,7 +86,7 @@ class EquipmentAvailabilityTest {
         assertThrows(LoanAdditionUnsuccessful.class, () -> loans.addLoan(LOAN));
         assertFalse(camera.isLoaned());
         assertFalse(duplicate.isLoaned());
-        assertTrue(LoanHandler.loans.isEmpty());
+        assertTrue(loans.loans.isEmpty());
     }
 
     @Test
@@ -118,7 +109,7 @@ class EquipmentAvailabilityTest {
         loans.addLoan(LOAN);
         loans.deleteLoan("delete-loan id/001");
         assertFalse(camera.isLoaned());
-        assertEquals(0, LoanHandler.numLoans);
+        assertEquals(0, loans.numLoans);
         loans.addLoan(LOAN);
         assertTrue(camera.isLoaned());
     }
@@ -130,7 +121,7 @@ class EquipmentAvailabilityTest {
         Loan current = loans.addLoan(LOAN);
         deleted.setReturned(true);
         assertTrue(camera.isLoaned());
-        assertSame(current, LoanHandler.loans.getFirst());
+        assertSame(current, loans.loans.getFirst());
         deleted.setReturned(false);
         assertTrue(camera.isLoaned());
     }
@@ -141,7 +132,7 @@ class EquipmentAvailabilityTest {
         loans.addLoan(LOAN.replace("01-10-26", "02-10-26"));
         loans.deleteLoan("delete-loan id/001 issued/01-10-26");
         assertTrue(camera.isLoaned());
-        assertEquals(1, LoanHandler.numLoans);
+        assertEquals(1, loans.numLoans);
     }
 
     @Test
@@ -150,7 +141,7 @@ class EquipmentAvailabilityTest {
         assertThrows(seedu.snap.exceptions.LoanDeletionUnsuccessful.class,
                 () -> loans.deleteLoan("delete-loan id/999"));
         assertTrue(camera.isLoaned());
-        assertSame(original, LoanHandler.loans.getFirst());
+        assertSame(original, loans.loans.getFirst());
     }
 
     @Test

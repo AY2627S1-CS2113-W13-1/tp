@@ -16,14 +16,15 @@ import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 
 /** Parses loan commands and stores successfully created loans. */
 public class LoanHandler {
-    static ArrayList<Loan> loans = new ArrayList<>();
-    static int numLoans = 0;
-
     private static final int EXPECTED_ADD_ARGUMENT_COUNT = 5;
     private static final Logger logger = Logger.getLogger(LoanHandler.class.getName());
     private static final String ID_FORMAT = "\\d{3}";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-uu")
             .withResolverStyle(ResolverStyle.STRICT);
+
+    /** Records belong to this inventory; separate handlers must not share active loans. */
+    final ArrayList<Loan> loans = new ArrayList<>();
+    int numLoans = 0;
 
     private final EquipmentHandler equipment;
 
@@ -260,7 +261,7 @@ public class LoanHandler {
     /**
      * Prints out all equipment in inventory
      */
-    public static void viewAllLoans() {
+    public void viewAllLoans() {
         assert numLoans == loans.size() : "numLoans should match the size of the loans list";
         logger.log(Level.INFO, "Viewing {0} loan(s)", numLoans);
         System.out.printf(

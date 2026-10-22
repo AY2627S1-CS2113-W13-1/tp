@@ -71,13 +71,13 @@ public class Loan {
         equipment = null;
     }
 
-    /** Updates return status and availability together; an existing active loan cannot be overwritten. */
+    /** Updates return status and availability together; returned records cannot be reactivated. */
     public void setReturned(boolean isReturned) {
         if (this.isReturned == isReturned) {
             return;
         }
-        if (!isReturned && equipment != null && equipment.isLoaned()) {
-            throw new IllegalStateException("Equipment already has an active loan.");
+        if (!isReturned && equipment != null) {
+            throw new IllegalStateException("Returned loans cannot be reactivated.");
         }
         this.isReturned = isReturned;
         if (equipment != null) {
