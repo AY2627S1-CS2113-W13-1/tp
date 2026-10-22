@@ -2,12 +2,15 @@ package seedu.snap.equipment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -15,6 +18,7 @@ import org.junit.jupiter.api.Test;
 
 import seedu.snap.eqmmanager.EqmManager;
 import seedu.snap.exceptions.EquipmentFilteringUnsuccessful;
+import seedu.snap.loan.LoanHandler;
 
 /** Covers individual and combined filters, invalid fields, availability, and inventory preservation. */
 class EquipmentFilterTest {
@@ -54,6 +58,22 @@ class EquipmentFilterTest {
     }
 
     @Test
+    void apply_multipleMatches_returnsReadOnlySnapshotInInventoryOrder() throws EquipmentFilteringUnsuccessful {
+        ArrayList<Equipment> inventory = new ArrayList<>(List.of(tripod, camera));
+        LoanHandler loans = new LoanHandler();
+        List<Equipment> result = EquipmentFilter.parse("filter cond/1-10").apply(inventory, loans);
+        assertEquals(List.of(tripod, camera), result);
+        assertSame(tripod, result.getFirst());
+        assertSame(camera, result.getLast());
+        assertThrows(UnsupportedOperationException.class, result::clear);
+        assertThrows(UnsupportedOperationException.class, () -> result.add(camera));
+        assertThrows(UnsupportedOperationException.class, () -> result.set(0, camera));
+        assertEquals(List.of(tripod, camera), inventory);
+        inventory.clear();
+        assertEquals(List.of(tripod, camera), result);
+    }
+
+    @Test
     void parse_combinedFieldsInAnyOrder_requiresAllToMatch() throws EquipmentFilteringUnsuccessful {
         EquipmentFilter filter = EquipmentFilter.parse(
                 "filter status/AVAILABLE cond/1-3 type/camera kit id/001 i/canon");
@@ -85,6 +105,60 @@ class EquipmentFilterTest {
         };
         for (String input : invalid) {
             assertThrows(EquipmentFilteringUnsuccessful.class, () -> EquipmentFilter.parse(input), input);
+        }
+    }
+
+    @Test
+    void parse_reservedIdSyntaxInsideName_rejectsMalformedAndDuplicateIds() {
+        for (String suffix : new String[]{"", " ", "001", "+01", "-01", " 999"}) {
+            assertThrows(EquipmentFilteringUnsuccessful.class,
+                    () -> EquipmentFilter.parse("filter id/001 i/Camera id/" + suffix), suffix);
+        }
+    }
+
+    @Test
+    void executeInput_emptyInventory_filtersWithoutCreatingEquipment() {
+        PrintStream original = System.out;
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        try (PrintStream captured = new PrintStream(output, true, StandardCharsets.UTF_8)) {
+            System.setOut(captured);
+            EqmManager manager = new EqmManager();
+            manager.executeInput("filter cond/1-10");
+            assertEquals("No equipment matches the filters." + System.lineSeparator(),
+                    output.toString(StandardCharsets.UTF_8));
+            manager.executeInput("add i/Camera id/001 type/camera cond/1");
+            output.reset();
+            manager.executeInput("filter id/001");
+            assertTrue(output.toString(StandardCharsets.UTF_8).contains("Camera"));
+        } finally {
+            System.setOut(original);
+        }
+    }
+
+    @Test
+    void executeInput_multipleMatches_preservesInsertionOrderAndExcludedItems() {
+        PrintStream original = System.out;
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        try (PrintStream captured = new PrintStream(output, true, StandardCharsets.UTF_8)) {
+            System.setOut(captured);
+            EqmManager manager = new EqmManager();
+            manager.executeInput("add i/First Camera id/999 type/camera cond/1");
+            manager.executeInput("add i/Excluded Tripod id/002 type/accessory cond/5");
+            manager.executeInput("add i/Second Camera id/001 type/camera cond/10");
+            output.reset();
+            manager.executeInput("filter type/camera cond/1-10");
+            String filtered = output.toString(StandardCharsets.UTF_8);
+            assertTrue(filtered.contains("First Camera"));
+            assertTrue(filtered.contains("Second Camera"));
+            assertTrue(filtered.indexOf("First Camera") < filtered.indexOf("Second Camera"));
+            assertFalse(filtered.contains("Excluded Tripod"));
+            output.reset();
+            manager.executeInput("list");
+            String all = output.toString(StandardCharsets.UTF_8);
+            assertTrue(all.indexOf("First Camera") < all.indexOf("Excluded Tripod"));
+            assertTrue(all.indexOf("Excluded Tripod") < all.indexOf("Second Camera"));
+        } finally {
+            System.setOut(original);
         }
     }
 

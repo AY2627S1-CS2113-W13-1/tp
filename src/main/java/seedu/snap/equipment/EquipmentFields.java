@@ -8,7 +8,10 @@ import java.util.regex.Pattern;
 
 /** Reads named fields for equipment commands, retaining spaces within names and types. */
 final class EquipmentFields {
-    private static final Pattern FIELD = Pattern.compile("(?<!\\S)(id|i|type|cond|status)/");
+    private static final Pattern FIELD = Pattern.compile("(?<!\\S)(id|i|type|cond|status)/",
+            Pattern.UNICODE_CHARACTER_CLASS);
+    private static final Pattern EDGE_WHITESPACE = Pattern.compile("^\\s+|\\s+$",
+            Pattern.UNICODE_CHARACTER_CLASS);
 
     private EquipmentFields() {
     }
@@ -20,10 +23,11 @@ final class EquipmentFields {
      * @throws IllegalArgumentException when the command or its fields are malformed
      */
     static Map<String, String> parse(String input, String command, String... allowedFields) {
-        if (input == null || !input.strip().matches(command + "\\s+.+")) {
+        String stripped = input == null ? "" : EDGE_WHITESPACE.matcher(input).replaceAll("");
+        if (!stripped.matches("(?U)" + command + "\\s+.+")) {
             throw new IllegalArgumentException("Supply at least one field after " + command + ".");
         }
-        String details = input.strip().substring(command.length()).strip();
+        String details = EDGE_WHITESPACE.matcher(stripped.substring(command.length())).replaceAll("");
         Set<String> allowed = Set.of(allowedFields);
         Map<String, String> values = new LinkedHashMap<>();
         Matcher matcher = FIELD.matcher(details);
@@ -65,7 +69,7 @@ final class EquipmentFields {
 
     /** Stores each nonempty field once so later values cannot silently overwrite earlier ones. */
     private static void addField(Map<String, String> values, String field, String value) {
-        String trimmed = value.strip();
+        String trimmed = EDGE_WHITESPACE.matcher(value).replaceAll("");
         if (trimmed.isBlank()) {
             throw new IllegalArgumentException("Field " + field + "/ cannot be empty.");
         }

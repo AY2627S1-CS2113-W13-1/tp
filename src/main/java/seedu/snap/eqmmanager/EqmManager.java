@@ -35,6 +35,7 @@ public class EqmManager {
      * @param input command to execute
      */
     public void executeInput(String input) {
+        input = input == null ? "" : input.replaceAll("(?U)^\\s+|\\s+$", "");
         if (input.equals("bye")) {
             isRunning = false;
         } else if (input.equals("delete-loan") || input.startsWith("delete-loan ")){
@@ -66,7 +67,7 @@ public class EqmManager {
             } catch (LoanAdditionUnsuccessful e) {
                 System.out.println(e.getMessage());
             }
-        } else if (input.equals("filter") || input.startsWith("filter ")) {
+        } else if (input.matches("(?U)filter(?:\\s.*)?")) {
             filterEquipment(input);
         } else if (input.equals("list loans")) {
             LoanHandler.viewAllLoans();
