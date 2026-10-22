@@ -8,23 +8,28 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Random;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import seedu.snap.eqmmanager.EqmManager;
 import seedu.snap.exceptions.EquipmentUpdateUnsuccessful;
 
 /** Exercises update parsing and verifies thousands of commands against independent expected values. */
 class EquipmentUpdateStressTest {
+    @TempDir
+    private Path temporaryDataDirectory;
+
     @Test
     void executeInput_unicodeWhitespace_routesToUpdateAndKeepsInventoryUsable() {
         PrintStream original = System.out;
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         try (PrintStream captured = new PrintStream(output, true, StandardCharsets.UTF_8)) {
             System.setOut(captured);
-            EqmManager manager = new EqmManager();
+            EqmManager manager = new EqmManager(temporaryDataDirectory);
             manager.executeInput("add i/Camera id/001 type/camera cond/1");
             for (String space : new String[]{" ", "\t", "\u2003", "\u00a0", "\u2007", "\u202f"}) {
                 output.reset();
@@ -140,10 +145,12 @@ class EquipmentUpdateStressTest {
                 assertThrows(EquipmentUpdateUnsuccessful.class,
                         () -> handler.updateEquipment("update id/001 i/Rejected cond/2147483648"));
                 break;
-            default:
+            case 4:
                 assertThrows(EquipmentUpdateUnsuccessful.class,
                         () -> handler.updateEquipment("update id/555 i/Missing"));
                 break;
+            default:
+                throw new AssertionError("Unexpected test operation");
             }
             assertEquals(expectedName, first.getItemName(), "step " + step);
             assertEquals(expectedType, first.getType(), "step " + step);

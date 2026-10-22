@@ -9,11 +9,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import seedu.snap.eqmmanager.EqmManager;
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
@@ -21,6 +23,9 @@ import seedu.snap.exceptions.EquipmentUpdateUnsuccessful;
 
 /** Tests partial updates, input boundaries, rejected commands, and preservation of item identity. */
 class EquipmentUpdateTest {
+    @TempDir
+    private Path temporaryDataDirectory;
+
     private EquipmentHandler handler;
     private Equipment camera;
     private Equipment tripod;
@@ -175,7 +180,7 @@ class EquipmentUpdateTest {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         try (PrintStream captured = new PrintStream(output, true, StandardCharsets.UTF_8)) {
             System.setOut(captured);
-            EqmManager manager = new EqmManager();
+            EqmManager manager = new EqmManager(temporaryDataDirectory);
             manager.executeInput("add i/Camera id/001 type/camera cond/1");
             output.reset();
             manager.executeInput("update id/001 i/Bad cond/11");
@@ -189,6 +194,18 @@ class EquipmentUpdateTest {
             assertTrue(text.contains("Equipment with item ID 001 deleted successfully."));
         } finally {
             System.setOut(original);
+        }
+    }
+
+    @Test
+    void parse_nonbreakingWhitespaceAfterRepeatedId_rejectsNumericField() {
+        for (String space : new String[]{"\u00a0", "\u2007", "\u202f", "\u2003", " "}) {
+            String command = "update id/001 i/Changed id/" + space + "999";
+            assertThrows(EquipmentUpdateUnsuccessful.class, () -> handler.updateEquipment(command));
+            assertEquals("Camera", camera.getItemName());
+            assertEquals("camera", camera.getType());
+            assertEquals(1, camera.getCondition());
+            assertEquals(List.of(camera, tripod), handler.getEquipmentList());
         }
     }
 }

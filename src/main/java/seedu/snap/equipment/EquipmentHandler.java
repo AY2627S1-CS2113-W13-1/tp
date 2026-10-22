@@ -1,5 +1,7 @@
 package seedu.snap.equipment;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -13,11 +15,13 @@ import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
 import seedu.snap.exceptions.EquipmentUpdateUnsuccessful;
 
-/** Parses add and delete commands and stores equipment for the current session. */
+/** Handles adding, updating, deleting, and displaying equipment, including persistent records. */
 public class EquipmentHandler {
     /** Diagnostic logger; the application sends outcomes and detailed traces to local files. */
     private static final Logger logger = Logger.getLogger(EquipmentHandler.class.getName());
     private static final String ADD_COMMAND = "add";
+    private static final String ADD_FORMAT_ERROR = "Invalid format. Use: add i/[ITEM] id/[ITEM ID] "
+            + "type/[TYPE] cond/[CONDITION]";
     private static final Pattern DELETE_PATTERN = Pattern.compile("delete\\s+item/([0-9]{3})");
     private static final String ITEM_MARKER = "i/";
     private static final String ID_MARKER = "id/";
@@ -26,81 +30,62 @@ public class EquipmentHandler {
 
     /** Equipment stored by this handler during the current application session. */
     private final ArrayList<Equipment> inventory = new ArrayList<>();
+    /** File used for persistence, or null when the handler is intentionally in-memory only. */
+    private final Path storageFile;
+
+    /** Creates an in-memory equipment handler, mainly useful for isolated unit tests. */
+    public EquipmentHandler() {
+        this(null);
+    }
+
+    /** Creates an equipment handler backed by the supplied text file. */
+    public EquipmentHandler(Path storageFile) {
+        this.storageFile = storageFile;
+    }
+
+    /**
+     * Replaces the current inventory with records loaded from the backing file.
+     * A missing file is treated as an empty inventory.
+     *
+     * @throws IOException if saved data cannot be read or is invalid
+     */
+    public void loadFromStorage() throws IOException {
+        if (storageFile == null) {
+            return;
+        }
+        List<Equipment> loaded = EquipmentStorage.load(storageFile);
+        inventory.clear();
+        inventory.addAll(loaded);
+        assert inventory.size() == loaded.size() : "Loaded inventory size must be preserved";
+        logger.log(Level.INFO, "Loaded {0} equipment item(s) from {1}",
+                new Object[]{inventory.size(), storageFile});
+    }
 
     /**
      * Adds equipment when the command contains valid details.
      *
      * @param input complete add command
      * @return the added equipment
-     * @throws EquipmentAdditionUnsuccessful when the command is invalid
+     * @throws EquipmentAdditionUnsuccessful when the command is invalid or the item ID already exists
      */
     public Equipment addEquipment(String input) throws EquipmentAdditionUnsuccessful {
         int previousSize = inventory.size();
         Equipment equipment;
         try {
             equipment = parseEquipment(input);
+            assert equipment != null : "Successful parsing must return equipment";
+            ensureUniqueItemId(equipment);
+            saveAddition(equipment);
         } catch (EquipmentAdditionUnsuccessful e) {
             assert inventory.size() == previousSize : "Rejected additions must not change inventory size";
             logger.log(Level.FINE, "Equipment addition rejected: {0}", e.getMessage());
             throw e;
         }
-        assert equipment != null : "Successful parsing must return equipment";
         inventory.add(equipment);
         assert inventory.size() == previousSize + 1 : "Adding equipment must increase inventory size by one";
         assert inventory.getLast() == equipment : "The newly added equipment must be last in the inventory";
         logger.log(Level.FINE, "Added equipment with item ID {0}", equipment.getItemId());
         return equipment;
-    }
-
-    /**
-     * Updates supplied details after validating every value; the ID, object, and inventory order stay the same.
-     *
-     * @param input update command with an ID and at least one detail
-     * @return the updated equipment
-     * @throws EquipmentUpdateUnsuccessful when the command or new details are invalid
-     */
-    public Equipment updateEquipment(String input) throws EquipmentUpdateUnsuccessful {
-        try {
-            Map<String, String> fields = EquipmentFields.parse(input, "update", "id", "i", "type", "cond");
-            String id = fields.get("id");
-            if (id == null || !id.matches("[0-9]{3}") || id.equals("000")) {
-                throw new EquipmentUpdateUnsuccessful("Item ID must be from 001 to 999.");
-            }
-            if (fields.size() == 1) {
-                throw new EquipmentUpdateUnsuccessful("Supply a name, type, or condition to update.");
-            }
-            Equipment target = findEquipmentForUpdate(id);
-            String name = fields.getOrDefault("i", target.getItemName());
-            String type = fields.getOrDefault("type", target.getType());
-            String condition = fields.getOrDefault("cond", Integer.toString(target.getCondition()));
-            validateEquipmentDetails(name, id, type, condition);
-            int previousSize = inventory.size();
-            target.updateDetails(name, type, Integer.parseInt(condition));
-            assert inventory.size() == previousSize : "Updates must not add or remove equipment";
-            assert target.getItemId().equals(id) : "Updates must preserve Item ID";
-            logger.log(Level.FINE, "Updated equipment with item ID {0}", id);
-            return target;
-        } catch (IllegalArgumentException | EquipmentAdditionUnsuccessful | EquipmentUpdateUnsuccessful e) {
-            logger.log(Level.FINE, "Equipment update rejected: {0}", e.getMessage());
-            throw new EquipmentUpdateUnsuccessful(e.getMessage());
-        }
-    }
-
-    /** Finds exactly one target so malformed inventories cannot cause an update to the wrong item. */
-    private Equipment findEquipmentForUpdate(String id) throws EquipmentUpdateUnsuccessful {
-        Equipment match = null;
-        for (Equipment item : inventory) {
-            if (item.getItemId().equals(id)) {
-                if (match != null) {
-                    throw new EquipmentUpdateUnsuccessful("Item ID " + id + " is not unique.");
-                }
-                match = item;
-            }
-        }
-        if (match == null) {
-            throw new EquipmentUpdateUnsuccessful("Item ID " + id + " does not exist.");
-        }
-        return match;
     }
 
     /**
@@ -110,6 +95,11 @@ public class EquipmentHandler {
      */
     public List<Equipment> getEquipmentList() {
         return Collections.unmodifiableList(inventory);
+    }
+
+    /** Persists the current inventory when this handler has a backing file. */
+    public void saveToStorage() throws IOException {
+        save(inventory);
     }
 
     /**
@@ -149,12 +139,31 @@ public class EquipmentHandler {
     public Equipment deleteEquipment(String input) throws EquipmentDeletionUnsuccessful {
         Equipment equipment = getEquipmentForDeletion(input);
         int previousSize = inventory.size();
+
+        ArrayList<Equipment> updatedInventory = new ArrayList<>(inventory);
+        updatedInventory.remove(equipment);
+        try {
+            save(updatedInventory);
+        } catch (IOException e) {
+            logger.log(Level.WARNING, "Equipment deletion could not be saved", e);
+            throw new EquipmentDeletionUnsuccessful("Could not save equipment deletion: " + e.getMessage());
+        }
+
         // Removal must still run when assertions are disabled.
-        boolean removed = inventory.remove(equipment);
-        assert removed : "Equipment found for deletion must still be in the inventory";
+        boolean wasRemoved = inventory.remove(equipment);
+        assert wasRemoved : "Equipment found for deletion must still be in the inventory";
         assert inventory.size() == previousSize - 1 : "Deletion must remove exactly one equipment record";
         logger.log(Level.INFO, "Deleted equipment with ID {0}.", equipment.getItemId());
         return equipment;
+    }
+
+    /** Saves the supplied inventory when this handler has a backing file. */
+    private void save(List<Equipment> equipment) throws IOException {
+        if (storageFile != null) {
+            EquipmentStorage.save(storageFile, equipment);
+            logger.log(Level.FINE, "Saved {0} equipment item(s) to {1}",
+                    new Object[]{equipment.size(), storageFile});
+        }
     }
 
     /**
@@ -165,52 +174,110 @@ public class EquipmentHandler {
      * @throws EquipmentAdditionUnsuccessful when the command is invalid
      */
     static Equipment parseEquipment(String userInput) throws EquipmentAdditionUnsuccessful {
-        if (userInput == null || !(userInput.equals(ADD_COMMAND) || userInput.startsWith(ADD_COMMAND + " "))) {
-            throw new EquipmentAdditionUnsuccessful("Invalid format. Use: add i/[ITEM] id/[ITEM ID] "
-                    + "type/[TYPE] cond/[CONDITION]");
+        if (userInput == null || !userInput.matches("(?U)" + ADD_COMMAND + "(?:\\s.*)?")) {
+            throw new EquipmentAdditionUnsuccessful(ADD_FORMAT_ERROR);
         }
-        String addDetails = userInput.substring(ADD_COMMAND.length()).trim();
-        int itemIndex = addDetails.indexOf(ITEM_MARKER);
-        int idIndex = addDetails.indexOf(ID_MARKER);
-        int typeIndex = addDetails.indexOf(TYPE_MARKER);
-        int conditionIndex = addDetails.indexOf(CONDITION_MARKER);
+        String addDetails = EquipmentFields.trimWhitespace(userInput.substring(ADD_COMMAND.length()));
+        int itemIndex = findFieldMarker(addDetails, ITEM_MARKER, 0);
+        int typeIndex = findFieldMarker(addDetails, TYPE_MARKER, 0);
+        int conditionIndex = findFieldMarker(addDetails, CONDITION_MARKER, 0);
+        int idIndex = findIdFieldMarker(addDetails, typeIndex);
+        validateFieldMarkers(addDetails, itemIndex, idIndex, typeIndex, conditionIndex);
 
+        String itemName = EquipmentFields.trimWhitespace(
+                addDetails.substring(itemIndex + ITEM_MARKER.length(), idIndex));
+        String id = EquipmentFields.trimWhitespace(addDetails.substring(idIndex + ID_MARKER.length(), typeIndex));
+        String type = EquipmentFields.trimWhitespace(
+                addDetails.substring(typeIndex + TYPE_MARKER.length(), conditionIndex));
+        String condition = EquipmentFields.trimWhitespace(
+                addDetails.substring(conditionIndex + CONDITION_MARKER.length()));
+
+        return createValidatedEquipment(itemName, id, type, condition);
+    }
+
+    /** Finds the last ID prefix before the type field, allowing earlier id/card-like name text. */
+    private static int findIdFieldMarker(String details, int typeIndex) {
+        int idIndex = findFieldMarker(details, ID_MARKER, 0);
+        int nextIdIndex = findFieldMarker(details, ID_MARKER, idIndex + ID_MARKER.length());
+        while (nextIdIndex != -1 && nextIdIndex < typeIndex) {
+            idIndex = nextIdIndex;
+            nextIdIndex = findFieldMarker(details, ID_MARKER, idIndex + ID_MARKER.length());
+        }
+        return idIndex;
+    }
+
+    /** Rejects missing, reordered, or repeated delimiters, except permitted ID text within the name. */
+    private static void validateFieldMarkers(String details, int itemIndex, int idIndex, int typeIndex,
+            int conditionIndex) throws EquipmentAdditionUnsuccessful {
         boolean markersAreInOrder = itemIndex == 0
                 && idIndex > itemIndex
                 && typeIndex > idIndex
                 && conditionIndex > typeIndex;
         if (!markersAreInOrder) {
-            throw new EquipmentAdditionUnsuccessful("Invalid format. Use: add i/[ITEM] id/[ITEM ID] "
-                    + "type/[TYPE] cond/[CONDITION]");
+            throw new EquipmentAdditionUnsuccessful(ADD_FORMAT_ERROR);
         }
-
-        String itemString = addDetails.substring(itemIndex + ITEM_MARKER.length(), idIndex).trim();
-        String id = addDetails.substring(idIndex + ID_MARKER.length(), typeIndex).trim();
-        String type = addDetails.substring(typeIndex + TYPE_MARKER.length(), conditionIndex).trim();
-        String conditionString = addDetails.substring(conditionIndex + CONDITION_MARKER.length()).trim();
-
-        validateEquipmentDetails(itemString, id, type, conditionString);
-        return new Equipment(itemString, id, type, Integer.parseInt(conditionString));
+        for (String marker : new String[]{ITEM_MARKER, ID_MARKER, TYPE_MARKER, CONDITION_MARKER}) {
+            int firstIndex = findFieldMarker(details, marker, 0);
+            if (marker.equals(ID_MARKER)) {
+                firstIndex = skipNameIdFragments(details, firstIndex, idIndex);
+            }
+            if (findFieldMarker(details, marker, firstIndex + marker.length()) != -1) {
+                throw new EquipmentAdditionUnsuccessful(ADD_FORMAT_ERROR);
+            }
+        }
     }
 
-    /** Shares field rules between adding and updating, before either operation changes the inventory. */
+    /** Validates extracted values before construction, preserving field-specific error messages. */
+    private static Equipment createValidatedEquipment(String itemName, String id, String type,
+            String conditionString) throws EquipmentAdditionUnsuccessful {
+        validateEquipmentDetails(itemName, id, type, conditionString);
+        return new Equipment(itemName, id, type, Integer.parseInt(conditionString));
+    }
+
+    /** Shares value rules between addition and updates before either changes the inventory. */
     private static void validateEquipmentDetails(String itemName, String id, String type, String conditionString)
             throws EquipmentAdditionUnsuccessful {
-        if (itemName.isBlank() || itemName.length() > 100) {
+        if (!Equipment.hasText(itemName) || itemName.length() > Equipment.MAX_NAME_LENGTH) {
             throw new EquipmentAdditionUnsuccessful("Item name must contain 1 to 100 characters.");
         }
 
-        if (!id.matches("[0-9]{3}") || id.equals("000")) {
+        if (!Equipment.isValidItemId(id)) {
             throw new EquipmentAdditionUnsuccessful("Item ID must be from 001 to 999.");
         }
 
-        if (type.isBlank()) {
+        if (!Equipment.hasText(type)) {
             throw new EquipmentAdditionUnsuccessful("Type cannot be empty.");
         }
 
         if (!conditionString.matches("10|[1-9]")) {
             throw new EquipmentAdditionUnsuccessful("Condition must be a whole number from 1 to 10.");
         }
+    }
+
+    /**
+     * Finds a field prefix at the start or after whitespace, ignoring prefix-like text inside words.
+     * The starting index also allows callers to detect repeated prefixes.
+     */
+    private static int findFieldMarker(String details, String marker, int startIndex) {
+        int index = details.indexOf(marker, startIndex);
+        while (index != -1) {
+            if (index == 0 || EquipmentFields.isWhitespace(details.charAt(index - 1))) {
+                return index;
+            }
+            index = details.indexOf(marker, index + marker.length());
+        }
+        return -1;
+    }
+
+    /** Allows id/card-like name text, reserving empty, numeric, and signed ID values for command syntax. */
+    private static boolean isNameIdText(String details, int markerIndex) {
+        int valueIndex = markerIndex + ID_MARKER.length();
+        if (valueIndex >= details.length()) {
+            return false;
+        }
+        char firstCharacter = details.charAt(valueIndex);
+        return !EquipmentFields.isWhitespace(firstCharacter) && !Character.isDigit(firstCharacter)
+                && firstCharacter != '+' && firstCharacter != '-';
     }
 
     /**
@@ -251,5 +318,109 @@ public class EquipmentHandler {
                     (i + 1) + ")", item.getItemName(), item.getItemId(), item.getType(), item.getCondition()
             );
         }
+    }
+
+    /** Rejects duplicate IDs before saving or changing the current inventory. */
+    private void ensureUniqueItemId(Equipment item) throws EquipmentAdditionUnsuccessful {
+        for (Equipment existing : inventory) {
+            if (existing.getItemId().equals(item.getItemId())) {
+                throw new EquipmentAdditionUnsuccessful("Item ID " + item.getItemId() + " already exists.");
+            }
+        }
+    }
+
+    /** Saves a candidate list first, so a failed write cannot add an item only in memory. */
+    private void saveAddition(Equipment item) throws EquipmentAdditionUnsuccessful {
+        ArrayList<Equipment> updatedInventory = new ArrayList<>(inventory);
+        updatedInventory.add(item);
+        try {
+            save(updatedInventory);
+        } catch (IOException e) {
+            logger.log(Level.WARNING, "Equipment addition could not be saved", e);
+            throw new EquipmentAdditionUnsuccessful("Could not save equipment: " + e.getMessage());
+        }
+    }
+
+    /** Checks that prefixes before the actual ID belong to textual name fragments. */
+    private static int skipNameIdFragments(String details, int firstIndex, int idIndex)
+            throws EquipmentAdditionUnsuccessful {
+        int currentIndex = firstIndex;
+        while (currentIndex < idIndex) {
+            if (!isNameIdText(details, currentIndex)) {
+                throw new EquipmentAdditionUnsuccessful(ADD_FORMAT_ERROR);
+            }
+            currentIndex = findFieldMarker(details, ID_MARKER, currentIndex + ID_MARKER.length());
+        }
+        return currentIndex;
+    }
+
+    /** Updates supplied details together while preserving identity and inventory order. */
+    public Equipment updateEquipment(String input) throws EquipmentUpdateUnsuccessful {
+        try {
+            Map<String, String> fields = EquipmentFields.parse(input, "update", EquipmentFields.ID_FIELD,
+                    EquipmentFields.NAME_FIELD, EquipmentFields.TYPE_FIELD,
+                    EquipmentFields.CONDITION_FIELD);
+            String id = fields.get(EquipmentFields.ID_FIELD);
+            if (!Equipment.isValidItemId(id)) {
+                throw new EquipmentUpdateUnsuccessful("Item ID must be from 001 to 999.");
+            }
+            if (fields.size() == 1) {
+                throw new EquipmentUpdateUnsuccessful("Supply a name, type, or condition to update.");
+            }
+            Equipment target = findEquipmentForUpdate(id);
+            return applyValidatedUpdate(target, fields);
+        } catch (IllegalArgumentException | EquipmentAdditionUnsuccessful | EquipmentUpdateUnsuccessful e) {
+            logger.log(Level.FINE, "Equipment update rejected: {0}", e.getMessage());
+            throw new EquipmentUpdateUnsuccessful(e.getMessage());
+        }
+    }
+
+    /** Finds exactly one item before applying an update. */
+    private Equipment findEquipmentForUpdate(String id) throws EquipmentUpdateUnsuccessful {
+        Equipment match = null;
+        for (Equipment item : inventory) {
+            if (item.getItemId().equals(id)) {
+                if (match != null) {
+                    throw new EquipmentUpdateUnsuccessful("Item ID " + id + " is not unique.");
+                }
+                match = item;
+            }
+        }
+        if (match == null) {
+            throw new EquipmentUpdateUnsuccessful("Item ID " + id + " does not exist.");
+        }
+        return match;
+    }
+
+    /** Saves new details before changing the existing object, preserving it if a write fails. */
+    private void saveUpdate(Equipment target, String name, String type, int condition)
+            throws EquipmentUpdateUnsuccessful {
+        ArrayList<Equipment> updatedInventory = new ArrayList<>(inventory);
+        updatedInventory.set(inventory.indexOf(target), new Equipment(name, target.getItemId(), type, condition));
+        try {
+            save(updatedInventory);
+        } catch (IOException e) {
+            logger.log(Level.WARNING, "Equipment update could not be saved", e);
+            throw new EquipmentUpdateUnsuccessful("Could not save equipment update: " + e.getMessage());
+        }
+    }
+
+    /** Validates all proposed values, persists them, and only then changes the existing object. */
+    private Equipment applyValidatedUpdate(Equipment target, Map<String, String> fields)
+            throws EquipmentAdditionUnsuccessful, EquipmentUpdateUnsuccessful {
+        String name = fields.getOrDefault(EquipmentFields.NAME_FIELD, target.getItemName());
+        String type = fields.getOrDefault(EquipmentFields.TYPE_FIELD, target.getType());
+        String condition = fields.getOrDefault(EquipmentFields.CONDITION_FIELD,
+                Integer.toString(target.getCondition()));
+        validateEquipmentDetails(name, target.getItemId(), type, condition);
+        int previousSize = inventory.size();
+        int parsedCondition = Integer.parseInt(condition);
+        saveUpdate(target, name, type, parsedCondition);
+        target.updateDetails(name, type, parsedCondition);
+        assert inventory.size() == previousSize : "Updates must not add or remove equipment";
+        assert target.getItemId().equals(fields.get(EquipmentFields.ID_FIELD))
+                : "Updates must preserve Item ID";
+        logger.log(Level.FINE, "Updated equipment with item ID {0}", target.getItemId());
+        return target;
     }
 }
