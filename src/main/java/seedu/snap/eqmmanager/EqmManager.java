@@ -142,12 +142,14 @@ public class EqmManager {
 
     /** Displays the outcome of a loan deletion. */
     private void deleteLoan(String input) {
+        // @@author Rohita-29
         try {
             Loan deleted = loans.deleteLoan(input);
             System.out.println("Loan for item ID " + deleted.getItemId() + " deleted successfully.");
         } catch (LoanDeletionUnsuccessful e) {
             System.out.println(e.getMessage());
         }
+        // @@author
     }
 
     /** Prevents deletion of borrowed equipment before asking the inventory to remove it. */
@@ -158,11 +160,13 @@ public class EqmManager {
                 throw new EquipmentDeletionUnsuccessful("Cannot delete item ID " + target.getItemId()
                         + " while it has an active loan.");
             }
+            // @@author Yi An
             equipment.deleteEquipment(input);
             System.out.println("Equipment with item ID " + target.getItemId() + " deleted successfully.");
         } catch (EquipmentDeletionUnsuccessful e) {
             System.out.println(e.getMessage());
         }
+        // @@author
     }
 
     /** Displays the outcome of equipment addition. */
@@ -177,12 +181,14 @@ public class EqmManager {
 
     /** Displays the outcome of loan addition. */
     private void addLoan(String input) {
+        // @@author Yi An
         try {
             loans.addLoan(input);
             System.out.println("Loan added successfully.");
         } catch (LoanAdditionUnsuccessful e) {
             System.out.println(e.getMessage());
         }
+        // @@author
     }
 
     /** Displays an update result while leaving validation and persistence to the handler. */

@@ -331,6 +331,7 @@ public class EquipmentHandler {
 
     /** Saves a candidate list first, so a failed write cannot add an item only in memory. */
     private void saveAddition(Equipment item) throws EquipmentAdditionUnsuccessful {
+        // @@author MatthewLeon888
         ArrayList<Equipment> updatedInventory = new ArrayList<>(inventory);
         updatedInventory.add(item);
         try {
@@ -339,6 +340,7 @@ public class EquipmentHandler {
             logger.log(Level.WARNING, "Equipment addition could not be saved", e);
             throw new EquipmentAdditionUnsuccessful("Could not save equipment: " + e.getMessage());
         }
+        // @@author
     }
 
     /** Checks that prefixes before the actual ID belong to textual name fragments. */
