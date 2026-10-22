@@ -41,8 +41,8 @@ class EquipmentAvailabilityValidationTest {
         for (String command : invalid) {
             assertThrows(LoanAdditionUnsuccessful.class, () -> handler.addLoan(command), command);
             assertFalse(camera.isLoaned(), command);
-            assertTrue(handler.loans.isEmpty(), command);
-            assertEquals(0, handler.numLoans, command);
+            assertTrue(handler.getLoanList().isEmpty(), command);
+            assertEquals(0, handler.getLoanCount(), command);
         }
         assertEquals("001", handler.addLoan(COMMAND).getItemId());
         assertTrue(camera.isLoaned());
@@ -55,17 +55,17 @@ class EquipmentAvailabilityValidationTest {
                 () -> handler.addLoan(COMMAND));
         assertEquals("Item ID 001 is already loaned out.", error.getMessage());
         assertTrue(camera.isLoaned());
-        assertTrue(handler.loans.isEmpty());
-        assertEquals(0, handler.numLoans);
+        assertTrue(handler.getLoanList().isEmpty());
+        assertEquals(0, handler.getLoanCount());
     }
 
     @Test
     void constructor_missingOrAlreadyLoanedEquipment_rejectsWithoutChangingCurrentLoan() throws Exception {
         LocalDateTime date = LocalDateTime.of(2026, 10, 1, 0, 0);
-        assertThrows(IllegalArgumentException.class, () -> new Loan(null, "002", date, date));
+        assertThrows(IllegalArgumentException.class, () -> new Loan((Equipment) null, "002", date, date));
         Loan original = handler.addLoan(COMMAND);
         assertThrows(IllegalArgumentException.class, () -> new Loan(camera, "003", date, date));
-        assertEquals(List.of(original), handler.loans);
+        assertEquals(List.of(original), handler.getLoanList());
         assertEquals("002", original.getBorrowerId());
         assertTrue(camera.isLoaned());
     }
@@ -81,6 +81,34 @@ class EquipmentAvailabilityValidationTest {
         old.setReturned(true);
         assertTrue(camera.isLoaned());
         assertFalse(current.isReturned());
-        assertEquals(List.of(current), handler.loans);
+        assertEquals(List.of(current), handler.getLoanList());
+    }
+
+    @Test
+    void constructor_availableEquipment_createsOneBorrowingTransaction() {
+        LocalDateTime date = LocalDateTime.of(2026, 10, 1, 0, 0);
+        Loan first = new Loan(camera, "002", date, date);
+        assertTrue(camera.isLoaned());
+        assertFalse(first.isReturned());
+        assertEquals("001", first.getItemId());
+        first.setReturned(true);
+        assertFalse(camera.isLoaned());
+        Loan second = new Loan(camera, "003", date, date);
+        assertThrows(IllegalStateException.class, () -> first.setReturned(false));
+        assertTrue(camera.isLoaned());
+        assertFalse(second.isReturned());
+    }
+
+    @Test
+    void attachEquipment_mismatchedOrReturnedRecord_doesNotReserveEquipment() {
+        LocalDateTime date = LocalDateTime.of(2026, 10, 1, 0, 0);
+        Loan wrongItem = new Loan("999", "002", date, date);
+        assertThrows(IllegalArgumentException.class, () -> wrongItem.attachEquipment(camera));
+        assertFalse(camera.isLoaned());
+        Loan returned = new Loan("001", "002", date, date);
+        returned.setReturned(true);
+        assertThrows(IllegalArgumentException.class, () -> returned.attachEquipment(camera));
+        assertTrue(returned.isReturned());
+        assertFalse(camera.isLoaned());
     }
 }

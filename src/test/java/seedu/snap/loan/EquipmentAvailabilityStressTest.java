@@ -62,7 +62,7 @@ class EquipmentAvailabilityStressTest {
             inventory.addEquipment("add i/Camera id/" + formatted + " type/camera cond/1");
             handler.addLoan(command(formatted, "01-10-26"));
         }
-        assertEquals(999, handler.numLoans);
+        assertEquals(999, handler.getLoanCount());
         for (Equipment item : inventory.getEquipmentList()) {
             assertTrue(item.isLoaned());
             assertThrows(LoanAdditionUnsuccessful.class,
@@ -71,7 +71,7 @@ class EquipmentAvailabilityStressTest {
         for (int i = 0; i < 999; i++) {
             Equipment item = inventory.getEquipmentList().get(i);
             if (i % 2 == 0) {
-                handler.loans.get(i).setReturned(true);
+                handler.getLoanList().get(i).setReturned(true);
             }
         }
         for (int i = 0; i < 999; i++) {
@@ -80,7 +80,7 @@ class EquipmentAvailabilityStressTest {
             handler.deleteLoan("delete-loan id/" + item.getItemId());
             assertFalse(item.isLoaned());
         }
-        assertEquals(0, handler.numLoans);
+        assertEquals(0, handler.getLoanCount());
     }
 
     @Test
@@ -121,19 +121,21 @@ class EquipmentAvailabilityStressTest {
                     active[index] = null;
                 }
                 break;
-            default:
+            case 3:
                 if (active[index] != null) {
                     assertThrows(EquipmentDeletionUnsuccessful.class,
                             () -> inventory.deleteEquipment("delete item/" + item.getItemId()));
                 }
                 break;
+            default:
+                throw new AssertionError("Unexpected test operation");
             }
             for (int i = 0; i < items.size(); i++) {
                 assertEquals(active[i] != null, items.get(i).isLoaned(), "step " + step + ", item " + i);
                 assertEquals(active[i] != null, handler.hasActiveLoanForItem(items.get(i).getItemId()));
                 assertSame(items.get(i), inventory.getEquipmentList().get(i));
             }
-            assertEquals(handler.loans.size(), handler.numLoans);
+            assertEquals(handler.getLoanList().size(), handler.getLoanCount());
         }
         assertEquals(List.copyOf(items), inventory.getEquipmentList());
     }

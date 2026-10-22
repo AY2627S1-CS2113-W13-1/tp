@@ -1,13 +1,21 @@
 package seedu.snap.loan;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
 import java.util.ArrayList;
-import java.util.logging.Logger;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.Set;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.EquipmentHandler;
@@ -22,16 +30,103 @@ public class LoanHandler {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-uu")
             .withResolverStyle(ResolverStyle.STRICT);
 
-    /** Records belong to this inventory; separate handlers must not share active loans. */
-    final ArrayList<Loan> loans = new ArrayList<>();
-    int numLoans = 0;
-
+    /** Loans managed by this handler instance. */
+    private final ArrayList<Loan> loans = new ArrayList<>();
+    /** Cached loan count kept in sync with {@link #loans}. */
+    private int numLoans = 0;
+    /** File used for persistence, or null when the handler is intentionally in-memory only. */
+    private final Path storageFile;
+    /** Inventory whose availability is tracked, or null for record-only storage operations. */
     private final EquipmentHandler equipment;
 
-    /** Connects this handler to the inventory used by the application. */
+    /** Creates an in-memory loan handler, mainly useful for isolated unit tests. */
+    public LoanHandler() {
+        this((Path) null);
+    }
+
+    /** Creates a loan handler backed by the supplied text file. */
+    public LoanHandler(Path storageFile) {
+        this(null, storageFile);
+    }
+
+    /** Creates an in-memory handler connected to the application inventory. */
     public LoanHandler(EquipmentHandler equipment) {
+        this(equipment, null);
         assert equipment != null : "Loan handler requires an inventory";
+    }
+
+    /** Connects persistent records to equipment; a null inventory permits record-only storage operations. */
+    public LoanHandler(EquipmentHandler equipment, Path storageFile) {
         this.equipment = equipment;
+        this.storageFile = storageFile;
+    }
+
+    /** Returns the number of currently loaded loans. */
+    public int getLoanCount() {
+        assert numLoans == loans.size() : "numLoans should match the size of the loans list";
+        return numLoans;
+    }
+
+    /** Returns a read-only view of this handler's loans for inspection and display. */
+    public List<Loan> getLoanList() {
+        return Collections.unmodifiableList(loans);
+    }
+
+    /** Persists the current loans when this handler has a backing file. */
+    public void saveToStorage() throws IOException {
+        save(loans);
+    }
+
+    /**
+     * Replaces the current loan list with records loaded from the backing file.
+     * A missing file represents an empty loan list.
+     *
+     * @throws IOException if saved data cannot be read or contains invalid records
+     */
+    public void loadFromStorage() throws IOException {
+        if (storageFile == null) {
+            return;
+        }
+        List<Loan> loaded = LoanStorage.load(storageFile);
+        Map<Loan, Equipment> bindings = validateSavedLoans(loaded);
+        for (Loan previous : loans) {
+            previous.detachEquipment();
+        }
+        loans.clear();
+        loans.addAll(loaded);
+        numLoans = loans.size();
+        for (Map.Entry<Loan, Equipment> binding : bindings.entrySet()) {
+            binding.getKey().attachEquipment(binding.getValue());
+        }
+        assert numLoans == loans.size() : "numLoans should match the size of the loans list";
+        logger.log(Level.INFO, "Loaded {0} loan(s) from {1}", new Object[]{numLoans, storageFile});
+    }
+
+    /** Validates the whole saved list before replacing records or changing equipment availability. */
+    private Map<Loan, Equipment> validateSavedLoans(List<Loan> loaded) throws IOException {
+        Set<String> activeIds = new HashSet<>();
+        Map<Loan, Equipment> bindings = new LinkedHashMap<>();
+        for (Loan loan : loaded) {
+            if (loan.isReturned()) {
+                continue;
+            }
+            if (!activeIds.add(loan.getItemId())) {
+                throw new IOException("Multiple active loans found for item ID " + loan.getItemId() + ".");
+            }
+            if (equipment == null) {
+                continue;
+            }
+            try {
+                Equipment item = findEquipment(loan.getItemId());
+                if (item.isLoaned() && !hasActiveLoanForItem(item.getItemId())) {
+                    throw new LoanAdditionUnsuccessful("Item ID " + item.getItemId() + " is already loaned out.");
+                }
+                bindings.put(loan, item);
+            } catch (LoanAdditionUnsuccessful e) {
+                throw new IOException("Invalid equipment association: " + e.getMessage(), e);
+            }
+        }
+        return bindings;
     }
 
 
@@ -43,57 +138,32 @@ public class LoanHandler {
      * @throws LoanAdditionUnsuccessful when the command cannot be added
      */
     public Loan addLoan(String input) throws LoanAdditionUnsuccessful {
-        String[] arguments = input == null ? new String[0] : input.trim().split("\\s+");
-        if (arguments.length != EXPECTED_ADD_ARGUMENT_COUNT) {
-            throw new LoanAdditionUnsuccessful("Incorrect number of arguments.");
-        }
-
-        if (!arguments[0].equals("loan")) {
-            throw new LoanAdditionUnsuccessful("Invalid command format. Expected: "
-                    + "loan id/[ITEM ID] b/[BORROWER ID] issued/[DD-MM-YY] due/[DD-MM-YY].");
-        }
-
-        String itemId = parseArgument(arguments[1], "id/", "/id", "item ID");
-        String borrowerId = parseArgument(arguments[2], "b/", "/b", "borrower ID");
-        LocalDateTime issuedDate = parseDateArgument(arguments[3], "issued/", "/issued");
-        LocalDateTime dueDate = parseDateArgument(arguments[4], "due/", "/due");
+        Loan loan = parseLoanRecord(input);
+        String itemId = loan.getItemId();
 
         if (hasActiveLoanForItem(itemId)) {
             throw new LoanAdditionUnsuccessful("An active loan already exists for item ID " + itemId + ".");
         }
 
-        if (issuedDate.isAfter(dueDate)) {
-            throw new LoanAdditionUnsuccessful("Issued date must not be later than the due date.");
+        Equipment target = equipment == null ? null : findAvailableEquipment(itemId);
+        assert loan != null : "Created loan must not be null.";
+        ArrayList<Loan> updatedLoans = new ArrayList<>(loans);
+        updatedLoans.add(loan);
+        try {
+            save(updatedLoans);
+        } catch (IOException e) {
+            logger.log(Level.WARNING, "Loan addition could not be saved", e);
+            throw new LoanAdditionUnsuccessful("Could not save loan: " + e.getMessage());
         }
 
-        Equipment item = findAvailableEquipment(itemId);
-        Loan loan = new Loan(item, borrowerId, issuedDate, dueDate);
-        assert loan != null : "Created loan must not be null.";
+        if (target != null) {
+            loan.attachEquipment(target);
+        }
         loans.add(loan);
         numLoans++;
         assert numLoans == loans.size() : "numLoans should match the size of the loans list";
         logger.log(Level.FINE, "Added loan for item ID {0}.", itemId);
         return loan;
-    }
-
-    /** Finds one available item, rejecting missing or ambiguous IDs before a loan changes any state. */
-    private Equipment findAvailableEquipment(String itemId) throws LoanAdditionUnsuccessful {
-        Equipment match = null;
-        for (Equipment item : equipment.getEquipmentList()) {
-            if (item.getItemId().equals(itemId)) {
-                if (match != null) {
-                    throw new LoanAdditionUnsuccessful("Item ID " + itemId + " is not unique.");
-                }
-                match = item;
-            }
-        }
-        if (match == null) {
-            throw new LoanAdditionUnsuccessful("Item ID " + itemId + " does not exist.");
-        }
-        if (match.isLoaned()) {
-            throw new LoanAdditionUnsuccessful("Item ID " + itemId + " is already loaned out.");
-        }
-        return match;
     }
 
     /**
@@ -135,6 +205,15 @@ public class LoanHandler {
         }
 
         Loan loan = matches.get(0);
+        ArrayList<Loan> updatedLoans = new ArrayList<>(loans);
+        updatedLoans.remove(loan);
+        try {
+            save(updatedLoans);
+        } catch (IOException e) {
+            logger.log(Level.WARNING, "Loan deletion could not be saved", e);
+            throw new LoanDeletionUnsuccessful("Could not save loan deletion: " + e.getMessage());
+        }
+
         loans.remove(loan);
         loan.detachEquipment();
         numLoans--;
@@ -143,6 +222,40 @@ public class LoanHandler {
         return loan;
     }
 
+    /**
+     * Parses a loan record without changing the current list.
+     * This is also used when validating persisted records.
+     */
+    static Loan parseLoanRecord(String input) throws LoanAdditionUnsuccessful {
+        String[] arguments = input == null ? new String[0] : input.trim().split("\\s+");
+        if (arguments.length != EXPECTED_ADD_ARGUMENT_COUNT) {
+            throw new LoanAdditionUnsuccessful("Incorrect number of arguments.");
+        }
+
+        if (!arguments[0].equals("loan")) {
+            throw new LoanAdditionUnsuccessful("Invalid command format. Expected: "
+                    + "loan id/[ITEM ID] b/[BORROWER ID] issued/[DD-MM-YY] due/[DD-MM-YY].");
+        }
+
+        String itemId = parseArgument(arguments[1], "id/", "/id", "item ID");
+        String borrowerId = parseArgument(arguments[2], "b/", "/b", "borrower ID");
+        LocalDateTime issuedDate = parseDateArgument(arguments[3], "issued/", "/issued");
+        LocalDateTime dueDate = parseDateArgument(arguments[4], "due/", "/due");
+
+        if (issuedDate.isAfter(dueDate)) {
+            throw new LoanAdditionUnsuccessful("Issued date must not be later than the due date.");
+        }
+
+        return new Loan(itemId, borrowerId, issuedDate, dueDate);
+    }
+
+    /** Saves the supplied loans when this handler has a backing file. */
+    private void save(List<Loan> loansToSave) throws IOException {
+        if (storageFile != null) {
+            LoanStorage.save(storageFile, loansToSave);
+            logger.log(Level.FINE, "Saved {0} loan(s) to {1}", new Object[]{loansToSave.size(), storageFile});
+        }
+    }
 
     /**
      * Extracts and validates an ID argument.
@@ -153,7 +266,7 @@ public class LoanHandler {
      * @param name            human-readable argument name for the error message
      * @return the validated three-digit ID
      */
-    private String parseArgument(String argument, String prefix, String alternatePrefix, String name)
+    private static String parseArgument(String argument, String prefix, String alternatePrefix, String name)
             throws LoanAdditionUnsuccessful {
         String value;
         if (argument.startsWith(prefix)) {
@@ -198,7 +311,7 @@ public class LoanHandler {
     /**
      * Creates an error for an invalid ID argument.
      */
-    private LoanAdditionUnsuccessful idFormatError(String prefix, String alternatePrefix, String name) {
+    private static LoanAdditionUnsuccessful idFormatError(String prefix, String alternatePrefix, String name) {
         return new LoanAdditionUnsuccessful("Invalid " + name + " format. Expected "
                 + prefix + "[three digits] or " + alternatePrefix + "[three digits].");
     }
@@ -211,7 +324,7 @@ public class LoanHandler {
      * @param alternatePrefix required prefix for the alternate date format
      * @return the parsed date at midnight
      */
-    private LocalDateTime parseDateArgument(String argument, String prefix, String alternatePrefix)
+    private static LocalDateTime parseDateArgument(String argument, String prefix, String alternatePrefix)
             throws LoanAdditionUnsuccessful {
         String value;
         if (argument.startsWith(prefix)) {
@@ -233,13 +346,16 @@ public class LoanHandler {
     /**
      * Creates an error for an invalid date argument.
      */
-    private LoanAdditionUnsuccessful dateFormatError(String prefix, String alternatePrefix) {
+    private static LoanAdditionUnsuccessful dateFormatError(String prefix, String alternatePrefix) {
         return new LoanAdditionUnsuccessful("Invalid date format. Expected " + prefix + "DD-MM-YY or "
                 + alternatePrefix + "DD-MM-YY.");
     }
 
     /**
      * Checks whether an item currently has an unreturned loan.
+     *
+     * @param itemId equipment ID to check
+     * @return whether deletion must be blocked to preserve an active loan's equipment association
      */
     public boolean hasActiveLoanForItem(String itemId) {
         for (Loan loan : loans) {
@@ -259,7 +375,7 @@ public class LoanHandler {
     }
 
     /**
-     * Prints out all equipment in inventory
+     * Prints the current loan records
      */
     public void viewAllLoans() {
         assert numLoans == loans.size() : "numLoans should match the size of the loans list";
@@ -278,5 +394,32 @@ public class LoanHandler {
                     (i + 1) + ")", item.getItemId(), item.getBorrowerId(), item.getIssuedDate(), item.getDueDate()
             );
         }
+    }
+
+    /** Finds one available item before a loan is saved or changes availability. */
+    private Equipment findAvailableEquipment(String itemId) throws LoanAdditionUnsuccessful {
+        Equipment item = findEquipment(itemId);
+        if (item.isLoaned()) {
+            throw new LoanAdditionUnsuccessful("Item ID " + itemId + " is already loaned out.");
+        }
+        return item;
+    }
+
+    /** Finds exactly one item, including when validating saved records before availability is restored. */
+    private Equipment findEquipment(String itemId) throws LoanAdditionUnsuccessful {
+        Equipment match = null;
+        for (Equipment item : equipment.getEquipmentList()) {
+            if (!item.getItemId().equals(itemId)) {
+                continue;
+            }
+            if (match != null) {
+                throw new LoanAdditionUnsuccessful("Item ID " + itemId + " is not unique.");
+            }
+            match = item;
+        }
+        if (match == null) {
+            throw new LoanAdditionUnsuccessful("Item ID " + itemId + " does not exist.");
+        }
+        return match;
     }
 }

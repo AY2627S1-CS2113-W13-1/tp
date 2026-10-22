@@ -8,7 +8,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
@@ -18,10 +17,15 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
@@ -30,6 +34,8 @@ import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
 class EquipmentHandlerTest {
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
     private PrintStream originalOutput;
+    @TempDir
+    private Path temporaryDirectory;
 
     @BeforeEach
     void redirectOutput() {
@@ -42,26 +48,22 @@ class EquipmentHandlerTest {
         System.setOut(originalOutput);
     }
 
-    @Test
-    public void addEquipment_unicodeWhitespaceFields_throwValidationException() {
+    @ParameterizedTest(name = "[{index}] rejects {0}")
+    @MethodSource("invalidAddCommands")
+    void addEquipment_invalidCommands_preservesInventory(String command) throws EquipmentAdditionUnsuccessful {
+        assertTrue(EquipmentHandler.class.desiredAssertionStatus(), "Run this test with Java assertions enabled");
         EquipmentHandler handler = new EquipmentHandler();
-        String[] invalidCommands = {
-            "add i/\u2003 id/001 type/camera cond/1",
-            "add i/Camera id/001 type/\u2003 cond/1"
-        };
-        for (String command : invalidCommands) {
-            assertThrows(EquipmentAdditionUnsuccessful.class, () -> handler.addEquipment(command));
-            assertEquals(0, handler.getEquipmentList().size());
-        }
+        Equipment original = handler.addEquipment("add i/Original camera id/001 type/camera cond/1");
+
+        assertThrows(EquipmentAdditionUnsuccessful.class, () -> handler.addEquipment(command));
+
+        assertEquals(1, handler.getEquipmentList().size());
+        assertSame(original, handler.getEquipmentList().getFirst());
     }
 
-    @Test
-    public void addEquipment_repeatedValidAndInvalidInputs_preservesInventory()
-            throws EquipmentAdditionUnsuccessful {
-        EquipmentHandler handler = new EquipmentHandler();
-        ArrayList<Equipment> expected = new ArrayList<>();
-        Random random = new Random(25);
-        String[] invalidCommands = {
+    /** Supplies each invalid input explicitly, including Unicode blanks and the name-length limit. */
+    private static String[] invalidAddCommands() {
+        return new String[]{
             null, "", "add", "ADD i/Camera id/001 type/camera cond/1",
             "add i/Camera id/000 type/camera cond/1",
             "add i/Camera id/1000 type/camera cond/1",
@@ -72,26 +74,58 @@ class EquipmentHandlerTest {
             "add i/Camera id/001 type/camera cond/1 extra",
             "add i/Camera id/001 type/ cond/1",
             "add i/" + "A".repeat(101) + " id/001 type/camera cond/1",
-            "add id/001 i/Camera type/camera cond/1"
+            "add id/001 i/Camera type/camera cond/1",
+            "add i/\u2003 id/001 type/camera cond/1",
+            "add i/Camera id/001 type/\u2003 cond/1"
         };
-        for (int i = 1; i <= 999; i++) {
-            String invalidCommand = invalidCommands[random.nextInt(invalidCommands.length)];
+    }
+
+    @ParameterizedTest(name = "[{index}] preserves name: {0}")
+    @MethodSource("validEquipmentNames")
+    void addEquipment_nameBoundariesAndUnicode_preservesFields(String name) throws EquipmentAdditionUnsuccessful {
+        EquipmentHandler handler = new EquipmentHandler();
+        Equipment item = handler.addEquipment("add i/" + name + " id/001 type/camera accessories cond/10");
+
+        assertEquals(name, item.getItemName());
+        assertEquals("001", item.getItemId());
+        assertEquals("camera accessories", item.getType());
+        assertEquals(10, item.getCondition());
+        assertSame(item, handler.getEquipmentList().getFirst());
+    }
+
+    /** Supplies the shortest and longest valid names plus a name containing Unicode text. */
+    private static String[] validEquipmentNames() {
+        return new String[]{"A", "A".repeat(100), "Camera \u76f8\u673a"};
+    }
+
+    @Test
+    void getEquipmentList_readOnlyView_rejectsExternalChanges() throws EquipmentAdditionUnsuccessful {
+        EquipmentHandler handler = new EquipmentHandler();
+        Equipment original = handler.addEquipment("add i/Camera id/001 type/camera cond/1");
+        List<Equipment> view = handler.getEquipmentList();
+
+        assertThrows(UnsupportedOperationException.class, () -> view.add(original));
+        assertThrows(UnsupportedOperationException.class, () -> view.remove(0));
+        assertThrows(UnsupportedOperationException.class, view::clear);
+        assertEquals(List.of(original), handler.getEquipmentList());
+    }
+
+    @Test
+    public void addEquipment_repeatedValidAndInvalidInputs_preservesInventory()
+            throws EquipmentAdditionUnsuccessful {
+        EquipmentHandler handler = new EquipmentHandler();
+        ArrayList<Equipment> expected = new ArrayList<>();
+        String[] invalidCommands = invalidAddCommands();
+        for (int i = 1; i <= 20; i++) {
+            String invalidCommand = invalidCommands[(i - 1) % invalidCommands.length];
             assertThrows(EquipmentAdditionUnsuccessful.class, () -> handler.addEquipment(invalidCommand));
             assertEquals(expected, handler.getEquipmentList());
 
-            String name = i % 2 == 0 ? "A".repeat(100) : "Camera \u76f8\u673a";
             String id = String.format(java.util.Locale.ROOT, "%03d", i);
-            int condition = random.nextInt(10) + 1;
-            Equipment equipment = handler.addEquipment("add i/" + name + " id/" + id
-                    + " type/camera accessories cond/" + condition);
+            Equipment equipment = handler.addEquipment("add i/Camera id/" + id + " type/camera cond/1");
             expected.add(equipment);
-            assertEquals(name, equipment.getItemName());
-            assertEquals(id, equipment.getItemId());
-            assertEquals(condition, equipment.getCondition());
             assertEquals(expected, handler.getEquipmentList());
         }
-        assertThrows(UnsupportedOperationException.class, () -> handler.getEquipmentList().clear());
-        assertEquals(expected, handler.getEquipmentList());
     }
 
     @Test
@@ -167,6 +201,50 @@ class EquipmentHandlerTest {
     }
 
     @Test
+    public void persistence_addDeleteAndReload_preservesInventoryAcrossHandlers() throws Exception {
+        Path file = temporaryDirectory.resolve("data/equipment.txt");
+        EquipmentHandler firstHandler = new EquipmentHandler(file);
+        firstHandler.addEquipment("add i/Canon EOS R10 id/001 type/camera cond/1");
+
+        EquipmentHandler secondHandler = new EquipmentHandler(file);
+        secondHandler.loadFromStorage();
+        assertEquals(1, secondHandler.getEquipmentList().size());
+        assertEquals("Canon EOS R10", secondHandler.getEquipmentList().getFirst().getItemName());
+
+        secondHandler.deleteEquipment("delete item/001");
+        EquipmentHandler thirdHandler = new EquipmentHandler(file);
+        thirdHandler.loadFromStorage();
+        assertTrue(thirdHandler.getEquipmentList().isEmpty());
+    }
+
+    @Test
+    public void persistence_duplicateId_isRejectedWithoutChangingSavedRecords() throws Exception {
+        Path file = temporaryDirectory.resolve("equipment.txt");
+        EquipmentHandler handler = new EquipmentHandler(file);
+        handler.addEquipment("add i/Camera id/001 type/camera cond/1");
+
+        EquipmentAdditionUnsuccessful exception = org.junit.jupiter.api.Assertions.assertThrows(
+                EquipmentAdditionUnsuccessful.class,
+                () -> handler.addEquipment("add i/Tripod id/001 type/accessories cond/5"));
+
+        assertEquals("Item ID 001 already exists.", exception.getMessage());
+        assertEquals(1, EquipmentStorage.load(file).size());
+    }
+
+    @Test
+    public void storage_blankLines_areIgnoredDuringLoad() throws Exception {
+        Path file = temporaryDirectory.resolve("equipment.txt");
+        Files.writeString(file, System.lineSeparator()
+                + "  " + System.lineSeparator()
+                + "add i/Camera id/001 type/camera cond/1" + System.lineSeparator());
+
+        List<Equipment> loaded = EquipmentStorage.load(file);
+
+        assertEquals(1, loaded.size());
+        assertEquals("001", loaded.getFirst().getItemId());
+    }
+
+    @Test
     public void addEquipment_multipleItems_increasesInventoryOneAtATime() throws EquipmentAdditionUnsuccessful {
         EquipmentHandler handler = new EquipmentHandler();
         Equipment camera = handler.addEquipment("add i/Canon EOS R10 id/001 type/camera cond/1");
@@ -179,20 +257,48 @@ class EquipmentHandlerTest {
     }
 
     @Test
-    public void addEquipment_invalidInputsWithAssertionsEnabled_throwValidationException() {
-        assertTrue(EquipmentHandler.class.desiredAssertionStatus(), "Run this test with Java assertions enabled");
+    void addEquipment_duplicateIds_preservesAllExistingEquipment() throws EquipmentAdditionUnsuccessful {
         EquipmentHandler handler = new EquipmentHandler();
-        String[] invalidInputs = {
-            null,
-            "add",
-            "add i/Camera id/000 type/camera cond/1",
-            "add i/Camera id/001 type/camera cond/11"
-        };
+        Equipment first = handler.addEquipment("add i/Camera id/001 type/camera cond/1");
+        Equipment middle = handler.addEquipment("add i/Tripod id/500 type/accessories cond/5");
+        Equipment last = handler.addEquipment("add i/Lens id/999 type/lens cond/10");
+        List<Equipment> expected = List.of(first, middle, last);
 
-        for (String input : invalidInputs) {
-            assertThrows(EquipmentAdditionUnsuccessful.class, () -> handler.addEquipment(input));
-            assertEquals(0, handler.getEquipmentList().size());
+        for (Equipment existing : expected) {
+            String[] duplicateCommands = {
+                "add i/" + existing.getItemName() + " id/" + existing.getItemId()
+                        + " type/" + existing.getType() + " cond/" + existing.getCondition(),
+                "add i/Replacement id/" + existing.getItemId() + " type/audio cond/3"
+            };
+            for (String command : duplicateCommands) {
+                EquipmentAdditionUnsuccessful exception = assertThrows(EquipmentAdditionUnsuccessful.class,
+                        () -> handler.addEquipment(command));
+                assertEquals("Item ID " + existing.getItemId() + " already exists.", exception.getMessage());
+                assertEquals(expected, handler.getEquipmentList());
+            }
         }
+    }
+
+    @Test
+    void addEquipment_sameNameWithDifferentIds_acceptsBoth() throws EquipmentAdditionUnsuccessful {
+        EquipmentHandler handler = new EquipmentHandler();
+        Equipment first = handler.addEquipment("add i/Camera id/001 type/camera cond/1");
+        Equipment second = handler.addEquipment("add i/Camera id/002 type/camera cond/1");
+
+        assertEquals(List.of(first, second), handler.getEquipmentList());
+    }
+
+    @Test
+    void addEquipment_deletedId_acceptsReplacement()
+            throws EquipmentAdditionUnsuccessful, EquipmentDeletionUnsuccessful {
+        EquipmentHandler handler = new EquipmentHandler();
+        handler.addEquipment("add i/Camera id/001 type/camera cond/1");
+        handler.deleteEquipment("delete item/001");
+
+        Equipment replacement = handler.addEquipment("add i/Tripod id/001 type/accessories cond/5");
+
+        assertEquals(List.of(replacement), handler.getEquipmentList());
+        assertEquals("Tripod", replacement.getItemName());
     }
 
     @Test

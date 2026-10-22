@@ -15,16 +15,34 @@ public class Loan {
 
     /** Creates a loan with an initially unreturned status. */
     public Loan(Equipment equipment, String borrowerId, LocalDateTime issuedDate, LocalDateTime dueDate) {
-        if (equipment == null || equipment.isLoaned()) {
-            throw new IllegalArgumentException("A loan requires available equipment.");
-        }
-        this.equipment = equipment;
-        this.itemId = equipment.getItemId();
-        equipment.setLoaned(true);
+        this(availableItemId(equipment), borrowerId, issuedDate, dueDate);
+        attachEquipment(equipment);
+    }
+
+    /** Restores a record without reserving equipment; the handler reconnects active records after validation. */
+    public Loan(String itemId, String borrowerId, LocalDateTime issuedDate, LocalDateTime dueDate) {
+        this.itemId = itemId;
         this.borrowerId = borrowerId;
         this.issuedDate = issuedDate;
         this.dueDate = dueDate;
         this.isReturned = false;
+    }
+
+    /** Checks availability before constructing a new borrowing transaction. */
+    private static String availableItemId(Equipment equipment) {
+        if (equipment == null || equipment.isLoaned()) {
+            throw new IllegalArgumentException("A loan requires available equipment.");
+        }
+        return equipment.getItemId();
+    }
+
+    /** Connects a validated active record to its matching equipment after a successful load or save. */
+    void attachEquipment(Equipment equipment) {
+        if (isReturned || !itemId.equals(availableItemId(equipment))) {
+            throw new IllegalArgumentException("An active loan requires matching available equipment.");
+        }
+        this.equipment = equipment;
+        equipment.setLoaned(true);
     }
 
     public String getItemId() {
@@ -76,7 +94,7 @@ public class Loan {
         if (this.isReturned == isReturned) {
             return;
         }
-        if (!isReturned && equipment != null) {
+        if (!isReturned) {
             throw new IllegalStateException("Returned loans cannot be reactivated.");
         }
         this.isReturned = isReturned;
