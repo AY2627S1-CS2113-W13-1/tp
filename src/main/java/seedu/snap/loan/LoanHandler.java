@@ -104,15 +104,19 @@ public class LoanHandler {
 
     /** Validates the whole saved list before replacing records or changing equipment availability. */
     private Map<Loan, Equipment> validateSavedLoans(List<Loan> loaded) throws IOException {
+        // @@author MatthewLeon888
         Set<String> activeIds = new HashSet<>();
+        // @@author
         Map<Loan, Equipment> bindings = new LinkedHashMap<>();
         for (Loan loan : loaded) {
             if (loan.isReturned()) {
                 continue;
             }
+            // @@author MatthewLeon888
             if (!activeIds.add(loan.getItemId())) {
                 throw new IOException("Multiple active loans found for item ID " + loan.getItemId() + ".");
             }
+            // @@author
             if (equipment == null) {
                 continue;
             }
