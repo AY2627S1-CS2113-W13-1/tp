@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -15,12 +16,16 @@ import java.util.Locale;
 import java.util.Random;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import seedu.snap.eqmmanager.EqmManager;
 import seedu.snap.exceptions.EquipmentFilteringUnsuccessful;
 
 /** Checks filter grammar, all field orders, large inputs, and a seeded independent matching model. */
 class EquipmentFilterStressTest {
+    @TempDir
+    private Path temporaryDataDirectory;
+
     @Test
     void parse_unicodeSeparatorsAndBlankValues_handlesEachExplicitCase() throws Exception {
         Equipment camera = new Equipment("Camera", "001", "camera", 1);
@@ -137,7 +142,7 @@ class EquipmentFilterStressTest {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         try (PrintStream captured = new PrintStream(output, true, StandardCharsets.UTF_8)) {
             System.setOut(captured);
-            EqmManager manager = new EqmManager();
+            EqmManager manager = new EqmManager(temporaryDataDirectory);
             manager.executeInput("add i/Camera id/001 type/camera cond/1");
             for (String space : new String[]{" ", "\t", "\u2003", "\u00a0"}) {
                 output.reset();

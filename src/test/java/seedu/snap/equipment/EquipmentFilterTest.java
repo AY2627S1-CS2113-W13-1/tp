@@ -9,12 +9,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import seedu.snap.eqmmanager.EqmManager;
 import seedu.snap.exceptions.EquipmentFilteringUnsuccessful;
@@ -22,6 +24,9 @@ import seedu.snap.loan.LoanHandler;
 
 /** Covers individual and combined filters, invalid fields, availability, and inventory preservation. */
 class EquipmentFilterTest {
+    @TempDir
+    private Path temporaryDataDirectory;
+
     private Equipment camera;
     private Equipment tripod;
 
@@ -122,7 +127,7 @@ class EquipmentFilterTest {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         try (PrintStream captured = new PrintStream(output, true, StandardCharsets.UTF_8)) {
             System.setOut(captured);
-            EqmManager manager = new EqmManager();
+            EqmManager manager = new EqmManager(temporaryDataDirectory);
             manager.executeInput("filter cond/1-10");
             assertEquals("No equipment matches the filters." + System.lineSeparator(),
                     output.toString(StandardCharsets.UTF_8));
@@ -141,7 +146,7 @@ class EquipmentFilterTest {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         try (PrintStream captured = new PrintStream(output, true, StandardCharsets.UTF_8)) {
             System.setOut(captured);
-            EqmManager manager = new EqmManager();
+            EqmManager manager = new EqmManager(temporaryDataDirectory);
             manager.executeInput("add i/First Camera id/999 type/camera cond/1");
             manager.executeInput("add i/Excluded Tripod id/002 type/accessory cond/5");
             manager.executeInput("add i/Second Camera id/001 type/camera cond/10");
@@ -166,7 +171,7 @@ class EquipmentFilterTest {
     void executeInput_availabilityChangesAfterLoanDeletion() {
         PrintStream original = System.out;
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        EqmManager manager = new EqmManager();
+        EqmManager manager = new EqmManager(temporaryDataDirectory);
         try (PrintStream captured = new PrintStream(output, true, StandardCharsets.UTF_8)) {
             System.setOut(captured);
             manager.executeInput("add i/Lens id/998 type/lens cond/2");
@@ -209,7 +214,7 @@ class EquipmentFilterTest {
         PrintStream original = System.out;
         try (PrintStream captured = new PrintStream(output, true, StandardCharsets.UTF_8)) {
             System.setOut(captured);
-            EqmManager manager = new EqmManager();
+            EqmManager manager = new EqmManager(temporaryDataDirectory);
             manager.executeInput("add i/Camera id/001 type/camera cond/1");
             output.reset();
             manager.executeInput("filter cond/9-1");
@@ -223,6 +228,14 @@ class EquipmentFilterTest {
             assertTrue(text.contains("Equipment with item ID 001 deleted successfully."));
         } finally {
             System.setOut(original);
+        }
+    }
+
+    @Test
+    void parse_nonbreakingWhitespaceAfterRepeatedId_rejectsNumericField() {
+        for (String space : new String[]{"\u00a0", "\u2007", "\u202f", "\u2003", " "}) {
+            String command = "filter id/001 i/Camera id/" + space + "999";
+            assertThrows(EquipmentFilteringUnsuccessful.class, () -> EquipmentFilter.parse(command));
         }
     }
 }

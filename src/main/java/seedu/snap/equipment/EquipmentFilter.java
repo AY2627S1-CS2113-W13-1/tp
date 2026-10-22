@@ -15,8 +15,8 @@ import seedu.snap.loan.LoanHandler;
 public final class EquipmentFilter {
     private static final Logger logger = Logger.getLogger(EquipmentFilter.class.getName());
     private final Map<String, String> fields;
-    private int minimumCondition = 1;
-    private int maximumCondition = 10;
+    private int minimumCondition = Equipment.MIN_CONDITION;
+    private int maximumCondition = Equipment.MAX_CONDITION;
 
     private EquipmentFilter(Map<String, String> fields) {
         this.fields = fields;
@@ -25,7 +25,9 @@ public final class EquipmentFilter {
     /** Parses optional ID, name, type, condition/range, and availability filters in any order. */
     public static EquipmentFilter parse(String input) throws EquipmentFilteringUnsuccessful {
         try {
-            Map<String, String> fields = EquipmentFields.parse(input, "filter", "id", "i", "type", "cond", "status");
+            Map<String, String> fields = EquipmentFields.parse(input, "filter", EquipmentFields.ID_FIELD,
+                    EquipmentFields.NAME_FIELD, EquipmentFields.TYPE_FIELD,
+                    EquipmentFields.CONDITION_FIELD, EquipmentFields.STATUS_FIELD);
             EquipmentFilter filter = new EquipmentFilter(fields);
             filter.validate();
             return filter;
@@ -37,15 +39,15 @@ public final class EquipmentFilter {
 
     /** Validates scalar values before any inventory is inspected. */
     private void validate() {
-        String id = fields.get("id");
-        if (id != null && (!id.matches("[0-9]{3}") || id.equals("000"))) {
+        String id = fields.get(EquipmentFields.ID_FIELD);
+        if (id != null && !Equipment.isValidItemId(id)) {
             throw new IllegalArgumentException("Item ID must be from 001 to 999.");
         }
-        String name = fields.get("i");
-        if (name != null && name.length() > 100) {
+        String name = fields.get(EquipmentFields.NAME_FIELD);
+        if (name != null && name.length() > Equipment.MAX_NAME_LENGTH) {
             throw new IllegalArgumentException("Item name must contain 1 to 100 characters.");
         }
-        String condition = fields.get("cond");
+        String condition = fields.get(EquipmentFields.CONDITION_FIELD);
         if (condition != null) {
             if (!condition.matches("(10|[1-9])(-(10|[1-9]))?")) {
                 throw new IllegalArgumentException("Condition must be from 1 to 10 or an inclusive range, e.g. 1-3.");
@@ -57,7 +59,7 @@ public final class EquipmentFilter {
                 throw new IllegalArgumentException("The minimum condition must not exceed the maximum.");
             }
         }
-        String status = fields.get("status");
+        String status = fields.get(EquipmentFields.STATUS_FIELD);
         if (status != null && !status.equalsIgnoreCase("available") && !status.equalsIgnoreCase("loaned")) {
             throw new IllegalArgumentException("Status must be available or loaned.");
         }
@@ -78,12 +80,17 @@ public final class EquipmentFilter {
 
     /** Applies every supplied criterion; availability comes from the current active loan records. */
     boolean matches(Equipment item, boolean isLoaned) {
-        return (!fields.containsKey("id") || fields.get("id").equals(item.getItemId()))
-                && (!fields.containsKey("i") || item.getItemName().toLowerCase(Locale.ROOT)
-                        .contains(fields.get("i").toLowerCase(Locale.ROOT)))
-                && (!fields.containsKey("type") || fields.get("type").equalsIgnoreCase(item.getType()))
-                && item.getCondition() >= minimumCondition && item.getCondition() <= maximumCondition
-                && (!fields.containsKey("status")
-                        || fields.get("status").equalsIgnoreCase(isLoaned ? "loaned" : "available"));
+        String id = fields.get(EquipmentFields.ID_FIELD);
+        boolean matchesId = id == null || id.equals(item.getItemId());
+        String name = fields.get(EquipmentFields.NAME_FIELD);
+        boolean matchesName = name == null || item.getItemName().toLowerCase(Locale.ROOT)
+                .contains(name.toLowerCase(Locale.ROOT));
+        String type = fields.get(EquipmentFields.TYPE_FIELD);
+        boolean matchesType = type == null || type.equalsIgnoreCase(item.getType());
+        boolean matchesCondition = item.getCondition() >= minimumCondition && item.getCondition() <= maximumCondition;
+        String status = fields.get(EquipmentFields.STATUS_FIELD);
+        String actualStatus = isLoaned ? "loaned" : "available";
+        boolean matchesStatus = status == null || status.equalsIgnoreCase(actualStatus);
+        return matchesId && matchesName && matchesType && matchesCondition && matchesStatus;
     }
 }

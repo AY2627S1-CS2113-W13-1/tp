@@ -1,10 +1,15 @@
 package seedu.snap.eqmmanager;
 
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.equipment.EquipmentFilter;
 import seedu.snap.exceptions.EquipmentFilteringUnsuccessful;
-import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.equipment.Equipment;
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
@@ -16,16 +21,45 @@ import seedu.snap.loan.Loan;
 
 /** Coordinates command input and execution for the SNAP application. */
 public class EqmManager {
+    private static final Logger logger = Logger.getLogger(EqmManager.class.getName());
     private final Parser parser;
     private final LoanHandler loans;
     private final EquipmentHandler equipment;
+    private final String startupError;
     private boolean isRunning;
 
     /** Creates an equipment manager ready to accept commands. */
     public EqmManager() {
+        this(Path.of("data"));
+    }
+
+    /**
+     * Creates a manager using the supplied directory for persistent equipment and loan files.
+     * A missing directory or file is treated as an empty data set.
+     *
+     * @param dataDirectory directory containing equipment.txt and loans.txt
+     */
+    public EqmManager(Path dataDirectory) {
+        if (dataDirectory == null) {
+            throw new IllegalArgumentException("Data directory must not be null.");
+        }
         this.parser = new Parser();
-        this.loans = new LoanHandler();
-        this.equipment = new EquipmentHandler();
+        this.loans = new LoanHandler(dataDirectory.resolve("loans.txt"));
+        this.equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
+        List<String> loadErrors = new ArrayList<>();
+        try {
+            equipment.loadFromStorage();
+        } catch (IOException e) {
+            loadErrors.add("equipment.txt: " + e.getMessage());
+            logger.log(Level.SEVERE, "Could not load saved equipment data", e);
+        }
+        try {
+            loans.loadFromStorage();
+        } catch (IOException e) {
+            loadErrors.add("loans.txt: " + e.getMessage());
+            logger.log(Level.SEVERE, "Could not load saved loan data", e);
+        }
+        this.startupError = loadErrors.isEmpty() ? null : String.join(System.lineSeparator(), loadErrors);
         this.isRunning = true;
     }
 
@@ -35,50 +69,124 @@ public class EqmManager {
      * @param input command to execute
      */
     public void executeInput(String input) {
-        input = input == null ? "" : input.replaceAll("(?U)^\\s+|\\s+$", "");
-        if (input.equals("bye")) {
-            isRunning = false;
-        } else if (input.equals("delete-loan") || input.startsWith("delete-loan ")){
-            try{
-                Loan deletedLoan = loans.deleteLoan(input);
-                System.out.println("Loan for item ID " + deletedLoan.getItemId() + " deleted successfully.");
-            } catch (LoanDeletionUnsuccessful e){
-                System.out.println(e.getMessage());
-            }
-        } else if (input.equals("delete") || input.startsWith("delete ")) {
-            try {
-                Equipment deletedEquipment = equipment.deleteEquipment(input);
-                System.out.println("Equipment with item ID " + deletedEquipment.getItemId()
-                        + " deleted successfully.");
-            } catch (EquipmentDeletionUnsuccessful e) {
-                System.out.println(e.getMessage());
-            }
-        } else if (input.equals("add") || input.startsWith("add ")) {
-            try {
-                equipment.addEquipment(input);
-                System.out.println("Equipment added successfully.");
-            } catch (EquipmentAdditionUnsuccessful e) {
-                System.out.println(e.getMessage());
-            }
-        } else if (input.equals("loan") || input.startsWith("loan ")) {
-            try {
-                loans.addLoan(input);
-                System.out.println("Loan added successfully.");
-            } catch (LoanAdditionUnsuccessful e) {
-                System.out.println(e.getMessage());
-            }
-        } else if (input.matches("(?U)filter(?:\\s.*)?")) {
-            filterEquipment(input);
-        } else if (input.equals("list loans")) {
-            LoanHandler.viewAllLoans();
-        } else if (input.equals("list") || input.startsWith("list ")) {
+        String normalizedInput = input == null ? "" : input.replaceAll("(?U)^\\s+|\\s+$", "");
+        if (startupError != null) {
+            System.out.println("Could not load saved data: " + startupError);
+        } else if (normalizedInput.equals("bye")) {
+            isRunning = !saveBeforeExit();
+        } else if (normalizedInput.equals("delete-loan") || normalizedInput.startsWith("delete-loan ")) {
+            deleteLoan(normalizedInput);
+        } else if (normalizedInput.equals("delete") || normalizedInput.startsWith("delete ")) {
+            deleteEquipment(normalizedInput);
+        } else if (normalizedInput.matches("(?U)add(?:\\s.*)?")) {
+            addEquipment(normalizedInput);
+        } else if (normalizedInput.equals("loan") || normalizedInput.startsWith("loan ")) {
+            addLoan(normalizedInput);
+        } else if (normalizedInput.matches("(?U)filter(?:\\s.*)?")) {
+            filterEquipment(normalizedInput);
+        } else if (normalizedInput.equals("list loans")) {
+            loans.viewAllLoans();
+        } else if (normalizedInput.equals("list") || normalizedInput.startsWith("list ")) {
             equipment.viewAllEquipment();
         } else {
-            System.out.println("Success message.");
+            System.out.println("Command not recognised. Please try again.");
         }
     }
 
-    /** Handles filter errors without changing equipment or stopping the command loop. */
+    /** Runs the main input and execution loop until the user exits. */
+    public void run() {
+        if (startupError != null) {
+            System.out.println("Could not load saved data: " + startupError);
+            return;
+        }
+
+        System.out.println("Welcome to snAp. Loaded " + equipment.getEquipmentList().size()
+                + " equipment record(s) and " + loans.getLoanCount() + " loan(s).");
+
+        // main process
+        String input;
+        while (isRunning) {
+            input = parser.getInput();
+            executeInput(input);
+        }
+
+        System.out.println("Goodbye.");
+    }
+
+    /**
+     * Performs a final save for both data files before ending the session.
+     *
+     * @return true when both files were saved successfully, or false when the user should retry
+     */
+    private boolean saveBeforeExit() {
+        List<String> saveErrors = new ArrayList<>();
+        try {
+            equipment.saveToStorage();
+        } catch (IOException e) {
+            saveErrors.add("equipment.txt: " + e.getMessage());
+            logger.log(Level.SEVERE, "Could not save equipment data before exit", e);
+        }
+        try {
+            loans.saveToStorage();
+        } catch (IOException e) {
+            saveErrors.add("loans.txt: " + e.getMessage());
+            logger.log(Level.SEVERE, "Could not save loan data before exit", e);
+        }
+
+        if (!saveErrors.isEmpty()) {
+            System.out.println("Could not save data: " + String.join(System.lineSeparator(), saveErrors));
+            return false;
+        }
+        logger.log(Level.FINE, "Saved application data before exit");
+        return true;
+    }
+
+    /** Displays the outcome of a loan deletion. */
+    private void deleteLoan(String input) {
+        try {
+            Loan deleted = loans.deleteLoan(input);
+            System.out.println("Loan for item ID " + deleted.getItemId() + " deleted successfully.");
+        } catch (LoanDeletionUnsuccessful e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    /** Prevents deletion of borrowed equipment before asking the inventory to remove it. */
+    private void deleteEquipment(String input) {
+        try {
+            Equipment target = equipment.getEquipmentForDeletion(input);
+            if (loans.hasActiveLoanForItem(target.getItemId())) {
+                throw new EquipmentDeletionUnsuccessful("Cannot delete item ID " + target.getItemId()
+                        + " while it has an active loan.");
+            }
+            equipment.deleteEquipment(input);
+            System.out.println("Equipment with item ID " + target.getItemId() + " deleted successfully.");
+        } catch (EquipmentDeletionUnsuccessful e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    /** Displays the outcome of equipment addition. */
+    private void addEquipment(String input) {
+        try {
+            equipment.addEquipment(input);
+            System.out.println("Equipment added successfully.");
+        } catch (EquipmentAdditionUnsuccessful e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    /** Displays the outcome of loan addition. */
+    private void addLoan(String input) {
+        try {
+            loans.addLoan(input);
+            System.out.println("Loan added successfully.");
+        } catch (LoanAdditionUnsuccessful e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    /** Displays matching equipment or the filter error. */
     private void filterEquipment(String input) {
         try {
             EquipmentFilter filter = EquipmentFilter.parse(input);
@@ -91,19 +199,5 @@ public class EqmManager {
         } catch (EquipmentFilteringUnsuccessful e) {
             System.out.println(e.getMessage());
         }
-    }
-
-    /** Runs the main input and execution loop until the user exits. */
-    public void run() {
-        System.out.println("Greeting message.");
-
-        // main process
-        String input;
-        while (isRunning) {
-            input = parser.getInput();
-            executeInput(input);
-        }
-
-        System.out.println("Goodbye message.");
     }
 }
