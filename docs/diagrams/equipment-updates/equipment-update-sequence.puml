@@ -1,0 +1,4 @@
+@startuml equipment-update-sequence
+!include ../style.puml
+' Add the participants and equipment update messages here.
+@enduml

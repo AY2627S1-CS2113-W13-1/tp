@@ -1,0 +1,4 @@
+@startuml equipment-update-class
+!include ../style.puml
+' Add the equipment update classes and their relationships here.
+@enduml
