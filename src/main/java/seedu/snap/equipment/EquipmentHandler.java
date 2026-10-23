@@ -1,8 +1,12 @@
 package seedu.snap.equipment;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -23,9 +27,45 @@ public class EquipmentHandler {
     private static final String ID_MARKER = "id/";
     private static final String TYPE_MARKER = "type/";
     private static final String CONDITION_MARKER = "cond/";
+    private static final String DAMAGE_MARKER = "damage/";
+    private static final String[] DETAIL_MARKERS = {"sensor/", "zoom/", "capacity/", "thread/", DAMAGE_MARKER};
+
+    /** Optional command fields after the common equipment fields. */
+    private record EquipmentDetails(String attribute, String damage) {
+    }
 
     /** Equipment stored by this handler during the current application session. */
     private final ArrayList<Equipment> inventory = new ArrayList<>();
+    /** File used for persistence, or null when the handler is intentionally in-memory only. */
+    private final Path storageFile;
+
+    /** Creates an in-memory equipment handler, mainly useful for isolated unit tests. */
+    public EquipmentHandler() {
+        this(null);
+    }
+
+    /** Creates an equipment handler backed by the supplied text file. */
+    public EquipmentHandler(Path storageFile) {
+        this.storageFile = storageFile;
+    }
+
+    /**
+     * Replaces the current inventory with records loaded from the backing file.
+     * A missing file is treated as an empty inventory.
+     *
+     * @throws IOException if saved data cannot be read or is invalid
+     */
+    public void loadFromStorage() throws IOException {
+        if (storageFile == null) {
+            return;
+        }
+        List<Equipment> loaded = EquipmentStorage.load(storageFile);
+        inventory.clear();
+        inventory.addAll(loaded);
+        assert inventory.size() == loaded.size() : "Loaded inventory size must be preserved";
+        logger.log(Level.INFO, "Loaded {0} equipment item(s) from {1}",
+                new Object[]{inventory.size(), storageFile});
+    }
 
     /**
      * Adds equipment when the command contains valid details.
@@ -51,6 +91,18 @@ public class EquipmentHandler {
             logger.log(Level.FINE, "Equipment addition rejected: {0}", e.getMessage());
             throw e;
         }
+        // Persist the candidate state before mutating memory so a failed write cannot
+        // leave the in-memory inventory ahead of the saved inventory.
+        ArrayList<Equipment> updatedInventory = new ArrayList<>(inventory);
+        updatedInventory.add(equipment);
+        try {
+            save(updatedInventory);
+        } catch (IOException e) {
+            EquipmentAdditionUnsuccessful exception = new EquipmentAdditionUnsuccessful(
+                    "Could not save equipment: " + e.getMessage());
+            logger.log(Level.WARNING, "Equipment addition could not be saved", e);
+            throw exception;
+        }
         inventory.add(equipment);
         assert inventory.size() == previousSize + 1 : "Adding equipment must increase inventory size by one";
         assert inventory.getLast() == equipment : "The newly added equipment must be last in the inventory";
@@ -65,6 +117,11 @@ public class EquipmentHandler {
      */
     public List<Equipment> getEquipmentList() {
         return Collections.unmodifiableList(inventory);
+    }
+
+    /** Persists the current inventory when this handler has a backing file. */
+    public void saveToStorage() throws IOException {
+        save(inventory);
     }
 
     /**
@@ -108,12 +165,31 @@ public class EquipmentHandler {
                     + " while it has an active loan.");
         }
         int previousSize = inventory.size();
+
+        ArrayList<Equipment> updatedInventory = new ArrayList<>(inventory);
+        updatedInventory.remove(equipment);
+        try {
+            save(updatedInventory);
+        } catch (IOException e) {
+            logger.log(Level.WARNING, "Equipment deletion could not be saved", e);
+            throw new EquipmentDeletionUnsuccessful("Could not save equipment deletion: " + e.getMessage());
+        }
+
         // Removal must still run when assertions are disabled.
         boolean wasRemoved = inventory.remove(equipment);
         assert wasRemoved : "Equipment found for deletion must still be in the inventory";
         assert inventory.size() == previousSize - 1 : "Deletion must remove exactly one equipment record";
         logger.log(Level.INFO, "Deleted equipment with ID {0}.", equipment.getItemId());
         return equipment;
+    }
+
+    /** Saves the supplied inventory when this handler has a backing file. */
+    private void save(List<Equipment> equipment) throws IOException {
+        if (storageFile != null) {
+            EquipmentStorage.save(storageFile, equipment);
+            logger.log(Level.FINE, "Saved {0} equipment item(s) to {1}",
+                    new Object[]{equipment.size(), storageFile});
+        }
     }
 
     /**
@@ -137,9 +213,24 @@ public class EquipmentHandler {
         String itemName = addDetails.substring(itemIndex + ITEM_MARKER.length(), idIndex).trim();
         String id = addDetails.substring(idIndex + ID_MARKER.length(), typeIndex).trim();
         String type = addDetails.substring(typeIndex + TYPE_MARKER.length(), conditionIndex).trim();
-        String condition = addDetails.substring(conditionIndex + CONDITION_MARKER.length()).trim();
+        int detailsIndex = findDetailsStart(addDetails, conditionIndex + CONDITION_MARKER.length());
+        int conditionEnd = detailsIndex == -1 ? addDetails.length() : detailsIndex;
+        String condition = addDetails.substring(conditionIndex + CONDITION_MARKER.length(), conditionEnd).trim();
+        String details = detailsIndex == -1 ? "" : addDetails.substring(detailsIndex).trim();
 
-        return createValidatedEquipment(itemName, id, type, condition);
+        return createValidatedEquipment(itemName, id, type, condition, details);
+    }
+
+    /** Finds optional fields after the condition, leaving existing names containing these prefixes valid. */
+    private static int findDetailsStart(String details, int startIndex) {
+        int firstIndex = -1;
+        for (String marker : DETAIL_MARKERS) {
+            int index = findFieldMarker(details, marker, startIndex);
+            if (index != -1 && (firstIndex == -1 || index < firstIndex)) {
+                firstIndex = index;
+            }
+        }
+        return firstIndex;
     }
 
     /** Finds the last ID prefix before the type field, allowing earlier id/card-like name text. */
@@ -181,7 +272,7 @@ public class EquipmentHandler {
 
     /** Validates extracted values before construction, preserving field-specific error messages. */
     private static Equipment createValidatedEquipment(String itemName, String id, String type,
-            String conditionString) throws EquipmentAdditionUnsuccessful {
+            String conditionString, String detailsString) throws EquipmentAdditionUnsuccessful {
         if (itemName.isBlank() || itemName.length() > 100) {
             throw new EquipmentAdditionUnsuccessful("Item name must contain 1 to 100 characters.");
         }
@@ -200,7 +291,72 @@ public class EquipmentHandler {
 
         int condition = Integer.parseInt(conditionString);
 
-        return new Equipment(itemName, id, type, condition);
+        String normalisedType = type.toLowerCase(Locale.ROOT);
+        String attributeMarker = switch (normalisedType) {
+        case "camera" -> "sensor/";
+        case "lens" -> "zoom/";
+        case "battery" -> "capacity/";
+        case "tripod" -> "thread/";
+        default -> throw new EquipmentAdditionUnsuccessful(
+                "Unsupported equipment type. Use: camera, lens, battery or tripod.");
+        };
+        EquipmentDetails details = parseDetails(detailsString, attributeMarker);
+        return switch (normalisedType) {
+        case "camera" -> new Camera(itemName, id, condition, details.attribute(),
+                parseDamage(details.damage(), Camera.CameraDamage.class, normalisedType));
+        case "lens" -> new Lens(itemName, id, condition, details.attribute(),
+                parseDamage(details.damage(), Lens.LensDamage.class, normalisedType));
+        case "battery" -> new Battery(itemName, id, condition, details.attribute(),
+                parseDamage(details.damage(), Battery.BatteryDamage.class, normalisedType));
+        case "tripod" -> new Tripod(itemName, id, condition, details.attribute(),
+                parseDamage(details.damage(), Tripod.TripodDamage.class, normalisedType));
+        default -> throw new AssertionError("Validated equipment type must have a subclass");
+        };
+    }
+
+    /** Rejects repeated, reordered or inapplicable optional fields before extracting their values. */
+    private static EquipmentDetails parseDetails(String details, String attributeMarker)
+            throws EquipmentAdditionUnsuccessful {
+        if (details.isEmpty()) {
+            return new EquipmentDetails("unspecified", "NONE");
+        }
+        int attributeIndex = findFieldMarker(details, attributeMarker, 0);
+        int damageIndex = findFieldMarker(details, DAMAGE_MARKER, 0);
+        boolean attributeFirst = attributeIndex == 0 && (damageIndex == -1 || damageIndex > attributeIndex);
+        boolean damageOnly = attributeIndex == -1 && damageIndex == 0;
+        if (!attributeFirst && !damageOnly) {
+            throw new EquipmentAdditionUnsuccessful("Optional fields must use " + attributeMarker
+                    + "[DETAIL] followed by damage/[DAMAGE], with either field optional.");
+        }
+        for (String marker : DETAIL_MARKERS) {
+            int index = findFieldMarker(details, marker, 0);
+            if (index != -1 && (!marker.equals(attributeMarker) && !marker.equals(DAMAGE_MARKER)
+                    || findFieldMarker(details, marker, index + marker.length()) != -1)) {
+                throw new EquipmentAdditionUnsuccessful("Repeated or inapplicable equipment detail field: " + marker);
+            }
+        }
+        String attribute = "unspecified";
+        if (attributeFirst) {
+            int attributeEnd = damageIndex == -1 ? details.length() : damageIndex;
+            attribute = details.substring(attributeMarker.length(), attributeEnd).trim();
+            if (attribute.isBlank() || attribute.length() > 100 || attribute.matches("(?s).*\\R.*")) {
+                throw new EquipmentAdditionUnsuccessful(
+                        "Equipment detail must contain 1 to 100 characters on one line.");
+            }
+        }
+        String damage = damageIndex == -1 ? "NONE" : details.substring(damageIndex + DAMAGE_MARKER.length()).trim();
+        return new EquipmentDetails(attribute, damage);
+    }
+
+    /** Converts the command value to the damage enum belonging to the selected equipment type. */
+    private static <T extends Enum<T>> T parseDamage(String value, Class<T> damageClass, String type)
+            throws EquipmentAdditionUnsuccessful {
+        try {
+            return Enum.valueOf(damageClass, value.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            throw new EquipmentAdditionUnsuccessful("Invalid damage for " + type + ". Use: "
+                    + Arrays.toString(damageClass.getEnumConstants()) + ".");
+        }
     }
 
     /**
@@ -251,8 +407,8 @@ public class EquipmentHandler {
      */
     public void viewAllEquipment() {
         System.out.printf(
-                "%-4s %-24s | %-6s | %-15s | %-9s | %-10s%n",
-                "No.", "NAME", "ID", "TYPE", "CONDITION", "STATUS"
+                "%-4s %-24s | %-6s | %-15s | %-9s | %-10s | %s%n",
+                "No.", "NAME", "ID", "TYPE", "CONDITION", "STATUS", "DETAILS"
         );
 
         List<Equipment> equipmentList = getEquipmentList();
@@ -263,9 +419,9 @@ public class EquipmentHandler {
             assert item != null : "Equipment list must not contain null items";
 
             System.out.printf(
-                    "%-4s %-24s | %-6s | %-15s | %-9d | %-10s%n",
+                    "%-4s %-24s | %-6s | %-15s | %-9d | %-10s | %s%n",
                     (i + 1) + ")", item.getItemName(), item.getItemId(), item.getType(), item.getCondition(),
-                    item.isLoaned() ? "Loaned" : "Available"
+                    item.isLoaned() ? "Loaned" : "Available", item.getDetails()
             );
         }
     }

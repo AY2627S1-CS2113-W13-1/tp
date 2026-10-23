@@ -16,22 +16,32 @@ public class Loan {
     private LocalDateTime dueDate;
     private boolean isReturned;
 
-    /** Creates a loan with an initially unreturned status. */
-    public Loan(Equipment equipment, String borrowerId, LocalDateTime issuedDate, LocalDateTime dueDate) {
-        if (equipment == null || equipment.isLoaned()) {
-            throw new IllegalArgumentException("A loan requires available equipment.");
-        }
-        assert !equipment.isLoaned() : "A new loan must target available equipment";
+    /** Creates a detached record for parsing or loading loan history, without changing equipment availability. */
+    public Loan(String itemId, String borrowerId, LocalDateTime issuedDate, LocalDateTime dueDate) {
+        assert itemId != null && itemId.matches("\\d{3}") : "A loan must have a three-digit item ID";
         assert borrowerId != null && !borrowerId.isBlank() : "A loan must have a borrower ID";
         assert issuedDate != null && dueDate != null : "A loan must have issue and due dates";
         assert !issuedDate.isAfter(dueDate) : "A loan issue date must not be after its due date";
-        this.equipment = equipment;
-        this.itemId = equipment.getItemId();
+        this.itemId = itemId;
         this.borrowerId = borrowerId;
         this.issuedDate = issuedDate;
         this.dueDate = dueDate;
         this.isReturned = false;
+    }
+
+    /** Creates an active loan candidate; its equipment is reserved only after the handler saves it. */
+    public Loan(Equipment equipment, String borrowerId, LocalDateTime issuedDate, LocalDateTime dueDate) {
+        this(getAvailableItemId(equipment), borrowerId, issuedDate, dueDate);
         logger.log(Level.FINE, "Created loan candidate for item ID {0}.", itemId);
+    }
+
+    /** Validates the candidate's equipment without retaining a reference or reserving it. */
+    private static String getAvailableItemId(Equipment equipment) {
+        if (equipment == null || equipment.isLoaned()) {
+            throw new IllegalArgumentException("A loan requires available equipment.");
+        }
+        assert !equipment.isLoaned() : "A new loan must target available equipment";
+        return equipment.getItemId();
     }
 
     public String getItemId() {
@@ -70,29 +80,37 @@ public class Loan {
         return isReturned;
     }
 
-    /** Releases an active loan's item and prevents deleted records from changing its future availability. */
+    /** Associates a validated active record with its item after saving or validating all loaded records. */
+    void attachEquipment(Equipment equipment) {
+        assert !isReturned : "Returned loan history must stay detached";
+        assert equipment != null && equipment.getItemId().equals(itemId) : "Attached equipment must match the loan";
+        assert !equipment.isLoaned() : "Attached equipment must be available";
+        assert this.equipment == null || this.equipment == equipment : "A loan must not change equipment references";
+        this.equipment = equipment;
+        equipment.setLoaned(true);
+    }
+
+    /** Releases an active loan's item and prevents removed records from changing its future availability. */
     void detachEquipment() {
         if (equipment != null && !isReturned) {
             equipment.setLoaned(false);
-            logger.log(Level.INFO, "Released equipment with item ID {0} after loan deletion.", itemId);
+            logger.log(Level.INFO, "Released equipment with item ID {0} from its loan.", itemId);
         }
         equipment = null;
-        assert equipment == null : "Deleted loans must not retain equipment references";
+        assert equipment == null : "Detached loans must not retain equipment references";
     }
 
-    /** Updates return status and availability together; an existing active loan cannot be overwritten. */
+    /** Releases returned equipment permanently; historical loans cannot be reactivated. */
     public void setReturned(boolean isReturned) {
         if (this.isReturned == isReturned) {
             return;
         }
-        if (!isReturned && equipment != null && equipment.isLoaned()) {
-            logger.log(Level.WARNING, "Rejected reactivation of loan for already-loaned item ID {0}.", itemId);
-            throw new IllegalStateException("Equipment already has an active loan.");
+        if (!isReturned) {
+            logger.log(Level.WARNING, "Rejected reactivation of returned loan for item ID {0}.", itemId);
+            throw new IllegalStateException("A returned loan cannot be reactivated.");
         }
+        detachEquipment();
         this.isReturned = isReturned;
-        if (equipment != null) {
-            equipment.setLoaned(!isReturned);
-        }
         logger.log(Level.INFO, "Loan for item ID {0} marked as {1}.",
                 new Object[]{itemId, isReturned ? "returned" : "active"});
     }

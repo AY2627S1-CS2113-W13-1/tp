@@ -10,15 +10,18 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
+import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.EquipmentHandler;
+import seedu.snap.equipment.Tripod;
 import seedu.snap.eqmmanager.EqmManager;
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
@@ -30,20 +33,14 @@ class EquipmentAvailabilityTest {
     private EquipmentHandler equipment;
     private Equipment camera;
     private LoanHandler loans;
+    @TempDir
+    private Path temporaryDirectory;
 
     @BeforeEach
     void setUp() throws EquipmentAdditionUnsuccessful {
-        LoanHandler.loans.clear();
-        LoanHandler.numLoans = 0;
         equipment = new EquipmentHandler();
         camera = equipment.addEquipment("add i/Camera id/001 type/camera cond/1");
         loans = new LoanHandler(equipment);
-    }
-
-    @AfterEach
-    void clearLoans() {
-        LoanHandler.loans.clear();
-        LoanHandler.numLoans = 0;
     }
 
     @Test
@@ -52,11 +49,38 @@ class EquipmentAvailabilityTest {
     }
 
     @Test
+    void loanConstructor_nullOrUnavailableEquipment_rejectsWithoutChangingAvailability() {
+        LocalDateTime issued = LocalDateTime.of(2026, 10, 1, 0, 0);
+        LocalDateTime due = LocalDateTime.of(2026, 10, 2, 0, 0);
+
+        assertThrows(IllegalArgumentException.class, () -> new Loan((Equipment) null, "002", issued, due));
+        assertFalse(camera.isLoaned());
+
+        camera.setLoaned(true);
+        assertThrows(IllegalArgumentException.class, () -> new Loan(camera, "002", issued, due));
+        assertTrue(camera.isLoaned());
+        assertTrue(loans.getLoanList().isEmpty());
+    }
+
+    @Test
+    void loanConstructor_unactivatedCandidate_cannotReleaseLaterActiveLoan() throws LoanAdditionUnsuccessful {
+        Loan candidate = new Loan(camera, "002", LocalDateTime.of(2026, 10, 1, 0, 0),
+                LocalDateTime.of(2026, 10, 2, 0, 0));
+        assertFalse(camera.isLoaned());
+        Loan active = loans.addLoan(LOAN);
+
+        candidate.setReturned(true);
+
+        assertTrue(camera.isLoaned());
+        assertSame(active, loans.getLoanList().getFirst());
+    }
+
+    @Test
     void addLoan_existingItem_marksItLoaned() throws LoanAdditionUnsuccessful {
         assertFalse(camera.isLoaned());
         loans.addLoan(LOAN);
         assertTrue(camera.isLoaned());
-        assertEquals(1, LoanHandler.numLoans);
+        assertEquals(1, loans.getLoanCount());
     }
 
     @Test
@@ -65,7 +89,7 @@ class EquipmentAvailabilityTest {
                 () -> loans.addLoan(LOAN.replace("id/001", "id/999")));
         assertEquals("Item ID 999 does not exist.", error.getMessage());
         assertFalse(camera.isLoaned());
-        assertTrue(LoanHandler.loans.isEmpty());
+        assertTrue(loans.getLoanList().isEmpty());
     }
 
     @Test
@@ -74,7 +98,7 @@ class EquipmentAvailabilityTest {
             LOAN.replace("02-10-26", "01-09-26"), LOAN + " extra"}) {
             assertThrows(LoanAdditionUnsuccessful.class, () -> loans.addLoan(command));
             assertFalse(camera.isLoaned());
-            assertEquals(0, LoanHandler.numLoans);
+            assertEquals(0, loans.getLoanCount());
         }
         loans.addLoan(LOAN);
         assertTrue(camera.isLoaned());
@@ -84,14 +108,14 @@ class EquipmentAvailabilityTest {
     void addLoan_alreadyLoaned_preservesOriginalLoan() throws LoanAdditionUnsuccessful {
         Loan original = loans.addLoan(LOAN);
         assertThrows(LoanAdditionUnsuccessful.class, () -> loans.addLoan(LOAN));
-        assertEquals(List.of(original), LoanHandler.loans);
+        assertEquals(List.of(original), loans.getLoanList());
         assertTrue(camera.isLoaned());
     }
 
     @Test
     void addLoan_ambiguousEquipmentId_rejectsWithoutReservingEitherItem()
             throws Exception {
-        Equipment duplicate = new Equipment("Tripod", "001", "accessory", 2);
+        Equipment duplicate = new Tripod("Tripod", "001", 2);
         Field field = EquipmentHandler.class.getDeclaredField("inventory");
         field.setAccessible(true);
         @SuppressWarnings("unchecked")
@@ -100,7 +124,7 @@ class EquipmentAvailabilityTest {
         assertThrows(LoanAdditionUnsuccessful.class, () -> loans.addLoan(LOAN));
         assertFalse(camera.isLoaned());
         assertFalse(duplicate.isLoaned());
-        assertTrue(LoanHandler.loans.isEmpty());
+        assertTrue(loans.getLoanList().isEmpty());
     }
 
     @Test
@@ -119,11 +143,23 @@ class EquipmentAvailabilityTest {
     }
 
     @Test
+    void setReturned_returnedLoanCannotReactivateEvenWhenEquipmentIsAvailable() throws LoanAdditionUnsuccessful {
+        Loan returned = loans.addLoan(LOAN);
+        returned.setReturned(true);
+
+        assertThrows(IllegalStateException.class, () -> returned.setReturned(false));
+
+        assertTrue(returned.isReturned());
+        assertFalse(camera.isLoaned());
+        assertFalse(loans.hasActiveLoanForItem("001"));
+    }
+
+    @Test
     void deleteLoan_activeLoan_releasesEquipment() throws Exception {
         loans.addLoan(LOAN);
         loans.deleteLoan("delete-loan id/001");
         assertFalse(camera.isLoaned());
-        assertEquals(0, LoanHandler.numLoans);
+        assertEquals(0, loans.getLoanCount());
         loans.addLoan(LOAN);
         assertTrue(camera.isLoaned());
     }
@@ -135,8 +171,8 @@ class EquipmentAvailabilityTest {
         Loan current = loans.addLoan(LOAN);
         deleted.setReturned(true);
         assertTrue(camera.isLoaned());
-        assertSame(current, LoanHandler.loans.getFirst());
-        deleted.setReturned(false);
+        assertSame(current, loans.getLoanList().getFirst());
+        assertThrows(IllegalStateException.class, () -> deleted.setReturned(false));
         assertTrue(camera.isLoaned());
     }
 
@@ -146,7 +182,24 @@ class EquipmentAvailabilityTest {
         loans.addLoan(LOAN.replace("01-10-26", "02-10-26"));
         loans.deleteLoan("delete-loan id/001 issued/01-10-26");
         assertTrue(camera.isLoaned());
-        assertEquals(1, LoanHandler.numLoans);
+        assertEquals(1, loans.getLoanCount());
+    }
+
+    @Test
+    void deleteLoan_returnedHistoryAfterEquipmentIdReuse_doesNotReleaseReplacement() throws Exception {
+        Loan returned = loans.addLoan(LOAN);
+        returned.setReturned(true);
+        equipment.deleteEquipment("delete item/001");
+        Equipment replacement = equipment.addEquipment("add i/Replacement tripod id/001 type/tripod cond/4");
+        Loan active = loans.addLoan(LOAN.replace("01-10-26", "02-10-26"));
+
+        assertSame(returned, loans.deleteLoan("delete-loan id/001 issued/01-10-26"));
+        returned.setReturned(true);
+        assertThrows(IllegalStateException.class, () -> returned.setReturned(false));
+
+        assertTrue(replacement.isLoaned());
+        assertFalse(camera.isLoaned());
+        assertEquals(List.of(active), loans.getLoanList());
     }
 
     @Test
@@ -155,7 +208,7 @@ class EquipmentAvailabilityTest {
         assertThrows(seedu.snap.exceptions.LoanDeletionUnsuccessful.class,
                 () -> loans.deleteLoan("delete-loan id/999"));
         assertTrue(camera.isLoaned());
-        assertSame(original, LoanHandler.loans.getFirst());
+        assertSame(original, loans.getLoanList().getFirst());
     }
 
     @Test
@@ -173,7 +226,7 @@ class EquipmentAvailabilityTest {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         try (PrintStream captured = new PrintStream(output, true, StandardCharsets.UTF_8)) {
             System.setOut(captured);
-            EqmManager manager = new EqmManager();
+            EqmManager manager = new EqmManager(temporaryDirectory);
             manager.executeInput(LOAN);
             manager.executeInput("add i/Camera id/001 type/camera cond/1");
             manager.executeInput(LOAN);
