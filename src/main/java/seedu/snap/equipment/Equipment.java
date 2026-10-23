@@ -23,9 +23,9 @@ public abstract class Equipment {
     private static final Pattern BLANK_TEXT = Pattern.compile("\\s*", Pattern.UNICODE_CHARACTER_CLASS);
 
     private static final Logger logger = Logger.getLogger(Equipment.class.getName());
-    private final String itemName;
+    private String itemName;
     private final String itemId;
-    private final int condition;
+    private int condition;
     private boolean isLoaned = false;
 
     /**
@@ -97,6 +97,16 @@ public abstract class Equipment {
     /** Checks the three-digit Item ID range, excluding the reserved all-zero ID. */
     static boolean isValidItemId(String id) {
         return id != null && id.matches(ITEM_ID_PATTERN) && !id.equals(RESERVED_ITEM_ID);
+    }
+
+    /** Applies validated name and condition together, preserving subtype, details, ID, and loan state. */
+    public final void updateDetails(String itemName, int condition) {
+        assert hasText(itemName) && itemName.length() <= MAX_NAME_LENGTH
+                : "Equipment name must contain 1 to 100 characters";
+        assert condition >= MIN_CONDITION && condition <= MAX_CONDITION
+                : "Equipment condition must be from 1 to 10";
+        this.itemName = itemName;
+        this.condition = condition;
     }
 
     /**

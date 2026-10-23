@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -14,8 +15,9 @@ import java.util.regex.Pattern;
 
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
+import seedu.snap.exceptions.EquipmentUpdateUnsuccessful;
 
-/** Handles adding, deleting, and displaying equipment, including filtered and persistent records. */
+/** Handles adding, updating, deleting, and displaying equipment, including filtered and persistent records. */
 public class EquipmentHandler {
     /** Diagnostic logger; the application sends outcomes and detailed traces to local files. */
     private static final Logger logger = Logger.getLogger(EquipmentHandler.class.getName());
@@ -255,22 +257,7 @@ public class EquipmentHandler {
     /** Validates extracted values before construction, preserving field-specific error messages. */
     private static Equipment createValidatedEquipment(String itemName, String id, String type,
             String conditionString, String detailsString) throws EquipmentAdditionUnsuccessful {
-        if (!Equipment.hasText(itemName) || itemName.length() > Equipment.MAX_NAME_LENGTH) {
-            throw new EquipmentAdditionUnsuccessful("Item name must contain 1 to 100 characters.");
-        }
-
-        if (!Equipment.isValidItemId(id)) {
-            throw new EquipmentAdditionUnsuccessful("Item ID must be from 001 to 999.");
-        }
-
-        if (!Equipment.hasText(type)) {
-            throw new EquipmentAdditionUnsuccessful("Type cannot be empty.");
-        }
-
-        if (!conditionString.matches("10|[1-9]")) {
-            throw new EquipmentAdditionUnsuccessful("Condition must be a whole number from 1 to 10.");
-        }
-
+        validateEquipmentDetails(itemName, id, type, conditionString);
         int condition = Integer.parseInt(conditionString);
 
         String normalisedType = type.toLowerCase(Locale.ROOT);
@@ -294,6 +281,23 @@ public class EquipmentHandler {
                 parseDamage(details.damage(), Tripod.TripodDamage.class, normalisedType));
         default -> throw new AssertionError("Validated equipment type must have a subclass");
         };
+    }
+
+    /** Shares value rules between addition and updates before either changes the inventory. */
+    private static void validateEquipmentDetails(String itemName, String id, String type, String conditionString)
+            throws EquipmentAdditionUnsuccessful {
+        if (!Equipment.hasText(itemName) || itemName.length() > Equipment.MAX_NAME_LENGTH) {
+            throw new EquipmentAdditionUnsuccessful("Item name must contain 1 to 100 characters.");
+        }
+        if (!Equipment.isValidItemId(id)) {
+            throw new EquipmentAdditionUnsuccessful("Item ID must be from 001 to 999.");
+        }
+        if (!Equipment.hasText(type)) {
+            throw new EquipmentAdditionUnsuccessful("Type cannot be empty.");
+        }
+        if (!conditionString.matches("10|[1-9]")) {
+            throw new EquipmentAdditionUnsuccessful("Condition must be a whole number from 1 to 10.");
+        }
     }
 
     /** Rejects repeated, reordered or inapplicable optional fields before extracting their values. */
@@ -439,5 +443,81 @@ public class EquipmentHandler {
             currentIndex = findFieldMarker(details, ID_MARKER, currentIndex + ID_MARKER.length());
         }
         return currentIndex;
+    }
+
+    /** Updates supplied details together while preserving identity and inventory order. */
+    public Equipment updateEquipment(String input) throws EquipmentUpdateUnsuccessful {
+        try {
+            Map<String, String> fields = EquipmentFields.parse(input, "update", EquipmentFields.ID_FIELD,
+                    EquipmentFields.NAME_FIELD, EquipmentFields.TYPE_FIELD,
+                    EquipmentFields.CONDITION_FIELD);
+            String id = fields.get(EquipmentFields.ID_FIELD);
+            if (!Equipment.isValidItemId(id)) {
+                throw new EquipmentUpdateUnsuccessful("Item ID must be from 001 to 999.");
+            }
+            if (fields.size() == 1) {
+                throw new EquipmentUpdateUnsuccessful("Supply a name, type, or condition to update.");
+            }
+            Equipment target = findEquipmentForUpdate(id);
+            return applyValidatedUpdate(target, fields);
+        } catch (IllegalArgumentException | EquipmentAdditionUnsuccessful | EquipmentUpdateUnsuccessful e) {
+            logger.log(Level.FINE, "Equipment update rejected: {0}", e.getMessage());
+            throw new EquipmentUpdateUnsuccessful(e.getMessage());
+        }
+    }
+
+    /** Finds exactly one item before applying an update. */
+    private Equipment findEquipmentForUpdate(String id) throws EquipmentUpdateUnsuccessful {
+        Equipment match = null;
+        for (Equipment item : inventory) {
+            if (item.getItemId().equals(id)) {
+                if (match != null) {
+                    throw new EquipmentUpdateUnsuccessful("Item ID " + id + " is not unique.");
+                }
+                match = item;
+            }
+        }
+        if (match == null) {
+            throw new EquipmentUpdateUnsuccessful("Item ID " + id + " does not exist.");
+        }
+        return match;
+    }
+
+    /** Saves a copy of the same subclass and its details before changing the existing object. */
+    private void saveUpdate(Equipment target, String name, int condition)
+            throws EquipmentAdditionUnsuccessful, EquipmentUpdateUnsuccessful {
+        Equipment proposed = createValidatedEquipment(name, target.getItemId(), target.getType(),
+                Integer.toString(condition), target.getDetails());
+        ArrayList<Equipment> updatedInventory = new ArrayList<>(inventory);
+        updatedInventory.set(inventory.indexOf(target), proposed);
+        try {
+            save(updatedInventory);
+        } catch (IOException e) {
+            logger.log(Level.WARNING, "Equipment update could not be saved", e);
+            throw new EquipmentUpdateUnsuccessful("Could not save equipment update: " + e.getMessage());
+        }
+    }
+
+    /** Validates all values, rejects a different type, and saves before changing the existing object. */
+    private Equipment applyValidatedUpdate(Equipment target, Map<String, String> fields)
+            throws EquipmentAdditionUnsuccessful, EquipmentUpdateUnsuccessful {
+        String name = fields.getOrDefault(EquipmentFields.NAME_FIELD, target.getItemName());
+        String type = fields.getOrDefault(EquipmentFields.TYPE_FIELD, target.getType());
+        String condition = fields.getOrDefault(EquipmentFields.CONDITION_FIELD,
+                Integer.toString(target.getCondition()));
+        validateEquipmentDetails(name, target.getItemId(), type, condition);
+        if (!type.equalsIgnoreCase(target.getType())) {
+            throw new EquipmentUpdateUnsuccessful("Equipment type cannot be changed. Item ID "
+                    + target.getItemId() + " must remain " + target.getType() + ".");
+        }
+        int previousSize = inventory.size();
+        int parsedCondition = Integer.parseInt(condition);
+        saveUpdate(target, name, parsedCondition);
+        target.updateDetails(name, parsedCondition);
+        assert inventory.size() == previousSize : "Updates must not add or remove equipment";
+        assert target.getItemId().equals(fields.get(EquipmentFields.ID_FIELD))
+                : "Updates must preserve Item ID";
+        logger.log(Level.FINE, "Updated equipment with item ID {0}", target.getItemId());
+        return target;
     }
 }

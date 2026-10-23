@@ -13,6 +13,7 @@ import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
 import seedu.snap.exceptions.EquipmentFilteringUnsuccessful;
+import seedu.snap.exceptions.EquipmentUpdateUnsuccessful;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 import seedu.snap.loan.Loan;
@@ -84,6 +85,8 @@ public class EqmManager {
             addLoan(normalizedInput);
         } else if (normalizedInput.matches("(?U)filter(?:\\s.*)?")) {
             filterEquipment(normalizedInput);
+        } else if (normalizedInput.matches("(?U)update(?:\\s.*)?")) {
+            updateEquipment(normalizedInput);
         } else if (normalizedInput.equals("list loans")) {
             loans.viewAllLoans();
         } else if (normalizedInput.equals("list") || normalizedInput.startsWith("list ")) {
@@ -203,6 +206,16 @@ public class EqmManager {
                 equipment.viewEquipment(matches);
             }
         } catch (EquipmentFilteringUnsuccessful e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    /** Displays an update result while leaving validation and persistence to the handler. */
+    private void updateEquipment(String input) {
+        try {
+            Equipment updated = equipment.updateEquipment(input);
+            System.out.println("Equipment with item ID " + updated.getItemId() + " updated successfully.");
+        } catch (EquipmentUpdateUnsuccessful e) {
             System.out.println(e.getMessage());
         }
     }

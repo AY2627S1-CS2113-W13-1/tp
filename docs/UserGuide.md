@@ -150,9 +150,32 @@ Text like `id/card` within a name is allowed. Empty or repeated fields are rejec
 unchanged and prints matches in inventory order, or `No equipment matches the filters.` when none match.
 Matching rows include the equipment's current status, type-specific details, and recorded damage, as in `list`.
 
+## Updating equipment: `update`
+
+Format: `update id/ITEM ID [i/NAME] [type/TYPE] [cond/CONDITION]`
+
+Examples:
+
+* `update id/001 cond/5`
+* `update id/001 i/Film Camera type/camera`
+
+Supply an existing ID and at least one of `i/`, `type/`, or `cond/`. Fields may appear in any order, once each.
+The ID stays fixed and omitted details keep their current values. Names contain 1-100 characters and
+conditions are whole numbers from 1 to 10. Condition ranges are not accepted for updates.
+
+Equipment types are fixed by their subclasses. If `type/` is supplied, it must match the item's current type,
+ignoring case. Changing a camera to a lens, for example, is rejected before saving or changing any details.
+Updates preserve the same equipment object, its position in the list, its type-specific fields and damage,
+and its availability and loan references. Type-specific fields and damage cannot be changed with `update`.
+
+Prefixes `id/`, `i/`, `type/`, `cond/`, and `status/` after whitespace are reserved separators; `status/`
+cannot be updated manually. Text such as `USB id/card reader` within a name is allowed.
+The proposed details are saved before the existing object is changed. Invalid commands or failed saves
+leave the existing equipment details unchanged, and the application displays an error.
+
 ## Saving equipment
 
-Successful equipment additions and deletions are saved automatically in `data/equipment.txt`, relative to the
+Successful equipment additions, updates and deletions are saved automatically in `data/equipment.txt`, relative to the
 directory from which the application is run. Successful loan additions and deletions are saved in
 `data/loans.txt`. Records are loaded when the application starts again. A final save of both files is also attempted
 when `bye` is entered; if it fails, the application reports the affected file and lets you retry.
@@ -195,4 +218,5 @@ the application reports the problem and stops.
 | List equipment | `list` |
 | List loans | `list loans` |
 | Filter equipment | `filter [id/ID] [i/NAME] [type/TYPE] [cond/1-3] [status/available]` |
+| Update equipment | `update id/ID [i/NAME] [type/TYPE] [cond/CONDITION]` |
 | Exit | `bye` |

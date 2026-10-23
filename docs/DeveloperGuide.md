@@ -8,11 +8,15 @@
 
 ### Updating equipment details
 
-The update feature lets an equipment officer correct an item's name, type, or condition without
+The update feature lets an equipment officer correct an item's name or condition without
 deleting the item and adding it again. The Item ID identifies the record to update and stays fixed.
 Only the supplied details change; omitted details keep their existing values. The implementation
-described here is on the equipment update feature branch in
-[PR #59](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/59), pending merge into `master`.
+described here is provided by
+[PR #59](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/59).
+
+The equipment type is fixed by its subclass. An optional `type/` field must match the current type,
+ignoring case; a request to change to a different type is rejected. This keeps type-specific fields,
+damage, availability, and existing loan references attached to the same object.
 
 #### Classes involved
 
@@ -24,7 +28,7 @@ validation, and saving finish before the existing equipment object is changed.
 | `EqmManager` | Routes the command to `EquipmentHandler` and displays the result or error message. |
 | `EquipmentFields` | Extracts named fields and rejects empty, repeated, or unsupported reserved fields. |
 | `EquipmentHandler` | Finds the target, fills in omitted values, validates and saves the resulting details, then changes the existing object. |
-| `Equipment` | Stores the item's identity and applies the validated name, type, and condition together. |
+| `Equipment` | Stores the item's identity and applies the validated name and condition together, preserving its subclass and other state. |
 | `EquipmentStorage` | Writes the proposed inventory to the backing file when storage is configured. |
 
 `EquipmentHandler` owns the inventory. `EquipmentFields` is a utility class with static parsing
@@ -51,7 +55,9 @@ while keeping its type.
    `Film Camera` and `5` from the command and keeps `camera` from the target object.
    `validateEquipmentDetails(...)` checks these values before any assignment occurs.
 5. `saveUpdate(...)` creates a copy of the inventory list and replaces the target's entry in
-   that copy with a new `Equipment` object containing the validated details and the same Item ID.
+   that copy with an object of the same equipment subclass. The existing creation method,
+   `createValidatedEquipment(...)`, builds this proposed object using the new name and condition,
+   the same Item ID and type, and the target's type-specific fields and damage from `getDetails()`.
    The handler saves this proposed inventory through `EquipmentStorage.save(...)` when a
    backing file is configured. The existing object and inventory remain unchanged at this stage.
 6. After the save succeeds, or is skipped because no backing file is configured, the handler
@@ -72,6 +78,8 @@ An update requires an Item ID from `001` to `999` and at least one of `i/`, `typ
 The name must contain 1 to 100 characters, the type must contain text, and the condition must
 be a whole number from 1 to 10. Addition and updates use the same value validation method,
 so an update cannot introduce details that an addition would reject.
+An explicitly supplied type must match the target's type, ignoring case. A different type is
+rejected before saving, even when the other supplied values are valid.
 
 A missing target is rejected. The lookup also rejects multiple matches rather than changing
 an arbitrary item if the inventory contains duplicate IDs. Empty and repeated fields are
@@ -94,9 +102,11 @@ another command.
 
 The Item ID is fixed because other records use it to identify the equipment. Changing details
 should not change which item those records refer to. Updating the existing object also
-preserves references held by other parts of the application. An alternative would be to create
-a replacement object, but that would require care to update existing references and preserve
-any additional state stored on the original item.
+preserves references held by active loans and the item's availability. Only the proposed list used
+for saving contains a new object; the inventory retains the original object after a successful save.
+Changing type is rejected because types are represented by different subclasses. Replacing the
+inventory object with another subclass would require rules for converting its specific fields and
+damage, and updating every existing loan reference. Keeping the current type avoids those changes.
 
 Keeping omitted fields makes small corrections convenient. Requiring every field again would
 make the command longer and give users more opportunities to overwrite correct details.
