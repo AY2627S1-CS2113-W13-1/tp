@@ -3,6 +3,7 @@ package seedu.snap.bundle;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -52,7 +53,7 @@ public class BundleHandler {
         if (nextBundleNumber > 999) {
             throw new BundleAdditionUnsuccessful("No more bundle IDs are available this session.");
         }
-        String bundleId = String.format("%03d", nextBundleNumber);
+        String bundleId = String.format(Locale.ROOT, "%03d", nextBundleNumber);
         nextBundleNumber++;
         Bundle bundle = new Bundle(name, bundleId);
         bundles.add(bundle);
@@ -65,6 +66,22 @@ public class BundleHandler {
     /** @return an unmodifiable view of all bundles */
     public List<Bundle> getBundleList() {
         return Collections.unmodifiableList(bundles);
+    }
+
+    /**
+     * Checks all session bundles before an inventory item is deleted.
+     * Keeping bundled items in the inventory prevents bundle contents and completion from becoming stale.
+     *
+     * @param itemId equipment ID to find
+     * @return true when any bundle contains the equipment ID
+     */
+    public boolean containsEquipmentId(String itemId) {
+        for (Bundle bundle : bundles) {
+            if (bundle.containsEquipmentId(itemId)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -160,7 +177,7 @@ public class BundleHandler {
             throw new BundleAdditionUnsuccessful("Invalid format. Use: add-bundle name/[NAME]");
         }
         String name = input.trim().substring((ADD_BUNDLE_COMMAND + " " + NAME_MARKER).length()).trim();
-        if (name.isEmpty() || name.length() > 100) {
+        if (name.isBlank() || name.length() > 100) {
             throw new BundleAdditionUnsuccessful("Bundle name must contain 1 to 100 characters.");
         }
         return name;

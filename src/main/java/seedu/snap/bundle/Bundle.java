@@ -18,6 +18,7 @@ public class Bundle {
 
     private final String bundleName;
     private final String bundleId;
+    /** References to inventory items so updates to their names and conditions remain visible in the bundle. */
     private final ArrayList<Equipment> equipment = new ArrayList<>();
     private boolean isComplete;
 

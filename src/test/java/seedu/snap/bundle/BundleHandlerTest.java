@@ -2,6 +2,7 @@ package seedu.snap.bundle;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -9,13 +10,18 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Locale;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.BundleAdditionUnsuccessful;
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
+import seedu.snap.exceptions.LoanAdditionUnsuccessful;
+import seedu.snap.loan.Loan;
+import seedu.snap.loan.LoanHandler;
 
 /** Tests bundle command parsing, validation, partial additions, and listing. */
 class BundleHandlerTest {
@@ -25,11 +31,11 @@ class BundleHandlerTest {
     @BeforeEach
     void setUp() throws EquipmentAdditionUnsuccessful {
         equipmentHandler = new EquipmentHandler();
-        equipmentHandler.addEquipment("add i/Camera id/001 type/camera cond/8");
-        equipmentHandler.addEquipment("add i/Battery id/002 type/battery cond/8");
+        equipmentHandler.addEquipment("add i/Camera id/001 type/camera cond/8 sensor/Full frame damage/SHUTTER_FAULT");
+        equipmentHandler.addEquipment("add i/Battery id/002 type/battery cond/8 capacity/2000 mAh damage/NONE");
         equipmentHandler.addEquipment("add i/Battery 2 id/003 type/battery cond/8");
-        equipmentHandler.addEquipment("add i/Tripod id/004 type/tripod cond/8");
-        equipmentHandler.addEquipment("add i/Lens id/005 type/lens cond/8");
+        equipmentHandler.addEquipment("add i/Tripod id/004 type/tripod cond/8 thread/Quarter inch damage/NONE");
+        equipmentHandler.addEquipment("add i/Lens id/005 type/lens cond/8 zoom/24 to 70 mm damage/NONE");
         equipmentHandler.addEquipment("add i/Lens 2 id/006 type/lens cond/8");
         equipmentHandler.addEquipment("add i/Camera 2 id/007 type/camera cond/8");
         equipmentHandler.addEquipment("add i/Tripod 2 id/008 type/tripod cond/8");
@@ -48,8 +54,25 @@ class BundleHandlerTest {
 
     @Test
     void addBundle_invalidName_throwsException() {
-        assertThrows(BundleAdditionUnsuccessful.class,
-                () -> bundleHandler.addBundle("add-bundle name/"));
+        for (String name : new String[]{"", "   ", "\u2003", "A".repeat(101)}) {
+            assertThrows(BundleAdditionUnsuccessful.class,
+                    () -> bundleHandler.addBundle("add-bundle name/" + name));
+            assertTrue(bundleHandler.getBundleList().isEmpty());
+        }
+    }
+
+    @Test
+    void addBundle_nonDefaultLocale_keepsAsciiIds() throws BundleAdditionUnsuccessful {
+        Locale originalLocale = Locale.getDefault();
+        try {
+            Locale.setDefault(Locale.forLanguageTag("ar-EG"));
+
+            Bundle bundle = bundleHandler.addBundle("add-bundle name/Travel Kit");
+
+            assertEquals("001", bundle.getBundleId());
+        } finally {
+            Locale.setDefault(originalLocale);
+        }
     }
 
     @Test
@@ -81,9 +104,10 @@ class BundleHandlerTest {
 
     @Test
     void addItemsToBundle_rejectsUnknownLoanedAndDuplicateItems()
-            throws BundleAdditionUnsuccessful {
+            throws BundleAdditionUnsuccessful, LoanAdditionUnsuccessful {
         Bundle bundle = bundleHandler.addBundle("add-bundle name/Travel Kit");
-        equipmentHandler.getEquipmentById("006").markLoaned();
+        LoanHandler loans = new LoanHandler(equipmentHandler);
+        loans.addLoan("loan id/006 b/001 issued/01-10-26 due/02-10-26");
 
         List<String> messages = bundleHandler.addItemsToBundle("add-to-bundle id/001 999 006 001 001");
 
@@ -92,6 +116,37 @@ class BundleHandlerTest {
         assertTrue(messages.get(2).contains("successfully"));
         assertTrue(messages.get(3).contains("already in this bundle"));
         assertFalse(bundle.isComplete());
+    }
+
+    @Test
+    void addItemsToBundle_returnedItem_canJoinBundle() throws Exception {
+        Bundle bundle = bundleHandler.addBundle("add-bundle name/Travel Kit");
+        bundleHandler.addItemsToBundle("add-to-bundle id/001 001 002");
+        LoanHandler loans = new LoanHandler(equipmentHandler);
+        Loan loan = loans.addLoan("loan id/005 b/001 issued/01-10-26 due/02-10-26");
+        assertTrue(bundleHandler.addItemsToBundle("add-to-bundle id/001 005")
+                .getFirst().contains("currently loaned"));
+        assertFalse(bundle.isComplete());
+
+        loan.setReturned(true);
+        List<String> messages = bundleHandler.addItemsToBundle("add-to-bundle id/001 005");
+
+        assertEquals(List.of("Equipment ID 005 added to bundle 001 successfully."), messages);
+        assertTrue(bundle.isComplete());
+        assertFalse(equipmentHandler.getEquipmentById("005").isLoaned());
+    }
+
+    @Test
+    void addItemsToBundle_deletedLoan_releasesItemForBundle() throws Exception {
+        Bundle bundle = bundleHandler.addBundle("add-bundle name/Travel Kit");
+        LoanHandler loans = new LoanHandler(equipmentHandler);
+        loans.addLoan("loan id/001 b/001 issued/01-10-26 due/02-10-26");
+
+        loans.deleteLoan("delete loan/001");
+        List<String> messages = bundleHandler.addItemsToBundle("add-to-bundle id/001 001");
+
+        assertTrue(messages.getFirst().contains("successfully"));
+        assertEquals(List.of(equipmentHandler.getEquipmentById("001")), bundle.getEquipmentList());
     }
 
     @Test
@@ -126,6 +181,38 @@ class BundleHandlerTest {
     void addItemsToBundle_unknownBundle_throwsException() {
         assertThrows(BundleAdditionUnsuccessful.class,
                 () -> bundleHandler.addItemsToBundle("add-to-bundle id/001 001"));
+    }
+
+    @Test
+    void containsEquipmentId_checksAllBundlesWithoutChangingContents() throws BundleAdditionUnsuccessful {
+        Bundle first = bundleHandler.addBundle("add-bundle name/First Kit");
+        Bundle second = bundleHandler.addBundle("add-bundle name/Second Kit");
+        assertFalse(bundleHandler.containsEquipmentId("001"));
+        bundleHandler.addItemsToBundle("add-to-bundle id/002 001 002 005");
+
+        assertTrue(bundleHandler.containsEquipmentId("001"));
+        assertTrue(bundleHandler.containsEquipmentId("002"));
+        assertTrue(bundleHandler.containsEquipmentId("005"));
+        assertFalse(bundleHandler.containsEquipmentId("003"));
+        assertFalse(bundleHandler.containsEquipmentId("999"));
+        assertTrue(first.getEquipmentList().isEmpty());
+        assertEquals(3, second.getEquipmentList().size());
+        assertTrue(second.isComplete());
+    }
+
+    @Test
+    void updateEquipment_bundledItem_preservesReferenceDetailsAndCompletion() throws Exception {
+        Bundle bundle = bundleHandler.addBundle("add-bundle name/Travel Kit");
+        bundleHandler.addItemsToBundle("add-to-bundle id/001 001 002 005");
+        Equipment camera = equipmentHandler.getEquipmentById("001");
+
+        equipmentHandler.updateEquipment("update id/001 i/Updated Camera cond/3");
+
+        assertSame(camera, bundle.getEquipmentList().getFirst());
+        assertEquals("Updated Camera", bundle.getEquipmentList().getFirst().getItemName());
+        assertEquals(3, bundle.getEquipmentList().getFirst().getCondition());
+        assertEquals("sensor/Full frame damage/SHUTTER_FAULT", camera.getDetails());
+        assertTrue(bundle.isComplete());
     }
 
     @Test
