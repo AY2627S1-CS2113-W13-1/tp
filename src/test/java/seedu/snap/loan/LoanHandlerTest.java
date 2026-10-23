@@ -1,6 +1,7 @@
 package seedu.snap.loan;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -16,9 +17,12 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import seedu.snap.eqmmanager.EqmManager;
+import seedu.snap.equipment.Equipment;
+import seedu.snap.equipment.EquipmentHandler;
+import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
-import seedu.snap.eqmmanager.EqmManager;
 
 /** Tests the deletion of loans using item IDs. */
 public class LoanHandlerTest {
@@ -30,11 +34,13 @@ public class LoanHandlerTest {
 
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
     private PrintStream originalOutput;
+    private EquipmentHandler equipment;
     @TempDir
     private Path temporaryDirectory;
 
     @BeforeEach
-    public void redirectOutput() {
+    public void redirectOutput() throws EquipmentAdditionUnsuccessful {
+        equipment = createInventory();
         originalOutput = System.out;
         System.setOut(new PrintStream(output, true, StandardCharsets.UTF_8));
     }
@@ -46,28 +52,45 @@ public class LoanHandlerTest {
 
     @Test
     public void addLoan_validLoan_keepsCountConsistent() throws LoanAdditionUnsuccessful {
-        LoanHandler loanHandler = new LoanHandler();
+        LoanHandler loanHandler = new LoanHandler(equipment);
 
         loanHandler.addLoan(FIRST_LOAN);
 
         assertEquals(1, loanHandler.getLoanCount());
         assertEquals(1, loanHandler.getLoanList().size());
+        assertTrue(equipment.getEquipmentList().getFirst().isLoaned());
+    }
+
+    @Test
+    void addLoan_unknownEquipment_preservesInventoryAvailability() {
+        LoanHandler loanHandler = new LoanHandler(equipment);
+
+        assertThrows(LoanAdditionUnsuccessful.class,
+                () -> loanHandler.addLoan("loan id/999 b/002 issued/01-10-26 due/02-10-26"));
+
+        assertEquals(0, loanHandler.getLoanCount());
+        assertTrue(loanHandler.getLoanList().isEmpty());
+        for (Equipment item : equipment.getEquipmentList()) {
+            assertFalse(item.isLoaned());
+        }
     }
 
     @Test
     public void persistence_addDeleteAndReload_preservesLoansAcrossHandlers() throws Exception {
         Path file = temporaryDirectory.resolve("data/loans.txt");
-        LoanHandler firstHandler = new LoanHandler(file);
+        LoanHandler firstHandler = new LoanHandler(equipment, file);
         firstHandler.addLoan(FIRST_LOAN);
 
-        LoanHandler secondHandler = new LoanHandler(file);
+        EquipmentHandler secondInventory = createInventory();
+        LoanHandler secondHandler = new LoanHandler(secondInventory, file);
         secondHandler.loadFromStorage();
         assertEquals(1, secondHandler.getLoanCount());
         assertEquals("001", secondHandler.getLoanList().getFirst().getItemId());
         assertEquals("002", secondHandler.getLoanList().getFirst().getBorrowerId());
+        assertTrue(secondInventory.getEquipmentList().getFirst().isLoaned());
 
         secondHandler.deleteLoan("delete loan/001");
-        LoanHandler thirdHandler = new LoanHandler(file);
+        LoanHandler thirdHandler = new LoanHandler(createInventory(), file);
         thirdHandler.loadFromStorage();
         assertEquals(0, thirdHandler.getLoanCount());
     }
@@ -75,13 +98,13 @@ public class LoanHandlerTest {
     @Test
     public void saveToStorage_persistsInMemoryLoanStatus() throws Exception {
         Path file = temporaryDirectory.resolve("data/loans.txt");
-        LoanHandler loanHandler = new LoanHandler(file);
+        LoanHandler loanHandler = new LoanHandler(equipment, file);
         loanHandler.addLoan(FIRST_LOAN);
         loanHandler.getLoanList().getFirst().setReturned(true);
 
         loanHandler.saveToStorage();
 
-        LoanHandler reloadedHandler = new LoanHandler(file);
+        LoanHandler reloadedHandler = new LoanHandler(createInventory(), file);
         reloadedHandler.loadFromStorage();
         assertTrue(reloadedHandler.getLoanList().getFirst().isReturned());
     }
@@ -103,12 +126,12 @@ public class LoanHandlerTest {
     void deleteEquipment_activeLoan_blocksDeletionAndIdReuse() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory);
         manager.executeInput("add i/Camera id/001 type/camera cond/1");
-        manager.executeInput("add i/Tripod id/002 type/accessories cond/5");
+        manager.executeInput("add i/Tripod id/002 type/tripod cond/5");
         manager.executeInput(FIRST_LOAN);
         output.reset();
 
         manager.executeInput("delete item/001");
-        manager.executeInput("add i/Replacement id/001 type/audio cond/3");
+        manager.executeInput("add i/Replacement id/001 type/battery cond/3");
         manager.executeInput("delete item/002");
 
         assertEquals("Cannot delete item ID 001 while it has an active loan." + System.lineSeparator()
@@ -127,7 +150,7 @@ public class LoanHandlerTest {
         output.reset();
 
         manager.executeInput("delete item/001");
-        manager.executeInput("add i/Replacement id/001 type/audio cond/3");
+        manager.executeInput("add i/Replacement id/001 type/battery cond/3");
 
         assertEquals("Equipment with item ID 001 deleted successfully." + System.lineSeparator()
                 + "Equipment added successfully." + System.lineSeparator(), output.toString(StandardCharsets.UTF_8));
@@ -140,8 +163,9 @@ public class LoanHandlerTest {
             throws Exception {
         writeLoanRecords("loan id/001 b/002 issued/01-10-26 due/02-10-26 returned/true",
                 "loan id/001 b/003 issued/03-10-26 due/04-10-26 returned/false");
+        Files.writeString(temporaryDirectory.resolve("equipment.txt"),
+                "add i/Camera id/001 type/camera cond/1\n");
         EqmManager manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("add i/Camera id/001 type/camera cond/1");
         output.reset();
 
         manager.executeInput("delete item/001");
@@ -160,7 +184,7 @@ public class LoanHandlerTest {
 
         manager.executeInput("delete loan/001");
         manager.executeInput("delete item/001");
-        manager.executeInput("add i/Replacement id/001 type/audio cond/3");
+        manager.executeInput("add i/Replacement id/001 type/battery cond/3");
 
         assertEquals("Loan for item ID 001 deleted successfully." + System.lineSeparator()
                 + "Equipment with item ID 001 deleted successfully." + System.lineSeparator()
@@ -174,11 +198,19 @@ public class LoanHandlerTest {
                 String.join(System.lineSeparator(), records) + System.lineSeparator());
     }
 
+    /** Creates the equipment required by the loan fixtures without sharing availability between tests. */
+    private EquipmentHandler createInventory() throws EquipmentAdditionUnsuccessful {
+        EquipmentHandler inventory = new EquipmentHandler();
+        inventory.addEquipment("add i/Camera id/001 type/camera cond/1");
+        inventory.addEquipment("add i/Tripod id/003 type/tripod cond/2");
+        return inventory;
+    }
+
     @Test
     public void deleteLoan_existingItemId_deletesCorrectLoan()
             throws LoanAdditionUnsuccessful,
             LoanDeletionUnsuccessful {
-        LoanHandler loanHandler = new LoanHandler();
+        LoanHandler loanHandler = new LoanHandler(equipment);
         loanHandler.addLoan(FIRST_LOAN);
         loanHandler.addLoan(SECOND_LOAN);
 
@@ -195,7 +227,7 @@ public class LoanHandlerTest {
     @Test
     public void deleteLoan_unknownItemId_keepsLoansUnchanged()
             throws LoanAdditionUnsuccessful {
-        LoanHandler loanHandler = new LoanHandler();
+        LoanHandler loanHandler = new LoanHandler(equipment);
         loanHandler.addLoan(FIRST_LOAN);
 
         LoanDeletionUnsuccessful exception = assertThrows(
@@ -215,7 +247,7 @@ public class LoanHandlerTest {
     @Test
     public void deleteLoan_invalidItemId_keepsLoansUnchanged()
             throws LoanAdditionUnsuccessful {
-        LoanHandler loanHandler = new LoanHandler();
+        LoanHandler loanHandler = new LoanHandler(equipment);
         loanHandler.addLoan(FIRST_LOAN);
 
         LoanDeletionUnsuccessful exception = assertThrows(
@@ -232,7 +264,7 @@ public class LoanHandlerTest {
     @Test
     public void deleteLoan_missingItemId_keepsLoansUnchanged()
             throws LoanAdditionUnsuccessful {
-        LoanHandler loanHandler = new LoanHandler();
+        LoanHandler loanHandler = new LoanHandler(equipment);
         loanHandler.addLoan(FIRST_LOAN);
 
         LoanDeletionUnsuccessful exception = assertThrows(
@@ -248,7 +280,7 @@ public class LoanHandlerTest {
     @Test
     public void deleteLoan_invalidPrefix_keepsLoansUnchanged()
             throws LoanAdditionUnsuccessful {
-        LoanHandler loanHandler = new LoanHandler();
+        LoanHandler loanHandler = new LoanHandler(equipment);
         loanHandler.addLoan(FIRST_LOAN);
 
         assertThrows(
@@ -262,13 +294,14 @@ public class LoanHandlerTest {
     @Test
     public void deleteLoan_duplicateItemId_requiresIssuedDate()
             throws LoanAdditionUnsuccessful, LoanDeletionUnsuccessful {
-        LoanHandler loanHandler = new LoanHandler();
+        LoanHandler loanHandler = new LoanHandler(equipment);
         loanHandler.addLoan(FIRST_LOAN);
         loanHandler.getLoanList().get(0).setReturned(true);
         loanHandler.addLoan("loan id/001 b/005 issued/05-10-26 due/06-10-26");
 
-        assertThrows(LoanDeletionUnsuccessful.class,
+        LoanDeletionUnsuccessful error = assertThrows(LoanDeletionUnsuccessful.class,
                 () -> loanHandler.deleteLoan("delete loan/001"));
+        assertTrue(error.getMessage().contains("Specify which one: delete loan/001 issued/DD-MM-YY."));
         assertEquals(2, loanHandler.getLoanCount());
 
         Loan deletedLoan = loanHandler.deleteLoan("delete loan/001 issued/05-10-26");
@@ -277,8 +310,25 @@ public class LoanHandlerTest {
     }
 
     @Test
+    void deleteLoan_invalidCommands_preserveSavedRecordsAndAvailability() throws Exception {
+        Path file = temporaryDirectory.resolve("loans.txt");
+        LoanHandler handler = new LoanHandler(equipment, file);
+        Loan original = handler.addLoan(FIRST_LOAN);
+        String saved = Files.readString(file);
+        for (String command : new String[]{null, "", "delete", "delete loan", "delete loan/",
+            "delete loan/01", "delete loan/999", "delete loan/001 extra", "delete loan/001 issued/31-02-26",
+            "delete loan/001 issued/03-10-26", "delete loan/001 issued/01-10-26 extra"}) {
+            assertThrows(LoanDeletionUnsuccessful.class, () -> handler.deleteLoan(command), command);
+            assertEquals(List.of(original), handler.getLoanList());
+            assertEquals(1, handler.getLoanCount());
+            assertTrue(equipment.getEquipmentList().getFirst().isLoaned());
+            assertEquals(saved, Files.readString(file));
+        }
+    }
+
+    @Test
     void viewAllLoans_noLoans_printsHeaderOnly() {
-        new LoanHandler().viewAllLoans();
+        new LoanHandler(equipment).viewAllLoans();
 
         String expected = String.format(
                 "%-4s %-12s | %-12s | %-16s | %-16s%n",
@@ -289,7 +339,7 @@ public class LoanHandlerTest {
     @Test
     void viewAllLoans_existingLoans_printsHeaderAndRows()
             throws LoanAdditionUnsuccessful {
-        LoanHandler loanHandler = new LoanHandler();
+        LoanHandler loanHandler = new LoanHandler(equipment);
         loanHandler.addLoan(FIRST_LOAN);
         loanHandler.addLoan(SECOND_LOAN);
 
