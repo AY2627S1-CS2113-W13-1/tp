@@ -1,0 +1,7 @@
+' Shared theme: https://the-lum.github.io/puml-themes-gallery/themes/vibrant.html
+!theme vibrant
+
+skinparam defaultFontName Arial
+skinparam defaultFontSize 14
+skinparam classAttributeIconSize 0
+hide circle

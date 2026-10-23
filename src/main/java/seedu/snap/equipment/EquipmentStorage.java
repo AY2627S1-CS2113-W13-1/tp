@@ -83,6 +83,7 @@ final class EquipmentStorage {
         return "add i/" + equipment.getItemName()
                 + " id/" + equipment.getItemId()
                 + " type/" + equipment.getType()
-                + " cond/" + equipment.getCondition();
+                + " cond/" + equipment.getCondition()
+                + " " + equipment.getDetails();
     }
 }

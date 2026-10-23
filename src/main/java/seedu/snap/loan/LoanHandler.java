@@ -15,6 +15,8 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import seedu.snap.equipment.Equipment;
+import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 
@@ -26,6 +28,8 @@ public class LoanHandler {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-uu")
             .withResolverStyle(ResolverStyle.STRICT);
 
+    /** Inventory whose item availability is maintained by this handler. */
+    private final EquipmentHandler equipment;
     /** Loans managed by this handler instance. */
     private final ArrayList<Loan> loans = new ArrayList<>();
     /** Cached loan count kept in sync with {@link #loans}. */
@@ -34,12 +38,14 @@ public class LoanHandler {
     private final Path storageFile;
 
     /** Creates an in-memory loan handler, mainly useful for isolated unit tests. */
-    public LoanHandler() {
-        this(null);
+    public LoanHandler(EquipmentHandler equipment) {
+        this(equipment, null);
     }
 
     /** Creates a loan handler backed by the supplied text file. */
-    public LoanHandler(Path storageFile) {
+    public LoanHandler(EquipmentHandler equipment, Path storageFile) {
+        assert equipment != null : "Loan handler requires an inventory";
+        this.equipment = equipment;
         this.storageFile = storageFile;
     }
 
@@ -71,9 +77,33 @@ public class LoanHandler {
         }
         List<Loan> loaded = LoanStorage.load(storageFile);
         Set<String> activeItemIds = new HashSet<>();
+        List<Equipment> activeEquipment = new ArrayList<>();
         for (Loan loan : loaded) {
-            if (!loan.isReturned() && !activeItemIds.add(loan.getItemId())) {
+            if (loan.isReturned()) {
+                continue;
+            }
+            if (!activeItemIds.add(loan.getItemId())) {
                 throw new IOException("Multiple active loans found for item ID " + loan.getItemId() + ".");
+            }
+            try {
+                activeEquipment.add(findEquipment(loan.getItemId()));
+            } catch (LoanAdditionUnsuccessful exception) {
+                throw new IOException("Invalid active loan for item ID " + loan.getItemId() + ": "
+                        + exception.getMessage(), exception);
+            }
+        }
+
+        // Validation is complete before changing the current loans or any equipment flags.
+        for (Loan loan : loans) {
+            loan.detachEquipment();
+        }
+        for (Equipment item : equipment.getEquipmentList()) {
+            item.setLoaned(false);
+        }
+        int activeIndex = 0;
+        for (Loan loan : loaded) {
+            if (!loan.isReturned()) {
+                loan.attachEquipment(activeEquipment.get(activeIndex++));
             }
         }
         loans.clear();
@@ -92,13 +122,16 @@ public class LoanHandler {
      * @throws LoanAdditionUnsuccessful when the command cannot be added
      */
     public Loan addLoan(String input) throws LoanAdditionUnsuccessful {
-        Loan loan = parseLoanRecord(input);
-        String itemId = loan.getItemId();
+        Loan parsed = parseLoanRecord(input);
+        String itemId = parsed.getItemId();
 
         if (hasActiveLoanForItem(itemId)) {
+            logger.log(Level.WARNING, "Loan rejected: item ID {0} already has an active loan.", itemId);
             throw new LoanAdditionUnsuccessful("An active loan already exists for item ID " + itemId + ".");
         }
 
+        Equipment item = findAvailableEquipment(itemId);
+        Loan loan = new Loan(item, parsed.getBorrowerId(), parsed.getIssuedDate(), parsed.getDueDate());
         assert loan != null : "Created loan must not be null.";
         ArrayList<Loan> updatedLoans = new ArrayList<>(loans);
         updatedLoans.add(loan);
@@ -111,9 +144,40 @@ public class LoanHandler {
 
         loans.add(loan);
         numLoans++;
+        loan.attachEquipment(item);
+        assert item.isLoaned() : "A successfully added loan must mark equipment as loaned";
         assert numLoans == loans.size() : "numLoans should match the size of the loans list";
-        logger.log(Level.FINE, "Added loan for item ID {0}.", itemId);
+        logger.log(Level.INFO, "Added loan for item ID {0}.", itemId);
         return loan;
+    }
+
+    /** Finds one matching item without changing its availability, including during reload validation. */
+    private Equipment findEquipment(String itemId) throws LoanAdditionUnsuccessful {
+        Equipment match = null;
+        for (Equipment item : equipment.getEquipmentList()) {
+            if (item.getItemId().equals(itemId)) {
+                if (match != null) {
+                    logger.log(Level.WARNING, "Loan rejected: item ID {0} is ambiguous.", itemId);
+                    throw new LoanAdditionUnsuccessful("Item ID " + itemId + " is not unique.");
+                }
+                match = item;
+            }
+        }
+        if (match == null) {
+            logger.log(Level.WARNING, "Loan rejected: item ID {0} does not exist.", itemId);
+            throw new LoanAdditionUnsuccessful("Item ID " + itemId + " does not exist.");
+        }
+        return match;
+    }
+
+    /** Finds one available item, rejecting missing or ambiguous IDs before a loan changes any state. */
+    private Equipment findAvailableEquipment(String itemId) throws LoanAdditionUnsuccessful {
+        Equipment match = findEquipment(itemId);
+        if (match.isLoaned()) {
+            logger.log(Level.WARNING, "Loan rejected: item ID {0} is already loaned out.", itemId);
+            throw new LoanAdditionUnsuccessful("Item ID " + itemId + " is already loaned out.");
+        }
+        return match;
     }
 
     /**
@@ -165,6 +229,7 @@ public class LoanHandler {
         }
 
         loans.remove(loan);
+        loan.detachEquipment();
         numLoans--;
         assert numLoans == loans.size() : "numLoans should match the size of the loans list";
         logger.log(Level.INFO, "Deleted loan for item ID " + itemId);
@@ -307,6 +372,7 @@ public class LoanHandler {
      * @return whether deletion must be blocked to preserve an active loan's equipment association
      */
     public boolean hasActiveLoanForItem(String itemId) {
+        assert itemId != null : "Active-loan checks require an item ID";
         for (Loan loan : loans) {
             if (loan.getItemId().equals(itemId) && !loan.isReturned()) {
                 return true;

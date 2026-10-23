@@ -61,8 +61,9 @@ class EquipmentUpdatePersistenceTest {
         Files.createDirectory(file);
         Path sentinel = file.resolve("keep.txt");
         Files.writeString(sentinel, "keep");
-        assertThrows(EquipmentUpdateUnsuccessful.class,
-                () -> handler.updateEquipment("update id/001 i/Changed type/lens cond/5"));
+        EquipmentUpdateUnsuccessful error = assertThrows(EquipmentUpdateUnsuccessful.class,
+                () -> handler.updateEquipment("update id/001 i/Changed type/camera cond/5"));
+        assertTrue(error.getMessage().startsWith("Could not save equipment update:"));
         assertEquals("Camera", original.getItemName());
         assertEquals("camera", original.getType());
         assertEquals(1, original.getCondition());

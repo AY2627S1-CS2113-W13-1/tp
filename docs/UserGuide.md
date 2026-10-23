@@ -12,23 +12,58 @@ snAp tracks individual pieces of equipment and their loans. Records are retained
 
 ## Adding equipment: `add`
 
-Format: `add i/[ITEM] id/[ITEM ID] type/[TYPE] cond/[CONDITION]`
+Base format: `add i/[ITEM] id/[ITEM ID] type/[TYPE] cond/[CONDITION]`
 
 Example: `add i/Canon EOS R10 id/001 type/camera cond/1`
 
 * `ITEM` is a non-empty name of up to 100 characters.
 * `ITEM ID` uses exactly three digits from `001` to `999` and must not already exist.
-* `TYPE` is non-empty text, such as `camera`, `lighting`, `lens`, `accessories` or `audio`.
+* `TYPE` is `camera`, `lens`, `battery` or `tripod`. Type names are case-insensitive and stored in lowercase.
 * `CONDITION` is a whole number from `1` to `10`. We recommend `1` for pristine and `10` for non-functional.
-* Enter the fields in the order shown above. Names and types can contain spaces.
+* Enter the fields in the order shown above. Names can contain spaces.
 * Equipment with the same name can be added separately using different IDs.
+
+After `cond/`, you can add the field for the equipment type, followed by `damage/[DAMAGE]`:
+
+| Type | Optional field | Damage values |
+| --- | --- | --- |
+| `camera` | `sensor/[SENSOR FORMAT]` | `NONE`, `SENSOR_DAMAGE`, `SHUTTER_FAULT` |
+| `lens` | `zoom/[ZOOM RANGE]` | `NONE`, `SCRATCHED_GLASS`, `AUTOFOCUS_FAULT` |
+| `battery` | `capacity/[CAPACITY]` | `NONE`, `SWELLING`, `CONTACT_DAMAGE` |
+| `tripod` | `thread/[THREAD]` | `NONE`, `BENT_LEG`, `HEAD_FAULT` |
+
+* Each type-specific value is free text of 1 to 100 characters on one line, such as `APS-C`, `24-70 mm`,
+  `1800 mAh` or `1/4 inch`.
+* Either optional field can be omitted. The type-specific value defaults to `unspecified`, and damage defaults to `NONE`.
+* Damage values are case-insensitive and stored in uppercase. Use a value from the row for the chosen type.
+* A field for another type, an invalid damage value, a repeated field or fields in the wrong order are rejected.
+
+Examples:
+
+```text
+add i/Canon EOS R10 id/001 type/camera cond/1 sensor/APS-C damage/NONE
+add i/Spare battery id/002 type/battery cond/7 damage/swelling
+add i/Travel tripod id/003 type/tripod cond/2 thread/1/4 inch
+```
+
 * Names can contain text such as `USB id/card reader` or `fluid/head tripod`.
   The actual `id/` field is the last one before `type/`. Earlier whitespace-prefixed `id/` text in the name must
   have a non-empty value starting with a non-whitespace character other than a digit, `+`, or `-`.
   Whitespace-prefixed numeric ID-like text such as `id/001` is reserved and cannot be part of the name.
-* Prefixes `i/`, `type/`, and `cond/` at the start or after whitespace are reserved command delimiters.
-  They must occur once each, in the documented order; fields must be separated by whitespace.
+* Prefixes `i/`, `type/` and `cond/` at the start or after whitespace are reserved command delimiters.
+  Prefixes `sensor/`, `zoom/`, `capacity/`, `thread/` and `damage/` are delimiters only after `cond/`.
+  Names can contain these optional prefixes, such as `Camera sensor/cleaning kit`.
+  Required fields must occur once each; optional fields may occur at most once. Fields must follow the
+  documented order and be separated by whitespace.
   There is no quoting or escaping syntax. Prefix-like text inside words remains valid.
+
+## Viewing equipment: `list`
+
+Format: `list`
+
+This displays all equipment with its name, ID, type and condition. The `STATUS` column, before `DETAILS`, shows
+`Available` or `Loaned`. The `DETAILS` column shows the type-specific value and damage, including the defaults
+when optional fields were omitted.
 
 ## Deleting equipment: `delete`
 
@@ -45,16 +80,29 @@ loans for that ID; returned loan records do not block deletion.
 Invalid delete syntax produces an error followed by the delete command format.
 An ID that does not exist produces an error without changing the saved records.
 
+## Equipment availability
+
+New equipment is `Available`. Adding a loan changes its status to `Loaned`. Marking an active loan as returned
+or deleting it makes the item available again. Removing an older returned loan does not affect a newer active loan.
+
+There is no command to mark a loan as returned yet. The current command-line option is `delete-loan`, which
+also removes the loan record. A return workflow that retains loan history is planned in
+[issue #78](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/78).
+
+A returned loan cannot be made active again. To borrow the same item again, create a new loan.
+
 ## Loaning out equipment: `loan`
 
 Format: `loan id/[ITEM ID] b/[BORROWER ID] issued/[DD-MM-YY] due/[DD-MM-YY]`
 
 Example: `loan id/001 b/002 issued/01-10-26 due/08-10-26`
 
-* `ITEM ID` is the three-digit identifier of the equipment being loaned.
+* `ITEM ID` is the three-digit identifier of existing equipment. The item must be `Available`.
 * `BORROWER ID` is the three-digit identifier of the borrower.
 * `issued` and `due` use the `DD-MM-YY` format. The issue date must not be later than the due date.
 * An item cannot have more than one active loan at the same time.
+
+Invalid loan commands leave both the loan records and equipment availability unchanged.
 
 ## Viewing loans: `list loans`
 
@@ -77,6 +125,31 @@ delete-loan id/001 issued/01-10-26
 If no matching loan exists, or if the command does not identify a unique loan, the application reports an error and
 keeps the existing loan records unchanged.
 
+Deleting an active loan makes its equipment `Available`. Deleting returned loan history leaves any newer active
+loan and the equipment's `Loaned` status unchanged.
+
+## Filtering equipment: `filter`
+
+Format: `filter [id/ITEM ID] [i/NAME] [type/TYPE] [cond/CONDITION] [status/STATUS]`
+
+Examples:
+
+* `filter type/camera cond/1-3 status/available`
+* `filter i/canon`
+* `filter id/001`
+
+Supply at least one filter, in any order. Each prefix can appear only once. All supplied filters must match.
+Names use case-insensitive partial matching and may contain spaces. Types use case-insensitive full matching
+against `camera`, `lens`, `battery`, or `tripod`. `id/` uses an exact three-digit ID from `001` to `999`.
+
+`cond/` accepts a value from `1` to `10` or an inclusive range such as `1-3`. Ranges cannot be reversed.
+`status/` accepts `available` or `loaned` and checks the current active loans. Returned loans do not block availability.
+
+Prefixes `id/`, `i/`, `type/`, `cond/`, and `status/` after whitespace are reserved field separators.
+Text like `id/card` within a name is allowed. Empty or repeated fields are rejected. Filtering leaves equipment
+unchanged and prints matches in inventory order, or `No equipment matches the filters.` when none match.
+Matching rows include the equipment's current status, type-specific details, and recorded damage, as in `list`.
+
 ## Updating equipment: `update`
 
 Format: `update id/ITEM ID [i/NAME] [type/TYPE] [cond/CONDITION]`
@@ -84,29 +157,41 @@ Format: `update id/ITEM ID [i/NAME] [type/TYPE] [cond/CONDITION]`
 Examples:
 
 * `update id/001 cond/5`
-* `update id/001 i/Film Camera type/camera kit`
+* `update id/001 i/Film Camera type/camera`
 
-Supply an existing ID and at least one detail to change. Fields may appear in any order, once each.
-The ID stays fixed and omitted details keep their current values. Names contain 1-100 characters, types
-must contain text, and conditions are whole numbers from 1 to 10. Condition ranges are not accepted for updates.
+Supply an existing ID and at least one of `i/`, `type/`, or `cond/`. Fields may appear in any order, once each.
+The ID stays fixed and omitted details keep their current values. Names contain 1-100 characters and
+conditions are whole numbers from 1 to 10. Condition ranges are not accepted for updates.
+
+Equipment types are fixed by their subclasses. If `type/` is supplied, it must match the item's current type,
+ignoring case. Changing a camera to a lens, for example, is rejected before saving or changing any details.
+Updates preserve the same equipment object, its position in the list, its type-specific fields and damage,
+and its availability and loan references. Type-specific fields and damage cannot be changed with `update`.
 
 Prefixes `id/`, `i/`, `type/`, `cond/`, and `status/` after whitespace are reserved separators; `status/`
-cannot be updated manually. Text such as `USB id/card reader` within a name is allowed. Updates preserve the
-same equipment record and its position in the list. Invalid commands leave all existing details unchanged.
+cannot be updated manually. Text such as `USB id/card reader` within a name is allowed.
+The proposed details are saved before the existing object is changed. Invalid commands or failed saves
+leave the existing equipment details unchanged, and the application displays an error.
 
 ## Saving equipment
 
-Successful equipment additions and deletions are saved automatically in `data/equipment.txt`, relative to the
+Successful equipment additions, updates and deletions are saved automatically in `data/equipment.txt`, relative to the
 directory from which the application is run. Successful loan additions and deletions are saved in
 `data/loans.txt`. Records are loaded when the application starts again. A final save of both files is also attempted
 when `bye` is entered; if it fails, the application reports the affected file and lets you retry.
 The directory and both files are created on the first save, including the final save performed by `bye`.
+Equipment availability is rebuilt from the active loans loaded at startup, so loaned items remain `Loaned`
+after restarting the application.
 
 The text file contains one equipment record per line, using the add command format. For example:
 
 ```text
 add i/Canon EOS R10 id/001 type/camera cond/1
+add i/Travel tripod id/003 type/tripod cond/2 thread/1/4 inch damage/NONE
 ```
+
+Saved equipment records use the four supported types and retain their type-specific values and damage.
+Existing records of supported types without optional fields are also accepted, using `unspecified` and `NONE`.
 
 To transfer your records, copy `data/equipment.txt` to the same location on the other computer.
 Copy `data/loans.txt` as well when transferring loan records. Loan records include the item ID, borrower ID,
@@ -126,11 +211,12 @@ the application reports the problem and stops.
 
 | Action | Command |
 | --- | --- |
-| Add equipment | `add i/[ITEM] id/[ITEM ID] type/[TYPE] cond/[CONDITION]` |
+| Add equipment | `add i/[ITEM] id/[ITEM ID] type/[TYPE] cond/[CONDITION]`, with optional type-specific and damage fields as described above |
 | Delete equipment | `delete item/[ITEM ID]` |
 | Add loan | `loan id/[ITEM ID] b/[BORROWER ID] issued/[DD-MM-YY] due/[DD-MM-YY]` |
 | Delete loan | `delete-loan id/[ITEM ID] [issued/DD-MM-YY]` |
 | List equipment | `list` |
 | List loans | `list loans` |
+| Filter equipment | `filter [id/ID] [i/NAME] [type/TYPE] [cond/1-3] [status/available]` |
 | Update equipment | `update id/ID [i/NAME] [type/TYPE] [cond/CONDITION]` |
 | Exit | `bye` |

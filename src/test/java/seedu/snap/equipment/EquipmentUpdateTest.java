@@ -34,7 +34,7 @@ class EquipmentUpdateTest {
     void setUp() throws EquipmentAdditionUnsuccessful {
         handler = new EquipmentHandler();
         camera = handler.addEquipment("add i/Camera id/001 type/camera cond/1");
-        tripod = handler.addEquipment("add i/Tripod id/999 type/accessory cond/10");
+        tripod = handler.addEquipment("add i/Tripod id/999 type/tripod cond/10");
     }
 
     @Test
@@ -43,13 +43,13 @@ class EquipmentUpdateTest {
         assertEquals("Film Camera", camera.getItemName());
         assertEquals("camera", camera.getType());
         assertEquals(1, camera.getCondition());
-        handler.updateEquipment("update id/001 type/camera kit");
+        handler.updateEquipment("update id/001 type/CAMERA");
         assertEquals("Film Camera", camera.getItemName());
-        assertEquals("camera kit", camera.getType());
+        assertEquals("camera", camera.getType());
         assertEquals(1, camera.getCondition());
         handler.updateEquipment("update id/001 cond/10");
         assertEquals("Film Camera", camera.getItemName());
-        assertEquals("camera kit", camera.getType());
+        assertEquals("camera", camera.getType());
         assertEquals(10, camera.getCondition());
     }
 
@@ -57,11 +57,11 @@ class EquipmentUpdateTest {
     void updateEquipment_allFieldsInAnyOrder_preservesIdentityOrderAndOtherItems()
             throws EquipmentUpdateUnsuccessful {
         List<Equipment> view = handler.getEquipmentList();
-        Equipment result = handler.updateEquipment("update cond/5 i/Updated Camera type/camera kit id/001");
+        Equipment result = handler.updateEquipment("update cond/5 i/Updated Camera type/CAMERA id/001");
         assertSame(camera, result);
         assertEquals("001", camera.getItemId());
         assertEquals("Updated Camera", camera.getItemName());
-        assertEquals("camera kit", camera.getType());
+        assertEquals("camera", camera.getType());
         assertEquals(5, camera.getCondition());
         assertEquals(List.of(camera, tripod), view);
         assertSame(camera, view.getFirst());
@@ -77,8 +77,8 @@ class EquipmentUpdateTest {
             handler.updateEquipment("update id/001 i/" + name);
             assertEquals(name, camera.getItemName());
         }
-        handler.updateEquipment("update id/001 type/fluid/head accessories cond/10");
-        assertEquals("fluid/head accessories", camera.getType());
+        handler.updateEquipment("update id/001 type/camera cond/10");
+        assertEquals("camera", camera.getType());
         assertEquals(10, camera.getCondition());
         handler.updateEquipment("update id/999 cond/1");
         assertEquals(1, tripod.getCondition());
@@ -120,7 +120,7 @@ class EquipmentUpdateTest {
 
     @Test
     void updateEquipment_ambiguousId_preservesBothRecords() throws Exception {
-        Equipment duplicate = new Equipment("Duplicate", "001", "lens", 3);
+        Equipment duplicate = new Lens("Duplicate", "001", 3);
         Field field = EquipmentHandler.class.getDeclaredField("inventory");
         field.setAccessible(true);
         @SuppressWarnings("unchecked")
@@ -137,7 +137,7 @@ class EquipmentUpdateTest {
     @Test
     void updateDetails_invalidNames_preserveAllOriginalDetails() {
         for (String name : new String[]{null, "", "\u2003", "A".repeat(101)}) {
-            assertThrows(AssertionError.class, () -> camera.updateDetails(name, "Changed", 5));
+            assertThrows(AssertionError.class, () -> camera.updateDetails(name, 5));
             assertEquals("Camera", camera.getItemName());
             assertEquals("camera", camera.getType());
             assertEquals(1, camera.getCondition());
@@ -145,9 +145,11 @@ class EquipmentUpdateTest {
     }
 
     @Test
-    void updateDetails_invalidTypes_preserveAllOriginalDetails() {
-        for (String type : new String[]{null, "", "\u2003"}) {
-            assertThrows(AssertionError.class, () -> camera.updateDetails("Changed", type, 5));
+    void updateEquipment_differentTypes_preserveAllOriginalDetails() {
+        for (String type : new String[]{"lens", "battery", "tripod", "camera kit"}) {
+            EquipmentUpdateUnsuccessful error = assertThrows(EquipmentUpdateUnsuccessful.class,
+                    () -> handler.updateEquipment("update id/001 i/Changed cond/5 type/" + type));
+            assertEquals("Equipment type cannot be changed. Item ID 001 must remain camera.", error.getMessage());
             assertEquals("Camera", camera.getItemName());
             assertEquals("camera", camera.getType());
             assertEquals(1, camera.getCondition());
@@ -157,7 +159,7 @@ class EquipmentUpdateTest {
     @Test
     void updateDetails_conditionOutsideEitherBoundary_preservesAllOriginalDetails() {
         for (int condition : new int[]{Integer.MIN_VALUE, 0, 11, Integer.MAX_VALUE}) {
-            assertThrows(AssertionError.class, () -> camera.updateDetails("Changed", "Changed", condition));
+            assertThrows(AssertionError.class, () -> camera.updateDetails("Changed", condition));
             assertEquals("Camera", camera.getItemName());
             assertEquals("camera", camera.getType());
             assertEquals(1, camera.getCondition());

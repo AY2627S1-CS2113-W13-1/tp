@@ -7,16 +7,18 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.equipment.Equipment;
+import seedu.snap.equipment.EquipmentFilter;
+import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
-import seedu.snap.exceptions.EquipmentUpdateUnsuccessful;
 import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
+import seedu.snap.exceptions.EquipmentFilteringUnsuccessful;
+import seedu.snap.exceptions.EquipmentUpdateUnsuccessful;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
+import seedu.snap.loan.Loan;
 import seedu.snap.loan.LoanHandler;
 import seedu.snap.parser.Parser;
-import seedu.snap.loan.Loan;
 
 /** Coordinates command input and execution for the SNAP application. */
 public class EqmManager {
@@ -43,8 +45,8 @@ public class EqmManager {
             throw new IllegalArgumentException("Data directory must not be null.");
         }
         this.parser = new Parser();
-        this.loans = new LoanHandler(dataDirectory.resolve("loans.txt"));
         this.equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
+        this.loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"));
         List<String> loadErrors = new ArrayList<>();
         try {
             equipment.loadFromStorage();
@@ -81,6 +83,8 @@ public class EqmManager {
             addEquipment(normalizedInput);
         } else if (normalizedInput.equals("loan") || normalizedInput.startsWith("loan ")) {
             addLoan(normalizedInput);
+        } else if (normalizedInput.matches("(?U)filter(?:\\s.*)?")) {
+            filterEquipment(normalizedInput);
         } else if (normalizedInput.matches("(?U)update(?:\\s.*)?")) {
             updateEquipment(normalizedInput);
         } else if (normalizedInput.equals("list loans")) {
@@ -189,6 +193,21 @@ public class EqmManager {
             System.out.println(e.getMessage());
         }
         // @@author
+    }
+
+    /** Displays matching equipment or the filter error. */
+    private void filterEquipment(String input) {
+        try {
+            EquipmentFilter filter = EquipmentFilter.parse(input);
+            List<Equipment> matches = filter.apply(equipment.getEquipmentList(), loans);
+            if (matches.isEmpty()) {
+                System.out.println("No equipment matches the filters.");
+            } else {
+                equipment.viewEquipment(matches);
+            }
+        } catch (EquipmentFilteringUnsuccessful e) {
+            System.out.println(e.getMessage());
+        }
     }
 
     /** Displays an update result while leaving validation and persistence to the handler. */

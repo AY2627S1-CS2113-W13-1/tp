@@ -134,8 +134,8 @@ class EquipmentUpdateStressTest {
                 handler.updateEquipment("update id/001 i/" + expectedName);
                 break;
             case 1:
-                expectedType = "type " + step;
-                handler.updateEquipment("update type/" + expectedType + " id/001");
+                assertThrows(EquipmentUpdateUnsuccessful.class,
+                        () -> handler.updateEquipment("update i/Rejected type/lens id/001"));
                 break;
             case 2:
                 expectedCondition = random.nextInt(10) + 1;
