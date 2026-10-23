@@ -12,23 +12,57 @@ snAp tracks individual pieces of equipment and their loans. Records are retained
 
 ## Adding equipment: `add`
 
-Format: `add i/[ITEM] id/[ITEM ID] type/[TYPE] cond/[CONDITION]`
+Base format: `add i/[ITEM] id/[ITEM ID] type/[TYPE] cond/[CONDITION]`
 
 Example: `add i/Canon EOS R10 id/001 type/camera cond/1`
 
 * `ITEM` is a non-empty name of up to 100 characters.
 * `ITEM ID` uses exactly three digits from `001` to `999` and must not already exist.
-* `TYPE` is non-empty text, such as `camera`, `lighting`, `lens`, `accessories` or `audio`.
+* `TYPE` is `camera`, `lens`, `battery` or `tripod`. Type names are case-insensitive and stored in lowercase.
 * `CONDITION` is a whole number from `1` to `10`. We recommend `1` for pristine and `10` for non-functional.
-* Enter the fields in the order shown above. Names and types can contain spaces.
+* Enter the fields in the order shown above. Names can contain spaces.
 * Equipment with the same name can be added separately using different IDs.
+
+After `cond/`, you can add the field for the equipment type, followed by `damage/[DAMAGE]`:
+
+| Type | Optional field | Damage values |
+| --- | --- | --- |
+| `camera` | `sensor/[SENSOR FORMAT]` | `NONE`, `SENSOR_DAMAGE`, `SHUTTER_FAULT` |
+| `lens` | `zoom/[ZOOM RANGE]` | `NONE`, `SCRATCHED_GLASS`, `AUTOFOCUS_FAULT` |
+| `battery` | `capacity/[CAPACITY]` | `NONE`, `SWELLING`, `CONTACT_DAMAGE` |
+| `tripod` | `thread/[THREAD]` | `NONE`, `BENT_LEG`, `HEAD_FAULT` |
+
+* Each type-specific value is free text of 1 to 100 characters on one line, such as `APS-C`, `24-70 mm`,
+  `1800 mAh` or `1/4 inch`.
+* Either optional field can be omitted. The type-specific value defaults to `unspecified`, and damage defaults to `NONE`.
+* Damage values are case-insensitive and stored in uppercase. Use a value from the row for the chosen type.
+* A field for another type, an invalid damage value, a repeated field or fields in the wrong order are rejected.
+
+Examples:
+
+```text
+add i/Canon EOS R10 id/001 type/camera cond/1 sensor/APS-C damage/NONE
+add i/Spare battery id/002 type/battery cond/7 damage/swelling
+add i/Travel tripod id/003 type/tripod cond/2 thread/1/4 inch
+```
+
 * Names can contain text such as `USB id/card reader` or `fluid/head tripod`.
   The actual `id/` field is the last one before `type/`. Earlier whitespace-prefixed `id/` text in the name must
   have a non-empty value starting with a non-whitespace character other than a digit, `+`, or `-`.
   Whitespace-prefixed numeric ID-like text such as `id/001` is reserved and cannot be part of the name.
-* Prefixes `i/`, `type/`, and `cond/` at the start or after whitespace are reserved command delimiters.
-  They must occur once each, in the documented order; fields must be separated by whitespace.
+* Prefixes `i/`, `type/` and `cond/` at the start or after whitespace are reserved command delimiters.
+  Prefixes `sensor/`, `zoom/`, `capacity/`, `thread/` and `damage/` are delimiters only after `cond/`.
+  Names can contain these optional prefixes, such as `Camera sensor/cleaning kit`.
+  Required fields must occur once each; optional fields may occur at most once. Fields must follow the
+  documented order and be separated by whitespace.
   There is no quoting or escaping syntax. Prefix-like text inside words remains valid.
+
+## Viewing equipment: `list`
+
+Format: `list`
+
+This displays all equipment with its name, ID, type and condition. The `DETAILS` column shows the type-specific
+value and damage, including the defaults when optional fields were omitted.
 
 ## Deleting equipment: `delete`
 
@@ -89,7 +123,11 @@ The text file contains one equipment record per line, using the add command form
 
 ```text
 add i/Canon EOS R10 id/001 type/camera cond/1
+add i/Travel tripod id/003 type/tripod cond/2 thread/1/4 inch damage/NONE
 ```
+
+Saved equipment records use the four supported types and retain their type-specific values and damage.
+Existing records of supported types without optional fields are also accepted, using `unspecified` and `NONE`.
 
 To transfer your records, copy `data/equipment.txt` to the same location on the other computer.
 Copy `data/loans.txt` as well when transferring loan records. Loan records include the item ID, borrower ID,
@@ -109,7 +147,7 @@ the application reports the problem and stops.
 
 | Action | Command |
 | --- | --- |
-| Add equipment | `add i/[ITEM] id/[ITEM ID] type/[TYPE] cond/[CONDITION]` |
+| Add equipment | `add i/[ITEM] id/[ITEM ID] type/[TYPE] cond/[CONDITION]`, with optional type-specific and damage fields as described above |
 | Delete equipment | `delete item/[ITEM ID]` |
 | Add loan | `loan id/[ITEM ID] b/[BORROWER ID] issued/[DD-MM-YY] due/[DD-MM-YY]` |
 | Delete loan | `delete-loan id/[ITEM ID] [issued/DD-MM-YY]` |

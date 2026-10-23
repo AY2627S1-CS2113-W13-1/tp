@@ -103,12 +103,12 @@ public class LoanHandlerTest {
     void deleteEquipment_activeLoan_blocksDeletionAndIdReuse() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory);
         manager.executeInput("add i/Camera id/001 type/camera cond/1");
-        manager.executeInput("add i/Tripod id/002 type/accessories cond/5");
+        manager.executeInput("add i/Tripod id/002 type/tripod cond/5");
         manager.executeInput(FIRST_LOAN);
         output.reset();
 
         manager.executeInput("delete item/001");
-        manager.executeInput("add i/Replacement id/001 type/audio cond/3");
+        manager.executeInput("add i/Replacement id/001 type/battery cond/3");
         manager.executeInput("delete item/002");
 
         assertEquals("Cannot delete item ID 001 while it has an active loan." + System.lineSeparator()
@@ -127,7 +127,7 @@ public class LoanHandlerTest {
         output.reset();
 
         manager.executeInput("delete item/001");
-        manager.executeInput("add i/Replacement id/001 type/audio cond/3");
+        manager.executeInput("add i/Replacement id/001 type/battery cond/3");
 
         assertEquals("Equipment with item ID 001 deleted successfully." + System.lineSeparator()
                 + "Equipment added successfully." + System.lineSeparator(), output.toString(StandardCharsets.UTF_8));
@@ -160,7 +160,7 @@ public class LoanHandlerTest {
 
         manager.executeInput("delete-loan id/001");
         manager.executeInput("delete item/001");
-        manager.executeInput("add i/Replacement id/001 type/audio cond/3");
+        manager.executeInput("add i/Replacement id/001 type/battery cond/3");
 
         assertEquals("Loan for item ID 001 deleted successfully." + System.lineSeparator()
                 + "Equipment with item ID 001 deleted successfully." + System.lineSeparator()

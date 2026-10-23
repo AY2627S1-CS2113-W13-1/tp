@@ -1,6 +1,7 @@
 package seedu.snap.equipment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -84,11 +85,11 @@ class EquipmentHandlerTest {
     @MethodSource("validEquipmentNames")
     void addEquipment_nameBoundariesAndUnicode_preservesFields(String name) throws EquipmentAdditionUnsuccessful {
         EquipmentHandler handler = new EquipmentHandler();
-        Equipment item = handler.addEquipment("add i/" + name + " id/001 type/camera accessories cond/10");
+        Equipment item = handler.addEquipment("add i/" + name + " id/001 type/camera cond/10");
 
         assertEquals(name, item.getItemName());
         assertEquals("001", item.getItemId());
-        assertEquals("camera accessories", item.getType());
+        assertEquals("camera", item.getType());
         assertEquals(10, item.getCondition());
         assertSame(item, handler.getEquipmentList().getFirst());
     }
@@ -155,7 +156,7 @@ class EquipmentHandlerTest {
             EquipmentHandler handler = new EquipmentHandler();
             handler.addEquipment("add i/Canon EOS R10 id/001 type/camera cond/1");
             EquipmentAdditionUnsuccessful exception = assertThrows(EquipmentAdditionUnsuccessful.class,
-                    () -> handler.addEquipment("add i/Tripod id/002 type/accessories cond/11"));
+                    () -> handler.addEquipment("add i/Tripod id/002 type/tripod cond/11"));
 
             assertEquals(2, records.size());
             assertEquals(Level.FINE, records.get(0).getLevel());
@@ -177,6 +178,123 @@ class EquipmentHandlerTest {
                 "add i/Canon EOS R10 id/001 type/camera cond/1");
 
         assertNotNull(equipment);
+        assertInstanceOf(Camera.class, equipment);
+    }
+
+    @Test
+    public void parseEquipment_supportedTypes_returnsMatchingSubclasses() throws EquipmentAdditionUnsuccessful {
+        assertInstanceOf(Camera.class, EquipmentHandler.parseEquipment(
+                "add i/Camera id/001 type/camera cond/1"));
+        assertInstanceOf(Tripod.class, EquipmentHandler.parseEquipment(
+                "add i/Tripod id/002 type/tripod cond/2"));
+        assertInstanceOf(Lens.class, EquipmentHandler.parseEquipment(
+                "add i/Lens id/003 type/lens cond/3"));
+        assertInstanceOf(Battery.class, EquipmentHandler.parseEquipment(
+                "add i/Battery id/004 type/battery cond/4"));
+    }
+
+    @Test
+    void parseEquipment_mixedCaseTypes_normalisesTypeNames() throws EquipmentAdditionUnsuccessful {
+        String[] types = {"CaMeRa", "LENS", "Battery", "TRIPOD"};
+        String[] expectedTypes = {"camera", "lens", "battery", "tripod"};
+        for (int i = 0; i < types.length; i++) {
+            Equipment item = EquipmentHandler.parseEquipment(
+                    "add i/Item id/001 type/" + types[i] + " cond/5");
+            assertEquals(expectedTypes[i], item.getType());
+        }
+    }
+
+    @Test
+    void parseEquipment_explicitSubtypeDetails_preservesFields() throws EquipmentAdditionUnsuccessful {
+        Camera camera = assertInstanceOf(Camera.class, EquipmentHandler.parseEquipment(
+                "add i/Camera id/001 type/camera cond/7 sensor/Full frame damage/sensor_damage"));
+        Lens lens = assertInstanceOf(Lens.class, EquipmentHandler.parseEquipment(
+                "add i/Lens id/002 type/lens cond/6 zoom/24 to 70 mm damage/scratched_glass"));
+        Battery battery = assertInstanceOf(Battery.class, EquipmentHandler.parseEquipment(
+                "add i/Battery id/003 type/battery cond/5 capacity/2000 mAh damage/swelling"));
+        Tripod tripod = assertInstanceOf(Tripod.class, EquipmentHandler.parseEquipment(
+                "add i/Tripod id/004 type/tripod cond/4 thread/Quarter inch damage/bent_leg"));
+
+        assertEquals("Full frame", camera.getSensorFormat());
+        assertEquals("SENSOR_DAMAGE", camera.getDamage().name());
+        assertEquals("24 to 70 mm", lens.getZoomRange());
+        assertEquals("SCRATCHED_GLASS", lens.getDamage().name());
+        assertEquals("2000 mAh", battery.getCapacity());
+        assertEquals("SWELLING", battery.getDamage().name());
+        assertEquals("Quarter inch", tripod.getThread());
+        assertEquals("BENT_LEG", tripod.getDamage().name());
+    }
+
+    @Test
+    void parseEquipment_optionalDetails_usesDefaultsForOmittedFields() throws EquipmentAdditionUnsuccessful {
+        String[] types = {"camera", "lens", "battery", "tripod"};
+        String[] markers = {"sensor", "zoom", "capacity", "thread"};
+        for (int i = 0; i < types.length; i++) {
+            String command = "add i/Item id/001 type/" + types[i] + " cond/5";
+            assertEquals(markers[i] + "/unspecified damage/NONE",
+                    EquipmentHandler.parseEquipment(command).getDetails());
+            assertEquals(markers[i] + "/Custom value damage/NONE",
+                    EquipmentHandler.parseEquipment(command + " " + markers[i] + "/Custom value").getDetails());
+            assertEquals(markers[i] + "/unspecified damage/NONE",
+                    EquipmentHandler.parseEquipment(command + " damage/none").getDetails());
+        }
+    }
+
+    @Test
+    void parseEquipment_attributeBoundaries_preservesValues() throws EquipmentAdditionUnsuccessful {
+        String[] values = {"A", "A".repeat(100), "Full frame \u76f8\u673a", "mini/sensor"};
+        for (String value : values) {
+            Camera camera = assertInstanceOf(Camera.class, EquipmentHandler.parseEquipment(
+                    "add i/Camera id/001 type/camera cond/5 sensor/" + value));
+            assertEquals(value, camera.getSensorFormat());
+        }
+    }
+
+    @Test
+    void addEquipment_invalidSubtypeFields_preservesInventoryAndSavedRecords() throws Exception {
+        Path file = temporaryDirectory.resolve("equipment.txt");
+        EquipmentHandler handler = new EquipmentHandler(file);
+        Equipment original = handler.addEquipment("add i/Original camera id/001 type/camera cond/1");
+        String saved = Files.readString(file);
+        String[] invalidTails = {
+            "zoom/24 mm", "capacity/2000 mAh", "thread/Quarter inch", "unknown/value",
+            "sensor/", "sensor/   ", "damage/", "damage/   ",
+            "sensor/Full frame sensor/Crop", "damage/NONE damage/SHUTTER_FAULT",
+            "damage/NONE sensor/Full frame", "sensor/Full frame zoom/24 mm",
+            "sensor/Full frame damage/SWELLING", "sensor/" + "A".repeat(101),
+            "sensor/Full frame id/003", "sensor/Full frame cond/5"
+        };
+
+        for (String tail : invalidTails) {
+            String command = "add i/Camera id/002 type/camera cond/5 " + tail;
+            assertThrows(EquipmentAdditionUnsuccessful.class, () -> handler.addEquipment(command), command);
+            assertEquals(List.of(original), handler.getEquipmentList(), command);
+            assertEquals(saved, Files.readString(file), command);
+        }
+
+        handler.addEquipment("add i/Camera id/002 type/camera cond/5 sensor/Full frame damage/NONE");
+        assertEquals(2, handler.getEquipmentList().size());
+    }
+
+    @Test
+    void addEquipment_damageForAnotherSubtype_rejectsWithoutAddingItems() {
+        EquipmentHandler handler = new EquipmentHandler();
+        String[] commands = {
+            "add i/Camera id/001 type/camera cond/5 damage/SCRATCHED_GLASS",
+            "add i/Lens id/002 type/lens cond/5 damage/SENSOR_DAMAGE",
+            "add i/Battery id/003 type/battery cond/5 damage/BENT_LEG",
+            "add i/Tripod id/004 type/tripod cond/5 damage/CONTACT_DAMAGE"
+        };
+        for (String command : commands) {
+            assertThrows(EquipmentAdditionUnsuccessful.class, () -> handler.addEquipment(command), command);
+            assertTrue(handler.getEquipmentList().isEmpty(), command);
+        }
+    }
+
+    @Test
+    public void parseEquipment_unsupportedType_throwsException() {
+        assertThrows(EquipmentAdditionUnsuccessful.class, () -> EquipmentHandler.parseEquipment(
+                "add i/Flash id/001 type/flash cond/1"));
     }
 
     @Test
@@ -225,7 +343,7 @@ class EquipmentHandlerTest {
 
         EquipmentAdditionUnsuccessful exception = org.junit.jupiter.api.Assertions.assertThrows(
                 EquipmentAdditionUnsuccessful.class,
-                () -> handler.addEquipment("add i/Tripod id/001 type/accessories cond/5"));
+                () -> handler.addEquipment("add i/Tripod id/001 type/tripod cond/5"));
 
         assertEquals("Item ID 001 already exists.", exception.getMessage());
         assertEquals(1, EquipmentStorage.load(file).size());
@@ -250,7 +368,7 @@ class EquipmentHandlerTest {
         Equipment camera = handler.addEquipment("add i/Canon EOS R10 id/001 type/camera cond/1");
         assertEquals(1, handler.getEquipmentList().size());
 
-        Equipment tripod = handler.addEquipment("add i/Tripod id/002 type/accessories cond/10");
+        Equipment tripod = handler.addEquipment("add i/Tripod id/002 type/tripod cond/10");
         assertEquals(2, handler.getEquipmentList().size());
         assertSame(camera, handler.getEquipmentList().get(0));
         assertSame(tripod, handler.getEquipmentList().get(1));
@@ -260,7 +378,7 @@ class EquipmentHandlerTest {
     void addEquipment_duplicateIds_preservesAllExistingEquipment() throws EquipmentAdditionUnsuccessful {
         EquipmentHandler handler = new EquipmentHandler();
         Equipment first = handler.addEquipment("add i/Camera id/001 type/camera cond/1");
-        Equipment middle = handler.addEquipment("add i/Tripod id/500 type/accessories cond/5");
+        Equipment middle = handler.addEquipment("add i/Tripod id/500 type/tripod cond/5");
         Equipment last = handler.addEquipment("add i/Lens id/999 type/lens cond/10");
         List<Equipment> expected = List.of(first, middle, last);
 
@@ -268,7 +386,7 @@ class EquipmentHandlerTest {
             String[] duplicateCommands = {
                 "add i/" + existing.getItemName() + " id/" + existing.getItemId()
                         + " type/" + existing.getType() + " cond/" + existing.getCondition(),
-                "add i/Replacement id/" + existing.getItemId() + " type/audio cond/3"
+                "add i/Replacement id/" + existing.getItemId() + " type/battery cond/3"
             };
             for (String command : duplicateCommands) {
                 EquipmentAdditionUnsuccessful exception = assertThrows(EquipmentAdditionUnsuccessful.class,
@@ -295,7 +413,7 @@ class EquipmentHandlerTest {
         handler.addEquipment("add i/Camera id/001 type/camera cond/1");
         handler.deleteEquipment("delete item/001");
 
-        Equipment replacement = handler.addEquipment("add i/Tripod id/001 type/accessories cond/5");
+        Equipment replacement = handler.addEquipment("add i/Tripod id/001 type/tripod cond/5");
 
         assertEquals(List.of(replacement), handler.getEquipmentList());
         assertEquals("Tripod", replacement.getItemName());
@@ -307,7 +425,7 @@ class EquipmentHandlerTest {
         Equipment equipment = handler.addEquipment("add i/Canon EOS R10 id/001 type/camera cond/1");
 
         assertThrows(EquipmentAdditionUnsuccessful.class,
-                () -> handler.addEquipment("add i/Tripod id/002 type/accessories cond/11"));
+                () -> handler.addEquipment("add i/Tripod id/002 type/tripod cond/11"));
 
         assertEquals(1, handler.getEquipmentList().size());
         assertSame(equipment, handler.getEquipmentList().getFirst());
@@ -330,8 +448,8 @@ class EquipmentHandlerTest {
             throws EquipmentAdditionUnsuccessful, EquipmentDeletionUnsuccessful {
         EquipmentHandler handler = new EquipmentHandler();
         Equipment first = handler.addEquipment("add i/Camera id/003 type/camera cond/1");
-        Equipment target = handler.addEquipment("add i/Tripod id/001 type/accessories cond/5");
-        Equipment last = handler.addEquipment("add i/Microphone id/002 type/audio cond/10");
+        Equipment target = handler.addEquipment("add i/Tripod id/001 type/tripod cond/5");
+        Equipment last = handler.addEquipment("add i/Microphone id/002 type/battery cond/10");
 
         Equipment deleted = handler.deleteEquipment("delete item/001");
 
@@ -385,9 +503,9 @@ class EquipmentHandlerTest {
     @Test
     public void deleteEquipment_corruptedDuplicateIds_preservesRecordsAndAllowsOtherDeletion()
             throws ReflectiveOperationException, EquipmentDeletionUnsuccessful {
-        Equipment first = new Equipment("Camera", "001", "camera", 1);
-        Equipment second = new Equipment("Tripod", "001", "accessories", 5);
-        Equipment unrelated = new Equipment("Microphone", "002", "audio", 10);
+        Equipment first = new Camera("Camera", "001", 1);
+        Equipment second = new Tripod("Tripod", "001", 5);
+        Equipment unrelated = new Battery("Battery", "002", 10);
         EquipmentHandler handler = handlerWithCorruptedInventory(first, second, unrelated);
 
         EquipmentDeletionUnsuccessful exception = assertThrows(EquipmentDeletionUnsuccessful.class,
@@ -420,7 +538,7 @@ class EquipmentHandlerTest {
             throws EquipmentAdditionUnsuccessful, EquipmentDeletionUnsuccessful {
         EquipmentHandler handler = new EquipmentHandler();
         handler.addEquipment("add i/Camera id/001 type/camera cond/1");
-        Equipment remaining = handler.addEquipment("add i/Tripod id/002 type/accessories cond/5");
+        Equipment remaining = handler.addEquipment("add i/Tripod id/002 type/tripod cond/5");
         handler.deleteEquipment("delete item/001");
 
         EquipmentDeletionUnsuccessful exception = assertThrows(EquipmentDeletionUnsuccessful.class,
@@ -436,7 +554,7 @@ class EquipmentHandlerTest {
         EquipmentHandler handler = new EquipmentHandler();
         handler.addEquipment("add i/Camera id/001 type/camera cond/1");
         handler.deleteEquipment("delete item/001");
-        Equipment replacement = handler.addEquipment("add i/Tripod id/001 type/accessories cond/5");
+        Equipment replacement = handler.addEquipment("add i/Tripod id/001 type/tripod cond/5");
 
         assertSame(replacement, handler.deleteEquipment("delete item/001"));
         assertEquals(List.of(), handler.getEquipmentList());
@@ -509,8 +627,8 @@ class EquipmentHandlerTest {
         handler.viewAllEquipment();
 
         String expected = String.format(
-                "%-4s %-24s | %-6s | %-15s | %-9s%n",
-                "No.", "NAME", "ID", "TYPE", "CONDITION");
+                "%-4s %-24s | %-6s | %-15s | %-9s | %s%n",
+                "No.", "NAME", "ID", "TYPE", "CONDITION", "DETAILS");
         assertEquals(expected, output.toString(StandardCharsets.UTF_8));
     }
 
@@ -519,19 +637,19 @@ class EquipmentHandlerTest {
             throws EquipmentAdditionUnsuccessful {
         EquipmentHandler handler = new EquipmentHandler();
         handler.addEquipment("add i/Canon EOS R10 id/001 type/camera cond/1");
-        handler.addEquipment("add i/Manfrotto Tripod id/002 type/accessories cond/8");
+        handler.addEquipment("add i/Manfrotto Tripod id/002 type/tripod cond/8");
 
         handler.viewAllEquipment();
 
         String expected = String.format(
-                "%-4s %-24s | %-6s | %-15s | %-9s%n",
-                "No.", "NAME", "ID", "TYPE", "CONDITION");
+                "%-4s %-24s | %-6s | %-15s | %-9s | %s%n",
+                "No.", "NAME", "ID", "TYPE", "CONDITION", "DETAILS");
         expected += String.format(
-                "%-4s %-24s | %-6s | %-15s | %-9d%n",
-                "1)", "Canon EOS R10", "001", "camera", 1);
+                "%-4s %-24s | %-6s | %-15s | %-9d | %s%n",
+                "1)", "Canon EOS R10", "001", "camera", 1, "sensor/unspecified damage/NONE");
         expected += String.format(
-                "%-4s %-24s | %-6s | %-15s | %-9d%n",
-                "2)", "Manfrotto Tripod", "002", "accessories", 8);
+                "%-4s %-24s | %-6s | %-15s | %-9d | %s%n",
+                "2)", "Manfrotto Tripod", "002", "tripod", 8, "thread/unspecified damage/NONE");
 
         assertEquals(expected, output.toString(StandardCharsets.UTF_8));
     }

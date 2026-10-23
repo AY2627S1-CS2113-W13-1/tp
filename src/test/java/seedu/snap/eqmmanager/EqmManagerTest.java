@@ -39,8 +39,8 @@ class EqmManagerTest {
         manager.executeInput(ADD_CAMERA);
         output.reset();
 
-        manager.executeInput("add i/Tripod id/001 type/accessories cond/5");
-        manager.executeInput("add i/Tripod id/002 type/accessories cond/5");
+        manager.executeInput("add i/Tripod id/001 type/tripod cond/5");
+        manager.executeInput("add i/Tripod id/002 type/tripod cond/5");
 
         assertEquals("Item ID 001 already exists." + System.lineSeparator()
                 + "Equipment added successfully." + System.lineSeparator(), output.toString(StandardCharsets.UTF_8));
@@ -53,11 +53,11 @@ class EqmManagerTest {
         output.reset();
         String[] commands = {
             "add i/Tripod id/002",
-            "add i/Tripod id/002 type/accessories cond/11",
-            "add i/Tripodid/002 type/accessories cond/5",
-            "add i/Tripod i/Lens id/002 type/accessories cond/5",
-            "add i/\u2003 id/002 type/accessories cond/5",
-            "add i/Tripod id/001 type/accessories cond/5"
+            "add i/Tripod id/002 type/tripod cond/11",
+            "add i/Tripodid/002 type/tripod cond/5",
+            "add i/Tripod i/Lens id/002 type/tripod cond/5",
+            "add i/\u2003 id/002 type/tripod cond/5",
+            "add i/Tripod id/001 type/tripod cond/5"
         };
         String formatError = "Invalid format. Use: add i/[ITEM] id/[ITEM ID] type/[TYPE] cond/[CONDITION]";
         String[] errors = {
@@ -69,17 +69,41 @@ class EqmManagerTest {
             assertEquals(errors[i] + System.lineSeparator(), output.toString(StandardCharsets.UTF_8), commands[i]);
             output.reset();
         }
-        manager.executeInput("add i/Tripod id/002 type/accessories cond/5");
+        manager.executeInput("add i/Tripod id/002 type/tripod cond/5");
         assertEquals("Equipment added successfully." + System.lineSeparator(), output.toString(StandardCharsets.UTF_8));
         output.reset();
 
         manager.executeInput("list");
-        String expected = String.format("%-4s %-24s | %-6s | %-15s | %-9s%n",
-                "No.", "NAME", "ID", "TYPE", "CONDITION")
-                + String.format("%-4s %-24s | %-6s | %-15s | %-9d%n",
-                        "1)", "Canon EOS R10", "001", "camera", 1)
-                + String.format("%-4s %-24s | %-6s | %-15s | %-9d%n",
-                        "2)", "Tripod", "002", "accessories", 5);
+        String expected = String.format("%-4s %-24s | %-6s | %-15s | %-9s | %s%n",
+                "No.", "NAME", "ID", "TYPE", "CONDITION", "DETAILS")
+                + String.format("%-4s %-24s | %-6s | %-15s | %-9d | %s%n",
+                        "1)", "Canon EOS R10", "001", "camera", 1, "sensor/unspecified damage/NONE")
+                + String.format("%-4s %-24s | %-6s | %-15s | %-9d | %s%n",
+                        "2)", "Tripod", "002", "tripod", 5, "thread/unspecified damage/NONE");
+        assertEquals(expected, output.toString(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void addEquipment_explicitSubtypeDetails_listsSavedDetails() {
+        EqmManager manager = new EqmManager(temporaryDirectory);
+        manager.executeInput("add i/Camera id/001 type/CAMERA cond/7 sensor/Full frame damage/sensor_damage");
+        manager.executeInput("add i/Lens id/002 type/lens cond/6 zoom/24 to 70 mm damage/scratched_glass");
+        manager.executeInput("add i/Battery id/003 type/battery cond/5 capacity/2000 mAh damage/swelling");
+        manager.executeInput("add i/Tripod id/004 type/tripod cond/4 thread/Quarter inch damage/bent_leg");
+        output.reset();
+
+        manager.executeInput("list");
+
+        String expected = String.format("%-4s %-24s | %-6s | %-15s | %-9s | %s%n",
+                "No.", "NAME", "ID", "TYPE", "CONDITION", "DETAILS")
+                + String.format("%-4s %-24s | %-6s | %-15s | %-9d | %s%n",
+                        "1)", "Camera", "001", "camera", 7, "sensor/Full frame damage/SENSOR_DAMAGE")
+                + String.format("%-4s %-24s | %-6s | %-15s | %-9d | %s%n",
+                        "2)", "Lens", "002", "lens", 6, "zoom/24 to 70 mm damage/SCRATCHED_GLASS")
+                + String.format("%-4s %-24s | %-6s | %-15s | %-9d | %s%n",
+                        "3)", "Battery", "003", "battery", 5, "capacity/2000 mAh damage/SWELLING")
+                + String.format("%-4s %-24s | %-6s | %-15s | %-9d | %s%n",
+                        "4)", "Tripod", "004", "tripod", 4, "thread/Quarter inch damage/BENT_LEG");
         assertEquals(expected, output.toString(StandardCharsets.UTF_8));
     }
 

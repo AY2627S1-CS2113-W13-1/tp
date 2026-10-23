@@ -30,7 +30,7 @@ class MainTest {
     /** Verifies that user validation and diagnostic logging work independently of Java assertions. */
     private void verifyEquipmentDiagnostics(boolean areAssertionsEnabled) throws Exception {
         String commands = "add i/Camera id/001 type/camera cond/1\n"
-                + "add i/Tripod id/002 type/accessories cond/11\n"
+                + "add i/Tripod id/002 type/tripod cond/11\n"
                 + "add i/\u2003 id/002 type/camera cond/1\n"
                 + "add i/Camera id/002 type/\u2003 cond/1\nbye\n";
         String output = runApplication(commands, areAssertionsEnabled);
@@ -76,7 +76,8 @@ class MainTest {
 
     @Test
     void main_restart_loadsPersistedEquipmentAndLoans() throws Exception {
-        String firstRun = runApplication("add i/Camera id/001 type/camera cond/1\n"
+        String firstRun = runApplication("add i/Camera id/001 type/camera cond/1"
+                + " sensor/Full frame damage/SHUTTER_FAULT\n"
                 + "loan id/001 b/002 issued/01-10-26 due/02-10-26\nbye\n", true);
 
         assertTrue(firstRun.contains("Equipment added successfully."));
@@ -84,7 +85,7 @@ class MainTest {
         assertTrue(Files.exists(temporaryDirectory.resolve("data/equipment.txt")));
         assertTrue(Files.exists(temporaryDirectory.resolve("data/loans.txt")));
         assertTrue(Files.readString(temporaryDirectory.resolve("data/equipment.txt"))
-                .contains("add i/Camera id/001 type/camera cond/1"));
+                .contains("add i/Camera id/001 type/camera cond/1 sensor/Full frame damage/SHUTTER_FAULT"));
         assertTrue(Files.readString(temporaryDirectory.resolve("data/loans.txt"))
                 .contains("loan id/001 b/002 issued/01-10-26 due/02-10-26 returned/false"));
 
@@ -92,6 +93,7 @@ class MainTest {
 
         assertTrue(secondRun.contains("Welcome to snAp. Loaded 1 equipment record(s) and 1 loan(s)."));
         assertTrue(secondRun.contains("Camera"));
+        assertTrue(secondRun.contains("sensor/Full frame damage/SHUTTER_FAULT"));
         assertTrue(secondRun.contains("001"));
         assertTrue(secondRun.contains("002"));
     }

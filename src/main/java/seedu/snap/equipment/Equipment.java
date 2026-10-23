@@ -2,11 +2,14 @@ package seedu.snap.equipment;
 
 /**
  * Represents an item of equipment in the inventory.
+ *
+ * <p>The concrete equipment type is represented by a subclass rather than by a
+ * field on this class. This keeps type-specific behaviour separate from the
+ * common equipment properties.</p>
  */
-public class Equipment {
+public abstract class Equipment {
     private final String itemName;
     private final String itemId;
-    private final String type;
     private final int condition;
 
     /**
@@ -15,20 +18,13 @@ public class Equipment {
      *
      * @param name Name of the equipment.
      * @param id Three-digit equipment ID.
-     * @param type Type of equipment.
      * @param condition Condition of the equipment from 1 to 10.
      */
-    public Equipment(String name, String id, String type, int condition) {
-        assert name != null && !name.isBlank() && name.length() <= 100
-                : "Equipment name must contain 1 to 100 characters";
-        assert id != null && id.matches("[0-9]{3}") && !id.equals("000")
-                : "Equipment ID must be from 001 to 999";
-        assert type != null && !type.isBlank() : "Equipment type must contain text";
-        assert condition >= 1 && condition <= 10 : "Equipment condition must be from 1 to 10";
+    protected Equipment(String name, String id, int condition) {
         this.itemName = name;
         this.itemId = id;
-        this.type = type;
         this.condition = condition;
+        assert hasValidState() : "Equipment fields must contain valid values.";
     }
 
     public String getItemName() {
@@ -39,11 +35,32 @@ public class Equipment {
         return itemId;
     }
 
-    public String getType() {
-        return type;
-    }
+    /**
+     * Returns the canonical type represented by this equipment subclass.
+     *
+     * @return the equipment type
+     */
+    public abstract String getType();
+
+    /**
+     * Returns the type-specific fields in add-command format for listing and saving.
+     *
+     * @return the equipment's attribute and damage fields
+     */
+    public abstract String getDetails();
 
     public int getCondition() {
         return condition;
+    }
+
+    /**
+     * Checks the invariant shared by all equipment subclasses.
+     *
+     * @return true when all common equipment fields are valid
+     */
+    private boolean hasValidState() {
+        return itemName != null && !itemName.isBlank() && itemName.length() <= 100
+                && itemId != null && itemId.matches("[0-9]{3}") && !itemId.equals("000")
+                && condition >= 1 && condition <= 10;
     }
 }
