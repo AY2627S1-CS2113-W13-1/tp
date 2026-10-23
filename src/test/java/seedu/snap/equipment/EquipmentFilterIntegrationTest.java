@@ -90,7 +90,7 @@ class EquipmentFilterIntegrationTest {
         assertEquals(List.of(camera), available.apply(equipment.getEquipmentList(), loans));
 
         Loan active = loans.addLoan("loan id/001 b/003 issued/03-10-26 due/04-10-26");
-        loans.deleteLoan("delete loan/001 issued/01-10-26");
+        loans.deleteLoan("delete loan/001");
 
         assertTrue(available.apply(equipment.getEquipmentList(), loans).isEmpty());
         assertSame(camera, loaned.apply(equipment.getEquipmentList(), loans).getFirst());

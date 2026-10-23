@@ -180,7 +180,7 @@ class EquipmentAvailabilityTest {
     void deleteLoan_oldReturnedLoan_doesNotReleaseNewActiveLoan() throws Exception {
         loans.addLoan(LOAN).setReturned(true);
         loans.addLoan(LOAN.replace("01-10-26", "02-10-26"));
-        loans.deleteLoan("delete loan/001 issued/01-10-26");
+        loans.deleteLoan("delete loan/001");
         assertTrue(camera.isLoaned());
         assertEquals(1, loans.getLoanCount());
     }
@@ -193,7 +193,7 @@ class EquipmentAvailabilityTest {
         Equipment replacement = equipment.addEquipment("add i/Replacement tripod id/001 type/tripod cond/4");
         Loan active = loans.addLoan(LOAN.replace("01-10-26", "02-10-26"));
 
-        assertSame(returned, loans.deleteLoan("delete loan/001 issued/01-10-26"));
+        assertSame(returned, loans.deleteLoan("delete loan/001"));
         returned.setReturned(true);
         assertThrows(IllegalStateException.class, () -> returned.setReturned(false));
 
@@ -233,7 +233,7 @@ class EquipmentAvailabilityTest {
             manager.executeInput("list");
             manager.executeInput("delete item/001");
             assertTrue(output.toString(StandardCharsets.UTF_8).contains("Item ID 001 does not exist."));
-            assertTrue(output.toString(StandardCharsets.UTF_8).contains("Loan added successfully."));
+            assertTrue(output.toString(StandardCharsets.UTF_8).contains("Loan 001 added successfully."));
             assertTrue(output.toString(StandardCharsets.UTF_8).contains("Loaned"));
             assertTrue(output.toString(StandardCharsets.UTF_8)
                     .contains("Cannot delete item ID 001 while it has an active loan."));

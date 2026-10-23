@@ -166,7 +166,8 @@ public class EqmManager {
         // @@author Rohita-29
         try {
             Loan deleted = loans.deleteLoan(input);
-            System.out.println("Loan for item ID " + deleted.getItemId() + " deleted successfully.");
+            System.out.println("Loan " + deleted.getLoanId() + " for item ID " + deleted.getItemId()
+                    + " deleted successfully.");
         } catch (LoanDeletionUnsuccessful e) {
             System.out.println(e.getMessage());
         }
@@ -229,8 +230,8 @@ public class EqmManager {
     private void addLoan(String input) {
         // @@author Yi An
         try {
-            loans.addLoan(input);
-            System.out.println("Loan added successfully.");
+            Loan added = loans.addLoan(input);
+            System.out.println("Loan " + added.getLoanId() + " added successfully.");
         } catch (LoanAdditionUnsuccessful e) {
             System.out.println(e.getMessage());
         }

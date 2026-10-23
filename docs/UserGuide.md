@@ -92,7 +92,7 @@ An ID that does not exist produces an error without changing the saved records.
 New equipment is `Available`. Adding a loan changes its status to `Loaned`. Marking an active loan as returned
 or deleting it makes the item available again. Removing an older returned loan does not affect a newer active loan.
 
-There is no command to mark a loan as returned yet. The current command-line option is `delete loan/[ITEM ID]`, which
+There is no command to mark a loan as returned yet. The current command-line option is `delete loan/[LOAN ID]`, which
 also removes the loan record. A return workflow that retains loan history is planned in
 [issue #78](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/78).
 
@@ -104,10 +104,14 @@ Format: `loan id/[ITEM ID] b/[BORROWER ID] issued/[DD-MM-YY] due/[DD-MM-YY]`
 
 Example: `loan id/001 b/002 issued/01-10-26 due/08-10-26`
 
-* `ITEM ID` is the three-digit identifier of existing equipment. The item must be `Available`.
-* `BORROWER ID` is the three-digit identifier of the borrower.
+* `ITEM ID` is the three-digit identifier of existing equipment, from `001` to `999`. The item must be `Available`.
+* `BORROWER ID` is the three-digit identifier of the borrower, from `000` to `999`.
 * `issued` and `due` use the `DD-MM-YY` format. The issue date must not be later than the due date.
 * An item cannot have more than one active loan at the same time.
+
+Each successful loan receives a unique three-digit loan ID, which is printed in the success message.
+Loan IDs start at `001` and increase through `999`. Deleted IDs are never reused, including after a restart.
+Once `999` has been assigned, further new loans are rejected.
 
 Invalid loan commands leave both the loan records and equipment availability unchanged.
 
@@ -115,22 +119,19 @@ Invalid loan commands leave both the loan records and equipment availability unc
 
 Format: `list loans`
 
-This displays all recorded loans with their item ID, borrower ID, issue date, and due date.
+This displays all recorded loans with their unique loan ID, item ID, borrower ID, issue date and due date.
+The `LOAN ID` column comes before `ITEM ID`.
 
 ## Deleting a loan: `delete loan`
 
-Format: `delete loan/[ITEM ID] [issued/DD-MM-YY]`
+Format: `delete loan/[LOAN ID]`
 
 Example: `delete loan/001`
 
-Use the optional issue date when more than one loan exists for the same item ID:
-
-```text
-delete loan/001 issued/01-10-26
-```
-
-If no matching loan exists, or if the command does not identify a unique loan, the application reports an error and
-keeps the existing loan records unchanged.
+Use the loan ID shown by `list loans`, from `001` to `999`. This selects one record even when the same item
+has been borrowed more than once. The value is a loan ID, not an equipment ID. Issue-date arguments are no longer
+accepted. If no matching loan exists or the command is invalid, the application reports an error and keeps
+the existing loan records unchanged.
 
 The deletion is saved before the loan is removed or its equipment is released. If saving fails, the application
 reports an error and keeps both the loan records and equipment availability unchanged. You can retry the command
@@ -227,11 +228,12 @@ checks the required equipment counts. Borrowing an item later does not remove it
 
 Successful equipment additions, updates and deletions are saved automatically in `data/equipment.txt`, relative to the
 directory from which the application is run. Successful loan additions and deletions are saved in
-`data/loans.txt`. Records are loaded when the application starts again. A final save of both files is also attempted
-when `bye` is entered; if it fails, the application reports the affected file and lets you retry.
-The directory and both files are created on the first save, including the final save performed by `bye`.
-Equipment availability is rebuilt from the active loans loaded at startup, so loaned items remain `Loaned`
-after restarting the application.
+`data/loans.txt`, and the next unused loan ID is saved in `data/loan-sequence.txt`. Records are loaded when the
+application starts again. A final save is also attempted when `bye` is entered; if it fails, the application
+reports the affected file and lets you retry.
+The directory and saved files are created on the first save, including the final save performed by `bye`.
+Each item's availability and associated loan ID are rebuilt from active loans at startup, so loaned items
+remain `Loaned` after restarting the application.
 
 The text file contains one equipment record per line, using the add command format. For example:
 
@@ -246,10 +248,19 @@ Existing records of supported types without optional fields are also accepted, u
 Records created before remarks were supported may omit the `remarks/` field; they load with empty remarks.
 Remarks are shown in the `list` equipment table and are restored when the application starts again.
 
-To transfer your records, copy `data/equipment.txt` to the same location on the other computer.
-Copy `data/loans.txt` as well when transferring loan records. Loan records include the item ID, borrower ID,
-issue date, due date, and returned status. If either file cannot be read or contains invalid or duplicate records,
-the application reports the problem and stops.
+Loan records include the loan ID, item ID, borrower ID, issue date, due date and returned status. For example:
+
+```text
+loan loanId/001 id/001 b/002 issued/01-10-26 due/08-10-26 returned/false
+```
+
+Existing loan records without loan IDs are assigned IDs in file order on first load and saved in the new format.
+These IDs remain stable on later restarts. The sequence file preserves the next unused ID even when loan records
+are deleted. Equipment records retain their details and remarks; loan associations are restored from the loan records.
+
+To transfer your records, copy `data/equipment.txt`, `data/loans.txt` and `data/loan-sequence.txt` to the same
+location on the other computer. If a file cannot be read or contains invalid or duplicate records, the application
+reports the problem and stops.
 
 ## Errors
 
@@ -267,7 +278,7 @@ the application reports the problem and stops.
 | Add equipment | `add i/[ITEM] id/[ITEM ID] type/[TYPE] cond/[CONDITION]` with optional details, damage and remarks |
 | Delete equipment | `delete item/[ITEM ID]` |
 | Add loan | `loan id/[ITEM ID] b/[BORROWER ID] issued/[DD-MM-YY] due/[DD-MM-YY]` |
-| Delete loan | `delete loan/[ITEM ID] [issued/DD-MM-YY]` |
+| Delete loan | `delete loan/[LOAN ID]` |
 | List equipment | `list` |
 | List loans | `list loans` |
 | Filter equipment | `filter [id/ID] [i/NAME] [type/TYPE] [cond/1-3] [status/available]` |

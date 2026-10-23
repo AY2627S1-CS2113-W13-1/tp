@@ -29,6 +29,8 @@ public abstract class Equipment {
     private final String itemId;
     private int condition;
     private boolean isLoaned = false;
+    /** Current active loan identifier, rebuilt from saved loan records rather than duplicated in equipment storage. */
+    private String loanId;
     /** Optional single-line remarks retained with this equipment record. */
     private final String remarks;
 
@@ -95,8 +97,23 @@ public abstract class Equipment {
         return isLoaned;
     }
 
+    /** Returns the current active loan identifier, or null when no identified loan owns this item. */
+    public String getLoanId() {
+        return loanId;
+    }
+
+    /** Associates this item with a validated loan identifier and updates availability together. */
+    public void setLoanId(String loanId) {
+        assert loanId == null || isValidItemId(loanId) : "Loan ID must be from 001 to 999";
+        setLoaned(loanId != null);
+        this.loanId = loanId;
+    }
+
     /** Updates availability when an associated loan changes status. */
     public void setLoaned(boolean isLoaned) {
+        if (!isLoaned) {
+            loanId = null;
+        }
         assert itemId != null : "Equipment must have an ID before its availability changes";
         if (this.isLoaned == isLoaned) {
             logger.log(Level.FINE, "Equipment with item ID {0} remains {1}.",

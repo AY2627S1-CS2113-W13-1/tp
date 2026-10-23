@@ -41,11 +41,13 @@ class EquipmentUpdateIntegrationTest {
         Path equipmentFile = temporaryDirectory.resolve("equipment.txt");
         Path loanFile = temporaryDirectory.resolve("loans.txt");
         EquipmentHandler handler = new EquipmentHandler(equipmentFile);
-        Equipment original = handler.addEquipment(command);
+        Equipment original = handler.addEquipment(command + " remarks/Serial label checked");
         Equipment other = handler.addEquipment("add i/Other id/999 type/lens cond/10");
         String details = original.getDetails();
         LoanHandler loans = new LoanHandler(handler, loanFile);
         Loan active = loans.addLoan("loan id/001 b/002 issued/01-10-26 due/02-10-26");
+        assertEquals("001", active.getLoanId());
+        assertEquals("001", original.getLoanId());
 
         Equipment updated = handler.updateEquipment("update id/001 i/Updated cond/5 type/"
                 + original.getType().toUpperCase(Locale.ROOT));
@@ -55,6 +57,8 @@ class EquipmentUpdateIntegrationTest {
         assertEquals("Updated", original.getItemName());
         assertEquals(5, original.getCondition());
         assertEquals(details, original.getDetails());
+        assertEquals("Serial label checked", original.getRemarks());
+        assertEquals(active.getLoanId(), original.getLoanId());
         assertTrue(original.isLoaned());
         assertSame(original, EquipmentFilter.parse("filter id/001 status/loaned")
                 .apply(handler.getEquipmentList(), loans).getFirst());
@@ -67,9 +71,13 @@ class EquipmentUpdateIntegrationTest {
         Equipment restored = restarted.getEquipmentList().getFirst();
         assertEquals(original.getClass(), restored.getClass());
         assertEquals(details, restored.getDetails());
+        assertEquals("Serial label checked", restored.getRemarks());
+        assertEquals(active.getLoanId(), restored.getLoanId());
+        assertEquals(active.getLoanId(), restartedLoans.getLoanList().getFirst().getLoanId());
         assertEquals("Updated", restored.getItemName());
         assertEquals(5, restored.getCondition());
         assertTrue(restored.isLoaned());
+        assertFalse(Files.readString(equipmentFile).contains("loanId/"));
 
         active.setReturned(true);
         assertFalse(original.isLoaned());

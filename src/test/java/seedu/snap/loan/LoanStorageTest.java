@@ -70,11 +70,12 @@ class LoanStorageTest {
         assertTrue(history.isReturned());
         history.setReturned(true);
         assertThrows(IllegalStateException.class, () -> history.setReturned(false));
-        handler.deleteLoan("delete loan/001 issued/01-09-26");
+        handler.deleteLoan("delete loan/001");
         assertTrue(replacement.isLoaned());
         assertEquals(2, handler.getLoanCount());
         assertTrue(Files.readString(file).contains("id/999"));
-        assertTrue(Files.readString(file).contains(LOAN + " returned/false"));
+        assertTrue(Files.readString(file).contains(
+                "loan loanId/003 id/001 b/002 issued/01-10-26 due/02-10-26 returned/false"));
     }
 
     @Test
@@ -205,7 +206,7 @@ class LoanStorageTest {
         Files.writeString(sentinel, "keep this record");
 
         LoanDeletionUnsuccessful error = assertThrows(LoanDeletionUnsuccessful.class,
-                () -> handler.deleteLoan("delete loan/001 issued/01-10-26"));
+                () -> handler.deleteLoan("delete loan/001"));
 
         assertTrue(error.getMessage().startsWith("Could not save loan deletion:"));
         assertEquals(List.of(history, active), handler.getLoanList());
@@ -215,7 +216,7 @@ class LoanStorageTest {
         Files.delete(sentinel);
         Files.delete(destination);
 
-        assertSame(history, handler.deleteLoan("delete loan/001 issued/01-10-26"));
+        assertSame(history, handler.deleteLoan("delete loan/001"));
         assertEquals(List.of(active), handler.getLoanList());
         assertTrue(camera.isLoaned());
         List<Loan> saved = LoanStorage.load(destination);
@@ -239,7 +240,7 @@ class LoanStorageTest {
         Path destination = temporaryDirectory.resolve("loans.txt");
         Files.createDirectory(destination);
         Files.writeString(destination.resolve("keep.txt"), "keep this record");
-        Loan loan = new Loan("001", "002", LocalDateTime.of(2026, 10, 1, 0, 0),
+        Loan loan = new Loan("001", "001", "002", LocalDateTime.of(2026, 10, 1, 0, 0),
                 LocalDateTime.of(2026, 10, 2, 0, 0));
 
         assertThrows(IOException.class, () -> LoanStorage.save(destination, List.of(loan)));

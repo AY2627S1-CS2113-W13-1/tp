@@ -61,15 +61,15 @@ class MainTest {
                 + "loan id/001 b/001 issued/15-10-26 due/16-10-26\n"
                 + "delete loan/001\ndelete loan/999\nbye\n", true);
         assertTrue(output.contains("Equipment added successfully."));
-        assertTrue(output.contains("Loan for item ID 001 deleted successfully."));
-        assertTrue(output.contains("No loan found for item ID 999."));
+        assertTrue(output.contains("Loan 001 for item ID 001 deleted successfully."));
+        assertTrue(output.contains("No loan found for loan ID 999."));
         assertFalse(output.contains("Added equipment with item ID"));
-        assertFalse(output.contains("Deleted loan for item ID"));
+        assertFalse(output.contains("Deleted loan 001 for item ID"));
         assertFalse(output.contains("WARNING:"));
         assertFalse(output.contains("INFO:"));
         String logs = Files.readString(temporaryDirectory.resolve("logs/snap.log.0"));
-        for (String message : new String[]{"Added equipment with item ID 001", "Deleted loan for item ID 001",
-            "No loan found for item ID 999"}) {
+        for (String message : new String[]{"Added equipment with item ID 001", "Deleted loan 001 for item ID 001",
+            "No loan found for loan ID 999"}) {
             assertEquals(1L, logs.lines().filter(line -> line.contains(message)).count());
         }
     }
@@ -81,13 +81,13 @@ class MainTest {
                 + "loan id/001 b/002 issued/01-10-26 due/02-10-26\nbye\n", true);
 
         assertTrue(firstRun.contains("Equipment added successfully."));
-        assertTrue(firstRun.contains("Loan added successfully."));
+        assertTrue(firstRun.contains("Loan 001 added successfully."));
         assertTrue(Files.exists(temporaryDirectory.resolve("data/equipment.txt")));
         assertTrue(Files.exists(temporaryDirectory.resolve("data/loans.txt")));
         assertTrue(Files.readString(temporaryDirectory.resolve("data/equipment.txt"))
                 .contains("add i/Camera id/001 type/camera cond/1 sensor/Full frame damage/SHUTTER_FAULT"));
         assertTrue(Files.readString(temporaryDirectory.resolve("data/loans.txt"))
-                .contains("loan id/001 b/002 issued/01-10-26 due/02-10-26 returned/false"));
+                .contains("loan loanId/001 id/001 b/002 issued/01-10-26 due/02-10-26 returned/false"));
 
         String secondRun = runApplication("list\nlist loans\nbye\n", true);
 
@@ -124,7 +124,7 @@ class MainTest {
                 "Loaned", "capacity/2000 mAh damage/CONTACT_DAMAGE")));
         assertTrue(firstRun.contains(equipmentRow("4)", "Tripod", "004", "tripod", 4,
                 "Available", "thread/Quarter inch damage/NONE")));
-        assertTrue(firstRun.contains("Loan for item ID 001 deleted successfully."));
+        assertTrue(firstRun.contains("Loan 001 for item ID 001 deleted successfully."));
 
         String secondRun = runApplication("list\nbye\n", true);
 
@@ -138,10 +138,10 @@ class MainTest {
         assertTrue(secondRun.contains(equipmentRow("4)", "Tripod", "004", "tripod", 4,
                 "Available", "thread/Quarter inch damage/NONE")));
         String savedLoans = Files.readString(dataDirectory.resolve("loans.txt"));
-        assertFalse(savedLoans.contains("loan id/001"));
-        assertTrue(savedLoans.contains("loan id/002 b/020 issued/01-10-26 due/02-10-26 returned/true"));
-        assertTrue(savedLoans.contains("loan id/003 b/030 issued/01-10-26 due/02-10-26 returned/false"));
-        assertTrue(savedLoans.contains("loan id/004 b/040 issued/01-10-26 due/02-10-26 returned/true"));
+        assertFalse(savedLoans.contains("loan loanId/001 "));
+        assertTrue(savedLoans.contains("loan loanId/002 id/002 b/020 issued/01-10-26 due/02-10-26 returned/true"));
+        assertTrue(savedLoans.contains("loan loanId/003 id/003 b/030 issued/01-10-26 due/02-10-26 returned/false"));
+        assertTrue(savedLoans.contains("loan loanId/004 id/004 b/040 issued/01-10-26 due/02-10-26 returned/true"));
     }
 
     /** Formats one complete row so restart checks associate each status with its equipment ID. */

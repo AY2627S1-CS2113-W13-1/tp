@@ -258,17 +258,20 @@ class EqmManagerTest {
     }
 
     @Test
-    void bye_withoutMutations_createsBothStorageFiles() throws Exception {
+    void bye_withoutMutations_createsAllStorageFiles() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory);
 
         manager.executeInput("bye");
 
         Path equipmentFile = temporaryDirectory.resolve("equipment.txt");
         Path loansFile = temporaryDirectory.resolve("loans.txt");
+        Path sequenceFile = temporaryDirectory.resolve("loan-sequence.txt");
         assertTrue(Files.isRegularFile(equipmentFile));
         assertTrue(Files.isRegularFile(loansFile));
+        assertTrue(Files.isRegularFile(sequenceFile));
         assertEquals("", Files.readString(equipmentFile));
         assertEquals("", Files.readString(loansFile));
+        assertEquals("nextLoanId/001" + System.lineSeparator(), Files.readString(sequenceFile));
     }
 
     @Test
@@ -299,7 +302,7 @@ class EqmManagerTest {
         manager.executeInput("filter id/001 status/available");
 
         String recovered = output.toString(StandardCharsets.UTF_8);
-        assertTrue(recovered.contains("Loan for item ID 001 deleted successfully."));
+        assertTrue(recovered.contains("Loan 001 for item ID 001 deleted successfully."));
         assertTrue(recovered.contains("Canon EOS R10"));
         assertEquals("", Files.readString(loansFile));
         output.reset();

@@ -2,6 +2,7 @@ package seedu.snap.loan;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -24,7 +25,7 @@ import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 
-/** Tests the deletion of loans using item IDs. */
+/** Tests loan IDs, availability and deletion of individual loan records. */
 public class LoanHandlerTest {
     private static final String FIRST_LOAN =
             "loan id/001 b/002 issued/01-10-26 due/02-10-26";
@@ -58,6 +59,8 @@ public class LoanHandlerTest {
 
         assertEquals(1, loanHandler.getLoanCount());
         assertEquals(1, loanHandler.getLoanList().size());
+        assertEquals("001", loanHandler.getLoanList().getFirst().getLoanId());
+        assertEquals("001", equipment.getEquipmentList().getFirst().getLoanId());
         assertTrue(equipment.getEquipmentList().getFirst().isLoaned());
     }
 
@@ -76,6 +79,30 @@ public class LoanHandlerTest {
     }
 
     @Test
+    void addLoan_zeroItemId_rejectsBeforeConstructionAndKeepsNextId() {
+        LoanHandler loanHandler = new LoanHandler(equipment);
+
+        assertThrows(LoanAdditionUnsuccessful.class,
+                () -> loanHandler.addLoan("loan id/000 b/002 issued/01-10-26 due/02-10-26"));
+
+        assertEquals("001", loanHandler.getNextLoanId());
+        assertTrue(loanHandler.getLoanList().isEmpty());
+        assertFalse(equipment.getEquipmentList().getFirst().isLoaned());
+    }
+
+    @Test
+    void addLoan_zeroBorrowerId_acceptsAndAssignsLoanId() throws LoanAdditionUnsuccessful {
+        LoanHandler loanHandler = new LoanHandler(equipment);
+
+        Loan loan = loanHandler.addLoan("loan id/001 b/000 issued/01-10-26 due/02-10-26");
+
+        assertEquals("000", loan.getBorrowerId());
+        assertEquals("001", loan.getLoanId());
+        assertEquals("001", equipment.getEquipmentList().getFirst().getLoanId());
+        assertEquals("002", loanHandler.getNextLoanId());
+    }
+
+    @Test
     public void persistence_addDeleteAndReload_preservesLoansAcrossHandlers() throws Exception {
         Path file = temporaryDirectory.resolve("data/loans.txt");
         LoanHandler firstHandler = new LoanHandler(equipment, file);
@@ -87,6 +114,8 @@ public class LoanHandlerTest {
         assertEquals(1, secondHandler.getLoanCount());
         assertEquals("001", secondHandler.getLoanList().getFirst().getItemId());
         assertEquals("002", secondHandler.getLoanList().getFirst().getBorrowerId());
+        assertEquals("001", secondHandler.getLoanList().getFirst().getLoanId());
+        assertEquals("001", secondInventory.getEquipmentList().getFirst().getLoanId());
         assertTrue(secondInventory.getEquipmentList().getFirst().isLoaned());
 
         secondHandler.deleteLoan("delete loan/001");
@@ -139,7 +168,7 @@ public class LoanHandlerTest {
                 + "Equipment with item ID 002 deleted successfully." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
         assertTrue(Files.readString(temporaryDirectory.resolve("loans.txt"))
-                .contains("loan id/001 b/002 issued/01-10-26 due/02-10-26 returned/false"));
+                .contains("loan loanId/001 id/001 b/002 issued/01-10-26 due/02-10-26 returned/false"));
     }
 
     @Test
@@ -155,7 +184,7 @@ public class LoanHandlerTest {
         assertEquals("Equipment with item ID 001 deleted successfully." + System.lineSeparator()
                 + "Equipment added successfully." + System.lineSeparator(), output.toString(StandardCharsets.UTF_8));
         assertTrue(Files.readString(temporaryDirectory.resolve("loans.txt"))
-                .contains("loan id/001 b/002 issued/01-10-26 due/02-10-26 returned/true"));
+                .contains("loan loanId/001 id/001 b/002 issued/01-10-26 due/02-10-26 returned/true"));
     }
 
     @Test
@@ -186,7 +215,7 @@ public class LoanHandlerTest {
         manager.executeInput("delete item/001");
         manager.executeInput("add i/Replacement id/001 type/battery cond/3");
 
-        assertEquals("Loan for item ID 001 deleted successfully." + System.lineSeparator()
+        assertEquals("Loan 001 for item ID 001 deleted successfully." + System.lineSeparator()
                 + "Equipment with item ID 001 deleted successfully." + System.lineSeparator()
                 + "Equipment added successfully." + System.lineSeparator(), output.toString(StandardCharsets.UTF_8));
         assertTrue(Files.readString(temporaryDirectory.resolve("loans.txt")).isBlank());
@@ -207,7 +236,7 @@ public class LoanHandlerTest {
     }
 
     @Test
-    public void deleteLoan_existingItemId_deletesCorrectLoan()
+    public void deleteLoan_existingLoanId_deletesCorrectLoan()
             throws LoanAdditionUnsuccessful,
             LoanDeletionUnsuccessful {
         LoanHandler loanHandler = new LoanHandler(equipment);
@@ -225,7 +254,7 @@ public class LoanHandlerTest {
     }
 
     @Test
-    public void deleteLoan_unknownItemId_keepsLoansUnchanged()
+    public void deleteLoan_unknownLoanId_keepsLoansUnchanged()
             throws LoanAdditionUnsuccessful {
         LoanHandler loanHandler = new LoanHandler(equipment);
         loanHandler.addLoan(FIRST_LOAN);
@@ -236,7 +265,7 @@ public class LoanHandlerTest {
                         "delete loan/999"));
 
         assertEquals(
-                "No loan found for item ID 999.",
+                "No loan found for loan ID 999.",
                 exception.getMessage());
         assertEquals(1, loanHandler.getLoanCount());
         assertEquals(
@@ -245,7 +274,7 @@ public class LoanHandlerTest {
     }
 
     @Test
-    public void deleteLoan_invalidItemId_keepsLoansUnchanged()
+    public void deleteLoan_invalidLoanId_keepsLoansUnchanged()
             throws LoanAdditionUnsuccessful {
         LoanHandler loanHandler = new LoanHandler(equipment);
         loanHandler.addLoan(FIRST_LOAN);
@@ -256,13 +285,13 @@ public class LoanHandlerTest {
                         "delete loan/01"));
 
         assertEquals(
-                "Invalid item ID \"01\". Item ID must be exactly three digits, e.g. 001.",
+                "Invalid loan ID \"01\". Loan ID must be exactly three digits from 001 to 999.",
                 exception.getMessage());
         assertEquals(1, loanHandler.getLoanCount());
     }
 
     @Test
-    public void deleteLoan_missingItemId_keepsLoansUnchanged()
+    public void deleteLoan_missingLoanId_keepsLoansUnchanged()
             throws LoanAdditionUnsuccessful {
         LoanHandler loanHandler = new LoanHandler(equipment);
         loanHandler.addLoan(FIRST_LOAN);
@@ -272,7 +301,7 @@ public class LoanHandlerTest {
                 () -> loanHandler.deleteLoan("delete loan"));
 
         assertEquals(
-                "Invalid command format. Expected: delete loan/[ITEM ID] [issued/DD-MM-YY].",
+                "Invalid command format. Expected: delete loan/[LOAN ID].",
                 exception.getMessage());
         assertEquals(1, loanHandler.getLoanCount());
     }
@@ -292,21 +321,24 @@ public class LoanHandlerTest {
     }
 
     @Test
-    public void deleteLoan_duplicateItemId_requiresIssuedDate()
+    public void deleteLoan_sameItemHistory_usesUniqueLoanIds()
             throws LoanAdditionUnsuccessful, LoanDeletionUnsuccessful {
         LoanHandler loanHandler = new LoanHandler(equipment);
-        loanHandler.addLoan(FIRST_LOAN);
-        loanHandler.getLoanList().get(0).setReturned(true);
-        loanHandler.addLoan("loan id/001 b/005 issued/05-10-26 due/06-10-26");
+        Loan history = loanHandler.addLoan(FIRST_LOAN);
+        history.setReturned(true);
+        Loan active = loanHandler.addLoan("loan id/001 b/005 issued/05-10-26 due/06-10-26");
+        assertEquals("001", history.getLoanId());
+        assertEquals("002", active.getLoanId());
 
-        LoanDeletionUnsuccessful error = assertThrows(LoanDeletionUnsuccessful.class,
-                () -> loanHandler.deleteLoan("delete loan/001"));
-        assertTrue(error.getMessage().contains("Specify which one: delete loan/001 issued/DD-MM-YY."));
-        assertEquals(2, loanHandler.getLoanCount());
+        assertSame(history, loanHandler.deleteLoan("delete loan/001"));
+        assertEquals(List.of(active), loanHandler.getLoanList());
+        assertTrue(equipment.getEquipmentList().getFirst().isLoaned());
 
-        Loan deletedLoan = loanHandler.deleteLoan("delete loan/001 issued/05-10-26");
+        Loan deletedLoan = loanHandler.deleteLoan("delete loan/002");
+        assertSame(active, deletedLoan);
         assertEquals("005", deletedLoan.getBorrowerId());
-        assertEquals(1, loanHandler.getLoanCount());
+        assertEquals(0, loanHandler.getLoanCount());
+        assertFalse(equipment.getEquipmentList().getFirst().isLoaned());
     }
 
     @Test
@@ -316,7 +348,8 @@ public class LoanHandlerTest {
         Loan original = handler.addLoan(FIRST_LOAN);
         String saved = Files.readString(file);
         for (String command : new String[]{null, "", "delete", "delete loan", "delete loan/",
-            "delete loan/01", "delete loan/999", "delete loan/001 extra", "delete loan/001 issued/31-02-26",
+            "delete loan/000", "delete loan/01", "delete loan/999", "delete loan/001 extra",
+            "delete-loan id/001", "delete loan/001 issued/31-02-26",
             "delete loan/001 issued/03-10-26", "delete loan/001 issued/01-10-26 extra"}) {
             assertThrows(LoanDeletionUnsuccessful.class, () -> handler.deleteLoan(command), command);
             assertEquals(List.of(original), handler.getLoanList());
@@ -331,8 +364,8 @@ public class LoanHandlerTest {
         new LoanHandler(equipment).viewAllLoans();
 
         String expected = String.format(
-                "%-4s %-12s | %-12s | %-16s | %-16s%n",
-                "No.", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE");
+                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s%n",
+                "No.", "LOAN ID", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE");
         assertEquals(expected, output.toString(StandardCharsets.UTF_8));
     }
 
@@ -346,14 +379,14 @@ public class LoanHandlerTest {
         loanHandler.viewAllLoans();
 
         String expected = String.format(
-                "%-4s %-12s | %-12s | %-16s | %-16s%n",
-                "No.", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE");
+                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s%n",
+                "No.", "LOAN ID", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE");
         expected += String.format(
-                "%-4s %-12s | %-12s | %-16s | %-16s%n",
-                "1)", "001", "002", "2026-10-01T00:00", "2026-10-02T00:00");
+                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s%n",
+                "1)", "001", "001", "002", "2026-10-01T00:00", "2026-10-02T00:00");
         expected += String.format(
-                "%-4s %-12s | %-12s | %-16s | %-16s%n",
-                "2)", "003", "004", "2026-10-03T00:00", "2026-10-04T00:00");
+                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s%n",
+                "2)", "002", "003", "004", "2026-10-03T00:00", "2026-10-04T00:00");
 
         assertEquals(expected, output.toString(StandardCharsets.UTF_8));
     }
