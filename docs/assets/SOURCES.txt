@@ -1,0 +1,9 @@
+snAp logo
+Source: https://i.imgur.com/cBTLckS.png
+The original project logo is stored unchanged as snap-logo.png.
+
+GitHub icon
+Source: https://github.com/primer/octicons/blob/main/icons/mark-github-16.svg
+The official Octicons mark-github icon is stored unchanged as github-mark.svg.
+Copyright (c) 2026 GitHub Inc. Distributed under the MIT licence.
+The full licence is included in github-octicons-LICENSE.txt.

@@ -1,27 +1,87 @@
 package seedu.snap.loan;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
 import java.util.ArrayList;
-import java.util.logging.Logger;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 
 /** Parses loan commands and stores successfully created loans. */
 public class LoanHandler {
-    static ArrayList<Loan> loans = new ArrayList<>();
-    static int numLoans = 0;
-
     private static final int EXPECTED_ADD_ARGUMENT_COUNT = 5;
     private static final Logger logger = Logger.getLogger(LoanHandler.class.getName());
     private static final String ID_FORMAT = "\\d{3}";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-uu")
             .withResolverStyle(ResolverStyle.STRICT);
+
+    /** Loans managed by this handler instance. */
+    private final ArrayList<Loan> loans = new ArrayList<>();
+    /** Cached loan count kept in sync with {@link #loans}. */
+    private int numLoans = 0;
+    /** File used for persistence, or null when the handler is intentionally in-memory only. */
+    private final Path storageFile;
+
+    /** Creates an in-memory loan handler, mainly useful for isolated unit tests. */
+    public LoanHandler() {
+        this(null);
+    }
+
+    /** Creates a loan handler backed by the supplied text file. */
+    public LoanHandler(Path storageFile) {
+        this.storageFile = storageFile;
+    }
+
+    /** Returns the number of currently loaded loans. */
+    public int getLoanCount() {
+        assert numLoans == loans.size() : "numLoans should match the size of the loans list";
+        return numLoans;
+    }
+
+    /** Returns a read-only view of this handler's loans for inspection and display. */
+    public List<Loan> getLoanList() {
+        return Collections.unmodifiableList(loans);
+    }
+
+    /** Persists the current loans when this handler has a backing file. */
+    public void saveToStorage() throws IOException {
+        save(loans);
+    }
+
+    /**
+     * Replaces the current loan list with records loaded from the backing file.
+     * A missing file represents an empty loan list.
+     *
+     * @throws IOException if saved data cannot be read or contains invalid records
+     */
+    public void loadFromStorage() throws IOException {
+        if (storageFile == null) {
+            return;
+        }
+        List<Loan> loaded = LoanStorage.load(storageFile);
+        Set<String> activeItemIds = new HashSet<>();
+        for (Loan loan : loaded) {
+            if (!loan.isReturned() && !activeItemIds.add(loan.getItemId())) {
+                throw new IOException("Multiple active loans found for item ID " + loan.getItemId() + ".");
+            }
+        }
+        loans.clear();
+        loans.addAll(loaded);
+        numLoans = loans.size();
+        assert numLoans == loans.size() : "numLoans should match the size of the loans list";
+        logger.log(Level.INFO, "Loaded {0} loan(s) from {1}", new Object[]{numLoans, storageFile});
+    }
 
 
     /**
@@ -32,32 +92,27 @@ public class LoanHandler {
      * @throws LoanAdditionUnsuccessful when the command cannot be added
      */
     public Loan addLoan(String input) throws LoanAdditionUnsuccessful {
-        String[] arguments = input == null ? new String[0] : input.trim().split("\\s+");
-        if (arguments.length != EXPECTED_ADD_ARGUMENT_COUNT) {
-            throw new LoanAdditionUnsuccessful("Incorrect number of arguments.");
-        }
-
-        if (!arguments[0].equals("loan")) {
-            throw new LoanAdditionUnsuccessful("Invalid command format. Expected: "
-                    + "loan id/[ITEM ID] b/[BORROWER ID] issued/[DD-MM-YY] due/[DD-MM-YY].");
-        }
-
-        String itemId = parseArgument(arguments[1], "id/", "/id", "item ID");
-        String borrowerId = parseArgument(arguments[2], "b/", "/b", "borrower ID");
-        LocalDateTime issuedDate = parseDateArgument(arguments[3], "issued/", "/issued");
-        LocalDateTime dueDate = parseDateArgument(arguments[4], "due/", "/due");
+        Loan loan = parseLoanRecord(input);
+        String itemId = loan.getItemId();
 
         if (hasActiveLoanForItem(itemId)) {
             throw new LoanAdditionUnsuccessful("An active loan already exists for item ID " + itemId + ".");
         }
 
-        if (issuedDate.isAfter(dueDate)) {
-            throw new LoanAdditionUnsuccessful("Issued date must not be later than the due date.");
+        assert loan != null : "Created loan must not be null.";
+        ArrayList<Loan> updatedLoans = new ArrayList<>(loans);
+        updatedLoans.add(loan);
+        try {
+            save(updatedLoans);
+        } catch (IOException e) {
+            logger.log(Level.WARNING, "Loan addition could not be saved", e);
+            throw new LoanAdditionUnsuccessful("Could not save loan: " + e.getMessage());
         }
 
-        Loan loan = new Loan(itemId, borrowerId, issuedDate, dueDate);
         loans.add(loan);
         numLoans++;
+        assert numLoans == loans.size() : "numLoans should match the size of the loans list";
+        logger.log(Level.FINE, "Added loan for item ID {0}.", itemId);
         return loan;
     }
 
@@ -100,6 +155,15 @@ public class LoanHandler {
         }
 
         Loan loan = matches.get(0);
+        ArrayList<Loan> updatedLoans = new ArrayList<>(loans);
+        updatedLoans.remove(loan);
+        try {
+            save(updatedLoans);
+        } catch (IOException e) {
+            logger.log(Level.WARNING, "Loan deletion could not be saved", e);
+            throw new LoanDeletionUnsuccessful("Could not save loan deletion: " + e.getMessage());
+        }
+
         loans.remove(loan);
         numLoans--;
         assert numLoans == loans.size() : "numLoans should match the size of the loans list";
@@ -107,6 +171,40 @@ public class LoanHandler {
         return loan;
     }
 
+    /**
+     * Parses a loan record without changing the current list.
+     * This is also used when validating persisted records.
+     */
+    static Loan parseLoanRecord(String input) throws LoanAdditionUnsuccessful {
+        String[] arguments = input == null ? new String[0] : input.trim().split("\\s+");
+        if (arguments.length != EXPECTED_ADD_ARGUMENT_COUNT) {
+            throw new LoanAdditionUnsuccessful("Incorrect number of arguments.");
+        }
+
+        if (!arguments[0].equals("loan")) {
+            throw new LoanAdditionUnsuccessful("Invalid command format. Expected: "
+                    + "loan id/[ITEM ID] b/[BORROWER ID] issued/[DD-MM-YY] due/[DD-MM-YY].");
+        }
+
+        String itemId = parseArgument(arguments[1], "id/", "/id", "item ID");
+        String borrowerId = parseArgument(arguments[2], "b/", "/b", "borrower ID");
+        LocalDateTime issuedDate = parseDateArgument(arguments[3], "issued/", "/issued");
+        LocalDateTime dueDate = parseDateArgument(arguments[4], "due/", "/due");
+
+        if (issuedDate.isAfter(dueDate)) {
+            throw new LoanAdditionUnsuccessful("Issued date must not be later than the due date.");
+        }
+
+        return new Loan(itemId, borrowerId, issuedDate, dueDate);
+    }
+
+    /** Saves the supplied loans when this handler has a backing file. */
+    private void save(List<Loan> loansToSave) throws IOException {
+        if (storageFile != null) {
+            LoanStorage.save(storageFile, loansToSave);
+            logger.log(Level.FINE, "Saved {0} loan(s) to {1}", new Object[]{loansToSave.size(), storageFile});
+        }
+    }
 
     /**
      * Extracts and validates an ID argument.
@@ -117,7 +215,7 @@ public class LoanHandler {
      * @param name            human-readable argument name for the error message
      * @return the validated three-digit ID
      */
-    private String parseArgument(String argument, String prefix, String alternatePrefix, String name)
+    private static String parseArgument(String argument, String prefix, String alternatePrefix, String name)
             throws LoanAdditionUnsuccessful {
         String value;
         if (argument.startsWith(prefix)) {
@@ -162,7 +260,7 @@ public class LoanHandler {
     /**
      * Creates an error for an invalid ID argument.
      */
-    private LoanAdditionUnsuccessful idFormatError(String prefix, String alternatePrefix, String name) {
+    private static LoanAdditionUnsuccessful idFormatError(String prefix, String alternatePrefix, String name) {
         return new LoanAdditionUnsuccessful("Invalid " + name + " format. Expected "
                 + prefix + "[three digits] or " + alternatePrefix + "[three digits].");
     }
@@ -175,7 +273,7 @@ public class LoanHandler {
      * @param alternatePrefix required prefix for the alternate date format
      * @return the parsed date at midnight
      */
-    private LocalDateTime parseDateArgument(String argument, String prefix, String alternatePrefix)
+    private static LocalDateTime parseDateArgument(String argument, String prefix, String alternatePrefix)
             throws LoanAdditionUnsuccessful {
         String value;
         if (argument.startsWith(prefix)) {
@@ -197,15 +295,18 @@ public class LoanHandler {
     /**
      * Creates an error for an invalid date argument.
      */
-    private LoanAdditionUnsuccessful dateFormatError(String prefix, String alternatePrefix) {
+    private static LoanAdditionUnsuccessful dateFormatError(String prefix, String alternatePrefix) {
         return new LoanAdditionUnsuccessful("Invalid date format. Expected " + prefix + "DD-MM-YY or "
                 + alternatePrefix + "DD-MM-YY.");
     }
 
     /**
      * Checks whether an item currently has an unreturned loan.
+     *
+     * @param itemId equipment ID to check
+     * @return whether deletion must be blocked to preserve an active loan's equipment association
      */
-    private boolean hasActiveLoanForItem(String itemId) {
+    public boolean hasActiveLoanForItem(String itemId) {
         for (Loan loan : loans) {
             if (loan.getItemId().equals(itemId) && !loan.isReturned()) {
                 return true;
@@ -226,6 +327,8 @@ public class LoanHandler {
      * Prints out all equipment in inventory
      */
     public void viewAllLoans() {
+        assert numLoans == loans.size() : "numLoans should match the size of the loans list";
+        logger.log(Level.INFO, "Viewing {0} loan(s)", numLoans);
         System.out.printf(
                 "%-4s %-12s | %-12s | %-16s | %-16s%n",
                 "No.", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE"
@@ -233,6 +336,7 @@ public class LoanHandler {
 
         for (int i = 0; i < numLoans; i++) {
             Loan item = loans.get(i);
+            assert item != null : "Loan list must not contain null items";
 
             System.out.printf(
                     "%-4s %-12s | %-12s | %-16s | %-16s%n",

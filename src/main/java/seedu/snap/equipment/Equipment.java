@@ -4,7 +4,7 @@ package seedu.snap.equipment;
  * Represents an item of equipment in the inventory.
  *
  * <p>The concrete equipment type is represented by a subclass rather than by a
- * field on this class. This keeps type-specific behavior separate from the
+ * field on this class. This keeps type-specific behaviour separate from the
  * common equipment properties.</p>
  */
 public abstract class Equipment {
@@ -14,6 +14,7 @@ public abstract class Equipment {
 
     /**
      * Creates an equipment item.
+     * Callers must validate user input before construction; assertions detect programming mistakes.
      *
      * @param name Name of the equipment.
      * @param id Three-digit equipment ID.
@@ -40,6 +41,13 @@ public abstract class Equipment {
      * @return the equipment type
      */
     public abstract String getType();
+
+    /**
+     * Returns the type-specific fields in add-command format for listing and saving.
+     *
+     * @return the equipment's attribute and damage fields
+     */
+    public abstract String getDetails();
 
     public int getCondition() {
         return condition;
