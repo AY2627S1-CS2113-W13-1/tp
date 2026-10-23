@@ -35,6 +35,27 @@ class EqmManagerTest {
     }
 
     @Test
+    void deleteEquipment_bundledItem_preservesInventoryAndCompletion() throws Exception {
+        EqmManager manager = new EqmManager(temporaryDirectory);
+        manager.executeInput(ADD_CAMERA);
+        manager.executeInput("add i/Lens id/002 type/lens cond/1");
+        manager.executeInput("add i/Battery id/003 type/battery cond/1");
+        manager.executeInput("add-bundle name/Camera kit");
+        manager.executeInput("add-to-bundle id/001 001 002 003");
+        String saved = Files.readString(temporaryDirectory.resolve("equipment.txt"));
+        output.reset();
+
+        manager.executeInput("delete item/001");
+        manager.executeInput("list bundles");
+
+        String actual = output.toString(StandardCharsets.UTF_8);
+        assertTrue(actual.contains("Cannot delete item ID 001 while it belongs to a bundle."));
+        assertTrue(actual.contains("Canon EOS R10"));
+        assertTrue(actual.contains("true"));
+        assertEquals(saved, Files.readString(temporaryDirectory.resolve("equipment.txt")));
+    }
+
+    @Test
     void addEquipment_duplicateId_printsErrorAndAcceptsNextValidCommand() {
         EqmManager manager = new EqmManager(temporaryDirectory);
         manager.executeInput(ADD_CAMERA);

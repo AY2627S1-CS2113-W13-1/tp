@@ -8,6 +8,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import seedu.snap.equipment.Equipment;
+import seedu.snap.bundle.Bundle;
+import seedu.snap.bundle.BundleHandler;
+import seedu.snap.exceptions.BundleAdditionUnsuccessful;
 import seedu.snap.equipment.EquipmentFilter;
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
@@ -26,6 +29,7 @@ public class EqmManager {
     private final Parser parser;
     private final LoanHandler loans;
     private final EquipmentHandler equipment;
+    private final BundleHandler bundles;
     private final String startupError;
     private boolean isRunning;
 
@@ -47,6 +51,7 @@ public class EqmManager {
         this.parser = new Parser();
         this.equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
         this.loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"));
+        this.bundles = new BundleHandler(equipment);
         List<String> loadErrors = new ArrayList<>();
         try {
             equipment.loadFromStorage();
@@ -91,6 +96,16 @@ public class EqmManager {
             updateEquipment(normalizedInput);
         } else if (normalizedInput.equals("list loans")) {
             loans.viewAllLoans();
+        } else if (normalizedInput.equals("add-bundle") || normalizedInput.startsWith("add-bundle ")) {
+            addBundle(normalizedInput);
+        } else if (normalizedInput.equals("add-to-bundle") || normalizedInput.startsWith("add-to-bundle ")) {
+            addItemsToBundle(normalizedInput);
+        } else if (normalizedInput.equals("list bundles")) {
+            try {
+                bundles.viewAllBundles(normalizedInput);
+            } catch (BundleAdditionUnsuccessful e) {
+                System.out.println(e.getMessage());
+            }
         } else if (normalizedInput.equals("list") || normalizedInput.startsWith("list ")) {
             equipment.viewAllEquipment();
         } else {
@@ -162,6 +177,10 @@ public class EqmManager {
     private void deleteEquipment(String input) {
         try {
             Equipment target = equipment.getEquipmentForDeletion(input);
+            if (bundles.containsEquipmentId(target.getItemId())) {
+                throw new EquipmentDeletionUnsuccessful("Cannot delete item ID " + target.getItemId()
+                        + " while it belongs to a bundle.");
+            }
             if (loans.hasActiveLoanForItem(target.getItemId())) {
                 throw new EquipmentDeletionUnsuccessful("Cannot delete item ID " + target.getItemId()
                         + " while it has an active loan.");
@@ -173,6 +192,27 @@ public class EqmManager {
             System.out.println(e.getMessage());
         }
         // @@author
+    }
+
+    /** Creates a bundle and reports its assigned identifier. */
+    private void addBundle(String input) {
+        try {
+            Bundle bundle = bundles.addBundle(input);
+            System.out.println("Bundle " + bundle.getBundleId() + " added successfully.");
+        } catch (BundleAdditionUnsuccessful e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    /** Reports each equipment addition to a bundle independently. */
+    private void addItemsToBundle(String input) {
+        try {
+            for (String message : bundles.addItemsToBundle(input)) {
+                System.out.println(message);
+            }
+        } catch (BundleAdditionUnsuccessful e) {
+            System.out.println(e.getMessage());
+        }
     }
 
     /** Displays the outcome of equipment addition. */

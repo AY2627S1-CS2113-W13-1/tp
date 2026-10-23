@@ -112,6 +112,24 @@ public class EquipmentHandler {
     }
 
     /**
+     * Finds equipment by its item ID.
+     *
+     * @param itemId three-digit equipment ID
+     * @return the matching equipment, or null when no match exists
+     */
+    public Equipment getEquipmentById(String itemId) {
+        for (Equipment equipment : inventory) {
+            if (equipment.getItemId().equals(itemId)) {
+                logger.log(Level.INFO, "Found {0} with item ID {1}.",
+                        new Object[] {equipment.getType(), itemId});
+                return equipment;
+            }
+        }
+        logger.log(Level.WARNING, "No equipment found for item ID {0}.", itemId);
+        return null;
+    }
+
+    /**
      * Finds the equipment targeted by a delete command without changing the inventory.
      *
      * @param input complete delete command
