@@ -187,7 +187,7 @@ class EquipmentFilterTest {
             output.reset();
             manager.executeInput("filter id/998 status/loaned");
             assertTrue(output.toString(StandardCharsets.UTF_8).contains("Lens"));
-            manager.executeInput("delete-loan id/998");
+            manager.executeInput("delete loan/998");
             output.reset();
             manager.executeInput("filter id/998 status/available");
             assertTrue(output.toString(StandardCharsets.UTF_8).contains("Lens"));

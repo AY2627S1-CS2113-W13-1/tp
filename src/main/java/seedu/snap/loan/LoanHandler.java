@@ -181,9 +181,10 @@ public class LoanHandler {
     }
 
     /**
-     * * Deletes the loan matching the item ID, and the issued date if one is given.
+     * Deletes the loan matching the item ID, and the issued date if one is given.
+     * Its equipment is released only after the deletion has been saved successfully.
      *
-     * @param input complete delete-loan command entered by the user
+     * @param input complete delete loan command entered by the user
      * @return the deleted loan
      * @throws LoanDeletionUnsuccessful when the command is invalid
      *                                  or no matching loan is found
@@ -191,9 +192,11 @@ public class LoanHandler {
     public Loan deleteLoan(String input) throws LoanDeletionUnsuccessful {
         String[] arguments = input == null ? new String[0] : input.trim().split("\\s+");
         boolean hasValidCount = arguments.length == 2 || arguments.length == 3;
-        if (!hasValidCount || !arguments[0].equals("delete-loan")) {
+        boolean hasLoanPrefix = arguments.length >= 2
+                && arguments[1].startsWith("loan/");
+        if (!hasValidCount || !arguments[0].equals("delete") || !hasLoanPrefix) {
             throw new LoanDeletionUnsuccessful("Invalid command format. Expected: "
-                    + "delete-loan id/[ITEM ID] [issued/DD-MM-YY].");
+                    + "delete loan/[ITEM ID] [issued/DD-MM-YY].");
         }
 
         String itemId = parseDeleteItemId(arguments[1]);
@@ -215,12 +218,13 @@ public class LoanHandler {
         if (matches.size() > 1) {
             logger.log(Level.WARNING, "Multiple loans found for item ID " + itemId);
             throw new LoanDeletionUnsuccessful(matches.size() + " loans found for item ID " + itemId
-                    + ". Specify which one: delete-loan id/" + itemId + " issued/DD-MM-YY.");
+                    + ". Specify which one: delete loan/" + itemId + " issued/DD-MM-YY.");
         }
 
         Loan loan = matches.get(0);
         ArrayList<Loan> updatedLoans = new ArrayList<>(loans);
         updatedLoans.remove(loan);
+        // Save first so a failed write leaves the loan and equipment availability unchanged.
         try {
             save(updatedLoans);
         } catch (IOException e) {
@@ -298,23 +302,19 @@ public class LoanHandler {
     }
 
     /**
-     * Extracts and validates the item ID from a delete-loan command.
+     * Extracts and validates the item ID from a delete loan command.
      *
      * @param argument item ID argument, including its prefix
      * @return the validated three-digit item ID
      * @throws LoanDeletionUnsuccessful when the format is invalid
      */
     private String parseDeleteItemId(String argument) throws LoanDeletionUnsuccessful {
-        String itemId;
-        if (argument.startsWith("id/")) {
-            itemId = argument.substring("id/".length());
-        } else if (argument.startsWith("/id")) {
-            itemId = argument.substring("/id".length());
-        } else {
+        if (!argument.startsWith("loan/")) {
             throw new LoanDeletionUnsuccessful(
-                    "Missing item ID prefix. Expected id/[three digits] or /id[three digits].");
+                    "Missing loan prefix. Expected loan/[three digits].");
         }
 
+        String itemId = argument.substring("loan/".length());
         if (!itemId.matches(ID_FORMAT)) {
             throw new LoanDeletionUnsuccessful("Invalid item ID \"" + itemId
                     + "\". Item ID must be exactly three digits, e.g. 001.");

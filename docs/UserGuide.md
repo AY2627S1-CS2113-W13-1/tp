@@ -85,7 +85,7 @@ An ID that does not exist produces an error without changing the saved records.
 New equipment is `Available`. Adding a loan changes its status to `Loaned`. Marking an active loan as returned
 or deleting it makes the item available again. Removing an older returned loan does not affect a newer active loan.
 
-There is no command to mark a loan as returned yet. The current command-line option is `delete-loan`, which
+There is no command to mark a loan as returned yet. The current command-line option is `delete loan/[ITEM ID]`, which
 also removes the loan record. A return workflow that retains loan history is planned in
 [issue #78](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/78).
 
@@ -110,23 +110,27 @@ Format: `list loans`
 
 This displays all recorded loans with their item ID, borrower ID, issue date, and due date.
 
-## Deleting a loan: `delete-loan`
+## Deleting a loan: `delete loan`
 
-Format: `delete-loan id/[ITEM ID] [issued/DD-MM-YY]`
+Format: `delete loan/[ITEM ID] [issued/DD-MM-YY]`
 
-Example: `delete-loan id/001`
+Example: `delete loan/001`
 
 Use the optional issue date when more than one loan exists for the same item ID:
 
 ```text
-delete-loan id/001 issued/01-10-26
+delete loan/001 issued/01-10-26
 ```
 
 If no matching loan exists, or if the command does not identify a unique loan, the application reports an error and
 keeps the existing loan records unchanged.
 
-Deleting an active loan makes its equipment `Available`. Deleting returned loan history leaves any newer active
-loan and the equipment's `Loaned` status unchanged.
+The deletion is saved before the loan is removed or its equipment is released. If saving fails, the application
+reports an error and keeps both the loan records and equipment availability unchanged. You can retry the command
+after fixing the storage problem.
+
+Deleting an active loan successfully makes its equipment `Available`. Deleting returned loan history leaves any
+newer active loan and the equipment's `Loaned` status unchanged.
 
 ## Filtering equipment: `filter`
 
@@ -214,7 +218,7 @@ the application reports the problem and stops.
 | Add equipment | `add i/[ITEM] id/[ITEM ID] type/[TYPE] cond/[CONDITION]`, with optional type-specific and damage fields as described above |
 | Delete equipment | `delete item/[ITEM ID]` |
 | Add loan | `loan id/[ITEM ID] b/[BORROWER ID] issued/[DD-MM-YY] due/[DD-MM-YY]` |
-| Delete loan | `delete-loan id/[ITEM ID] [issued/DD-MM-YY]` |
+| Delete loan | `delete loan/[ITEM ID] [issued/DD-MM-YY]` |
 | List equipment | `list` |
 | List loans | `list loans` |
 | Filter equipment | `filter [id/ID] [i/NAME] [type/TYPE] [cond/1-3] [status/available]` |

@@ -1,6 +1,7 @@
 package seedu.snap.eqmmanager;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
@@ -127,7 +128,7 @@ class EqmManagerTest {
         String expectedMessage = "Invalid delete syntax. ITEM ID must be from 001 to 999.";
         String[] invalidCommands = {
             "delete",
-            "delete loan/001",
+            "delete camera/001",
             "delete item/1",
             "delete item/000",
             "delete item/1000",
@@ -223,6 +224,43 @@ class EqmManagerTest {
         assertTrue(Files.isRegularFile(loansFile));
         assertEquals("", Files.readString(equipmentFile));
         assertEquals("", Files.readString(loansFile));
+    }
+
+    @Test
+    void deleteLoan_failedSave_keepsEquipmentLoanedUntilSuccessfulRetry() throws Exception {
+        EqmManager manager = new EqmManager(temporaryDirectory);
+        manager.executeInput(ADD_CAMERA);
+        manager.executeInput("loan id/001 b/002 issued/01-10-26 due/02-10-26");
+        Path loansFile = temporaryDirectory.resolve("loans.txt");
+        Files.delete(loansFile);
+        Files.createDirectory(loansFile);
+        Path sentinel = loansFile.resolve("keep.txt");
+        Files.writeString(sentinel, "keep loan data");
+        output.reset();
+
+        manager.executeInput("delete loan/001");
+        manager.executeInput("delete item/001");
+
+        String rejected = output.toString(StandardCharsets.UTF_8);
+        assertTrue(rejected.contains("Could not save loan deletion:"));
+        assertTrue(rejected.contains("Cannot delete item ID 001 while it has an active loan."));
+        assertFalse(rejected.contains("deleted successfully."));
+        assertEquals("keep loan data", Files.readString(sentinel));
+        Files.delete(sentinel);
+        Files.delete(loansFile);
+        output.reset();
+
+        manager.executeInput("delete loan/001");
+        manager.executeInput("filter id/001 status/available");
+
+        String recovered = output.toString(StandardCharsets.UTF_8);
+        assertTrue(recovered.contains("Loan for item ID 001 deleted successfully."));
+        assertTrue(recovered.contains("Canon EOS R10"));
+        assertEquals("", Files.readString(loansFile));
+        output.reset();
+        EqmManager restarted = new EqmManager(temporaryDirectory);
+        restarted.executeInput("filter id/001 status/available");
+        assertTrue(output.toString(StandardCharsets.UTF_8).contains("Canon EOS R10"));
     }
 
     @Test

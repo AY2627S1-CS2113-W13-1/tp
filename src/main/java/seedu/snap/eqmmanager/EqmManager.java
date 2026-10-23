@@ -75,7 +75,9 @@ public class EqmManager {
             System.out.println("Could not load saved data: " + startupError);
         } else if (normalizedInput.equals("bye")) {
             isRunning = !saveBeforeExit();
-        } else if (normalizedInput.equals("delete-loan") || normalizedInput.startsWith("delete-loan ")) {
+        } else if (normalizedInput.equals("delete loan")
+                || normalizedInput.startsWith("delete loan/")
+                || normalizedInput.startsWith("delete loan ")) {
             deleteLoan(normalizedInput);
         } else if (normalizedInput.equals("delete") || normalizedInput.startsWith("delete ")) {
             deleteEquipment(normalizedInput);

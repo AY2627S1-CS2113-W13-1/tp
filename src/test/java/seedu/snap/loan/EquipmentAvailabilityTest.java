@@ -157,7 +157,7 @@ class EquipmentAvailabilityTest {
     @Test
     void deleteLoan_activeLoan_releasesEquipment() throws Exception {
         loans.addLoan(LOAN);
-        loans.deleteLoan("delete-loan id/001");
+        loans.deleteLoan("delete loan/001");
         assertFalse(camera.isLoaned());
         assertEquals(0, loans.getLoanCount());
         loans.addLoan(LOAN);
@@ -167,7 +167,7 @@ class EquipmentAvailabilityTest {
     @Test
     void deleteLoan_oldReference_cannotChangeNewLoansAvailability() throws Exception {
         Loan deleted = loans.addLoan(LOAN);
-        loans.deleteLoan("delete-loan id/001");
+        loans.deleteLoan("delete loan/001");
         Loan current = loans.addLoan(LOAN);
         deleted.setReturned(true);
         assertTrue(camera.isLoaned());
@@ -180,7 +180,7 @@ class EquipmentAvailabilityTest {
     void deleteLoan_oldReturnedLoan_doesNotReleaseNewActiveLoan() throws Exception {
         loans.addLoan(LOAN).setReturned(true);
         loans.addLoan(LOAN.replace("01-10-26", "02-10-26"));
-        loans.deleteLoan("delete-loan id/001 issued/01-10-26");
+        loans.deleteLoan("delete loan/001 issued/01-10-26");
         assertTrue(camera.isLoaned());
         assertEquals(1, loans.getLoanCount());
     }
@@ -193,7 +193,7 @@ class EquipmentAvailabilityTest {
         Equipment replacement = equipment.addEquipment("add i/Replacement tripod id/001 type/tripod cond/4");
         Loan active = loans.addLoan(LOAN.replace("01-10-26", "02-10-26"));
 
-        assertSame(returned, loans.deleteLoan("delete-loan id/001 issued/01-10-26"));
+        assertSame(returned, loans.deleteLoan("delete loan/001 issued/01-10-26"));
         returned.setReturned(true);
         assertThrows(IllegalStateException.class, () -> returned.setReturned(false));
 
@@ -206,7 +206,7 @@ class EquipmentAvailabilityTest {
     void deleteLoan_rejectedDeletion_preservesAvailability() throws Exception {
         Loan original = loans.addLoan(LOAN);
         assertThrows(seedu.snap.exceptions.LoanDeletionUnsuccessful.class,
-                () -> loans.deleteLoan("delete-loan id/999"));
+                () -> loans.deleteLoan("delete loan/999"));
         assertTrue(camera.isLoaned());
         assertSame(original, loans.getLoanList().getFirst());
     }
