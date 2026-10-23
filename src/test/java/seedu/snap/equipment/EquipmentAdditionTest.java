@@ -47,6 +47,16 @@ class EquipmentAdditionTest {
     }
 
     @Test
+    void parseEquipment_remarksTextInsideName_preservesName()
+            throws EquipmentAdditionUnsuccessful {
+        Equipment item = EquipmentHandler.parseEquipment(
+                command("Camera remarks/adapter", "002", "camera", "1"));
+
+        assertEquals("Camera remarks/adapter", item.getItemName());
+        assertEquals("", item.getRemarks());
+    }
+
+    @Test
     void addEquipment_invalidRemarks_rejectsWithoutChangingInventory() throws EquipmentAdditionUnsuccessful {
         EquipmentHandler handler = seededInventory();
         String expectedMessage = "Remarks must contain at most 200 characters and no line breaks.";

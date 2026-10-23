@@ -144,6 +144,17 @@ class EquipmentStorageTest {
     }
 
     @Test
+    void load_legacyRecordWithRemarksMarkerInName_preservesName() throws IOException {
+        Path file = temporaryDirectory.resolve("equipment.txt");
+        Files.writeString(file, "add i/Camera remarks/adapter id/001 type/camera cond/1");
+
+        Equipment loaded = EquipmentStorage.load(file).getFirst();
+
+        assertEquals("Camera remarks/adapter", loaded.getItemName());
+        assertEquals("", loaded.getRemarks());
+    }
+
+    @Test
     void save_failedReplacement_preservesDestinationAndCleansTemporaryFile() throws IOException {
         Path destination = temporaryDirectory.resolve("equipment.txt");
         Files.createDirectory(destination);
