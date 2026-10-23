@@ -20,13 +20,51 @@ class EquipmentAdditionTest {
         String[] names = {"A", "A".repeat(100), "Camera \u76f8\u673a", "fluid/head tripod"};
         String[] ids = {"001", "002", "998", "999"};
         for (int i = 0; i < names.length; i++) {
-            Equipment item = handler.addEquipment(command(names[i], ids[i], "camera accessories", "10"));
+            Equipment item = handler.addEquipment(command(names[i], ids[i], "camera", "10"));
             assertEquals(names[i], item.getItemName());
             assertEquals(ids[i], item.getItemId());
-            assertEquals("camera accessories", item.getType());
+            assertEquals("camera", item.getType());
             assertEquals(10, item.getCondition());
             assertEquals(i + 1, handler.getEquipmentList().size());
         }
+    }
+
+    @Test
+    void addEquipment_withoutRemarks_usesEmptyDefault() throws EquipmentAdditionUnsuccessful {
+        Equipment item = new EquipmentHandler().addEquipment(command("Camera", "001", "camera", "1"));
+
+        assertEquals("", item.getRemarks());
+    }
+
+    @Test
+    void addEquipment_withRemarks_preservesFreeFormText() throws EquipmentAdditionUnsuccessful {
+        String remarks = "Lens has a small scratch; handle with care.";
+
+        Equipment item = new EquipmentHandler().addEquipment(
+                command("Lens", "001", "lens", "3", remarks));
+
+        assertEquals(remarks, item.getRemarks());
+    }
+
+    @Test
+    void parseEquipment_remarksTextInsideName_preservesName()
+            throws EquipmentAdditionUnsuccessful {
+        Equipment item = EquipmentHandler.parseEquipment(
+                command("Camera remarks/adapter", "002", "camera", "1"));
+
+        assertEquals("Camera remarks/adapter", item.getItemName());
+        assertEquals("", item.getRemarks());
+    }
+
+    @Test
+    void addEquipment_invalidRemarks_rejectsWithoutChangingInventory() throws EquipmentAdditionUnsuccessful {
+        EquipmentHandler handler = seededInventory();
+        String expectedMessage = "Remarks must contain at most 200 characters and no line breaks.";
+
+        assertRejected(handler, command("Tripod", "002", "tripod", "5", "r".repeat(201)),
+                expectedMessage);
+        assertRejected(handler, command("Tripod", "002", "tripod", "5", "line one\nline two"),
+                expectedMessage);
     }
 
     @Test
@@ -37,9 +75,9 @@ class EquipmentAdditionTest {
             "mini/camera fluid/head prototype/body second/hand"
         };
         for (String value : values) {
-            Equipment item = EquipmentHandler.parseEquipment(command(value, "002", value, "5"));
+            Equipment item = EquipmentHandler.parseEquipment(command(value, "002", "camera", "5"));
             assertEquals(value, item.getItemName());
-            assertEquals(value, item.getType());
+            assertEquals("camera", item.getType());
             assertEquals("002", item.getItemId());
             assertEquals(5, item.getCondition());
         }
@@ -64,10 +102,10 @@ class EquipmentAdditionTest {
     void parseEquipment_textIdPrefixesInName_preservesName() throws EquipmentAdditionUnsuccessful {
         String[] names = {"USB id/card reader", "id/card reader", "USB id/card id/tag reader"};
         for (String name : names) {
-            Equipment item = EquipmentHandler.parseEquipment(command(name, "002", "accessory", "1"));
+            Equipment item = EquipmentHandler.parseEquipment(command(name, "002", "lens", "1"));
             assertEquals(name, item.getItemName());
             assertEquals("002", item.getItemId());
-            assertEquals("accessory", item.getType());
+            assertEquals("lens", item.getType());
         }
     }
 
@@ -76,17 +114,17 @@ class EquipmentAdditionTest {
             throws EquipmentAdditionUnsuccessful {
         EquipmentHandler handler = seededInventory();
         String[] inputs = {
-            "add i/USB id/003 reader id/002 type/accessory cond/1",
-            "add i/USB id/+03 reader id/002 type/accessory cond/1",
-            "add i/USB id/-03 reader id/002 type/accessory cond/1",
-            "add i/USB id/ reader id/002 type/accessory cond/1",
-            "add i/USB id/002 id/card type/accessory cond/1",
-            "add i/USB id/002 type/accessory id/card cond/1"
+            "add i/USB id/003 reader id/002 type/lens cond/1",
+            "add i/USB id/+03 reader id/002 type/lens cond/1",
+            "add i/USB id/-03 reader id/002 type/lens cond/1",
+            "add i/USB id/ reader id/002 type/lens cond/1",
+            "add i/USB id/002 id/card type/lens cond/1",
+            "add i/USB id/002 type/lens id/card cond/1"
         };
         for (String input : inputs) {
             assertRejected(handler, input, FORMAT_ERROR);
         }
-        assertRejected(handler, command("USB reader", "card", "accessory", "1"),
+        assertRejected(handler, command("USB reader", "card", "lens", "1"),
                 "Item ID must be from 001 to 999.");
     }
 
@@ -100,10 +138,10 @@ class EquipmentAdditionTest {
 
     @Test
     void parseEquipment_fieldWhitespace_trimsValues() throws EquipmentAdditionUnsuccessful {
-        Equipment item = EquipmentHandler.parseEquipment("add   i/  Film Camera  \tid/001  type/ camera kit  cond/1  ");
+        Equipment item = EquipmentHandler.parseEquipment("add   i/  Film Camera  \tid/001  type/ camera  cond/1  ");
         assertEquals("Film Camera", item.getItemName());
         assertEquals("001", item.getItemId());
-        assertEquals("camera kit", item.getType());
+        assertEquals("camera", item.getType());
         assertEquals(1, item.getCondition());
     }
 
@@ -152,7 +190,7 @@ class EquipmentAdditionTest {
             "add unexpected i/Camera id/002 type/camera cond/1",
             "add i/Camera i/Tripod id/002 type/camera cond/1",
             "add i/Camera id/002 id/003 type/camera cond/1",
-            "add i/Camera id/002 type/camera type/audio cond/1",
+            "add i/Camera id/002 type/camera type/battery cond/1",
             "add i/Camera id/002 type/camera cond/1 cond/2"
         };
         for (String input : commands) {
@@ -175,13 +213,13 @@ class EquipmentAdditionTest {
     void addEquipment_repeatedRejections_acceptsNextValidItem() throws EquipmentAdditionUnsuccessful {
         EquipmentHandler handler = seededInventory();
         for (int i = 0; i < 3; i++) {
-            assertRejected(handler, command("Replacement", "001", "audio", "5"),
+            assertRejected(handler, command("Replacement", "001", "battery", "5"),
                     "Item ID 001 already exists.");
-            assertRejected(handler, command("Tripod", "002", "accessories", "11"),
+            assertRejected(handler, command("Tripod", "002", "tripod", "11"),
                     "Condition must be a whole number from 1 to 10.");
         }
         Equipment original = handler.getEquipmentList().getFirst();
-        Equipment next = handler.addEquipment(command("Tripod", "002", "accessories", "5"));
+        Equipment next = handler.addEquipment(command("Tripod", "002", "tripod", "5"));
         assertEquals(List.of(original, next), handler.getEquipmentList());
     }
 
@@ -194,7 +232,13 @@ class EquipmentAdditionTest {
 
     /** Builds the documented command format while keeping boundary values readable in tests. */
     private String command(String name, String id, String type, String condition) {
-        return "add i/" + name + " id/" + id + " type/" + type + " cond/" + condition;
+        return command(name, id, type, condition, "");
+    }
+
+    /** Builds an add command with optional remarks. */
+    private String command(String name, String id, String type, String condition, String remarks) {
+        String remarkField = remarks.isEmpty() ? "" : " remarks/" + remarks;
+        return "add i/" + name + " id/" + id + " type/" + type + " cond/" + condition + remarkField;
     }
 
     /** Checks the error reason and protects the inventory's contents and order on every rejection. */

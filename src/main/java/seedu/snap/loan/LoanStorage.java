@@ -9,6 +9,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -67,7 +68,7 @@ final class LoanStorage {
             }
         }
 
-        int migrationNumber = FIRST_LOAN_NUMBER;
+        int migrationNumber = readNextLoanNumber(sequenceFile, FIRST_LOAN_NUMBER);
         List<Loan> loaded = new ArrayList<>();
         Set<String> allLoanIds = new HashSet<>();
         for (LoanRecord record : records) {
@@ -253,11 +254,11 @@ final class LoanStorage {
     }
 
     private static String formatLoanId(int loanNumber) {
-        return String.format("%03d", loanNumber);
+        return String.format(Locale.ROOT, "%03d", loanNumber);
     }
 
     private static String formatSequenceNumber(int loanNumber) {
-        return String.format("%03d", loanNumber);
+        return String.format(Locale.ROOT, "%03d", loanNumber);
     }
 
     private static boolean isValidLoanId(String loanId) {

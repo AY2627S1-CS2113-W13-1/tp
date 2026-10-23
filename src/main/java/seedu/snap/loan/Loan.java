@@ -1,13 +1,12 @@
 package seedu.snap.loan;
 
 import java.time.LocalDateTime;
-import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import seedu.snap.equipment.Equipment;
 
-/** Represents an item loaned to a borrower. */
+/** Represents an identified loan to a borrower, with an optional active equipment association. */
 public class Loan {
     private static final Logger logger = Logger.getLogger(Loan.class.getName());
     private final String loanId;
@@ -18,20 +17,17 @@ public class Loan {
     private LocalDateTime dueDate;
     private boolean isReturned;
 
-    /**
-     * Creates a legacy in-memory loan without an identifier.
-     * New loans should be created by {@link LoanHandler}, which assigns an identifier first.
-     */
+    /** Creates a detached legacy record for parsing or migration, without assigning a loan ID. */
     public Loan(String itemId, String borrowerId, LocalDateTime issuedDate, LocalDateTime dueDate) {
         this(null, itemId, borrowerId, issuedDate, dueDate);
     }
 
-    /** Creates a persisted or newly assigned loan record. */
+    /** Creates an identified detached record without changing equipment availability. */
     public Loan(String loanId, String itemId, String borrowerId, LocalDateTime issuedDate,
             LocalDateTime dueDate) {
-        assert loanId == null || isValidLoanId(loanId) : "Loan ID must be three digits";
-        assert itemId != null && isValidLoanId(itemId) : "Item ID must be three digits";
-        assert borrowerId != null && isValidLoanId(borrowerId) : "Borrower ID must be three digits";
+        assert loanId == null || isValidIdentifier(loanId) : "Loan ID must be from 001 to 999";
+        assert itemId != null && isValidIdentifier(itemId) : "Item ID must be from 001 to 999";
+        assert borrowerId != null && borrowerId.matches("[0-9]{3}") : "Borrower ID must be three digits";
         assert issuedDate != null && dueDate != null : "A loan must have issue and due dates";
         assert !issuedDate.isAfter(dueDate) : "A loan issue date must not be after its due date";
         this.loanId = loanId;
@@ -39,20 +35,18 @@ public class Loan {
         this.borrowerId = borrowerId;
         this.issuedDate = issuedDate;
         this.dueDate = dueDate;
-        this.isReturned = false;
     }
 
-    /** Creates an identified loan associated with an available equipment item. */
-    public Loan(String loanId, Equipment equipment, String borrowerId, LocalDateTime issuedDate,
-            LocalDateTime dueDate) {
-        this(loanId, requireAvailableEquipment(equipment).getItemId(), borrowerId, issuedDate, dueDate);
-        this.equipment = equipment;
-        logger.log(Level.FINE, "Created loan {0} for item ID {1}.", new Object[]{loanId, itemId});
-    }
-
-    /** Creates a legacy in-memory loan associated with an available equipment item. */
+    /** Creates a legacy candidate without retaining or reserving its equipment before saving. */
     public Loan(Equipment equipment, String borrowerId, LocalDateTime issuedDate, LocalDateTime dueDate) {
         this(null, equipment, borrowerId, issuedDate, dueDate);
+    }
+
+    /** Creates an identified candidate; the handler attaches its equipment only after saving. */
+    public Loan(String loanId, Equipment equipment, String borrowerId, LocalDateTime issuedDate,
+            LocalDateTime dueDate) {
+        this(loanId, getAvailableItemId(equipment), borrowerId, issuedDate, dueDate);
+        logger.log(Level.FINE, "Created loan candidate {0} for item ID {1}.", new Object[]{loanId, itemId});
     }
 
     public String getLoanId() {
@@ -68,7 +62,7 @@ public class Loan {
     }
 
     public void setBorrowerId(String borrowerId) {
-        assert borrowerId != null && isValidLoanId(borrowerId) : "Borrower ID must be three digits";
+        assert borrowerId != null && borrowerId.matches("[0-9]{3}") : "Borrower ID must be three digits";
         this.borrowerId = borrowerId;
     }
 
@@ -100,82 +94,52 @@ public class Loan {
         return isReturned;
     }
 
-    /** Returns the associated equipment for handler rollback and lifecycle coordination. */
-    Equipment getEquipment() {
-        return equipment;
-    }
-
-    /** Associates a loaded loan with its equipment and restores active availability state. */
+    /** Associates a saved or fully validated active record with its equipment. */
     void attachEquipment(Equipment equipment) {
-        if (equipment == null || !itemId.equals(equipment.getItemId())) {
-            throw new IllegalArgumentException("Loan and equipment IDs must match.");
-        }
-        String currentLoanId = equipment.getLoanId();
-        if (!isReturned && currentLoanId != null && !Objects.equals(currentLoanId, loanId)) {
-            logger.log(Level.WARNING, "Loan {0} could not claim item ID {1}; it belongs to loan {2}.",
-                    new Object[]{loanId, itemId, currentLoanId});
-            throw new IllegalStateException("Equipment already has a different active loan.");
-        }
+        assert !isReturned : "Returned loan history must stay detached";
+        assert loanId != null : "Active equipment associations require an assigned loan ID";
+        assert equipment != null && equipment.getItemId().equals(itemId) : "Attached equipment must match the loan";
+        assert !equipment.isLoaned() : "Attached equipment must be available";
+        assert this.equipment == null || this.equipment == equipment : "A loan must not change equipment references";
         this.equipment = equipment;
-        if (!isReturned && loanId != null) {
-            equipment.setLoanId(loanId);
-        }
-        logger.log(Level.FINE, "Attached loan {0} to item ID {1}.", new Object[]{loanId, itemId});
+        equipment.setLoanId(loanId);
     }
 
-    /** Releases an active loan's item and prevents deleted records from changing its future availability. */
+    /** Releases only the equipment still owned by this loan, then discards its reference. */
     void detachEquipment() {
-        if (equipment != null) {
-            if (Objects.equals(equipment.getLoanId(), loanId)) {
-                equipment.setLoanId(null);
-                logger.log(Level.INFO, "Released equipment with item ID {0} after loan {1} deletion.",
-                        new Object[]{itemId, loanId});
-            } else {
-                logger.log(Level.WARNING, "Loan {0} did not clear item ID {1}; a different loan owns it.",
-                        new Object[]{loanId, itemId});
-            }
+        if (equipment != null && loanId != null && loanId.equals(equipment.getLoanId())) {
+            equipment.setLoanId(null);
+            logger.log(Level.INFO, "Released equipment with item ID {0} from loan {1}.",
+                    new Object[]{itemId, loanId});
         }
         equipment = null;
-        assert equipment == null : "Deleted loans must not retain equipment references";
+        assert equipment == null : "Detached loans must not retain equipment references";
     }
 
-    /** Updates return status and availability together; an existing active loan cannot be overwritten. */
+    /** Releases returned equipment permanently; historical loans cannot be reactivated. */
     public void setReturned(boolean isReturned) {
         if (this.isReturned == isReturned) {
             return;
         }
-        if (!isReturned && equipment != null) {
-            String currentLoanId = equipment.getLoanId();
-            if (currentLoanId != null && !Objects.equals(currentLoanId, loanId)) {
-                logger.log(Level.WARNING, "Rejected reactivation of loan {0} for already-loaned item ID {1}.",
-                        new Object[]{loanId, itemId});
-                throw new IllegalStateException("Equipment already has an active loan.");
-            }
+        if (!isReturned) {
+            logger.log(Level.WARNING, "Rejected reactivation of returned loan {0}.", loanId);
+            throw new IllegalStateException("A returned loan cannot be reactivated.");
         }
-        this.isReturned = isReturned;
-        if (equipment != null && loanId != null) {
-            if (isReturned) {
-                if (Objects.equals(equipment.getLoanId(), loanId)) {
-                    equipment.setLoanId(null);
-                }
-            } else {
-                equipment.setLoanId(loanId);
-            }
-        }
-        logger.log(Level.INFO, "Loan {0} for item ID {1} marked as {2}.",
-                new Object[]{loanId, itemId, isReturned ? "returned" : "active"});
+        detachEquipment();
+        this.isReturned = true;
+        logger.log(Level.INFO, "Loan {0} for item ID {1} marked as returned.", new Object[]{loanId, itemId});
     }
 
-    private static Equipment requireAvailableEquipment(Equipment equipment) {
+    /** Validates candidate equipment without retaining a reference or changing its availability. */
+    private static String getAvailableItemId(Equipment equipment) {
         if (equipment == null || equipment.isLoaned()) {
             throw new IllegalArgumentException("A loan requires available equipment.");
         }
-        assert !equipment.isLoaned() : "A new loan must target available equipment";
-        return equipment;
+        return equipment.getItemId();
     }
 
-    /** Returns whether a persisted identifier has the canonical three-digit format. */
-    private static boolean isValidLoanId(String id) {
+    /** Returns whether an item or loan identifier is in the supported range. */
+    private static boolean isValidIdentifier(String id) {
         return id.matches("[0-9]{3}") && !id.equals("000");
     }
 }
