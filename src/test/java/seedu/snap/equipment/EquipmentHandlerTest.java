@@ -328,11 +328,43 @@ class EquipmentHandlerTest {
         secondHandler.loadFromStorage();
         assertEquals(1, secondHandler.getEquipmentList().size());
         assertEquals("Canon EOS R10", secondHandler.getEquipmentList().getFirst().getItemName());
+        assertEquals("", secondHandler.getEquipmentList().getFirst().getRemarks());
 
         secondHandler.deleteEquipment("delete item/001");
         EquipmentHandler thirdHandler = new EquipmentHandler(file);
         thirdHandler.loadFromStorage();
         assertTrue(thirdHandler.getEquipmentList().isEmpty());
+    }
+
+    @Test
+    public void persistence_remarksSurviveReload() throws Exception {
+        Path file = temporaryDirectory.resolve("data/equipment.txt");
+        String remarks = "Lens has a small scratch; handle with care.";
+        EquipmentHandler firstHandler = new EquipmentHandler(file);
+        firstHandler.addEquipment("add i/Lens id/001 type/lens cond/3 remarks/" + remarks);
+
+        EquipmentHandler secondHandler = new EquipmentHandler(file);
+        secondHandler.loadFromStorage();
+
+        assertEquals(remarks, secondHandler.getEquipmentList().getFirst().getRemarks());
+        assertTrue(Files.readString(file).contains("remarks/" + remarks));
+    }
+
+    @Test
+    public void persistence_maxLengthRemarksSurviveReload() throws Exception {
+        Path file = temporaryDirectory.resolve("data/equipment.txt");
+        String remarks = "r".repeat(Equipment.MAX_REMARKS_LENGTH);
+        EquipmentHandler firstHandler = new EquipmentHandler(file);
+
+        firstHandler.addEquipment("add i/Lens id/001 type/lens cond/3 remarks/" + remarks);
+
+        EquipmentHandler secondHandler = new EquipmentHandler(file);
+        secondHandler.loadFromStorage();
+
+        String reloadedRemarks = secondHandler.getEquipmentList().getFirst().getRemarks();
+        assertEquals(Equipment.MAX_REMARKS_LENGTH, reloadedRemarks.length());
+        assertEquals(remarks, reloadedRemarks);
+        assertTrue(Files.readString(file).contains("remarks/" + remarks));
     }
 
     @Test
@@ -360,6 +392,7 @@ class EquipmentHandlerTest {
 
         assertEquals(1, loaded.size());
         assertEquals("001", loaded.getFirst().getItemId());
+        assertEquals("", loaded.getFirst().getRemarks());
     }
 
     @Test
@@ -627,8 +660,8 @@ class EquipmentHandlerTest {
         handler.viewAllEquipment();
 
         String expected = String.format(
-                "%-4s %-24s | %-6s | %-15s | %-9s | %-10s | %s%n",
-                "No.", "NAME", "ID", "TYPE", "CONDITION", "STATUS", "DETAILS");
+                "%-4s %-24s | %-6s | %-15s | %-9s | %-10s | %-30s | %-30s%n",
+                "No.", "NAME", "ID", "TYPE", "CONDITION", "STATUS", "DETAILS", "REMARKS");
         assertEquals(expected, output.toString(StandardCharsets.UTF_8));
     }
 
@@ -637,19 +670,21 @@ class EquipmentHandlerTest {
             throws EquipmentAdditionUnsuccessful {
         EquipmentHandler handler = new EquipmentHandler();
         handler.addEquipment("add i/Canon EOS R10 id/001 type/camera cond/1");
-        handler.addEquipment("add i/Manfrotto Tripod id/002 type/tripod cond/8");
+        handler.addEquipment("add i/Manfrotto Tripod id/002 type/tripod cond/8 remarks/Needs cleaning");
 
         handler.viewAllEquipment();
 
         String expected = String.format(
-                "%-4s %-24s | %-6s | %-15s | %-9s | %-10s | %s%n",
-                "No.", "NAME", "ID", "TYPE", "CONDITION", "STATUS", "DETAILS");
+                "%-4s %-24s | %-6s | %-15s | %-9s | %-10s | %-30s | %-30s%n",
+                "No.", "NAME", "ID", "TYPE", "CONDITION", "STATUS", "DETAILS", "REMARKS");
         expected += String.format(
-                "%-4s %-24s | %-6s | %-15s | %-9d | %-10s | %s%n",
-                "1)", "Canon EOS R10", "001", "camera", 1, "Available", "sensor/unspecified damage/NONE");
+                "%-4s %-24s | %-6s | %-15s | %-9d | %-10s | %-30s | %-30s%n",
+                "1)", "Canon EOS R10", "001", "camera", 1, "Available",
+                "sensor/unspecified damage/NONE", "");
         expected += String.format(
-                "%-4s %-24s | %-6s | %-15s | %-9d | %-10s | %s%n",
-                "2)", "Manfrotto Tripod", "002", "tripod", 8, "Available", "thread/unspecified damage/NONE");
+                "%-4s %-24s | %-6s | %-15s | %-9d | %-10s | %-30s | %-30s%n",
+                "2)", "Manfrotto Tripod", "002", "tripod", 8, "Available",
+                "thread/unspecified damage/NONE", "Needs cleaning");
 
         assertEquals(expected, output.toString(StandardCharsets.UTF_8));
     }

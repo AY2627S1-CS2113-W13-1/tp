@@ -40,7 +40,12 @@ public class Tripod extends Equipment {
      * @param damage Damage recorded for the tripod.
      */
     public Tripod(String name, String id, int condition, String thread, TripodDamage damage) {
-        super(name, id, condition);
+        this(name, id, condition, thread, damage, "");
+    }
+
+    /** Creates a tripod with type-specific details and optional remarks. */
+    public Tripod(String name, String id, int condition, String thread, TripodDamage damage, String remarks) {
+        super(name, id, condition, remarks);
         assert thread != null && !thread.isBlank() && thread.length() <= 100
                 && !thread.matches("(?s).*\\R.*")
                 : "Tripod thread must contain 1 to 100 characters without line breaks.";

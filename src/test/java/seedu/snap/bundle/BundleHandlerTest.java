@@ -31,7 +31,8 @@ class BundleHandlerTest {
     @BeforeEach
     void setUp() throws EquipmentAdditionUnsuccessful {
         equipmentHandler = new EquipmentHandler();
-        equipmentHandler.addEquipment("add i/Camera id/001 type/camera cond/8 sensor/Full frame damage/SHUTTER_FAULT");
+        equipmentHandler.addEquipment("add i/Camera id/001 type/camera cond/8 sensor/Full frame"
+                + " damage/SHUTTER_FAULT remarks/Handle with care");
         equipmentHandler.addEquipment("add i/Battery id/002 type/battery cond/8 capacity/2000 mAh damage/NONE");
         equipmentHandler.addEquipment("add i/Battery 2 id/003 type/battery cond/8");
         equipmentHandler.addEquipment("add i/Tripod id/004 type/tripod cond/8 thread/Quarter inch damage/NONE");
@@ -212,6 +213,7 @@ class BundleHandlerTest {
         assertEquals("Updated Camera", bundle.getEquipmentList().getFirst().getItemName());
         assertEquals(3, bundle.getEquipmentList().getFirst().getCondition());
         assertEquals("sensor/Full frame damage/SHUTTER_FAULT", camera.getDetails());
+        assertEquals("Handle with care", camera.getRemarks());
         assertTrue(bundle.isComplete());
     }
 

@@ -40,7 +40,12 @@ public class Lens extends Equipment {
      * @param damage Damage recorded for the lens.
      */
     public Lens(String name, String id, int condition, String zoomRange, LensDamage damage) {
-        super(name, id, condition);
+        this(name, id, condition, zoomRange, damage, "");
+    }
+
+    /** Creates a lens with type-specific details and optional remarks. */
+    public Lens(String name, String id, int condition, String zoomRange, LensDamage damage, String remarks) {
+        super(name, id, condition, remarks);
         assert zoomRange != null && !zoomRange.isBlank() && zoomRange.length() <= 100
                 && !zoomRange.matches("(?s).*\\R.*")
                 : "Lens zoom range must contain 1 to 100 characters without line breaks.";

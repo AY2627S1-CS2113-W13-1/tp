@@ -13,14 +13,16 @@ application sessions. Bundles group equipment during the current session.
 
 ## Adding equipment: `add`
 
-Base format: `add i/[ITEM] id/[ITEM ID] type/[TYPE] cond/[CONDITION]`
+Format: `add i/[ITEM] id/[ITEM ID] type/[TYPE] cond/[CONDITION] [TYPE DETAIL] [damage/[DAMAGE]] [remarks/[REMARKS]]`
 
-Example: `add i/Canon EOS R10 id/001 type/camera cond/1`
+Example: `add i/Canon EOS R10 id/001 type/camera cond/1 remarks/Handle with care`
 
 * `ITEM` is a non-empty name of up to 100 characters.
 * `ITEM ID` uses exactly three digits from `001` to `999` and must not already exist.
 * `TYPE` is `camera`, `lens`, `battery` or `tripod`. Type names are case-insensitive and stored in lowercase.
 * `CONDITION` is a whole number from `1` to `10`. We recommend `1` for pristine and `10` for non-functional.
+* `REMARKS` is optional free-form text of up to 200 characters. It must remain on one line and is trimmed at both ends.
+* Put `remarks/` last when remarks are provided. Omit it to add equipment without remarks.
 * Enter the fields in the order shown above. Names can contain spaces.
 * Equipment with the same name can be added separately using different IDs.
 
@@ -52,10 +54,11 @@ add i/Travel tripod id/003 type/tripod cond/2 thread/1/4 inch
   have a non-empty value starting with a non-whitespace character other than a digit, `+`, or `-`.
   Whitespace-prefixed numeric ID-like text such as `id/001` is reserved and cannot be part of the name.
 * Prefixes `i/`, `type/` and `cond/` at the start or after whitespace are reserved command delimiters.
-  Prefixes `sensor/`, `zoom/`, `capacity/`, `thread/` and `damage/` are delimiters only after `cond/`.
-  Names can contain these optional prefixes, such as `Camera sensor/cleaning kit`.
+  Prefixes `sensor/`, `zoom/`, `capacity/`, `thread/`, `damage/` and `remarks/` are delimiters only after `cond/`.
+  Names can contain these optional prefixes, such as `Camera sensor/cleaning kit` or `Camera remarks/adapter`.
+  The first `remarks/` after `cond/` starts the remarks field.
   Required fields must occur once each; optional fields may occur at most once. Fields must follow the
-  documented order and be separated by whitespace.
+  documented order and be separated by whitespace. `remarks/` must be the final optional field.
   There is no quoting or escaping syntax. Prefix-like text inside words remains valid.
 
 ## Viewing equipment: `list`
@@ -64,7 +67,7 @@ Format: `list`
 
 This displays all equipment with its name, ID, type and condition. The `STATUS` column, before `DETAILS`, shows
 `Available` or `Loaned`. The `DETAILS` column shows the type-specific value and damage, including the defaults
-when optional fields were omitted.
+when optional fields were omitted. The `REMARKS` column follows `DETAILS` and is empty when no remarks were given.
 
 ## Deleting equipment: `delete`
 
@@ -156,7 +159,7 @@ against `camera`, `lens`, `battery`, or `tripod`. `id/` uses an exact three-digi
 Prefixes `id/`, `i/`, `type/`, `cond/`, and `status/` after whitespace are reserved field separators.
 Text like `id/card` within a name is allowed. Empty or repeated fields are rejected. Filtering leaves equipment
 unchanged and prints matches in inventory order, or `No equipment matches the filters.` when none match.
-Matching rows include the equipment's current status, type-specific details, and recorded damage, as in `list`.
+Matching rows include the equipment's current status, type-specific details, recorded damage and remarks, as in `list`.
 
 ## Updating equipment: `update`
 
@@ -173,8 +176,9 @@ conditions are whole numbers from 1 to 10. Condition ranges are not accepted for
 
 Equipment types are fixed by their subclasses. If `type/` is supplied, it must match the item's current type,
 ignoring case. Changing a camera to a lens, for example, is rejected before saving or changing any details.
-Updates preserve the same equipment object, its position in the list, its type-specific fields and damage,
-and its availability and loan references. Type-specific fields and damage cannot be changed with `update`.
+Updates preserve the same equipment object, its position in the list, its type-specific fields, damage and remarks,
+and its availability, loan references and bundle membership. Type-specific fields, damage and remarks cannot be
+changed with `update`.
 
 Prefixes `id/`, `i/`, `type/`, `cond/`, and `status/` after whitespace are reserved separators; `status/`
 cannot be updated manually. Text such as `USB id/card reader` within a name is allowed.
@@ -234,10 +238,13 @@ The text file contains one equipment record per line, using the add command form
 ```text
 add i/Canon EOS R10 id/001 type/camera cond/1
 add i/Travel tripod id/003 type/tripod cond/2 thread/1/4 inch damage/NONE
+add i/Canon EOS R10 id/004 type/camera cond/1 remarks/Handle with care
 ```
 
 Saved equipment records use the four supported types and retain their type-specific values and damage.
 Existing records of supported types without optional fields are also accepted, using `unspecified` and `NONE`.
+Records created before remarks were supported may omit the `remarks/` field; they load with empty remarks.
+Remarks are shown in the `list` equipment table and are restored when the application starts again.
 
 To transfer your records, copy `data/equipment.txt` to the same location on the other computer.
 Copy `data/loans.txt` as well when transferring loan records. Loan records include the item ID, borrower ID,
@@ -257,7 +264,7 @@ the application reports the problem and stops.
 
 | Action | Command |
 | --- | --- |
-| Add equipment | `add i/[ITEM] id/[ITEM ID] type/[TYPE] cond/[CONDITION]`, with optional type-specific and damage fields as described above |
+| Add equipment | `add i/[ITEM] id/[ITEM ID] type/[TYPE] cond/[CONDITION]` with optional details, damage and remarks |
 | Delete equipment | `delete item/[ITEM ID]` |
 | Add loan | `loan id/[ITEM ID] b/[BORROWER ID] issued/[DD-MM-YY] due/[DD-MM-YY]` |
 | Delete loan | `delete loan/[ITEM ID] [issued/DD-MM-YY]` |

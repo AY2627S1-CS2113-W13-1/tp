@@ -40,7 +40,12 @@ public class Camera extends Equipment {
      * @param damage Damage recorded for the camera.
      */
     public Camera(String name, String id, int condition, String sensorFormat, CameraDamage damage) {
-        super(name, id, condition);
+        this(name, id, condition, sensorFormat, damage, "");
+    }
+
+    /** Creates a camera with type-specific details and optional remarks. */
+    public Camera(String name, String id, int condition, String sensorFormat, CameraDamage damage, String remarks) {
+        super(name, id, condition, remarks);
         assert sensorFormat != null && !sensorFormat.isBlank() && sensorFormat.length() <= 100
                 && !sensorFormat.matches("(?s).*\\R.*")
                 : "Camera sensor format must contain 1 to 100 characters without line breaks.";
