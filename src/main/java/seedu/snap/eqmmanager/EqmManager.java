@@ -42,8 +42,8 @@ public class EqmManager {
             throw new IllegalArgumentException("Data directory must not be null.");
         }
         this.parser = new Parser();
-        this.loans = new LoanHandler(dataDirectory.resolve("loans.txt"));
         this.equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
+        this.loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"));
         List<String> loadErrors = new ArrayList<>();
         try {
             equipment.loadFromStorage();

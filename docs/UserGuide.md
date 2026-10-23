@@ -61,8 +61,9 @@ add i/Travel tripod id/003 type/tripod cond/2 thread/1/4 inch
 
 Format: `list`
 
-This displays all equipment with its name, ID, type and condition. The `DETAILS` column shows the type-specific
-value and damage, including the defaults when optional fields were omitted.
+This displays all equipment with its name, ID, type and condition. The `STATUS` column, before `DETAILS`, shows
+`Available` or `Loaned`. The `DETAILS` column shows the type-specific value and damage, including the defaults
+when optional fields were omitted.
 
 ## Deleting equipment: `delete`
 
@@ -79,16 +80,29 @@ loans for that ID; returned loan records do not block deletion.
 Invalid delete syntax produces an error followed by the delete command format.
 An ID that does not exist produces an error without changing the saved records.
 
+## Equipment availability
+
+New equipment is `Available`. Adding a loan changes its status to `Loaned`. Marking an active loan as returned
+or deleting it makes the item available again. Removing an older returned loan does not affect a newer active loan.
+
+There is no command to mark a loan as returned yet. The current command-line option is `delete-loan`, which
+also removes the loan record. A return workflow that retains loan history is planned in
+[issue #78](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/78).
+
+A returned loan cannot be made active again. To borrow the same item again, create a new loan.
+
 ## Loaning out equipment: `loan`
 
 Format: `loan id/[ITEM ID] b/[BORROWER ID] issued/[DD-MM-YY] due/[DD-MM-YY]`
 
 Example: `loan id/001 b/002 issued/01-10-26 due/08-10-26`
 
-* `ITEM ID` is the three-digit identifier of the equipment being loaned.
+* `ITEM ID` is the three-digit identifier of existing equipment. The item must be `Available`.
 * `BORROWER ID` is the three-digit identifier of the borrower.
 * `issued` and `due` use the `DD-MM-YY` format. The issue date must not be later than the due date.
 * An item cannot have more than one active loan at the same time.
+
+Invalid loan commands leave both the loan records and equipment availability unchanged.
 
 ## Viewing loans: `list loans`
 
@@ -111,6 +125,9 @@ delete-loan id/001 issued/01-10-26
 If no matching loan exists, or if the command does not identify a unique loan, the application reports an error and
 keeps the existing loan records unchanged.
 
+Deleting an active loan makes its equipment `Available`. Deleting returned loan history leaves any newer active
+loan and the equipment's `Loaned` status unchanged.
+
 ## Saving equipment
 
 Successful equipment additions and deletions are saved automatically in `data/equipment.txt`, relative to the
@@ -118,6 +135,8 @@ directory from which the application is run. Successful loan additions and delet
 `data/loans.txt`. Records are loaded when the application starts again. A final save of both files is also attempted
 when `bye` is entered; if it fails, the application reports the affected file and lets you retry.
 The directory and both files are created on the first save, including the final save performed by `bye`.
+Equipment availability is rebuilt from the active loans loaded at startup, so loaned items remain `Loaned`
+after restarting the application.
 
 The text file contains one equipment record per line, using the add command format. For example:
 

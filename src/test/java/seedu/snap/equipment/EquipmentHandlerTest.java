@@ -627,8 +627,8 @@ class EquipmentHandlerTest {
         handler.viewAllEquipment();
 
         String expected = String.format(
-                "%-4s %-24s | %-6s | %-15s | %-9s | %s%n",
-                "No.", "NAME", "ID", "TYPE", "CONDITION", "DETAILS");
+                "%-4s %-24s | %-6s | %-15s | %-9s | %-10s | %s%n",
+                "No.", "NAME", "ID", "TYPE", "CONDITION", "STATUS", "DETAILS");
         assertEquals(expected, output.toString(StandardCharsets.UTF_8));
     }
 
@@ -642,14 +642,14 @@ class EquipmentHandlerTest {
         handler.viewAllEquipment();
 
         String expected = String.format(
-                "%-4s %-24s | %-6s | %-15s | %-9s | %s%n",
-                "No.", "NAME", "ID", "TYPE", "CONDITION", "DETAILS");
+                "%-4s %-24s | %-6s | %-15s | %-9s | %-10s | %s%n",
+                "No.", "NAME", "ID", "TYPE", "CONDITION", "STATUS", "DETAILS");
         expected += String.format(
-                "%-4s %-24s | %-6s | %-15s | %-9d | %s%n",
-                "1)", "Canon EOS R10", "001", "camera", 1, "sensor/unspecified damage/NONE");
+                "%-4s %-24s | %-6s | %-15s | %-9d | %-10s | %s%n",
+                "1)", "Canon EOS R10", "001", "camera", 1, "Available", "sensor/unspecified damage/NONE");
         expected += String.format(
-                "%-4s %-24s | %-6s | %-15s | %-9d | %s%n",
-                "2)", "Manfrotto Tripod", "002", "tripod", 8, "thread/unspecified damage/NONE");
+                "%-4s %-24s | %-6s | %-15s | %-9d | %-10s | %s%n",
+                "2)", "Manfrotto Tripod", "002", "tripod", 8, "Available", "thread/unspecified damage/NONE");
 
         assertEquals(expected, output.toString(StandardCharsets.UTF_8));
     }

@@ -160,6 +160,10 @@ public class EquipmentHandler {
      */
     public Equipment deleteEquipment(String input) throws EquipmentDeletionUnsuccessful {
         Equipment equipment = getEquipmentForDeletion(input);
+        if (equipment.isLoaned()) {
+            throw new EquipmentDeletionUnsuccessful("Cannot delete item ID " + equipment.getItemId()
+                    + " while it has an active loan.");
+        }
         int previousSize = inventory.size();
 
         ArrayList<Equipment> updatedInventory = new ArrayList<>(inventory);
@@ -403,8 +407,8 @@ public class EquipmentHandler {
      */
     public void viewAllEquipment() {
         System.out.printf(
-                "%-4s %-24s | %-6s | %-15s | %-9s | %s%n",
-                "No.", "NAME", "ID", "TYPE", "CONDITION", "DETAILS"
+                "%-4s %-24s | %-6s | %-15s | %-9s | %-10s | %s%n",
+                "No.", "NAME", "ID", "TYPE", "CONDITION", "STATUS", "DETAILS"
         );
 
         List<Equipment> equipmentList = getEquipmentList();
@@ -415,9 +419,9 @@ public class EquipmentHandler {
             assert item != null : "Equipment list must not contain null items";
 
             System.out.printf(
-                    "%-4s %-24s | %-6s | %-15s | %-9d | %s%n",
+                    "%-4s %-24s | %-6s | %-15s | %-9d | %-10s | %s%n",
                     (i + 1) + ")", item.getItemName(), item.getItemId(), item.getType(), item.getCondition(),
-                    item.getDetails()
+                    item.isLoaned() ? "Loaned" : "Available", item.getDetails()
             );
         }
     }
