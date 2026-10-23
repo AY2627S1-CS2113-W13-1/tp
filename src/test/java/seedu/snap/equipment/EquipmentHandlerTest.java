@@ -351,6 +351,23 @@ class EquipmentHandlerTest {
     }
 
     @Test
+    public void persistence_maxLengthRemarksSurviveReload() throws Exception {
+        Path file = temporaryDirectory.resolve("data/equipment.txt");
+        String remarks = "r".repeat(Equipment.MAX_REMARKS_LENGTH);
+        EquipmentHandler firstHandler = new EquipmentHandler(file);
+
+        firstHandler.addEquipment("add i/Lens id/001 type/lens cond/3 remarks/" + remarks);
+
+        EquipmentHandler secondHandler = new EquipmentHandler(file);
+        secondHandler.loadFromStorage();
+
+        String reloadedRemarks = secondHandler.getEquipmentList().getFirst().getRemarks();
+        assertEquals(Equipment.MAX_REMARKS_LENGTH, reloadedRemarks.length());
+        assertEquals(remarks, reloadedRemarks);
+        assertTrue(Files.readString(file).contains("remarks/" + remarks));
+    }
+
+    @Test
     public void persistence_duplicateId_isRejectedWithoutChangingSavedRecords() throws Exception {
         Path file = temporaryDirectory.resolve("equipment.txt");
         EquipmentHandler handler = new EquipmentHandler(file);
