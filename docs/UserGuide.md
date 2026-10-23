@@ -2,7 +2,8 @@
 
 ## Introduction
 
-snAp tracks individual pieces of equipment and their loans. Records are retained between application sessions.
+snAp tracks individual pieces of equipment and their loans. Equipment and loan records are retained between
+application sessions. Bundles group equipment during the current session.
 
 ## Quick Start
 
@@ -76,6 +77,9 @@ The item is deleted immediately and a success message is printed. The deleted ID
 Equipment with an active (unreturned) loan cannot be deleted. This prevents its ID from being reused
 for a different item while the original loan is still active. Deletion is allowed once there are no active
 loans for that ID; returned loan records do not block deletion.
+
+Equipment that belongs to a bundle cannot be deleted during that session. This keeps each bundle's contents
+and completion status consistent with the inventory. Bundles are cleared when the application restarts.
 
 Invalid delete syntax produces an error followed by the delete command format.
 An ID that does not exist produces an error without changing the saved records.
@@ -177,6 +181,44 @@ cannot be updated manually. Text such as `USB id/card reader` within a name is a
 The proposed details are saved before the existing object is changed. Invalid commands or failed saves
 leave the existing equipment details unchanged, and the application displays an error.
 
+## Creating a bundle: `add-bundle`
+
+Format: `add-bundle name/[NAME]`
+
+Example: `add-bundle name/Travel Kit`
+
+The name must contain 1 to 100 characters. A bundle starts empty and incomplete. The application assigns
+three-digit bundle IDs in creation order, starting at `001`, with at most 999 bundles per session.
+Bundle IDs are separate from equipment IDs.
+
+Bundles are stored only for the current session. They are not saved when you enter `bye`, and restarting
+the application clears all bundles and starts their IDs at `001` again. Equipment and loans remain saved.
+
+## Adding equipment to a bundle: `add-to-bundle`
+
+Format: `add-to-bundle id/[BUNDLE ID] [EQUIPMENT ID]...`
+
+Example: `add-to-bundle id/001 001 002 005`
+
+The bundle must exist. Supply one or more equipment IDs, separated by spaces. Each requested item gets
+its own success or error message. Valid items are added even if another requested item is rejected.
+
+* Equipment must exist in the inventory and be `Available` when added.
+* An item cannot appear twice in the same bundle. It can appear in different bundles.
+* A bundle can contain only one camera and at most one tripod. Extra batteries and lenses are allowed.
+* A bundle is complete when it contains exactly one camera, at least one battery and at least one lens.
+  A tripod is optional.
+
+Returning an item or deleting its active loan makes it available for a later `add-to-bundle` command.
+Updating a bundled item's name or condition also updates the item shown in the bundle.
+
+## Viewing bundles: `list bundles`
+
+Format: `list bundles`
+
+This displays each bundle's ID, name, completion status and contained equipment. The `COMPLETE` column
+checks the required equipment counts. Borrowing an item later does not remove it from its bundle.
+
 ## Saving equipment
 
 Successful equipment additions, updates and deletions are saved automatically in `data/equipment.txt`, relative to the
@@ -223,4 +265,7 @@ the application reports the problem and stops.
 | List loans | `list loans` |
 | Filter equipment | `filter [id/ID] [i/NAME] [type/TYPE] [cond/1-3] [status/available]` |
 | Update equipment | `update id/ID [i/NAME] [type/TYPE] [cond/CONDITION]` |
+| Create bundle | `add-bundle name/[NAME]` |
+| Add equipment to bundle | `add-to-bundle id/[BUNDLE ID] [EQUIPMENT ID]...` |
+| List bundles | `list bundles` |
 | Exit | `bye` |
