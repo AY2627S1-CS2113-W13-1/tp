@@ -128,6 +128,28 @@ keeps the existing loan records unchanged.
 Deleting an active loan makes its equipment `Available`. Deleting returned loan history leaves any newer active
 loan and the equipment's `Loaned` status unchanged.
 
+## Filtering equipment: `filter`
+
+Format: `filter [id/ITEM ID] [i/NAME] [type/TYPE] [cond/CONDITION] [status/STATUS]`
+
+Examples:
+
+* `filter type/camera cond/1-3 status/available`
+* `filter i/canon`
+* `filter id/001`
+
+Supply at least one filter, in any order. Each prefix can appear only once. All supplied filters must match.
+Names use case-insensitive partial matching and may contain spaces. Types use case-insensitive full matching
+against `camera`, `lens`, `battery`, or `tripod`. `id/` uses an exact three-digit ID from `001` to `999`.
+
+`cond/` accepts a value from `1` to `10` or an inclusive range such as `1-3`. Ranges cannot be reversed.
+`status/` accepts `available` or `loaned` and checks the current active loans. Returned loans do not block availability.
+
+Prefixes `id/`, `i/`, `type/`, `cond/`, and `status/` after whitespace are reserved field separators.
+Text like `id/card` within a name is allowed. Empty or repeated fields are rejected. Filtering leaves equipment
+unchanged and prints matches in inventory order, or `No equipment matches the filters.` when none match.
+Matching rows include the equipment's current status, type-specific details, and recorded damage, as in `list`.
+
 ## Saving equipment
 
 Successful equipment additions and deletions are saved automatically in `data/equipment.txt`, relative to the
@@ -172,4 +194,5 @@ the application reports the problem and stops.
 | Delete loan | `delete-loan id/[ITEM ID] [issued/DD-MM-YY]` |
 | List equipment | `list` |
 | List loans | `list loans` |
+| Filter equipment | `filter [id/ID] [i/NAME] [type/TYPE] [cond/1-3] [status/available]` |
 | Exit | `bye` |

@@ -2,6 +2,7 @@ package seedu.snap.equipment;
 
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 /**
  * Represents an item of equipment in the inventory.
@@ -11,6 +12,16 @@ import java.util.logging.Logger;
  * common equipment properties.</p>
  */
 public abstract class Equipment {
+    /** Maximum number of characters accepted in an equipment name. */
+    public static final int MAX_NAME_LENGTH = 100;
+    /** Inclusive lower bound of the equipment condition scale. */
+    public static final int MIN_CONDITION = 1;
+    /** Inclusive upper bound of the equipment condition scale. */
+    public static final int MAX_CONDITION = 10;
+    private static final String ITEM_ID_PATTERN = "[0-9]{3}";
+    private static final String RESERVED_ITEM_ID = "000";
+    private static final Pattern BLANK_TEXT = Pattern.compile("\\s*", Pattern.UNICODE_CHARACTER_CLASS);
+
     private static final Logger logger = Logger.getLogger(Equipment.class.getName());
     private final String itemName;
     private final String itemId;
@@ -78,14 +89,24 @@ public abstract class Equipment {
         return condition;
     }
 
+    /** Checks required text consistently for ordinary and nonbreaking whitespace. */
+    static boolean hasText(String value) {
+        return value != null && !BLANK_TEXT.matcher(value).matches();
+    }
+
+    /** Checks the three-digit Item ID range, excluding the reserved all-zero ID. */
+    static boolean isValidItemId(String id) {
+        return id != null && id.matches(ITEM_ID_PATTERN) && !id.equals(RESERVED_ITEM_ID);
+    }
+
     /**
      * Checks the invariant shared by all equipment subclasses.
      *
      * @return true when all common equipment fields are valid
      */
     private boolean hasValidState() {
-        return itemName != null && !itemName.isBlank() && itemName.length() <= 100
-                && itemId != null && itemId.matches("[0-9]{3}") && !itemId.equals("000")
-                && condition >= 1 && condition <= 10;
+        return hasText(itemName) && itemName.length() <= MAX_NAME_LENGTH
+                && isValidItemId(itemId)
+                && condition >= MIN_CONDITION && condition <= MAX_CONDITION;
     }
 }

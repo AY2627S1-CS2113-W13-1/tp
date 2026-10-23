@@ -16,6 +16,9 @@ import java.util.logging.SimpleFormatter;
 public final class AppLogging implements AutoCloseable {
     private static final Logger logger = Logger.getLogger("seedu.snap");
 
+    private static final int LOG_FILE_LIMIT_BYTES = 1_000_000;
+    private static final int LOG_FILE_COUNT = 2;
+
     /** The handler owned by this session, or null when file logging could not be started. */
     private final FileHandler fileHandler;
     /** Logger settings restored on close so later runs in the same JVM do not inherit stale configuration. */
@@ -43,7 +46,8 @@ public final class AppLogging implements AutoCloseable {
     static AppLogging start(Path directory) {
         try {
             Files.createDirectories(directory);
-            FileHandler handler = new FileHandler(directory.resolve("snap.log").toString(), 1_000_000, 2, true);
+            FileHandler handler = new FileHandler(directory.resolve("snap.log").toString(),
+                    LOG_FILE_LIMIT_BYTES, LOG_FILE_COUNT, true);
             handler.setFormatter(new SimpleFormatter());
             handler.setLevel(Level.FINER);
             AppLogging logging = new AppLogging(handler);

@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
 
-/** Parses add and delete commands and stores equipment for the current session. */
+/** Handles adding, deleting, and displaying equipment, including filtered and persistent records. */
 public class EquipmentHandler {
     /** Diagnostic logger; the application sends outcomes and detailed traces to local files. */
     private static final Logger logger = Logger.getLogger(EquipmentHandler.class.getName());
@@ -80,28 +80,12 @@ public class EquipmentHandler {
         try {
             equipment = parseEquipment(input);
             assert equipment != null : "Successful parsing must return equipment";
-            for (Equipment existing : inventory) {
-                if (existing.getItemId().equals(equipment.getItemId())) {
-                    throw new EquipmentAdditionUnsuccessful("Item ID " + equipment.getItemId()
-                            + " already exists.");
-                }
-            }
+            ensureUniqueItemId(equipment);
+            saveAddition(equipment);
         } catch (EquipmentAdditionUnsuccessful e) {
             assert inventory.size() == previousSize : "Rejected additions must not change inventory size";
             logger.log(Level.FINE, "Equipment addition rejected: {0}", e.getMessage());
             throw e;
-        }
-        // Persist the candidate state before mutating memory so a failed write cannot
-        // leave the in-memory inventory ahead of the saved inventory.
-        ArrayList<Equipment> updatedInventory = new ArrayList<>(inventory);
-        updatedInventory.add(equipment);
-        try {
-            save(updatedInventory);
-        } catch (IOException e) {
-            EquipmentAdditionUnsuccessful exception = new EquipmentAdditionUnsuccessful(
-                    "Could not save equipment: " + e.getMessage());
-            logger.log(Level.WARNING, "Equipment addition could not be saved", e);
-            throw exception;
         }
         inventory.add(equipment);
         assert inventory.size() == previousSize + 1 : "Adding equipment must increase inventory size by one";
@@ -200,23 +184,26 @@ public class EquipmentHandler {
      * @throws EquipmentAdditionUnsuccessful when the command is invalid
      */
     static Equipment parseEquipment(String userInput) throws EquipmentAdditionUnsuccessful {
-        if (userInput == null || !(userInput.equals(ADD_COMMAND) || userInput.startsWith(ADD_COMMAND + " "))) {
+        if (userInput == null || !userInput.matches("(?U)" + ADD_COMMAND + "(?:\\s.*)?")) {
             throw new EquipmentAdditionUnsuccessful(ADD_FORMAT_ERROR);
         }
-        String addDetails = userInput.substring(ADD_COMMAND.length()).trim();
+        String addDetails = EquipmentFields.trimWhitespace(userInput.substring(ADD_COMMAND.length()));
         int itemIndex = findFieldMarker(addDetails, ITEM_MARKER, 0);
         int typeIndex = findFieldMarker(addDetails, TYPE_MARKER, 0);
         int conditionIndex = findFieldMarker(addDetails, CONDITION_MARKER, 0);
         int idIndex = findIdFieldMarker(addDetails, typeIndex);
         validateFieldMarkers(addDetails, itemIndex, idIndex, typeIndex, conditionIndex);
 
-        String itemName = addDetails.substring(itemIndex + ITEM_MARKER.length(), idIndex).trim();
-        String id = addDetails.substring(idIndex + ID_MARKER.length(), typeIndex).trim();
-        String type = addDetails.substring(typeIndex + TYPE_MARKER.length(), conditionIndex).trim();
+        String itemName = EquipmentFields.trimWhitespace(
+                addDetails.substring(itemIndex + ITEM_MARKER.length(), idIndex));
+        String id = EquipmentFields.trimWhitespace(addDetails.substring(idIndex + ID_MARKER.length(), typeIndex));
+        String type = EquipmentFields.trimWhitespace(
+                addDetails.substring(typeIndex + TYPE_MARKER.length(), conditionIndex));
         int detailsIndex = findDetailsStart(addDetails, conditionIndex + CONDITION_MARKER.length());
         int conditionEnd = detailsIndex == -1 ? addDetails.length() : detailsIndex;
-        String condition = addDetails.substring(conditionIndex + CONDITION_MARKER.length(), conditionEnd).trim();
-        String details = detailsIndex == -1 ? "" : addDetails.substring(detailsIndex).trim();
+        String condition = EquipmentFields.trimWhitespace(
+                addDetails.substring(conditionIndex + CONDITION_MARKER.length(), conditionEnd));
+        String details = detailsIndex == -1 ? "" : EquipmentFields.trimWhitespace(addDetails.substring(detailsIndex));
 
         return createValidatedEquipment(itemName, id, type, condition, details);
     }
@@ -257,12 +244,7 @@ public class EquipmentHandler {
         for (String marker : new String[]{ITEM_MARKER, ID_MARKER, TYPE_MARKER, CONDITION_MARKER}) {
             int firstIndex = findFieldMarker(details, marker, 0);
             if (marker.equals(ID_MARKER)) {
-                while (firstIndex < idIndex) {
-                    if (!isNameIdText(details, firstIndex)) {
-                        throw new EquipmentAdditionUnsuccessful(ADD_FORMAT_ERROR);
-                    }
-                    firstIndex = findFieldMarker(details, marker, firstIndex + marker.length());
-                }
+                firstIndex = skipNameIdFragments(details, firstIndex, idIndex);
             }
             if (findFieldMarker(details, marker, firstIndex + marker.length()) != -1) {
                 throw new EquipmentAdditionUnsuccessful(ADD_FORMAT_ERROR);
@@ -273,15 +255,15 @@ public class EquipmentHandler {
     /** Validates extracted values before construction, preserving field-specific error messages. */
     private static Equipment createValidatedEquipment(String itemName, String id, String type,
             String conditionString, String detailsString) throws EquipmentAdditionUnsuccessful {
-        if (itemName.isBlank() || itemName.length() > 100) {
+        if (!Equipment.hasText(itemName) || itemName.length() > Equipment.MAX_NAME_LENGTH) {
             throw new EquipmentAdditionUnsuccessful("Item name must contain 1 to 100 characters.");
         }
 
-        if (!id.matches("[0-9]{3}") || id.equals("000")) {
+        if (!Equipment.isValidItemId(id)) {
             throw new EquipmentAdditionUnsuccessful("Item ID must be from 001 to 999.");
         }
 
-        if (type.isBlank()) {
+        if (!Equipment.hasText(type)) {
             throw new EquipmentAdditionUnsuccessful("Type cannot be empty.");
         }
 
@@ -366,7 +348,7 @@ public class EquipmentHandler {
     private static int findFieldMarker(String details, String marker, int startIndex) {
         int index = details.indexOf(marker, startIndex);
         while (index != -1) {
-            if (index == 0 || Character.isWhitespace(details.charAt(index - 1))) {
+            if (index == 0 || EquipmentFields.isWhitespace(details.charAt(index - 1))) {
                 return index;
             }
             index = details.indexOf(marker, index + marker.length());
@@ -381,7 +363,7 @@ public class EquipmentHandler {
             return false;
         }
         char firstCharacter = details.charAt(valueIndex);
-        return !Character.isWhitespace(firstCharacter) && !Character.isDigit(firstCharacter)
+        return !EquipmentFields.isWhitespace(firstCharacter) && !Character.isDigit(firstCharacter)
                 && firstCharacter != '+' && firstCharacter != '-';
     }
 
@@ -406,23 +388,56 @@ public class EquipmentHandler {
      * Prints out all equipment in inventory
      */
     public void viewAllEquipment() {
-        System.out.printf(
-                "%-4s %-24s | %-6s | %-15s | %-9s | %-10s | %s%n",
-                "No.", "NAME", "ID", "TYPE", "CONDITION", "STATUS", "DETAILS"
-        );
+        viewEquipment(getEquipmentList());
+    }
 
-        List<Equipment> equipmentList = getEquipmentList();
+    /** Prints matching items in their existing order using the normal equipment table. */
+    public void viewEquipment(List<Equipment> equipmentList) {
+        System.out.printf("%-4s %-24s | %-6s | %-15s | %-9s | %-10s | %s%n",
+                "No.", "NAME", "ID", "TYPE", "CONDITION", "STATUS", "DETAILS");
         logger.log(Level.INFO, "Viewing {0} equipment item(s)", equipmentList.size());
-
-        for (int i = 0; i < equipmentList.size(); i++) {
-            Equipment item = equipmentList.get(i);
+        for (int index = 0; index < equipmentList.size(); index++) {
+            Equipment item = equipmentList.get(index);
             assert item != null : "Equipment list must not contain null items";
-
-            System.out.printf(
-                    "%-4s %-24s | %-6s | %-15s | %-9d | %-10s | %s%n",
-                    (i + 1) + ")", item.getItemName(), item.getItemId(), item.getType(), item.getCondition(),
-                    item.isLoaned() ? "Loaned" : "Available", item.getDetails()
-            );
+            System.out.printf("%-4s %-24s | %-6s | %-15s | %-9d | %-10s | %s%n",
+                    (index + 1) + ")", item.getItemName(), item.getItemId(), item.getType(), item.getCondition(),
+                    item.isLoaned() ? "Loaned" : "Available", item.getDetails());
         }
+    }
+
+    /** Rejects duplicate IDs before saving or changing the current inventory. */
+    private void ensureUniqueItemId(Equipment item) throws EquipmentAdditionUnsuccessful {
+        for (Equipment existing : inventory) {
+            if (existing.getItemId().equals(item.getItemId())) {
+                throw new EquipmentAdditionUnsuccessful("Item ID " + item.getItemId() + " already exists.");
+            }
+        }
+    }
+
+    /** Saves a candidate list first, so a failed write cannot add an item only in memory. */
+    private void saveAddition(Equipment item) throws EquipmentAdditionUnsuccessful {
+        // @@author MatthewLeon888
+        ArrayList<Equipment> updatedInventory = new ArrayList<>(inventory);
+        updatedInventory.add(item);
+        try {
+            save(updatedInventory);
+        } catch (IOException e) {
+            logger.log(Level.WARNING, "Equipment addition could not be saved", e);
+            throw new EquipmentAdditionUnsuccessful("Could not save equipment: " + e.getMessage());
+        }
+        // @@author
+    }
+
+    /** Checks that prefixes before the actual ID belong to textual name fragments. */
+    private static int skipNameIdFragments(String details, int firstIndex, int idIndex)
+            throws EquipmentAdditionUnsuccessful {
+        int currentIndex = firstIndex;
+        while (currentIndex < idIndex) {
+            if (!isNameIdText(details, currentIndex)) {
+                throw new EquipmentAdditionUnsuccessful(ADD_FORMAT_ERROR);
+            }
+            currentIndex = findFieldMarker(details, ID_MARKER, currentIndex + ID_MARKER.length());
+        }
+        return currentIndex;
     }
 }
