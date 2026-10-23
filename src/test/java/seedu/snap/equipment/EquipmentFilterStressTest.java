@@ -28,7 +28,7 @@ class EquipmentFilterStressTest {
 
     @Test
     void parse_unicodeSeparatorsAndBlankValues_handlesEachExplicitCase() throws Exception {
-        Equipment camera = new Equipment("Camera", "001", "camera", 1);
+        Equipment camera = new Camera("Camera", "001", 1);
         for (String space : new String[]{" ", "\t", "\u2003", "\u00a0", "\u2007", "\u202f"}) {
             EquipmentFilter filter = EquipmentFilter.parse("filter" + space + "id/001" + space + "cond/1-3");
             assertTrue(filter.matches(camera, false));
@@ -50,9 +50,9 @@ class EquipmentFilterStressTest {
     private void checkPermutations(String[] fields, int position) throws Exception {
         if (position == fields.length) {
             EquipmentFilter filter = EquipmentFilter.parse("filter " + String.join(" ", fields));
-            assertTrue(filter.matches(new Equipment("Camera", "001", "camera", 2), false));
-            assertFalse(filter.matches(new Equipment("Camera", "001", "camera", 2), true));
-            assertFalse(filter.matches(new Equipment("Camera", "001", "camera", 4), false));
+            assertTrue(filter.matches(new Camera("Camera", "001", 2), false));
+            assertFalse(filter.matches(new Camera("Camera", "001", 2), true));
+            assertFalse(filter.matches(new Camera("Camera", "001", 4), false));
             return;
         }
         for (int i = position; i < fields.length; i++) {
@@ -70,8 +70,9 @@ class EquipmentFilterStressTest {
         List<Equipment> items = new ArrayList<>();
         for (int id = 1; id <= 999; id++) {
             String formatted = String.format(Locale.ROOT, "%03d", id);
-            items.add(new Equipment("Camera " + formatted, formatted, id % 2 == 0 ? "camera" : "lens",
-                    (id - 1) % 10 + 1));
+            int condition = (id - 1) % 10 + 1;
+            items.add(id % 2 == 0 ? new Camera("Camera " + formatted, formatted, condition)
+                    : new Lens("Camera " + formatted, formatted, condition));
         }
         Random random = new Random(2113);
         for (int query = 0; query < 200; query++) {
@@ -113,7 +114,7 @@ class EquipmentFilterStressTest {
         Random random = new Random(2026);
         String[] tokens = {"id/001", "id/000", "i/Camera", "type/camera", "cond/1-3", "status/available",
             "cond/2147483648", "x", " ", "\u00a0", "i/", "\t", "\u0000", "id/card"};
-        Equipment item = new Equipment("Camera", "001", "camera", 1);
+        Equipment item = new Camera("Camera", "001", 1);
         for (int trial = 0; trial < 8_000; trial++) {
             StringBuilder command = new StringBuilder("filter ");
             for (int token = 0; token < 1 + random.nextInt(12); token++) {

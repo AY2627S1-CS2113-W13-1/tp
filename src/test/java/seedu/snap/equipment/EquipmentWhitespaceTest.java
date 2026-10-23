@@ -24,7 +24,7 @@ class EquipmentWhitespaceTest {
                     () -> handler.addEquipment("add i/Tripod id/002 type/" + space + " cond/1"));
             assertEquals(List.of(original), handler.getEquipmentList());
         }
-        handler.addEquipment("add i/Tripod id/002 type/accessory cond/1");
+        handler.addEquipment("add i/Tripod id/002 type/tripod cond/1");
         assertEquals(2, handler.getEquipmentList().size());
     }
 
@@ -33,9 +33,9 @@ class EquipmentWhitespaceTest {
         for (String space : SPACES) {
             EquipmentHandler handler = new EquipmentHandler();
             Equipment item = handler.addEquipment("add" + space + "i/" + space + "Film" + space + "Camera"
-                    + space + "id/001" + space + "type/" + space + "camera kit" + space + "cond/1" + space);
+                    + space + "id/001" + space + "type/" + space + "camera" + space + "cond/1" + space);
             assertEquals("Film" + space + "Camera", item.getItemName());
-            assertEquals("camera kit", item.getType());
+            assertEquals("camera", item.getType());
             assertEquals(1, item.getCondition());
         }
     }
@@ -49,14 +49,14 @@ class EquipmentWhitespaceTest {
             assertEquals(List.of(), handler.getEquipmentList());
         }
         assertEquals("USB id/card reader",
-                handler.addEquipment("add i/USB id/card reader id/001 type/accessory cond/1").getItemName());
+                handler.addEquipment("add i/USB id/card reader id/001 type/tripod cond/1").getItemName());
     }
 
     @Test
     void constructor_whitespaceOnlyRequiredFields_failAssertions() {
         for (String space : SPACES) {
-            assertThrows(AssertionError.class, () -> new Equipment(space, "001", "camera", 1));
-            assertThrows(AssertionError.class, () -> new Equipment("Camera", "001", space, 1));
+            assertThrows(AssertionError.class, () -> new Camera(space, "001", 1));
+            assertThrows(AssertionError.class, () -> new Camera("Camera", space, 1));
         }
     }
 }

@@ -32,8 +32,8 @@ class EquipmentFilterTest {
 
     @BeforeEach
     void setUp() {
-        camera = new Equipment("Canon Camera 相机", "001", "camera kit", 1);
-        tripod = new Equipment("Tripod", "999", "accessory", 10);
+        camera = new Camera("Canon Camera 相机", "001", 1);
+        tripod = new Tripod("Tripod", "999", 10);
     }
 
     @Test
@@ -47,8 +47,9 @@ class EquipmentFilterTest {
 
     @Test
     void parse_type_usesFullCaseInsensitiveMatch() throws EquipmentFilteringUnsuccessful {
-        assertTrue(EquipmentFilter.parse("filter type/CAMERA KIT").matches(camera, false));
-        assertFalse(EquipmentFilter.parse("filter type/camera").matches(camera, false));
+        assertTrue(EquipmentFilter.parse("filter type/CAMERA").matches(camera, false));
+        assertFalse(EquipmentFilter.parse("filter type/cam").matches(camera, false));
+        assertFalse(EquipmentFilter.parse("filter type/camera kit").matches(camera, false));
     }
 
     @Test
@@ -65,7 +66,7 @@ class EquipmentFilterTest {
     @Test
     void apply_multipleMatches_returnsReadOnlySnapshotInInventoryOrder() throws EquipmentFilteringUnsuccessful {
         ArrayList<Equipment> inventory = new ArrayList<>(List.of(tripod, camera));
-        LoanHandler loans = new LoanHandler();
+        LoanHandler loans = new LoanHandler(new EquipmentHandler());
         List<Equipment> result = EquipmentFilter.parse("filter cond/1-10").apply(inventory, loans);
         assertEquals(List.of(tripod, camera), result);
         assertSame(tripod, result.getFirst());
@@ -81,7 +82,7 @@ class EquipmentFilterTest {
     @Test
     void parse_combinedFieldsInAnyOrder_requiresAllToMatch() throws EquipmentFilteringUnsuccessful {
         EquipmentFilter filter = EquipmentFilter.parse(
-                "filter status/AVAILABLE cond/1-3 type/camera kit id/001 i/canon");
+                "filter status/AVAILABLE cond/1-3 type/camera id/001 i/canon");
         assertTrue(filter.matches(camera, false));
         assertFalse(filter.matches(camera, true));
         assertFalse(filter.matches(tripod, false));
@@ -90,7 +91,7 @@ class EquipmentFilterTest {
     @Test
     void parse_textPrefixes_preservesNames() throws EquipmentFilteringUnsuccessful {
         for (String name : new String[]{"USB id/card reader", "fluid/head tripod", "mini/camera"}) {
-            Equipment item = new Equipment(name, "002", "accessory", 2);
+            Equipment item = new Tripod(name, "002", 2);
             assertTrue(EquipmentFilter.parse("filter i/" + name).matches(item, false));
         }
     }
@@ -148,7 +149,7 @@ class EquipmentFilterTest {
             System.setOut(captured);
             EqmManager manager = new EqmManager(temporaryDataDirectory);
             manager.executeInput("add i/First Camera id/999 type/camera cond/1");
-            manager.executeInput("add i/Excluded Tripod id/002 type/accessory cond/5");
+            manager.executeInput("add i/Excluded Tripod id/002 type/tripod cond/5");
             manager.executeInput("add i/Second Camera id/001 type/camera cond/10");
             output.reset();
             manager.executeInput("filter type/camera cond/1-10");
@@ -201,7 +202,7 @@ class EquipmentFilterTest {
         Locale original = Locale.getDefault();
         try {
             Locale.setDefault(Locale.forLanguageTag("tr"));
-            Equipment item = new Equipment("FILM", "002", "camera", 2);
+            Equipment item = new Camera("FILM", "002", 2);
             assertTrue(EquipmentFilter.parse("filter i/film").matches(item, false));
         } finally {
             Locale.setDefault(original);

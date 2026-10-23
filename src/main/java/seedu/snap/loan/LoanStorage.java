@@ -23,6 +23,7 @@ final class LoanStorage {
      * Loads loan records from each non-blank line in the supplied file.
      * The optional returned field is accepted for compatibility with older files;
      * newly saved records always include it.
+     * Records stay detached until the handler validates active loans against the current inventory.
      *
      * @param file file containing saved loans
      * @return parsed loan records

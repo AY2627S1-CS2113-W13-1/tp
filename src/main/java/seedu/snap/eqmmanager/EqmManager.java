@@ -7,17 +7,17 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import seedu.snap.equipment.EquipmentHandler;
-import seedu.snap.equipment.EquipmentFilter;
-import seedu.snap.exceptions.EquipmentFilteringUnsuccessful;
 import seedu.snap.equipment.Equipment;
+import seedu.snap.equipment.EquipmentFilter;
+import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
+import seedu.snap.exceptions.EquipmentFilteringUnsuccessful;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
+import seedu.snap.loan.Loan;
 import seedu.snap.loan.LoanHandler;
 import seedu.snap.parser.Parser;
-import seedu.snap.loan.Loan;
 
 /** Coordinates command input and execution for the SNAP application. */
 public class EqmManager {
@@ -44,8 +44,8 @@ public class EqmManager {
             throw new IllegalArgumentException("Data directory must not be null.");
         }
         this.parser = new Parser();
-        this.loans = new LoanHandler(dataDirectory.resolve("loans.txt"));
         this.equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
+        this.loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"));
         List<String> loadErrors = new ArrayList<>();
         try {
             equipment.loadFromStorage();
