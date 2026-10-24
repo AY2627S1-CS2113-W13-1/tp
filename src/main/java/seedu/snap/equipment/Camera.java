@@ -16,7 +16,7 @@ public class Camera extends Equipment {
     }
 
     private final String sensorFormat;
-    private final CameraDamage damage;
+    private CameraDamage damage;
 
     /**
      * Creates a camera with unspecified sensor format and no recorded damage.
@@ -67,6 +67,15 @@ public class Camera extends Equipment {
 
     public CameraDamage getDamage() {
         return damage;
+    }
+
+    @Override
+    protected void applyDamageAssessment(Equipment assessed) {
+        Camera camera = (Camera) assessed;
+        if (!sensorFormat.equals(camera.sensorFormat) || camera.damage == null) {
+            throw new IllegalArgumentException("A return assessment cannot change the camera sensor format.");
+        }
+        damage = camera.damage;
     }
 
     @Override

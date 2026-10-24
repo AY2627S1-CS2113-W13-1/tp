@@ -6,6 +6,70 @@
 
 ## Design & implementation
 
+### Optional command fields and explicit defaults
+
+Equipment addition already defaults omitted subtype details to `unspecified`, damage to `NONE` and remarks to empty
+text. Updates retain omitted details, and filters impose no restriction for an omitted criterion. Required fields
+and supplied invalid values remain validated. Optional equipment details and damage use the same Unicode whitespace
+trimming as the common fields, so a supplied whitespace-only detail is rejected instead of being stored as text.
+
+Interactive loan commands may omit the entire `issued/` field. `LoanHandler.parseLoanCommand(...)` accepts either
+four or five arguments. The shared validator checks the required IDs and due date; only the four-argument form
+reads `LocalDate.now(clock)` once and uses that date at midnight. A supplied issue date is parsed strictly and never
+uses the clock. Invalid supplied fields and issue dates after the due date are rejected before saving or consuming
+a loan ID. Existing constructors use the system's local time zone. An explicit `Clock` constructor allows fixed-date,
+time-zone and midnight-boundary tests without changing the computer's date.
+
+`parseLoanRecord(...)` remains a separate strict entry point for storage, requiring both dates explicitly. The
+selected default is saved as an ordinary issue date, and restart loading never replaces a missing or invalid date
+with today's date. Separating interactive defaults from stored-record validation prevents corrupt data from changing
+meaning according to the day it is loaded.
+
+Return commands may omit final `remarks/`. `LoanReturn.parse(...)` supplies an empty string through the existing
+assessment and save-before-mutation path, clearing previous remarks only after a successful save. Loan ID,
+serviceability and damage remain mandatory. Explicit empty remarks have the same meaning; supplied text is validated
+and all text after the final prefix remains literal. A failed return preserves the previous remarks and assessment.
+
+Tests cover every equipment optional-field subset across all four subtypes, whitespace validation, persistence,
+fixed local dates, explicit dates, one clock read at midnight, invalid supplied values, strict stored records,
+omitted and empty return remarks, required assessments, and failed saves followed by successful retries.
+
+### Returning equipment with an assessment
+
+`EqmManager` routes `return loan/001 serviceable/yes damage/none remarks/Checked` to
+`LoanHandler.returnLoan(...)`. `LoanReturn` parses the required fields in their documented order.
+Loan IDs must be from `001` to `999`. A serviceability decision and a type-specific damage value are mandatory.
+The final remarks field is optional and defaults to empty text. Supplied remarks must be single-line text of at most
+200 characters after trimming. Text after `remarks/` is kept as text, rather than parsed as more fields.
+
+The handler finds exactly one active loan and checks that it still owns the same equipment object in the inventory.
+Checking both object identity and the active loan ID prevents a stale association from assessing or releasing
+replacement equipment. Missing, duplicated, already returned or mismatched records are rejected before saving.
+
+`EquipmentHandler.prepareReturnAssessment(...)` validates damage with the existing equipment-specific enums
+and creates a detached equipment proposal. The proposal preserves the numeric condition, name, ID and type-specific
+attributes. A detached returned loan proposal preserves the loan ID, borrower and dates. Neither proposal changes
+the live inventory or the active loan.
+
+`LoanReturnStorage` captures the existing equipment, loan and sequence files, then saves the proposed assessment
+and returned loan. If an `IOException` occurs, it attempts to restore every captured file independently;
+restoration errors are retained and reported. Only after all saves succeed does the handler apply the assessment
+to the original equipment object and call `Loan.setReturned(true)` on the original loan. Bundle references therefore
+continue to point to the same object. Returns retain the loan count and next loan ID.
+
+Serviceability is independent of loan status. An unserviceable returned item has no active loan, but new loans,
+new bundle additions and `status/available` filtering reject it. Equipment listing displays `Unserviceable`.
+Normal name and numeric-condition updates preserve this assessment. There is no repair command in this feature.
+Storage writes serviceability before the existing add record, separated by a tab, so the new metadata cannot
+be confused with free-form names, type attributes or remarks. Legacy records default to serviceable.
+
+The file snapshots handle reported save failures. They do not form a recovery log for abrupt process termination
+or power loss during a multi-file save. Such recovery would require an additional transaction journal.
+
+Tests cover serviceable and unserviceable returns, type-specific damage, validation and command recovery,
+permanent returned state, new loan IDs on subsequent borrowing, restart persistence, stale associations,
+bundle identity, and equipment, loan and sequence save failures followed by successful retries.
+
 ### Updating equipment details
 
 The update feature lets an equipment officer correct an item's name or condition without

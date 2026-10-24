@@ -11,6 +11,25 @@ application sessions. Bundles group equipment during the current session.
 2. From the project directory, run `./gradlew run` on macOS/Linux or `.\gradlew.bat run` on Windows.
 3. Enter one command per line. Type `bye` to exit.
 
+## Optional fields and defaults
+
+Square brackets around a field mean that the whole field can be omitted. Defaults apply only when a field is
+absent. Supplying an empty or invalid value produces an error, except that empty remarks are valid.
+
+| Command | Optional field | When omitted |
+| --- | --- | --- |
+| `add` | Type-specific detail (`sensor/`, `zoom/`, `capacity/` or `thread/`) | `unspecified` |
+| `add` | `damage/` | `NONE` |
+| `add` | `remarks/` | Empty text |
+| `loan` | `issued/` | Today's date in the application's local time zone, at midnight |
+| `return` | `remarks/` | Empty text, replacing any previous remarks |
+| `update` | Name, type or condition | Keep the existing value; supply an ID and at least one field |
+| `filter` | Any individual criterion | No restriction for that criterion; supply at least one criterion |
+
+Equipment name, Item ID, type and numeric condition remain required when adding equipment.
+Loans require Item ID, borrower ID and due date. Returns require loan ID, serviceability and damage.
+There is no default due date or serviceability decision.
+
 ## Adding equipment: `add`
 
 Format: `add i/[ITEM] id/[ITEM ID] type/[TYPE] cond/[CONDITION] [TYPE DETAIL] [damage/[DAMAGE]] [remarks/[REMARKS]]`
@@ -40,6 +59,8 @@ After `cond/`, you can add the field for the equipment type, followed by `damage
 * Either optional field can be omitted. The type-specific value defaults to `unspecified`, and damage defaults to `NONE`.
 * Damage values are case-insensitive and stored in uppercase. Use a value from the row for the chosen type.
 * A field for another type, an invalid damage value, a repeated field or fields in the wrong order are rejected.
+* Leading and trailing whitespace, including non-breaking spaces, is trimmed from optional details and damage.
+  A supplied detail containing only whitespace or a supplied empty damage value is rejected.
 
 Examples:
 
@@ -66,7 +87,7 @@ add i/Travel tripod id/003 type/tripod cond/2 thread/1/4 inch
 Format: `list`
 
 This displays all equipment with its name, ID, type and condition. The `STATUS` column, before `DETAILS`, shows
-`Available` or `Loaned`. The `DETAILS` column shows the type-specific value and damage, including the defaults
+`Available`, `Loaned` or `Unserviceable`. The `DETAILS` column shows the type-specific value and damage, including the defaults
 when optional fields were omitted. The `REMARKS` column follows `DETAILS` and is empty when no remarks were given.
 
 ## Deleting equipment: `delete`
@@ -89,24 +110,30 @@ An ID that does not exist produces an error without changing the saved records.
 
 ## Equipment availability
 
-New equipment is `Available`. Adding a loan changes its status to `Loaned`. Marking an active loan as returned
-or deleting it makes the item available again. Removing an older returned loan does not affect a newer active loan.
-
-There is no command to mark a loan as returned yet. The current command-line option is `delete loan/[LOAN ID]`, which
-also removes the loan record. A return workflow that retains loan history is planned in
-[issue #78](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/78).
+New equipment is serviceable and `Available`. Adding a loan changes its status to `Loaned`.
+Use `return` to retain the loan record and record whether the returned item is serviceable.
+An item returned with `serviceable/yes` becomes `Available`; an item returned with `serviceable/no`
+becomes `Unserviceable` and cannot be borrowed or added to another bundle. This assessment survives restarting.
+Removing an older returned loan does not change the assessment or affect a newer active loan.
 
 A returned loan cannot be made active again. To borrow the same item again, create a new loan.
 
 ## Loaning out equipment: `loan`
 
-Format: `loan id/[ITEM ID] b/[BORROWER ID] issued/[DD-MM-YY] due/[DD-MM-YY]`
+Format: `loan id/[ITEM ID] b/[BORROWER ID] [issued/DD-MM-YY] due/[DD-MM-YY]`
 
 Example: `loan id/001 b/002 issued/01-10-26 due/08-10-26`
 
+Example with the issue date omitted: `loan id/001 b/002 due/28-10-26`
+
 * `ITEM ID` is the three-digit identifier of existing equipment, from `001` to `999`. The item must be `Available`.
 * `BORROWER ID` is the three-digit identifier of the borrower, from `000` to `999`.
-* `issued` and `due` use the `DD-MM-YY` format. The issue date must not be later than the due date.
+* `issued/` is optional and defaults to today's date in the application's local time zone, at midnight.
+  The date is read once for each command. A supplied issue date overrides this default.
+* `due/` is required. Both dates use `DD-MM-YY`. The issue date must not be later than the due date.
+  When omitting `issued/`, choose a due date on or after today.
+* Keep the displayed field order. Empty, invalid, repeated or misplaced supplied dates are rejected;
+  `issued/` without a value does not use the default.
 * An item cannot have more than one active loan at the same time.
 
 Each successful loan receives a unique three-digit loan ID, which is printed in the success message.
@@ -120,7 +147,45 @@ Invalid loan commands leave both the loan records and equipment availability unc
 Format: `list loans`
 
 This displays all recorded loans with their unique loan ID, item ID, borrower ID, issue date and due date.
-The `LOAN ID` column comes before `ITEM ID`.
+The `LOAN ID` column comes before `ITEM ID`. The final `RETURNED` column is `true` for returned loans
+and `false` for active loans.
+
+## Returning equipment: `return`
+
+Format: `return loan/[LOAN ID] serviceable/[yes|no] damage/[DAMAGE|none] [remarks/[REMARKS]]`
+
+Examples:
+
+```text
+return loan/001 serviceable/yes damage/none remarks/Checked on return
+return loan/002 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair
+return loan/003 serviceable/yes damage/none
+```
+
+* Use the loan ID from `list loans`, from `001` to `999`. It must identify an active loan.
+* `loan/`, `serviceable/` and `damage/` are required, once each and in the displayed order.
+  The complete command must be on one line.
+* `serviceable/yes` or `serviceable/no` is a mandatory condition assessment. These values are case-insensitive.
+  The assessment determines whether the equipment may be borrowed again; damage alone does not decide this.
+* `damage/` must use a value from the equipment type's damage table under **Adding equipment**.
+  Values are case-insensitive. Use `none` when no damage is found.
+* `remarks/` is optional and must be last when supplied. Omit it or supply empty text to clear previous remarks.
+  Supplied text may contain up to 200 characters after trimming. All text after this prefix is treated as remarks,
+  including prefix-like text.
+* The assessment replaces the item's previous damage and remarks. Its name, numeric condition, type-specific
+  attributes and existing bundle memberships are retained. The numeric condition can be changed separately with `update`.
+
+A successful return keeps the loan record and its ID, sets `RETURNED` to `true`, and clears its active equipment link.
+An already returned loan cannot be returned again or reactivated. Borrowing the same serviceable equipment later
+creates a new loan with a new ID. Returning equipment does not consume a loan ID.
+
+Equipment and loan files are saved before the live records change. If a save fails, the application reports the error
+and attempts to restore the previous files. The live loan remains active, with its previous equipment assessment.
+After fixing the file or directory problem, retry the same command. If restoration also fails, the error explicitly
+asks you to check the saved files before retrying.
+
+There is currently no repair command to make unserviceable equipment serviceable again.
+Changing its numeric condition with `update` does not remove the unserviceable assessment.
 
 ## Deleting a loan: `delete loan`
 
@@ -137,7 +202,8 @@ The deletion is saved before the loan is removed or its equipment is released. I
 reports an error and keeps both the loan records and equipment availability unchanged. You can retry the command
 after fixing the storage problem.
 
-Deleting an active loan successfully makes its equipment `Available`. Deleting returned loan history leaves any
+Deleting an active loan releases its equipment without changing its serviceability assessment.
+Deleting returned loan history leaves any
 newer active loan and the equipment's `Loaned` status unchanged.
 
 ## Filtering equipment: `filter`
@@ -155,7 +221,8 @@ Names use case-insensitive partial matching and may contain spaces. Types use ca
 against `camera`, `lens`, `battery`, or `tripod`. `id/` uses an exact three-digit ID from `001` to `999`.
 
 `cond/` accepts a value from `1` to `10` or an inclusive range such as `1-3`. Ranges cannot be reversed.
-`status/` accepts `available` or `loaned` and checks the current active loans. Returned loans do not block availability.
+`status/` accepts `available` or `loaned` and checks the current active loans.
+The `available` filter also excludes unserviceable equipment. Returned loans do not block availability.
 
 Prefixes `id/`, `i/`, `type/`, `cond/`, and `status/` after whitespace are reserved field separators.
 Text like `id/card` within a name is allowed. Empty or repeated fields are rejected. Filtering leaves equipment
@@ -214,7 +281,8 @@ its own success or error message. Valid items are added even if another requeste
 * A bundle is complete when it contains exactly one camera, at least one battery and at least one lens.
   A tripod is optional.
 
-Returning an item or deleting its active loan makes it available for a later `add-to-bundle` command.
+Returning a serviceable item or deleting its active loan makes it available for a later `add-to-bundle` command.
+Unserviceable equipment cannot be added to a bundle. Existing bundle memberships are retained on return.
 Updating a bundled item's name or condition also updates the item shown in the bundle.
 
 ## Viewing bundles: `list bundles`
@@ -226,8 +294,9 @@ checks the required equipment counts. Borrowing an item later does not remove it
 
 ## Saving equipment
 
-Successful equipment additions, updates and deletions are saved automatically in `data/equipment.txt`, relative to the
-directory from which the application is run. Successful loan additions and deletions are saved in
+Successful equipment additions, updates, deletions and return assessments are saved automatically in
+`data/equipment.txt`, relative to the directory from which the application is run.
+Successful loan additions, returns and deletions are saved in
 `data/loans.txt`, and the next unused loan ID is saved in `data/loan-sequence.txt`. Records are loaded when the
 application starts again. A final save is also attempted when `bye` is entered; if it fails, the application
 reports the affected file and lets you retry.
@@ -247,12 +316,17 @@ Saved equipment records use the four supported types and retain their type-speci
 Existing records of supported types without optional fields are also accepted, using `unspecified` and `NONE`.
 Records created before remarks were supported may omit the `remarks/` field; they load with empty remarks.
 Remarks are shown in the `list` equipment table and are restored when the application starts again.
+Saved records may start with `serviceable/yes` or `serviceable/no`, followed by a tab and the add record.
+This prefix is storage metadata, not an add-command field. Older records without the prefix are serviceable.
 
 Loan records include the loan ID, item ID, borrower ID, issue date, due date and returned status. For example:
 
 ```text
 loan loanId/001 id/001 b/002 issued/01-10-26 due/08-10-26 returned/false
 ```
+
+Saved loans always contain explicit issue and due dates, including a default issue date chosen by a command.
+Loading a saved record never substitutes today's date for a missing or malformed date.
 
 Existing loan records without loan IDs are assigned IDs in file order on first load and saved in the new format.
 These IDs remain stable on later restarts. The sequence file preserves the next unused ID even when loan records
@@ -277,7 +351,8 @@ reports the problem and stops.
 | --- | --- |
 | Add equipment | `add i/[ITEM] id/[ITEM ID] type/[TYPE] cond/[CONDITION]` with optional details, damage and remarks |
 | Delete equipment | `delete item/[ITEM ID]` |
-| Add loan | `loan id/[ITEM ID] b/[BORROWER ID] issued/[DD-MM-YY] due/[DD-MM-YY]` |
+| Add loan | `loan id/[ITEM ID] b/[BORROWER ID] [issued/DD-MM-YY] due/[DD-MM-YY]` |
+| Return equipment | `return loan/[LOAN ID] serviceable/[yes|no] damage/[DAMAGE|none] [remarks/[REMARKS]]` |
 | Delete loan | `delete loan/[LOAN ID]` |
 | List equipment | `list` |
 | List loans | `list loans` |

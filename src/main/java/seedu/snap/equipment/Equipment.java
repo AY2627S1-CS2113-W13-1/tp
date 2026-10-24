@@ -29,10 +29,12 @@ public abstract class Equipment {
     private final String itemId;
     private int condition;
     private boolean isLoaned = false;
+    /** Whether this item has passed the latest return assessment and can be loaned again. */
+    private boolean isServiceable = true;
     /** Current active loan identifier, rebuilt from saved loan records rather than duplicated in equipment storage. */
     private String loanId;
     /** Optional single-line remarks retained with this equipment record. */
-    private final String remarks;
+    private String remarks;
 
     /**
      * Creates an equipment item.
@@ -95,6 +97,39 @@ public abstract class Equipment {
     /** Returns whether this item currently has an active loan. */
     public boolean isLoaned() {
         return isLoaned;
+    }
+
+    /** Returns whether this equipment can be loaned after any active loan has ended. */
+    public boolean isServiceable() {
+        return isServiceable;
+    }
+
+    /** Sets serviceability on a detached proposal or equipment freshly read from storage. */
+    final void setServiceable(boolean serviceable) {
+        isServiceable = serviceable;
+    }
+
+    /** Copies subtype damage after the common return-assessment identity checks have passed. */
+    protected abstract void applyDamageAssessment(Equipment assessed);
+
+    /**
+     * Commits a validated return assessment without replacing references held by loans and bundles.
+     * The assessment cannot change equipment identity, subtype attributes, name, or condition.
+     *
+     * @param assessed detached proposal whose persistent values have already been saved
+     * @throws IllegalArgumentException if the proposal belongs to different equipment
+     */
+    public final void applyReturnAssessment(Equipment assessed) {
+        if (assessed == null || assessed.getClass() != getClass()
+                || !itemId.equals(assessed.itemId) || !itemName.equals(assessed.itemName)
+                || condition != assessed.condition || assessed.remarks == null
+                || assessed.remarks.length() > MAX_REMARKS_LENGTH
+                || assessed.remarks.matches("(?s).*\\R.*")) {
+            throw new IllegalArgumentException("The return assessment must belong to the same equipment.");
+        }
+        applyDamageAssessment(assessed);
+        remarks = assessed.remarks;
+        isServiceable = assessed.isServiceable;
     }
 
     /** Returns the current active loan identifier, or null when no identified loan owns this item. */

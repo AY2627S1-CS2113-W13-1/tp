@@ -2,6 +2,7 @@ package seedu.snap.eqmmanager;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -19,6 +20,7 @@ import seedu.snap.exceptions.EquipmentFilteringUnsuccessful;
 import seedu.snap.exceptions.EquipmentUpdateUnsuccessful;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
+import seedu.snap.exceptions.LoanReturnUnsuccessful;
 import seedu.snap.loan.Loan;
 import seedu.snap.loan.LoanHandler;
 import seedu.snap.parser.Parser;
@@ -45,12 +47,18 @@ public class EqmManager {
      * @param dataDirectory directory containing equipment.txt and loans.txt
      */
     public EqmManager(Path dataDirectory) {
+        this(dataDirectory, Clock.systemDefaultZone());
+    }
+
+    /** Creates a manager with an explicit clock for optional issue-date defaults. */
+    public EqmManager(Path dataDirectory, Clock clock) {
         if (dataDirectory == null) {
             throw new IllegalArgumentException("Data directory must not be null.");
         }
         this.parser = new Parser();
         this.equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
-        this.loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"));
+        this.loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"),
+                dataDirectory.resolve("loan-sequence.txt"), clock);
         this.bundles = new BundleHandler(equipment);
         List<String> loadErrors = new ArrayList<>();
         try {
@@ -88,8 +96,10 @@ public class EqmManager {
             deleteEquipment(normalizedInput);
         } else if (normalizedInput.matches("(?U)add(?:\\s.*)?")) {
             addEquipment(normalizedInput);
-        } else if (normalizedInput.equals("loan") || normalizedInput.startsWith("loan ")) {
+        } else if (normalizedInput.matches("(?sU)loan(?:\\s.*)?")) {
             addLoan(normalizedInput);
+        } else if (normalizedInput.matches("(?sU)return(?:\\s.*)?")) {
+            returnEquipment(normalizedInput);
         } else if (normalizedInput.matches("(?U)filter(?:\\s.*)?")) {
             filterEquipment(normalizedInput);
         } else if (normalizedInput.matches("(?U)update(?:\\s.*)?")) {
@@ -236,6 +246,17 @@ public class EqmManager {
             System.out.println(e.getMessage());
         }
         // @@author
+    }
+
+    /** Displays a persisted return result or its validation/save error. */
+    private void returnEquipment(String input) {
+        try {
+            Loan returned = loans.returnLoan(input);
+            System.out.println("Loan " + returned.getLoanId() + " for item ID " + returned.getItemId()
+                    + " returned successfully.");
+        } catch (LoanReturnUnsuccessful exception) {
+            System.out.println(exception.getMessage());
+        }
     }
 
     /** Displays matching equipment or the filter error. */

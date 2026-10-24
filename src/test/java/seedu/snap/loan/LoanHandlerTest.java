@@ -364,8 +364,8 @@ public class LoanHandlerTest {
         new LoanHandler(equipment).viewAllLoans();
 
         String expected = String.format(
-                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s%n",
-                "No.", "LOAN ID", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE");
+                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s | %-8s%n",
+                "No.", "LOAN ID", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE", "RETURNED");
         assertEquals(expected, output.toString(StandardCharsets.UTF_8));
     }
 
@@ -379,14 +379,14 @@ public class LoanHandlerTest {
         loanHandler.viewAllLoans();
 
         String expected = String.format(
-                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s%n",
-                "No.", "LOAN ID", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE");
+                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s | %-8s%n",
+                "No.", "LOAN ID", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE", "RETURNED");
         expected += String.format(
-                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s%n",
-                "1)", "001", "001", "002", "2026-10-01T00:00", "2026-10-02T00:00");
+                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s | %-8s%n",
+                "1)", "001", "001", "002", "2026-10-01T00:00", "2026-10-02T00:00", false);
         expected += String.format(
-                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s%n",
-                "2)", "002", "003", "004", "2026-10-03T00:00", "2026-10-04T00:00");
+                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s | %-8s%n",
+                "2)", "002", "003", "004", "2026-10-03T00:00", "2026-10-04T00:00", false);
 
         assertEquals(expected, output.toString(StandardCharsets.UTF_8));
     }
