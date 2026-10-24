@@ -16,7 +16,7 @@ public class Battery extends Equipment {
     }
 
     private final String capacity;
-    private final BatteryDamage damage;
+    private BatteryDamage damage;
 
     /**
      * Creates a battery with unspecified capacity and no recorded damage.
@@ -67,6 +67,15 @@ public class Battery extends Equipment {
 
     public BatteryDamage getDamage() {
         return damage;
+    }
+
+    @Override
+    protected void applyDamageAssessment(Equipment assessed) {
+        Battery battery = (Battery) assessed;
+        if (!capacity.equals(battery.capacity) || battery.damage == null) {
+            throw new IllegalArgumentException("A return assessment cannot change the battery capacity.");
+        }
+        damage = battery.damage;
     }
 
     @Override

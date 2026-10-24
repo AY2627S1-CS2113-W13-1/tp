@@ -14,6 +14,9 @@ import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 
 /** Loads and saves equipment records in a readable UTF-8 text file. */
 final class EquipmentStorage {
+    /** Storage-only metadata appears before the add record so free-form fields remain unambiguous. */
+    private static final String SERVICEABILITY_PREFIX = "serviceable/";
+
     private EquipmentStorage() {
         // Utility class; do not instantiate.
     }
@@ -40,7 +43,7 @@ final class EquipmentStorage {
                 continue;
             }
             try {
-                Equipment equipment = EquipmentHandler.parseEquipment(line);
+                Equipment equipment = parseStorageLine(line);
                 if (!ids.add(equipment.getItemId())) {
                     throw new IllegalArgumentException("Duplicate equipment ID " + equipment.getItemId() + ".");
                 }
@@ -51,6 +54,24 @@ final class EquipmentStorage {
             }
         }
         return loaded;
+    }
+
+    /** Loads legacy add records as serviceable and reads the assessment metadata on newer records. */
+    private static Equipment parseStorageLine(String line) throws EquipmentAdditionUnsuccessful {
+        if (!line.startsWith(SERVICEABILITY_PREFIX)) {
+            return EquipmentHandler.parseEquipment(line);
+        }
+        int delimiter = line.indexOf('\t');
+        if (delimiter < 0) {
+            throw new IllegalArgumentException("Serviceability metadata must precede a tab and an add record.");
+        }
+        String serviceability = line.substring(SERVICEABILITY_PREFIX.length(), delimiter);
+        if (!serviceability.equals("yes") && !serviceability.equals("no")) {
+            throw new IllegalArgumentException("Saved serviceability must be yes or no.");
+        }
+        Equipment equipment = EquipmentHandler.parseEquipment(line.substring(delimiter + 1));
+        equipment.setServiceable(serviceability.equals("yes"));
+        return equipment;
     }
 
     /**
@@ -78,9 +99,10 @@ final class EquipmentStorage {
         }
     }
 
-    /** Converts an equipment record to the documented add-command format. */
+    /** Adds serviceability metadata before the existing add record to preserve free-form field values. */
     private static String toStorageLine(Equipment equipment) {
-        String record = "add i/" + equipment.getItemName()
+        String record = SERVICEABILITY_PREFIX + (equipment.isServiceable() ? "yes" : "no") + "\tadd i/"
+                + equipment.getItemName()
                 + " id/" + equipment.getItemId()
                 + " type/" + equipment.getType()
                 + " cond/" + equipment.getCondition()
