@@ -15,6 +15,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.Objects;
 
 import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.EquipmentHandler;
@@ -394,7 +395,55 @@ public class LoanHandler {
         return false;
     }
 
+    // @@author Rohita-29
 
+    /**
+     * Returns active loans whose due dates are before the reference date.
+     * The returned list preserves the order of the stored loans.
+     *
+     * @param referenceDate date against which loan due dates are checked
+     * @return an unmodifiable list containing the overdue loans
+     */
+    public List<Loan> getOverdueLoans(LocalDate referenceDate) {
+        Objects.requireNonNull(referenceDate, "Reference date must not be null");
+        assert numLoans == loans.size() : "numLoans should match the size of the loans list";
+
+        ArrayList<Loan> overdueLoans = new ArrayList<>();
+        for (Loan loan : loans) {
+            if (loan.isOverdue(referenceDate)) {
+                overdueLoans.add(loan);
+            }
+        }
+        return Collections.unmodifiableList(overdueLoans);
+    }
+
+    /**
+     * Displays active loans whose due dates are before the reference date.
+     *
+     * @param referenceDate date against which loan due dates are checked
+     */
+    public void viewOverdueLoans(LocalDate referenceDate) {
+        List<Loan> overdueLoans = getOverdueLoans(referenceDate);
+        if (overdueLoans.isEmpty()) {
+            System.out.println("No overdue loans found.");
+            return;
+        }
+
+        logger.log(Level.INFO, "Viewing {0} overdue loan(s)", overdueLoans.size());
+        System.out.printf(
+                "%-4s %-12s | %-12s | %-16s%n",
+                "No.", "ITEM ID", "BORROWER ID", "DUE DATE"
+        );
+        for (int i = 0; i < overdueLoans.size(); i++) {
+            Loan loan = overdueLoans.get(i);
+            System.out.printf(
+                    "%-4s %-12s | %-12s | %-16s%n",
+                    (i + 1) + ")", loan.getItemId(), loan.getBorrowerId(), loan.getDueDate()
+            );
+        }
+    }
+
+    // @@author
 
     /**
      * Prints out all equipment in inventory
