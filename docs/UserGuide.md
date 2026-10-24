@@ -122,6 +122,28 @@ This displays all recorded loans with their unique loan ID, item ID, borrower ID
 The `LOAN ID` column comes before `ITEM ID`. The final `RETURNED` column is `true` for returned loans
 and `false` for active loans.
 
+## Viewing an item's loan history: `history`
+
+Format: `history id/[ITEM ID]`
+
+Example: `history id/001`
+
+Use an existing Item ID from `001` to `999`. The history includes both active and returned loans for the
+equipment currently registered under that ID. Each row shows the loan ID, borrower, issue date, due date and
+return status. Rows are ordered by issue date from earliest to latest, then by loan ID for equal issue dates.
+This command does not change equipment, loans, availability or saved records.
+
+If the item has no recorded loans, the application prints `No loan history for item ID 001.`
+If the item does not exist, the application reports the missing ID. Invalid commands show the required format.
+
+Deleting equipment and adding another item under the same Item ID starts a separate history, including when
+the replacement has the same name and type. The previous item's loans remain in `list loans`, but are excluded
+from the replacement's history. This separation survives restarting and normal equipment updates and returns.
+
+Older saved returned loans may lack enough information to prove which item they belonged to. Such loans remain
+in `list loans` and are excluded from item-specific histories. If they use the queried Item ID, the history view
+explains this and points to `list loans`. Existing active loans can be associated with the current item when loaded.
+
 ## Returning equipment: `return`
 
 Format: `return loan/[LOAN ID] serviceable/[yes|no] damage/[DAMAGE|none] remarks/[REMARKS]`
@@ -287,12 +309,21 @@ Records created before remarks were supported may omit the `remarks/` field; the
 Remarks are shown in the `list` equipment table and are restored when the application starts again.
 Saved records may start with `serviceable/yes` or `serviceable/no`, followed by a tab and the add record.
 This prefix is storage metadata, not an add-command field. Older records without the prefix are serviceable.
+New records also start with `recordId/` and a permanent equipment identifier, followed by a tab before
+the serviceability prefix. The application assigns this identifier; it is separate from the reusable Item ID.
+Older equipment records are upgraded and saved with permanent identifiers when first loaded. If that save fails,
+startup reports the error instead of using identifiers that could change on the next restart.
 
 Loan records include the loan ID, item ID, borrower ID, issue date, due date and returned status. For example:
 
 ```text
 loan loanId/001 id/001 b/002 issued/01-10-26 due/08-10-26 returned/false
 ```
+
+New loan records also end with `equipment/` and the permanent identifier of the borrowed equipment.
+Returns retain this identifier, so later reuse of the Item ID cannot mix histories. Older returned records without
+it are kept without assigning them to the current item. Older active records receive the current item's identifier
+and are saved before the application uses their associations.
 
 Existing loan records without loan IDs are assigned IDs in file order on first load and saved in the new format.
 These IDs remain stable on later restarts. The sequence file preserves the next unused ID even when loan records
@@ -322,6 +353,7 @@ reports the problem and stops.
 | Delete loan | `delete loan/[LOAN ID]` |
 | List equipment | `list` |
 | List loans | `list loans` |
+| View item loan history | `history id/[ITEM ID]` |
 | Filter equipment | `filter [id/ID] [i/NAME] [type/TYPE] [cond/1-3] [status/available]` |
 | Update equipment | `update id/ID [i/NAME] [type/TYPE] [cond/CONDITION]` |
 | Create bundle | `add-bundle name/[NAME]` |
