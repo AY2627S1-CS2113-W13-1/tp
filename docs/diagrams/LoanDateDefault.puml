@@ -1,0 +1,45 @@
+@startuml
+!include style.puml
+hide footbox
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 180
+
+participant ":EqmManager" as Manager
+participant ":LoanHandler" as Handler
+participant "LocalDate" as Date <<Java API>>
+participant "LoanStorage" as Store <<utility>>
+
+Manager -> Handler: addLoan("loan id/001 b/002 due/31-10-26")
+activate Handler
+Handler -> Handler: parseLoanCommand(input)
+activate Handler
+Handler -> Handler: parseLoanArguments(arguments, clock)
+note right of Handler
+Validate required IDs and due date first.
+This example omits the entire issued/ field.
+end note
+Handler -> Date: now(clock)
+Date --> Handler: current local date
+note right of Handler
+Use date.atStartOfDay() as issuedDate.
+Reject issuedDate after dueDate.
+end note
+Handler --> Handler: parsed loan with explicit dates
+deactivate Handler
+note right of Handler
+Check item availability and loan ID limit;
+create identified loan and proposed list.
+end note
+Handler -> Store: save(...)
+Store --> Handler: saved successfully
+note right of Handler
+Publish loan, advance counters and
+attach the original equipment object.
+end note
+Handler --> Manager: added loan
+deactivate Handler
+note over Handler, Date
+Explicit issued/ values use strict parsing without reading the clock.
+Stored records always require both dates.
+end note
+@enduml

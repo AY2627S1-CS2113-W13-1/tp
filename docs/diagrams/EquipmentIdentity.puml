@@ -1,0 +1,42 @@
+@startuml
+!include style.puml
+!pragma layout smetana
+skinparam linetype ortho
+skinparam nodesep 35
+skinparam ranksep 40
+
+class EquipmentHandler {
+    + getEquipmentList(): List<Equipment>
+}
+class LoanHandler {
+    + getLoanHistory(input): List<Loan>
+}
+abstract class Equipment {
+    - itemId: String
+    - recordId: String
+    - isServiceable: boolean
+    + getRecordId(): String
+}
+class Loan {
+    - loanId: String
+    - itemId: String
+    - equipmentRecordId: String
+    - isReturned: boolean
+    + getEquipmentRecordId(): String
+}
+
+LoanHandler --> "1" EquipmentHandler : equipment
+EquipmentHandler --> "0..*" Equipment : inventory
+LoanHandler --> "0..*" Loan : loans
+Loan --> "0..1" Equipment : active equipment reference
+
+note bottom of Equipment
+itemId may be reused after deletion.
+recordId identifies one physical item across restarts.
+end note
+note bottom of Loan
+History matches itemId AND equipmentRecordId.
+Unattributed legacy returned loans keep a null identity.
+A returned loan has no active equipment reference.
+end note
+@enduml
