@@ -6,6 +6,42 @@
 
 ## Design & implementation
 
+### Returning equipment with an assessment
+
+`EqmManager` routes `return loan/001 serviceable/yes damage/none remarks/Checked` to
+`LoanHandler.returnLoan(...)`. `LoanReturn` parses the required fields in their documented order.
+Loan IDs must be from `001` to `999`. A serviceability decision, a type-specific damage value and the
+final remarks prefix are mandatory. Remarks can be empty, but must otherwise be single-line text of at most
+200 characters after trimming. Text after `remarks/` is kept as text, rather than parsed as more fields.
+
+The handler finds exactly one active loan and checks that it still owns the same equipment object in the inventory.
+Checking both object identity and the active loan ID prevents a stale association from assessing or releasing
+replacement equipment. Missing, duplicated, already returned or mismatched records are rejected before saving.
+
+`EquipmentHandler.prepareReturnAssessment(...)` validates damage with the existing equipment-specific enums
+and creates a detached equipment proposal. The proposal preserves the numeric condition, name, ID and type-specific
+attributes. A detached returned loan proposal preserves the loan ID, borrower and dates. Neither proposal changes
+the live inventory or the active loan.
+
+`LoanReturnStorage` captures the existing equipment, loan and sequence files, then saves the proposed assessment
+and returned loan. If an `IOException` occurs, it attempts to restore every captured file independently;
+restoration errors are retained and reported. Only after all saves succeed does the handler apply the assessment
+to the original equipment object and call `Loan.setReturned(true)` on the original loan. Bundle references therefore
+continue to point to the same object. Returns retain the loan count and next loan ID.
+
+Serviceability is independent of loan status. An unserviceable returned item has no active loan, but new loans,
+new bundle additions and `status/available` filtering reject it. Equipment listing displays `Unserviceable`.
+Normal name and numeric-condition updates preserve this assessment. There is no repair command in this feature.
+Storage writes serviceability before the existing add record, separated by a tab, so the new metadata cannot
+be confused with free-form names, type attributes or remarks. Legacy records default to serviceable.
+
+The file snapshots handle reported save failures. They do not form a recovery log for abrupt process termination
+or power loss during a multi-file save. Such recovery would require an additional transaction journal.
+
+Tests cover serviceable and unserviceable returns, type-specific damage, validation and command recovery,
+permanent returned state, new loan IDs on subsequent borrowing, restart persistence, stale associations,
+bundle identity, and equipment, loan and sequence save failures followed by successful retries.
+
 ### Updating equipment details
 
 The update feature lets an equipment officer correct an item's name or condition without

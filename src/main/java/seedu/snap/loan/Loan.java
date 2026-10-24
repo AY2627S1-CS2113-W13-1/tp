@@ -94,6 +94,19 @@ public class Loan {
         return isReturned;
     }
 
+    /** Checks object identity as well as loan ownership before a return can assess live equipment. */
+    boolean ownsEquipment(Equipment item) {
+        return !isReturned && equipment == item && item.isLoaned()
+                && loanId != null && loanId.equals(item.getLoanId());
+    }
+
+    /** Creates a detached storage proposal without changing or logging a return on the live loan. */
+    Loan returnedCopy() {
+        Loan returned = new Loan(loanId, itemId, borrowerId, issuedDate, dueDate);
+        returned.isReturned = true;
+        return returned;
+    }
+
     /** Associates a saved or fully validated active record with its equipment. */
     void attachEquipment(Equipment equipment) {
         assert !isReturned : "Returned loan history must stay detached";
@@ -132,7 +145,7 @@ public class Loan {
 
     /** Validates candidate equipment without retaining a reference or changing its availability. */
     private static String getAvailableItemId(Equipment equipment) {
-        if (equipment == null || equipment.isLoaned()) {
+        if (equipment == null || equipment.isLoaned() || !equipment.isServiceable()) {
             throw new IllegalArgumentException("A loan requires available equipment.");
         }
         return equipment.getItemId();

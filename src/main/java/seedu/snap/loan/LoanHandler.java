@@ -20,6 +20,7 @@ import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
+import seedu.snap.exceptions.LoanReturnUnsuccessful;
 
 /** Parses loan commands and stores successfully created loans. */
 public class LoanHandler {
@@ -206,6 +207,83 @@ public class LoanHandler {
         if (match.isLoaned()) {
             logger.log(Level.WARNING, "Loan rejected: item ID {0} is already loaned out.", itemId);
             throw new LoanAdditionUnsuccessful("Item ID " + itemId + " is already loaned out.");
+        }
+        if (!match.isServiceable()) {
+            throw new LoanAdditionUnsuccessful("Item ID " + itemId + " is unserviceable and cannot be loaned.");
+        }
+        return match;
+    }
+
+    /**
+     * Records the mandatory return assessment without removing the loan or changing its identifier.
+     * The proposed equipment and returned record are saved before the original objects change.
+     *
+     * @param input complete return command
+     * @return the retained loan, now permanently returned
+     * @throws LoanReturnUnsuccessful if the command, loan association or assessment is invalid, or saving fails
+     */
+    public Loan returnLoan(String input) throws LoanReturnUnsuccessful {
+        LoanReturn assessment = LoanReturn.parse(input);
+        Loan loan = findLoanForReturn(assessment.loanId());
+        Equipment item;
+        Equipment assessed;
+        try {
+            item = findEquipment(loan.getItemId());
+            if (!loan.ownsEquipment(item)) {
+                throw new LoanReturnUnsuccessful("Loan " + loan.getLoanId()
+                        + " no longer owns its equipment. No return was recorded.");
+            }
+            for (Loan other : loans) {
+                if (other != loan && !other.isReturned() && other.getItemId().equals(loan.getItemId())) {
+                    throw new LoanReturnUnsuccessful("Multiple active loans found for item ID "
+                            + loan.getItemId() + ". No return was recorded.");
+                }
+            }
+            assessed = equipment.prepareReturnAssessment(item, assessment.serviceable(),
+                    assessment.damage(), assessment.remarks());
+        } catch (LoanAdditionUnsuccessful | IllegalArgumentException exception) {
+            throw new LoanReturnUnsuccessful(exception.getMessage());
+        }
+
+        // This detached proposal cannot release equipment or alter the live loan before saving.
+        Loan returned = loan.returnedCopy();
+        ArrayList<Loan> proposedLoans = new ArrayList<>(loans);
+        proposedLoans.set(proposedLoans.indexOf(loan), returned);
+        try {
+            LoanReturnStorage.save(equipment, item, assessed, storageFile,
+                    proposedLoans, sequenceFile, nextLoanNumber);
+        } catch (IOException exception) {
+            logger.log(Level.WARNING, "Equipment return could not be saved", exception);
+            String rollbackWarning = exception.getSuppressed().length == 0 ? ""
+                    : " Restoring previous files also failed; check the saved files before retrying.";
+            throw new LoanReturnUnsuccessful("Could not save return: " + exception.getMessage() + rollbackWarning);
+        }
+
+        item.applyReturnAssessment(assessed);
+        loan.setReturned(true);
+        assert !item.isLoaned() && item.getLoanId() == null : "Returned equipment must have no active loan";
+        assert numLoans == loans.size() : "Returning equipment must retain its loan record";
+        logger.log(Level.INFO, "Returned loan {0} for item ID {1}; serviceable: {2}.",
+                new Object[]{loan.getLoanId(), item.getItemId(), item.isServiceable()});
+        return loan;
+    }
+
+    /** Rejects missing, duplicated or already returned loan IDs before an assessment is prepared. */
+    private Loan findLoanForReturn(String loanId) throws LoanReturnUnsuccessful {
+        Loan match = null;
+        for (Loan candidate : loans) {
+            if (loanId.equals(candidate.getLoanId())) {
+                if (match != null) {
+                    throw new LoanReturnUnsuccessful("Loan ID " + loanId + " is not unique.");
+                }
+                match = candidate;
+            }
+        }
+        if (match == null) {
+            throw new LoanReturnUnsuccessful("No loan found for loan ID " + loanId + ".");
+        }
+        if (match.isReturned()) {
+            throw new LoanReturnUnsuccessful("Loan " + loanId + " has already been returned.");
         }
         return match;
     }
@@ -403,16 +481,16 @@ public class LoanHandler {
         assert numLoans == loans.size() : "numLoans should match the size of the loans list";
         logger.log(Level.INFO, "Viewing {0} loan(s)", numLoans);
         System.out.printf(
-                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s%n",
-                "No.", "LOAN ID", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE"
+                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s | %-8s%n",
+                "No.", "LOAN ID", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE", "RETURNED"
         );
         for (int i = 0; i < numLoans; i++) {
             Loan item = loans.get(i);
             assert item != null : "Loan list must not contain null items";
             System.out.printf(
-                    "%-4s %-12s | %-12s | %-12s | %-16s | %-16s%n",
+                    "%-4s %-12s | %-12s | %-12s | %-16s | %-16s | %-8s%n",
                     (i + 1) + ")", item.getLoanId(), item.getItemId(), item.getBorrowerId(),
-                    item.getIssuedDate(), item.getDueDate()
+                    item.getIssuedDate(), item.getDueDate(), item.isReturned()
             );
         }
     }
