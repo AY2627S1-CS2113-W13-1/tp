@@ -450,13 +450,14 @@ public class EquipmentHandler {
         String attribute = "unspecified";
         if (attributeFirst) {
             int attributeEnd = damageIndex == -1 ? details.length() : damageIndex;
-            attribute = details.substring(attributeMarker.length(), attributeEnd).trim();
-            if (attribute.isBlank() || attribute.length() > 100 || attribute.matches("(?s).*\\R.*")) {
+            attribute = EquipmentFields.trimWhitespace(details.substring(attributeMarker.length(), attributeEnd));
+            if (!Equipment.hasText(attribute) || attribute.length() > 100 || attribute.matches("(?s).*\\R.*")) {
                 throw new EquipmentAdditionUnsuccessful(
                         "Equipment detail must contain 1 to 100 characters on one line.");
             }
         }
-        String damage = damageIndex == -1 ? "NONE" : details.substring(damageIndex + DAMAGE_MARKER.length()).trim();
+        String damage = damageIndex == -1 ? "NONE"
+                : EquipmentFields.trimWhitespace(details.substring(damageIndex + DAMAGE_MARKER.length()));
         return new EquipmentDetails(attribute, damage);
     }
 

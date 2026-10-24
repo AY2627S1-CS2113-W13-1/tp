@@ -2,6 +2,7 @@ package seedu.snap.eqmmanager;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -46,12 +47,18 @@ public class EqmManager {
      * @param dataDirectory directory containing equipment.txt and loans.txt
      */
     public EqmManager(Path dataDirectory) {
+        this(dataDirectory, Clock.systemDefaultZone());
+    }
+
+    /** Creates a manager with an explicit clock for optional issue-date defaults. */
+    public EqmManager(Path dataDirectory, Clock clock) {
         if (dataDirectory == null) {
             throw new IllegalArgumentException("Data directory must not be null.");
         }
         this.parser = new Parser();
         this.equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
-        this.loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"));
+        this.loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"),
+                dataDirectory.resolve("loan-sequence.txt"), clock);
         this.bundles = new BundleHandler(equipment);
         List<String> loadErrors = new ArrayList<>();
         try {
@@ -89,7 +96,7 @@ public class EqmManager {
             deleteEquipment(normalizedInput);
         } else if (normalizedInput.matches("(?U)add(?:\\s.*)?")) {
             addEquipment(normalizedInput);
-        } else if (normalizedInput.equals("loan") || normalizedInput.startsWith("loan ")) {
+        } else if (normalizedInput.matches("(?sU)loan(?:\\s.*)?")) {
             addLoan(normalizedInput);
         } else if (normalizedInput.matches("(?sU)return(?:\\s.*)?")) {
             returnEquipment(normalizedInput);

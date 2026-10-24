@@ -5,14 +5,14 @@ import java.util.regex.Pattern;
 
 import seedu.snap.exceptions.LoanReturnUnsuccessful;
 
-/** Holds the mandatory assessment from a single-line return command, before any records change. */
+/** Holds the mandatory assessment and optional remarks from a return command, before any records change. */
 record LoanReturn(String loanId, boolean serviceable, String damage, String remarks) {
     private static final String FORMAT = "Invalid format. Use: return loan/[LOAN ID] "
-            + "serviceable/[yes|no] damage/[DAMAGE|none] remarks/[REMARKS].";
+            + "serviceable/[yes|no] damage/[DAMAGE|none] [remarks/[REMARKS]].";
     private static final Pattern COMMAND = Pattern.compile("(?U)\\A\\s*return\\s+loan/([0-9]{3})"
-            + "\\s+serviceable/((?i:yes|no))\\s+damage/([A-Za-z_]+)\\s+remarks/(.*)\\z");
+            + "\\s+serviceable/((?i:yes|no))\\s+damage/([A-Za-z_]+)(?:\\s+remarks/(.*))?\\s*\\z");
 
-    /** Parses all required fields, allowing free-form text only after the final remarks prefix. */
+    /** Parses the required assessment and defaults omitted final remarks to empty text. */
     static LoanReturn parse(String input) throws LoanReturnUnsuccessful {
         if (input == null || input.matches("(?s).*\\R.*")) {
             throw new LoanReturnUnsuccessful(FORMAT);
@@ -25,6 +25,6 @@ record LoanReturn(String loanId, boolean serviceable, String damage, String rema
             throw new LoanReturnUnsuccessful("Loan ID must be from 001 to 999.");
         }
         return new LoanReturn(match.group(1), match.group(2).equalsIgnoreCase("yes"),
-                match.group(3), match.group(4));
+                match.group(3), match.group(4) == null ? "" : match.group(4));
     }
 }
