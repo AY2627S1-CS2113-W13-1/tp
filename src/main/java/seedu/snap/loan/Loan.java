@@ -1,6 +1,7 @@
 package seedu.snap.loan;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -11,6 +12,8 @@ public class Loan {
     private static final Logger logger = Logger.getLogger(Loan.class.getName());
     private final String loanId;
     private final String itemId;
+    /** Permanent physical-item identity; null only for legacy records that have not been attributed. */
+    private String equipmentRecordId;
     private Equipment equipment;
     private String borrowerId;
     private LocalDateTime issuedDate;
@@ -25,6 +28,15 @@ public class Loan {
     /** Creates an identified detached record without changing equipment availability. */
     public Loan(String loanId, String itemId, String borrowerId, LocalDateTime issuedDate,
             LocalDateTime dueDate) {
+        this(loanId, itemId, borrowerId, issuedDate, dueDate, null);
+    }
+
+    /** Creates a stored record with an optional permanent equipment identity for legacy compatibility. */
+    public Loan(String loanId, String itemId, String borrowerId, LocalDateTime issuedDate,
+            LocalDateTime dueDate, String equipmentRecordId) {
+        if (equipmentRecordId != null && !isValidEquipmentRecordId(equipmentRecordId)) {
+            throw new IllegalArgumentException("Equipment record identity must be a canonical UUID.");
+        }
         assert loanId == null || isValidIdentifier(loanId) : "Loan ID must be from 001 to 999";
         assert itemId != null && isValidIdentifier(itemId) : "Item ID must be from 001 to 999";
         assert borrowerId != null && borrowerId.matches("[0-9]{3}") : "Borrower ID must be three digits";
@@ -35,6 +47,7 @@ public class Loan {
         this.borrowerId = borrowerId;
         this.issuedDate = issuedDate;
         this.dueDate = dueDate;
+        this.equipmentRecordId = equipmentRecordId;
     }
 
     /** Creates a legacy candidate without retaining or reserving its equipment before saving. */
@@ -45,7 +58,7 @@ public class Loan {
     /** Creates an identified candidate; the handler attaches its equipment only after saving. */
     public Loan(String loanId, Equipment equipment, String borrowerId, LocalDateTime issuedDate,
             LocalDateTime dueDate) {
-        this(loanId, getAvailableItemId(equipment), borrowerId, issuedDate, dueDate);
+        this(loanId, getAvailableItemId(equipment), borrowerId, issuedDate, dueDate, equipment.getRecordId());
         logger.log(Level.FINE, "Created loan candidate {0} for item ID {1}.", new Object[]{loanId, itemId});
     }
 
@@ -55,6 +68,20 @@ public class Loan {
 
     public String getItemId() {
         return itemId;
+    }
+
+    /** Returns the permanent physical-item identity, or null for unattributed legacy history. */
+    public String getEquipmentRecordId() {
+        return equipmentRecordId;
+    }
+
+    /** Attributes an active legacy proposal once; returned legacy history is never guessed from its Item ID. */
+    void bindEquipmentRecordId(Equipment item) {
+        if (isReturned || item == null || !itemId.equals(item.getItemId())
+                || equipmentRecordId != null && !equipmentRecordId.equals(item.getRecordId())) {
+            throw new IllegalArgumentException("The active loan must belong to the same equipment record.");
+        }
+        equipmentRecordId = item.getRecordId();
     }
 
     public String getBorrowerId() {
@@ -97,12 +124,13 @@ public class Loan {
     /** Checks object identity as well as loan ownership before a return can assess live equipment. */
     boolean ownsEquipment(Equipment item) {
         return !isReturned && equipment == item && item.isLoaned()
-                && loanId != null && loanId.equals(item.getLoanId());
+                && loanId != null && loanId.equals(item.getLoanId())
+                && item.getRecordId().equals(equipmentRecordId);
     }
 
     /** Creates a detached storage proposal without changing or logging a return on the live loan. */
     Loan returnedCopy() {
-        Loan returned = new Loan(loanId, itemId, borrowerId, issuedDate, dueDate);
+        Loan returned = new Loan(loanId, itemId, borrowerId, issuedDate, dueDate, equipmentRecordId);
         returned.isReturned = true;
         return returned;
     }
@@ -112,6 +140,7 @@ public class Loan {
         assert !isReturned : "Returned loan history must stay detached";
         assert loanId != null : "Active equipment associations require an assigned loan ID";
         assert equipment != null && equipment.getItemId().equals(itemId) : "Attached equipment must match the loan";
+        assert equipment.getRecordId().equals(equipmentRecordId) : "Attached equipment identity must match the loan";
         assert !equipment.isLoaned() : "Attached equipment must be available";
         assert this.equipment == null || this.equipment == equipment : "A loan must not change equipment references";
         this.equipment = equipment;
@@ -154,5 +183,17 @@ public class Loan {
     /** Returns whether an item or loan identifier is in the supported range. */
     private static boolean isValidIdentifier(String id) {
         return id.matches("[0-9]{3}") && !id.equals("000");
+    }
+
+    /** Rejects shortened, non-canonical and malformed UUIDs before constructing stored loan records. */
+    static boolean isValidEquipmentRecordId(String value) {
+        if (value == null) {
+            return false;
+        }
+        try {
+            return UUID.fromString(value).toString().equals(value);
+        } catch (IllegalArgumentException exception) {
+            return false;
+        }
     }
 }
