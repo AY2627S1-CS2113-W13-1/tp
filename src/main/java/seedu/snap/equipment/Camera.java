@@ -18,6 +18,14 @@ public class Camera extends Equipment {
     private final String sensorFormat;
     private CameraDamage damage;
 
+    // @@author Rohita-29
+
+    private final String lensMount;
+    private final String tripodThread;
+    private final String batteryType;
+
+    // @@author
+
     /**
      * Creates a camera with unspecified sensor format and no recorded damage.
      *
@@ -44,17 +52,52 @@ public class Camera extends Equipment {
     }
 
     /** Creates a camera with type-specific details and optional remarks. */
-    public Camera(String name, String id, int condition, String sensorFormat, CameraDamage damage, String remarks) {
+    public Camera(String name, String id, int condition,
+                  String sensorFormat, CameraDamage damage, String remarks) {
+        this(name, id, condition, sensorFormat, damage, remarks,
+                CompatibilityText.UNSPECIFIED,
+                CompatibilityText.UNSPECIFIED,
+                CompatibilityText.UNSPECIFIED);
+    }
+
+    // @@author Rohita-29
+
+    /**
+     * Creates a camera with its compatibility attributes.
+     *
+     * @param name Name of the camera.
+     * @param id Three-digit equipment ID.
+     * @param condition Condition of the camera from 1 to 10.
+     * @param sensorFormat Sensor format description.
+     * @param damage Damage recorded for the camera.
+     * @param remarks Optional equipment remarks.
+     * @param lensMount Lens mount used by the camera.
+     * @param tripodThread Tripod thread used by the camera.
+     * @param batteryType Battery type required by the camera.
+     */
+    public Camera(String name, String id, int condition,
+                  String sensorFormat, CameraDamage damage, String remarks,
+                  String lensMount, String tripodThread, String batteryType) {
         super(name, id, condition, remarks);
-        assert sensorFormat != null && !sensorFormat.isBlank() && sensorFormat.length() <= 100
+        assert sensorFormat != null
+                && !sensorFormat.isBlank()
+                && sensorFormat.length() <= 100
                 && !sensorFormat.matches("(?s).*\\R.*")
                 : "Camera sensor format must contain 1 to 100 characters without line breaks.";
         assert damage != null : "Camera damage must be specified.";
+
         this.sensorFormat = sensorFormat;
         this.damage = damage;
+        this.lensMount = CompatibilityText.normalize(lensMount);
+        this.tripodThread = CompatibilityText.normalize(tripodThread);
+        this.batteryType = CompatibilityText.normalize(batteryType);
+
         assert TYPE.equals(getType()) : "Camera type must remain camera.";
         LOGGER.log(Level.INFO, "Created camera with item ID {0}.", id);
     }
+
+    // @@author
+
 
     @Override
     public String getType() {
@@ -68,6 +111,22 @@ public class Camera extends Equipment {
     public CameraDamage getDamage() {
         return damage;
     }
+
+    // @@author Rohita-29
+
+    public String getLensMount() {
+        return lensMount;
+    }
+
+    public String getTripodThread() {
+        return tripodThread;
+    }
+
+    public String getBatteryType() {
+        return batteryType;
+    }
+
+    // @@author
 
     @Override
     protected void applyDamageAssessment(Equipment assessed) {
