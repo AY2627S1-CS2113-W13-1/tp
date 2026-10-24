@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -88,7 +89,7 @@ final class LoanStorage {
                 throw new IOException("Duplicate loan ID " + loanId + ".");
             }
             Loan loan = new Loan(loanId, record.itemId(), record.borrowerId(),
-                    record.issuedDate(), record.dueDate());
+                    record.issuedDate(), record.dueDate(), record.equipmentRecordId());
             loan.setReturned(record.returned());
             loaded.add(loan);
         }
@@ -179,7 +180,8 @@ final class LoanStorage {
                 + " b/" + loan.getBorrowerId()
                 + " issued/" + DATE_FORMATTER.format(loan.getIssuedDate())
                 + " due/" + DATE_FORMATTER.format(loan.getDueDate())
-                + " returned/" + loan.isReturned();
+                + " returned/" + loan.isReturned()
+                + (loan.getEquipmentRecordId() == null ? "" : " equipment/" + loan.getEquipmentRecordId());
     }
 
     /** Parses either the new loan-ID record format or the legacy format without a loan ID. */
@@ -187,7 +189,7 @@ final class LoanStorage {
         String[] fields = line.split("\\s+");
         boolean hasLoanId = fields.length >= 2 && fields[1].startsWith("loanId/");
         int expectedMinimumFields = hasLoanId ? 6 : 5;
-        int expectedMaximumFields = hasLoanId ? 7 : 6;
+        int expectedMaximumFields = expectedMinimumFields + 2;
         if (fields.length < expectedMinimumFields || fields.length > expectedMaximumFields
                 || !fields[0].equals("loan")) {
             throw new IllegalArgumentException("Expected loanId/NNN id/NNN b/NNN issued/DD-MM-YY due/DD-MM-YY.");
@@ -202,19 +204,27 @@ final class LoanStorage {
         Loan parsed = LoanHandler.parseLoanRecord("loan id/" + itemId + " b/" + borrowerId
                 + " issued/" + issuedText + " due/" + dueText);
         boolean returned = false;
-        if (fields.length == expectedMaximumFields) {
-            String returnedField = fields[5 + offset];
-            if (!returnedField.startsWith("returned/")) {
-                throw new IllegalArgumentException("Expected returned/true or returned/false.");
-            }
+        int nextField = expectedMinimumFields;
+        if (nextField < fields.length && fields[nextField].startsWith("returned/")) {
+            String returnedField = fields[nextField++];
             String returnedValue = returnedField.substring("returned/".length());
             if (!returnedValue.equals("true") && !returnedValue.equals("false")) {
                 throw new IllegalArgumentException("Expected returned/true or returned/false.");
             }
             returned = Boolean.parseBoolean(returnedValue);
         }
+        String equipmentRecordId = null;
+        if (nextField < fields.length) {
+            equipmentRecordId = parseField(fields[nextField++], "equipment/");
+            if (!Loan.isValidEquipmentRecordId(equipmentRecordId)) {
+                throw new IllegalArgumentException("Equipment record identity must be a canonical UUID.");
+            }
+        }
+        if (nextField != fields.length) {
+            throw new IllegalArgumentException("Unexpected fields after the equipment record identity.");
+        }
         return new LoanRecord(loanId, parsed.getItemId(), parsed.getBorrowerId(),
-                parsed.getIssuedDate(), parsed.getDueDate(), returned);
+                parsed.getIssuedDate(), parsed.getDueDate(), returned, equipmentRecordId);
     }
 
     private static String parseLoanIdField(String field) {
@@ -270,11 +280,12 @@ final class LoanStorage {
     }
 
     private record LoanRecord(String loanId, String itemId, String borrowerId,
-            java.time.LocalDateTime issuedDate, java.time.LocalDateTime dueDate, boolean returned) {
+            java.time.LocalDateTime issuedDate, java.time.LocalDateTime dueDate, boolean returned,
+            String equipmentRecordId) {
     }
 
-    /** Captures a file before a two-file replacement so failed saves can be rolled back. */
-    private record FileSnapshot(Path path, boolean existed, boolean regularFile, byte[] contents) {
+    /** Captures a file before replacement so failed loan and return saves can be rolled back. */
+    record FileSnapshot(Path path, boolean existed, boolean regularFile, byte[] contents) {
         static FileSnapshot capture(Path path) throws IOException {
             boolean exists = Files.exists(path);
             boolean regular = exists && Files.isRegularFile(path);
@@ -284,7 +295,9 @@ final class LoanStorage {
 
         void restore() throws IOException {
             if (existed && regularFile) {
-                Files.write(path, contents);
+                if (!Files.isRegularFile(path) || !Arrays.equals(Files.readAllBytes(path), contents)) {
+                    Files.write(path, contents);
+                }
             } else if (!existed && Files.exists(path) && Files.isRegularFile(path)) {
                 Files.delete(path);
             }

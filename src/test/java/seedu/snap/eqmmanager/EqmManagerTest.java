@@ -96,12 +96,12 @@ class EqmManagerTest {
         output.reset();
 
         manager.executeInput("list");
-        String expected = String.format("%-4s %-24s | %-6s | %-15s | %-9s | %-10s | %-30s | %-30s%n",
+        String expected = String.format("%-4s %-24s | %-6s | %-15s | %-9s | %-13s | %-30s | %-30s%n",
                 "No.", "NAME", "ID", "TYPE", "CONDITION", "STATUS", "DETAILS", "REMARKS")
-                + String.format("%-4s %-24s | %-6s | %-15s | %-9d | %-10s | %-30s | %-30s%n",
+                + String.format("%-4s %-24s | %-6s | %-15s | %-9d | %-13s | %-30s | %-30s%n",
                         "1)", "Canon EOS R10", "001", "camera", 1, "Available",
                         "sensor/unspecified damage/NONE", "")
-                + String.format("%-4s %-24s | %-6s | %-15s | %-9d | %-10s | %-30s | %-30s%n",
+                + String.format("%-4s %-24s | %-6s | %-15s | %-9d | %-13s | %-30s | %-30s%n",
                         "2)", "Tripod", "002", "tripod", 5, "Available",
                         "thread/unspecified damage/NONE", "");
         assertEquals(expected, output.toString(StandardCharsets.UTF_8));
@@ -118,18 +118,18 @@ class EqmManagerTest {
 
         manager.executeInput("list");
 
-        String expected = String.format("%-4s %-24s | %-6s | %-15s | %-9s | %-10s | %-30s | %-30s%n",
+        String expected = String.format("%-4s %-24s | %-6s | %-15s | %-9s | %-13s | %-30s | %-30s%n",
                 "No.", "NAME", "ID", "TYPE", "CONDITION", "STATUS", "DETAILS", "REMARKS")
-                + String.format("%-4s %-24s | %-6s | %-15s | %-9d | %-10s | %-30s | %-30s%n",
+                + String.format("%-4s %-24s | %-6s | %-15s | %-9d | %-13s | %-30s | %-30s%n",
                         "1)", "Camera", "001", "camera", 7, "Available",
                         "sensor/Full frame damage/SENSOR_DAMAGE", "")
-                + String.format("%-4s %-24s | %-6s | %-15s | %-9d | %-10s | %-30s | %-30s%n",
+                + String.format("%-4s %-24s | %-6s | %-15s | %-9d | %-13s | %-30s | %-30s%n",
                         "2)", "Lens", "002", "lens", 6, "Available",
                         "zoom/24 to 70 mm damage/SCRATCHED_GLASS", "")
-                + String.format("%-4s %-24s | %-6s | %-15s | %-9d | %-10s | %-30s | %-30s%n",
+                + String.format("%-4s %-24s | %-6s | %-15s | %-9d | %-13s | %-30s | %-30s%n",
                         "3)", "Battery", "003", "battery", 5, "Available",
                         "capacity/2000 mAh damage/SWELLING", "")
-                + String.format("%-4s %-24s | %-6s | %-15s | %-9d | %-10s | %-30s | %-30s%n",
+                + String.format("%-4s %-24s | %-6s | %-15s | %-9d | %-13s | %-30s | %-30s%n",
                         "4)", "Tripod", "004", "tripod", 4, "Available",
                         "thread/Quarter inch damage/BENT_LEG", "");
         assertEquals(expected, output.toString(StandardCharsets.UTF_8));
@@ -143,9 +143,9 @@ class EqmManagerTest {
 
         manager.executeInput("list");
 
-        String expected = String.format("%-4s %-24s | %-6s | %-15s | %-9s | %-10s | %-30s | %-30s%n",
+        String expected = String.format("%-4s %-24s | %-6s | %-15s | %-9s | %-13s | %-30s | %-30s%n",
                 "No.", "NAME", "ID", "TYPE", "CONDITION", "STATUS", "DETAILS", "REMARKS")
-                + String.format("%-4s %-24s | %-6s | %-15s | %-9d | %-10s | %-30s | %-30s%n",
+                + String.format("%-4s %-24s | %-6s | %-15s | %-9d | %-13s | %-30s | %-30s%n",
                         "1)", "Lens", "001", "lens", 3, "Available",
                         "zoom/unspecified damage/NONE", "Handle with care");
         assertEquals(expected, output.toString(StandardCharsets.UTF_8));
@@ -252,7 +252,7 @@ class EqmManagerTest {
         manager.executeInput("gibberish");
 
         assertEquals(
-                "Command not recognised. Please try again." + System.lineSeparator(),
+                "Command not recognised. Type help for available commands." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8)
         );
     }

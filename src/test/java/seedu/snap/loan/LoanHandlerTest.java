@@ -105,10 +105,16 @@ public class LoanHandlerTest {
     @Test
     public void persistence_addDeleteAndReload_preservesLoansAcrossHandlers() throws Exception {
         Path file = temporaryDirectory.resolve("data/loans.txt");
-        LoanHandler firstHandler = new LoanHandler(equipment, file);
+        Path equipmentFile = temporaryDirectory.resolve("data/equipment.txt");
+        EquipmentHandler firstInventory = new EquipmentHandler(equipmentFile);
+        firstInventory.addEquipment("add i/Camera id/001 type/camera cond/1");
+        firstInventory.addEquipment("add i/Tripod id/003 type/tripod cond/2");
+        LoanHandler firstHandler = new LoanHandler(firstInventory, file);
         firstHandler.addLoan(FIRST_LOAN);
 
-        EquipmentHandler secondInventory = createInventory();
+        // A restart reloads the same physical items instead of constructing replacements with reused IDs.
+        EquipmentHandler secondInventory = new EquipmentHandler(equipmentFile);
+        secondInventory.loadFromStorage();
         LoanHandler secondHandler = new LoanHandler(secondInventory, file);
         secondHandler.loadFromStorage();
         assertEquals(1, secondHandler.getLoanCount());
@@ -117,9 +123,13 @@ public class LoanHandlerTest {
         assertEquals("001", secondHandler.getLoanList().getFirst().getLoanId());
         assertEquals("001", secondInventory.getEquipmentList().getFirst().getLoanId());
         assertTrue(secondInventory.getEquipmentList().getFirst().isLoaned());
+        assertEquals(firstInventory.getEquipmentList().getFirst().getRecordId(),
+                secondHandler.getLoanList().getFirst().getEquipmentRecordId());
 
         secondHandler.deleteLoan("delete loan/001");
-        LoanHandler thirdHandler = new LoanHandler(createInventory(), file);
+        EquipmentHandler thirdInventory = new EquipmentHandler(equipmentFile);
+        thirdInventory.loadFromStorage();
+        LoanHandler thirdHandler = new LoanHandler(thirdInventory, file);
         thirdHandler.loadFromStorage();
         assertEquals(0, thirdHandler.getLoanCount());
     }
@@ -364,8 +374,8 @@ public class LoanHandlerTest {
         new LoanHandler(equipment).viewAllLoans();
 
         String expected = String.format(
-                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s%n",
-                "No.", "LOAN ID", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE");
+                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s | %-8s%n",
+                "No.", "LOAN ID", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE", "RETURNED");
         assertEquals(expected, output.toString(StandardCharsets.UTF_8));
     }
 
@@ -379,14 +389,14 @@ public class LoanHandlerTest {
         loanHandler.viewAllLoans();
 
         String expected = String.format(
-                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s%n",
-                "No.", "LOAN ID", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE");
+                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s | %-8s%n",
+                "No.", "LOAN ID", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE", "RETURNED");
         expected += String.format(
-                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s%n",
-                "1)", "001", "001", "002", "2026-10-01T00:00", "2026-10-02T00:00");
+                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s | %-8s%n",
+                "1)", "001", "001", "002", "2026-10-01T00:00", "2026-10-02T00:00", false);
         expected += String.format(
-                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s%n",
-                "2)", "002", "003", "004", "2026-10-03T00:00", "2026-10-04T00:00");
+                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s | %-8s%n",
+                "2)", "002", "003", "004", "2026-10-03T00:00", "2026-10-04T00:00", false);
 
         assertEquals(expected, output.toString(StandardCharsets.UTF_8));
     }
