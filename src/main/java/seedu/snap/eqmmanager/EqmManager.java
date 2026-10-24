@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.time.LocalDate;
 
 import seedu.snap.equipment.Equipment;
 import seedu.snap.bundle.Bundle;
@@ -110,7 +111,9 @@ public class EqmManager {
             filterEquipment(normalizedInput);
         } else if (normalizedInput.matches("(?U)update(?:\\s.*)?")) {
             updateEquipment(normalizedInput);
-        } else if (normalizedInput.equals("list loans")) {
+        } else if (normalizedInput.equals("list overdue")) {
+            viewOverdueLoans();
+        }else if (normalizedInput.equals("list loans")) {
             loans.viewAllLoans();
         } else if (normalizedInput.equals("add-bundle") || normalizedInput.startsWith("add-bundle ")) {
             addBundle(normalizedInput);
@@ -299,4 +302,14 @@ public class EqmManager {
             System.out.println(e.getMessage());
         }
     }
+
+    // @@author Rohita-29
+
+    /** Displays loans that are overdue as of the current local date. */
+    private void viewOverdueLoans() {
+        LocalDate referenceDate = LocalDate.now();
+        loans.viewOverdueLoans(referenceDate);
+    }
+
+    // @@author
 }
