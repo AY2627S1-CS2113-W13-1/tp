@@ -6,6 +6,24 @@
 
 ## Design & implementation
 
+### Showing command help without changing records
+
+`EqmManager.executeInput(...)` recognises the exact `help` command after trimming surrounding whitespace.
+It calls `Help.print()` directly. The help utility contains the command reference and depends only on immutable
+equipment limits and damage enums. It has no equipment, loan or bundle handler references and performs no storage
+operations. This keeps help separate from commands that change or save application state.
+
+The reference includes all executable commands, their syntax, examples, optional-field defaults and restrictions.
+It covers history, assessed returns, loan issue-date defaults and session-only bundles alongside the basic commands.
+The welcome message and unknown-command error direct users to `help`. Arguments such as `help add` are not accepted;
+the complete reference is shown by `help`. Existing startup-error handling still stops the input loop if data cannot
+be loaded.
+
+Tests compare record contents, object references, flags, counts, next identifiers, bundle completion, saved bytes
+and modification times before and after repeated help requests. They also request help with missing or blocked
+storage paths and check that subsequent commands still work. Content tests check each command, its example and
+the documented defaults and restrictions against the supported values.
+
 ### Optional command fields and explicit defaults
 
 Equipment addition already defaults omitted subtype details to `unspecified`, damage to `NONE` and remarks to empty

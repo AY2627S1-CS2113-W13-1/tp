@@ -25,6 +25,7 @@ import seedu.snap.exceptions.LoanHistoryUnsuccessful;
 import seedu.snap.loan.Loan;
 import seedu.snap.loan.LoanHandler;
 import seedu.snap.parser.Parser;
+import seedu.snap.ui.Help;
 
 /** Coordinates command input and execution for the SNAP application. */
 public class EqmManager {
@@ -87,6 +88,8 @@ public class EqmManager {
         String normalizedInput = input == null ? "" : input.replaceAll("(?U)^\\s+|\\s+$", "");
         if (startupError != null) {
             System.out.println("Could not load saved data: " + startupError);
+        } else if (normalizedInput.equals("help")) {
+            Help.print();
         } else if (normalizedInput.equals("bye")) {
             isRunning = !saveBeforeExit();
         } else if (normalizedInput.equals("delete loan")
@@ -122,7 +125,7 @@ public class EqmManager {
         } else if (normalizedInput.equals("list") || normalizedInput.startsWith("list ")) {
             equipment.viewAllEquipment();
         } else {
-            System.out.println("Command not recognised. Please try again.");
+            System.out.println("Command not recognised. Type help for available commands.");
         }
     }
 
@@ -135,6 +138,7 @@ public class EqmManager {
 
         System.out.println("Welcome to snAp. Loaded " + equipment.getEquipmentList().size()
                 + " equipment record(s) and " + loans.getLoanCount() + " loan(s).");
+        System.out.println("Type help for command formats, examples and defaults.");
 
         // main process
         String input;

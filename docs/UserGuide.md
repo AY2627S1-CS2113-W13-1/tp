@@ -11,6 +11,19 @@ application sessions. Bundles group equipment during the current session.
 2. From the project directory, run `./gradlew run` on macOS/Linux or `.\gradlew.bat run` on Windows.
 3. Enter one command per line. Type `bye` to exit.
 
+## Getting help: `help`
+
+Format: `help`
+
+Example: `help`
+
+This displays every available command with its format, an example, required and optional fields, defaults and
+important restrictions. Help uses `<VALUE>` for a value you must replace and `[field/<VALUE>]` for a field you
+can omit. Enter `help` without arguments. The welcome message and unrecognised-command errors point to it.
+
+Requesting help leaves equipment, loans, bundles, availability, identifiers and saved records unchanged.
+You can then enter another command normally. Help does not save data or end the session.
+
 ## Optional fields and defaults
 
 Square brackets around a field mean that the whole field can be omitted. Defaults apply only when a field is
@@ -369,7 +382,7 @@ reports the problem and stops.
 
 ## Errors
 
-* Empty or unknown commands show an error and the available commands. You can then enter another command.
+* Empty or unknown commands show an error and direct you to `help`. You can then enter another command.
 * Invalid add or delete commands show the correct syntax. Invalid fields, duplicate IDs and missing IDs are rejected.
 * File errors show the reason and ask you to check the file or directory permissions.
 * Saves are written to temporary files before replacing the saved records, preserving previous records if writing fails.
@@ -380,6 +393,7 @@ reports the problem and stops.
 
 | Action | Command |
 | --- | --- |
+| Show command formats, examples and defaults | `help` |
 | Add equipment | `add i/[ITEM] id/[ITEM ID] type/[TYPE] cond/[CONDITION]` with optional details, damage and remarks |
 | Delete equipment | `delete item/[ITEM ID]` |
 | Add loan | `loan id/[ITEM ID] b/[BORROWER ID] [issued/DD-MM-YY] due/[DD-MM-YY]` |
