@@ -14,11 +14,6 @@ import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
  * General field parsing and validation are delegated to EquipmentDetailParser.
  */
 final class CameraDetailsParser {
-    static final String MOUNT_MARKER =
-            EquipmentDetailField.MOUNT.getMarker();
-    static final String BATTERY_MARKER =
-            EquipmentDetailField.BATTERY_TYPE.getMarker();
-
     private static final List<EquipmentDetailField> CAMERA_FIELDS = List.of(
             EquipmentDetailField.SENSOR,
             EquipmentDetailField.MOUNT,
