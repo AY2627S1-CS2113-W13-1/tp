@@ -1,8 +1,6 @@
 package seedu.snap.equipment;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
@@ -11,11 +9,12 @@ import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 
 /** Converts parsed lens-specific fields into a Lens object. */
 final class LensDetailsParser {
-    private static final List<EquipmentDetailField> LENS_FIELDS = List.of(
-            EquipmentDetailField.ZOOM,
-            EquipmentDetailField.MOUNT,
-            EquipmentDetailField.SENSOR,
-            EquipmentDetailField.DAMAGE);
+    private static final List<EquipmentDetailField> LENS_FIELDS =
+            List.of(
+                    EquipmentDetailField.ZOOM,
+                    EquipmentDetailField.MOUNT,
+                    EquipmentDetailField.SENSOR,
+                    EquipmentDetailField.DAMAGE);
 
     private LensDetailsParser() {
     }
@@ -44,19 +43,25 @@ final class LensDetailsParser {
                         "lens",
                         LENS_FIELDS);
 
-        String zoomRange = getValue(
-                fields,
-                EquipmentDetailField.ZOOM);
-        String lensMount = getValue(
-                fields,
-                EquipmentDetailField.MOUNT);
-        String sensorFormat = getValue(
-                fields,
-                EquipmentDetailField.SENSOR);
-        Lens.LensDamage damage = parseDamage(
-                fields.getOrDefault(
+        String zoomRange =
+                EquipmentDetailParser.getTextValue(
+                        fields,
+                        EquipmentDetailField.ZOOM);
+        String lensMount =
+                EquipmentDetailParser.getTextValue(
+                        fields,
+                        EquipmentDetailField.MOUNT);
+        String sensorFormat =
+                EquipmentDetailParser.getTextValue(
+                        fields,
+                        EquipmentDetailField.SENSOR);
+        Lens.LensDamage damage =
+                EquipmentDetailParser.getEnumValue(
+                        fields,
                         EquipmentDetailField.DAMAGE,
-                        Lens.LensDamage.NONE.name()));
+                        Lens.LensDamage.NONE,
+                        Lens.LensDamage.class,
+                        "lens");
 
         return new Lens(
                 name,
@@ -68,31 +73,6 @@ final class LensDetailsParser {
                 lensMount,
                 sensorFormat);
     }
-
-    /** Returns a supplied field value or the common unspecified value. */
-    private static String getValue(
-            Map<EquipmentDetailField, String> fields,
-            EquipmentDetailField field) {
-        return fields.getOrDefault(
-                field,
-                CompatibilityText.UNSPECIFIED);
-    }
-
-    /** Converts a validated damage value into the lens damage enum. */
-    private static Lens.LensDamage parseDamage(String value)
-            throws EquipmentAdditionUnsuccessful {
-        try {
-            return Lens.LensDamage.valueOf(
-                    value.toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException exception) {
-            throw new EquipmentAdditionUnsuccessful(
-                    "Invalid damage for lens. Use: "
-                            + Arrays.toString(
-                            Lens.LensDamage.values())
-                            + ".");
-        }
-    }
 }
 
 // @@author
-

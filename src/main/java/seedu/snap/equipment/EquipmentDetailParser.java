@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.Locale;
 
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 
@@ -54,6 +55,68 @@ final class EquipmentDetailParser {
                 normalizedDetails,
                 equipmentType,
                 allowedOrder);
+    }
+
+    /**
+     * Returns a supplied detail value or the common unspecified value.
+     *
+     * @param fields parsed equipment fields
+     * @param field field whose value is required
+     * @return supplied value or unspecified
+     */
+    static String getTextValue(
+            Map<EquipmentDetailField, String> fields,
+            EquipmentDetailField field) {
+        assert fields != null : "Parsed equipment fields must exist.";
+        assert field != null : "Requested equipment field must exist.";
+
+        return fields.getOrDefault(
+                field,
+                CompatibilityText.UNSPECIFIED);
+    }
+
+    /**
+     * Converts a supplied field value into its corresponding enum.
+     *
+     * @param fields parsed equipment fields
+     * @param field enum-backed field being read
+     * @param defaultValue value used when the field was omitted
+     * @param enumClass enum class used for conversion
+     * @param equipmentType equipment type used in error messages
+     * @param <T> enum type
+     * @return parsed or default enum value
+     * @throws EquipmentAdditionUnsuccessful if the value is invalid
+     */
+    static <T extends Enum<T>> T getEnumValue(
+            Map<EquipmentDetailField, String> fields,
+            EquipmentDetailField field,
+            T defaultValue,
+            Class<T> enumClass,
+            String equipmentType)
+            throws EquipmentAdditionUnsuccessful {
+        assert fields != null : "Parsed equipment fields must exist.";
+        assert field != null : "Requested equipment field must exist.";
+        assert defaultValue != null : "Default enum value must exist.";
+        assert enumClass != null : "Enum class must exist.";
+        assert equipmentType != null && !equipmentType.isBlank()
+                : "Equipment type must be supplied internally.";
+
+        String value = fields.getOrDefault(
+                field,
+                defaultValue.name());
+
+        try {
+            return Enum.valueOf(
+                    enumClass,
+                    value.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            throw new EquipmentAdditionUnsuccessful(
+                    "Invalid " + field.getFieldName()
+                            + " for " + equipmentType + ". Use: "
+                            + Arrays.toString(
+                            enumClass.getEnumConstants())
+                            + ".");
+        }
     }
 
     /** Checks the parser configuration supplied by application code. */

@@ -1,8 +1,6 @@
 package seedu.snap.equipment;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
@@ -43,13 +41,17 @@ final class TripodDetailsParser {
                         "tripod",
                         TRIPOD_FIELDS);
 
-        String thread = fields.getOrDefault(
-                EquipmentDetailField.THREAD,
-                CompatibilityText.UNSPECIFIED);
-        Tripod.TripodDamage damage = parseDamage(
-                fields.getOrDefault(
+        String thread =
+                EquipmentDetailParser.getTextValue(
+                        fields,
+                        EquipmentDetailField.THREAD);
+        Tripod.TripodDamage damage =
+                EquipmentDetailParser.getEnumValue(
+                        fields,
                         EquipmentDetailField.DAMAGE,
-                        Tripod.TripodDamage.NONE.name()));
+                        Tripod.TripodDamage.NONE,
+                        Tripod.TripodDamage.class,
+                        "tripod");
 
         return new Tripod(
                 name,
@@ -59,22 +61,6 @@ final class TripodDetailsParser {
                 damage,
                 remarks);
     }
-
-    /** Converts a validated damage value into the tripod damage enum. */
-    private static Tripod.TripodDamage parseDamage(String value)
-            throws EquipmentAdditionUnsuccessful {
-        try {
-            return Tripod.TripodDamage.valueOf(
-                    value.toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException exception) {
-            throw new EquipmentAdditionUnsuccessful(
-                    "Invalid damage for tripod. Use: "
-                            + Arrays.toString(
-                            Tripod.TripodDamage.values())
-                            + ".");
-        }
-    }
 }
 
 // @@author
-

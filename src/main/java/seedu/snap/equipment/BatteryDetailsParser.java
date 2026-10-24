@@ -1,8 +1,6 @@
 package seedu.snap.equipment;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
@@ -44,16 +42,21 @@ final class BatteryDetailsParser {
                         "battery",
                         BATTERY_FIELDS);
 
-        String capacity = getValue(
-                fields,
-                EquipmentDetailField.CAPACITY);
-        String batteryType = getValue(
-                fields,
-                EquipmentDetailField.BATTERY_TYPE);
-        Battery.BatteryDamage damage = parseDamage(
-                fields.getOrDefault(
+        String capacity =
+                EquipmentDetailParser.getTextValue(
+                        fields,
+                        EquipmentDetailField.CAPACITY);
+        String batteryType =
+                EquipmentDetailParser.getTextValue(
+                        fields,
+                        EquipmentDetailField.BATTERY_TYPE);
+        Battery.BatteryDamage damage =
+                EquipmentDetailParser.getEnumValue(
+                        fields,
                         EquipmentDetailField.DAMAGE,
-                        Battery.BatteryDamage.NONE.name()));
+                        Battery.BatteryDamage.NONE,
+                        Battery.BatteryDamage.class,
+                        "battery");
 
         return new Battery(
                 name,
@@ -64,31 +67,6 @@ final class BatteryDetailsParser {
                 remarks,
                 batteryType);
     }
-
-    /** Returns a supplied field value or the common unspecified value. */
-    private static String getValue(
-            Map<EquipmentDetailField, String> fields,
-            EquipmentDetailField field) {
-        return fields.getOrDefault(
-                field,
-                CompatibilityText.UNSPECIFIED);
-    }
-
-    /** Converts a validated damage value into the battery damage enum. */
-    private static Battery.BatteryDamage parseDamage(String value)
-            throws EquipmentAdditionUnsuccessful {
-        try {
-            return Battery.BatteryDamage.valueOf(
-                    value.toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException exception) {
-            throw new EquipmentAdditionUnsuccessful(
-                    "Invalid damage for battery. Use: "
-                            + Arrays.toString(
-                            Battery.BatteryDamage.values())
-                            + ".");
-        }
-    }
 }
 
 // @@author
-
