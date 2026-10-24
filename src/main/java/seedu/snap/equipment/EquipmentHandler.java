@@ -415,30 +415,26 @@ public class EquipmentHandler {
                     remarks);
         }
 
-        String attributeMarker = switch (normalisedType) {
-        case "battery" -> "capacity/";
-        case "tripod" -> "thread/";
-        default -> throw new EquipmentAdditionUnsuccessful(
-                "Unsupported equipment type. Use: "
-                        + "camera, lens, battery or tripod.");
-        };
+        if (normalisedType.equals("battery")) {
+            return BatteryDetailsParser.createBattery(
+                    itemName,
+                    id,
+                    condition,
+                    detailsString,
+                    remarks);
+        }
+
+        if (!normalisedType.equals("tripod")) {
+            throw new EquipmentAdditionUnsuccessful(
+                    "Unsupported equipment type. Use: "
+                            + "camera, lens, battery or tripod.");
+        }
 
         EquipmentDetails details = parseDetails(
                 detailsString,
-                attributeMarker);
+                "thread/");
 
-        return switch (normalisedType) {
-        case "battery" -> new Battery(
-                itemName,
-                id,
-                condition,
-                details.attribute(),
-                parseDamage(
-                        details.damage(),
-                        Battery.BatteryDamage.class,
-                        normalisedType),
-                remarks);
-        case "tripod" -> new Tripod(
+        return new Tripod(
                 itemName,
                 id,
                 condition,
@@ -448,11 +444,7 @@ public class EquipmentHandler {
                         Tripod.TripodDamage.class,
                         normalisedType),
                 remarks);
-        default -> throw new AssertionError(
-                "Validated equipment type must have a subclass.");
-        };
     }
-
 
     /** Shares value rules between addition and updates before either changes the inventory. */
     private static void validateEquipmentDetails(String itemName, String id, String type, String conditionString)
