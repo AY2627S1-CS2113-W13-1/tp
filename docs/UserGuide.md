@@ -26,28 +26,39 @@ Example: `add i/Canon EOS R10 id/001 type/camera cond/1 remarks/Handle with care
 * Enter the fields in the order shown above. Names can contain spaces.
 * Equipment with the same name can be added separately using different IDs.
 
-After `cond/`, you can add the fields for the equipment type, followed by `damage/[DAMAGE]`:
+After `cond/`, you can add the fields for the equipment type, followed by
+`damage/[DAMAGE]`:
 
-| Type | Optional fields | Damage values |
+| Type | Optional fields, in command order | Damage values |
 | --- | --- | --- |
 | `camera` | `sensor/[SENSOR FORMAT]`, `mount/[LENS MOUNT]`, `thread/[TRIPOD THREAD]`, `battery/[BATTERY TYPE]` | `NONE`, `SENSOR_DAMAGE`, `SHUTTER_FAULT` |
-| `lens` | `zoom/[ZOOM RANGE]` | `NONE`, `SCRATCHED_GLASS`, `AUTOFOCUS_FAULT` |
-| `battery` | `capacity/[CAPACITY]` | `NONE`, `SWELLING`, `CONTACT_DAMAGE` |
-| `tripod` | `thread/[THREAD]` | `NONE`, `BENT_LEG`, `HEAD_FAULT` |
+| `lens` | `zoom/[ZOOM RANGE]`, `mount/[LENS MOUNT]`, `sensor/[SENSOR FORMAT]` | `NONE`, `SCRATCHED_GLASS`, `AUTOFOCUS_FAULT` |
+| `battery` | `capacity/[CAPACITY]`, `battery/[BATTERY TYPE]` | `NONE`, `SWELLING`, `CONTACT_DAMAGE` |
+| `tripod` | `thread/[TRIPOD THREAD]` | `NONE`, `BENT_LEG`, `HEAD_FAULT` |
 
-* Each type-specific value is free text of 1 to 100 characters on one line.
-* Camera fields must appear in this order when supplied: `sensor/`, `mount/`, `thread/`, `battery/`, `damage/`.
-* Every optional field may be omitted. Omitted compatibility values default to `unspecified`, and damage defaults to `NONE`.
-* Damage values are case-insensitive and stored in uppercase. Use a value from the row for the chosen type.
-* A field belonging to another type, an invalid damage value, a repeated field or fields in the wrong order are rejected.
-* Camera compatibility fields are saved and displayed for later comparison when constructing compatible bundles.
+* Each type-specific value is free text containing 1 to 100 characters
+  on one line.
+* Type-specific fields must appear in the order shown in the table.
+  `damage/` follows those fields when supplied.
+* Every optional field may be omitted. Omitted compatibility values
+  default to `unspecified`, and damage defaults to `NONE`.
+* Damage values are case-insensitive and stored in uppercase. Use a
+  damage value from the row belonging to the selected equipment type.
+* Fields belonging to another equipment type, invalid damage values,
+  repeated fields and fields in the wrong order are rejected.
+* Compatibility comparisons ignore letter case.
+* A result is reported as unknown when an attribute needed for comparison
+  was omitted. A known conflicting attribute is considered incompatible.
+* Compatibility attributes are saved, restored and preserved when the
+  equipment name or condition is updated.
 
 Examples:
 
 ```text
-add i/Canon EOS R10 id/001 type/camera cond/1 sensor/APS-C mount/Canon RF thread/1/4"-20 battery/LP-E17 damage/NONE
-add i/Spare battery id/002 type/battery cond/7 damage/swelling
-add i/Travel tripod id/003 type/tripod cond/2 thread/1/4 inch
+add i/Canon EOS R10 id/001 type/camera cond/1 sensor/APS-C mount/Canon RF thread/1/4"-20 battery/Li-ion damage/NONE
+add i/Standard Zoom id/002 type/lens cond/2 zoom/24-70 mm mount/Canon RF sensor/APS-C damage/NONE
+add i/Spare Battery id/003 type/battery cond/3 capacity/2000 mAh battery/Li-ion damage/NONE
+add i/Travel Tripod id/004 type/tripod cond/2 thread/1/4"-20 damage/NONE
 ```
 
 * Names can contain text such as `USB id/card reader` or `fluid/head tripod`.
