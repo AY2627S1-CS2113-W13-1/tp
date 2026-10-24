@@ -128,6 +128,8 @@ public class Camera extends Equipment {
 
     // @@author
 
+    // @@author Rohita-29
+
     @Override
     protected void applyDamageAssessment(Equipment assessed) {
         Camera camera = (Camera) assessed;
@@ -139,6 +141,27 @@ public class Camera extends Equipment {
 
     @Override
     public String getDetails() {
-        return "sensor/" + sensorFormat + " damage/" + damage.name();
+        StringBuilder details = new StringBuilder("sensor/")
+                .append(sensorFormat);
+
+        appendCompatibilityDetail(details, "mount/", lensMount);
+        appendCompatibilityDetail(details, "thread/", tripodThread);
+        appendCompatibilityDetail(details, "battery/", batteryType);
+
+        return details.append(" damage/")
+                .append(damage.name())
+                .toString();
     }
+
+    /** Adds a supplied compatibility field while omitting unspecified defaults. */
+    private static void appendCompatibilityDetail(
+            StringBuilder details, String marker, String value) {
+        if (!CompatibilityText.UNSPECIFIED.equals(value)) {
+            details.append(' ')
+                    .append(marker)
+                    .append(value);
+        }
+    }
+
+    // @@author
 }

@@ -30,7 +30,15 @@ public class EquipmentHandler {
     private static final String TYPE_MARKER = "type/";
     private static final String CONDITION_MARKER = "cond/";
     private static final String DAMAGE_MARKER = "damage/";
-    private static final String[] DETAIL_MARKERS = {"sensor/", "zoom/", "capacity/", "thread/", DAMAGE_MARKER};
+    private static final String[] DETAIL_MARKERS = {
+        "sensor/",
+        "zoom/",
+        "capacity/",
+        "thread/",
+        CameraDetailsParser.MOUNT_MARKER,
+        CameraDetailsParser.BATTERY_MARKER,
+        DAMAGE_MARKER
+    };
     private static final String REMARKS_MARKER = "remarks/";
 
     /** Optional command fields after the common equipment fields. */
@@ -378,25 +386,32 @@ public class EquipmentHandler {
         int condition = Integer.parseInt(conditionString);
 
         String normalisedType = type.toLowerCase(Locale.ROOT);
+        if (normalisedType.equals("camera")) {
+            return CameraDetailsParser.createCamera(
+                    itemName, id, condition, detailsString, remarks);
+        }
+
         String attributeMarker = switch (normalisedType) {
-        case "camera" -> "sensor/";
         case "lens" -> "zoom/";
         case "battery" -> "capacity/";
         case "tripod" -> "thread/";
         default -> throw new EquipmentAdditionUnsuccessful(
-                "Unsupported equipment type. Use: camera, lens, battery or tripod.");
+                    "Unsupported equipment type. Use: camera, lens, battery or tripod.");
         };
+
         EquipmentDetails details = parseDetails(detailsString, attributeMarker);
         return switch (normalisedType) {
-        case "camera" -> new Camera(itemName, id, condition, details.attribute(),
-                parseDamage(details.damage(), Camera.CameraDamage.class, normalisedType), remarks);
         case "lens" -> new Lens(itemName, id, condition, details.attribute(),
-                parseDamage(details.damage(), Lens.LensDamage.class, normalisedType), remarks);
+                    parseDamage(details.damage(), Lens.LensDamage.class, normalisedType),
+                    remarks);
         case "battery" -> new Battery(itemName, id, condition, details.attribute(),
-                parseDamage(details.damage(), Battery.BatteryDamage.class, normalisedType), remarks);
+                    parseDamage(details.damage(), Battery.BatteryDamage.class, normalisedType),
+                    remarks);
         case "tripod" -> new Tripod(itemName, id, condition, details.attribute(),
-                parseDamage(details.damage(), Tripod.TripodDamage.class, normalisedType), remarks);
-        default -> throw new AssertionError("Validated equipment type must have a subclass");
+                    parseDamage(details.damage(), Tripod.TripodDamage.class, normalisedType),
+                    remarks);
+        default -> throw new AssertionError(
+                    "Validated equipment type must have a subclass");
         };
     }
 
