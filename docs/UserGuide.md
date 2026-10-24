@@ -26,25 +26,26 @@ Example: `add i/Canon EOS R10 id/001 type/camera cond/1 remarks/Handle with care
 * Enter the fields in the order shown above. Names can contain spaces.
 * Equipment with the same name can be added separately using different IDs.
 
-After `cond/`, you can add the field for the equipment type, followed by `damage/[DAMAGE]`:
+After `cond/`, you can add the fields for the equipment type, followed by `damage/[DAMAGE]`:
 
-| Type | Optional field | Damage values |
+| Type | Optional fields | Damage values |
 | --- | --- | --- |
-| `camera` | `sensor/[SENSOR FORMAT]` | `NONE`, `SENSOR_DAMAGE`, `SHUTTER_FAULT` |
+| `camera` | `sensor/[SENSOR FORMAT]`, `mount/[LENS MOUNT]`, `thread/[TRIPOD THREAD]`, `battery/[BATTERY TYPE]` | `NONE`, `SENSOR_DAMAGE`, `SHUTTER_FAULT` |
 | `lens` | `zoom/[ZOOM RANGE]` | `NONE`, `SCRATCHED_GLASS`, `AUTOFOCUS_FAULT` |
 | `battery` | `capacity/[CAPACITY]` | `NONE`, `SWELLING`, `CONTACT_DAMAGE` |
 | `tripod` | `thread/[THREAD]` | `NONE`, `BENT_LEG`, `HEAD_FAULT` |
 
-* Each type-specific value is free text of 1 to 100 characters on one line, such as `APS-C`, `24-70 mm`,
-  `1800 mAh` or `1/4 inch`.
-* Either optional field can be omitted. The type-specific value defaults to `unspecified`, and damage defaults to `NONE`.
+* Each type-specific value is free text of 1 to 100 characters on one line.
+* Camera fields must appear in this order when supplied: `sensor/`, `mount/`, `thread/`, `battery/`, `damage/`.
+* Every optional field may be omitted. Omitted compatibility values default to `unspecified`, and damage defaults to `NONE`.
 * Damage values are case-insensitive and stored in uppercase. Use a value from the row for the chosen type.
-* A field for another type, an invalid damage value, a repeated field or fields in the wrong order are rejected.
+* A field belonging to another type, an invalid damage value, a repeated field or fields in the wrong order are rejected.
+* Camera compatibility fields are saved and displayed for later comparison when constructing compatible bundles.
 
 Examples:
 
 ```text
-add i/Canon EOS R10 id/001 type/camera cond/1 sensor/APS-C damage/NONE
+add i/Canon EOS R10 id/001 type/camera cond/1 sensor/APS-C mount/Canon RF thread/1/4"-20 battery/LP-E17 damage/NONE
 add i/Spare battery id/002 type/battery cond/7 damage/swelling
 add i/Travel tripod id/003 type/tripod cond/2 thread/1/4 inch
 ```
@@ -54,7 +55,8 @@ add i/Travel tripod id/003 type/tripod cond/2 thread/1/4 inch
   have a non-empty value starting with a non-whitespace character other than a digit, `+`, or `-`.
   Whitespace-prefixed numeric ID-like text such as `id/001` is reserved and cannot be part of the name.
 * Prefixes `i/`, `type/` and `cond/` at the start or after whitespace are reserved command delimiters.
-  Prefixes `sensor/`, `zoom/`, `capacity/`, `thread/`, `damage/` and `remarks/` are delimiters only after `cond/`.
+  Prefixes `sensor/`, `mount/`, `zoom/`, `capacity/`, `thread/`, `battery/`, `damage/` and `remarks/`
+  are delimiters only after `cond/`.
   Names can contain these optional prefixes, such as `Camera sensor/cleaning kit` or `Camera remarks/adapter`.
   The first `remarks/` after `cond/` starts the remarks field.
   Required fields must occur once each; optional fields may occur at most once. Fields must follow the
