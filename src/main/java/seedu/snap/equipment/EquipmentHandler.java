@@ -378,42 +378,81 @@ public class EquipmentHandler {
         }
     }
 
-    /** Validates extracted values before construction, preserving field-specific error messages. */
-    private static Equipment createValidatedEquipment(String itemName, String id, String type,
-            String conditionString, String detailsString, String remarks) throws EquipmentAdditionUnsuccessful {
-        validateEquipmentDetails(itemName, id, type, conditionString);
+    /** Validates extracted values and creates the correct equipment subclass. */
+    private static Equipment createValidatedEquipment(
+            String itemName,
+            String id,
+            String type,
+            String conditionString,
+            String detailsString,
+            String remarks)
+            throws EquipmentAdditionUnsuccessful {
+        validateEquipmentDetails(
+                itemName,
+                id,
+                type,
+                conditionString);
         validateRemarks(remarks);
-        int condition = Integer.parseInt(conditionString);
 
+        int condition = Integer.parseInt(conditionString);
         String normalisedType = type.toLowerCase(Locale.ROOT);
+
         if (normalisedType.equals("camera")) {
             return CameraDetailsParser.createCamera(
-                    itemName, id, condition, detailsString, remarks);
+                    itemName,
+                    id,
+                    condition,
+                    detailsString,
+                    remarks);
+        }
+
+        if (normalisedType.equals("lens")) {
+            return LensDetailsParser.createLens(
+                    itemName,
+                    id,
+                    condition,
+                    detailsString,
+                    remarks);
         }
 
         String attributeMarker = switch (normalisedType) {
-        case "lens" -> "zoom/";
         case "battery" -> "capacity/";
         case "tripod" -> "thread/";
         default -> throw new EquipmentAdditionUnsuccessful(
-                    "Unsupported equipment type. Use: camera, lens, battery or tripod.");
+                "Unsupported equipment type. Use: "
+                        + "camera, lens, battery or tripod.");
         };
 
-        EquipmentDetails details = parseDetails(detailsString, attributeMarker);
+        EquipmentDetails details = parseDetails(
+                detailsString,
+                attributeMarker);
+
         return switch (normalisedType) {
-        case "lens" -> new Lens(itemName, id, condition, details.attribute(),
-                    parseDamage(details.damage(), Lens.LensDamage.class, normalisedType),
-                    remarks);
-        case "battery" -> new Battery(itemName, id, condition, details.attribute(),
-                    parseDamage(details.damage(), Battery.BatteryDamage.class, normalisedType),
-                    remarks);
-        case "tripod" -> new Tripod(itemName, id, condition, details.attribute(),
-                    parseDamage(details.damage(), Tripod.TripodDamage.class, normalisedType),
-                    remarks);
+        case "battery" -> new Battery(
+                itemName,
+                id,
+                condition,
+                details.attribute(),
+                parseDamage(
+                        details.damage(),
+                        Battery.BatteryDamage.class,
+                        normalisedType),
+                remarks);
+        case "tripod" -> new Tripod(
+                itemName,
+                id,
+                condition,
+                details.attribute(),
+                parseDamage(
+                        details.damage(),
+                        Tripod.TripodDamage.class,
+                        normalisedType),
+                remarks);
         default -> throw new AssertionError(
-                    "Validated equipment type must have a subclass");
+                "Validated equipment type must have a subclass.");
         };
     }
+
 
     /** Shares value rules between addition and updates before either changes the inventory. */
     private static void validateEquipmentDetails(String itemName, String id, String type, String conditionString)
