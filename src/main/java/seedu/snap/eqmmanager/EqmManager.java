@@ -19,6 +19,8 @@ import seedu.snap.exceptions.EquipmentFilteringUnsuccessful;
 import seedu.snap.exceptions.EquipmentUpdateUnsuccessful;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
+import seedu.snap.exceptions.LoanReturnUnsuccessful;
+import seedu.snap.exceptions.LoanHistoryUnsuccessful;
 import seedu.snap.loan.Loan;
 import seedu.snap.loan.LoanHandler;
 import seedu.snap.parser.Parser;
@@ -90,6 +92,10 @@ public class EqmManager {
             addEquipment(normalizedInput);
         } else if (normalizedInput.equals("loan") || normalizedInput.startsWith("loan ")) {
             addLoan(normalizedInput);
+        } else if (normalizedInput.matches("(?sU)return(?:\\s.*)?")) {
+            returnEquipment(normalizedInput);
+        } else if (normalizedInput.matches("(?sU)history(?:\\s.*)?")) {
+            viewLoanHistory(normalizedInput);
         } else if (normalizedInput.matches("(?U)filter(?:\\s.*)?")) {
             filterEquipment(normalizedInput);
         } else if (normalizedInput.matches("(?U)update(?:\\s.*)?")) {
@@ -236,6 +242,26 @@ public class EqmManager {
             System.out.println(e.getMessage());
         }
         // @@author
+    }
+
+    /** Displays a persisted return result or its validation/save error. */
+    private void returnEquipment(String input) {
+        try {
+            Loan returned = loans.returnLoan(input);
+            System.out.println("Loan " + returned.getLoanId() + " for item ID " + returned.getItemId()
+                    + " returned successfully.");
+        } catch (LoanReturnUnsuccessful exception) {
+            System.out.println(exception.getMessage());
+        }
+    }
+
+    /** Displays the selected equipment's borrowing history or its validation error. */
+    private void viewLoanHistory(String input) {
+        try {
+            loans.viewLoanHistory(input);
+        } catch (LoanHistoryUnsuccessful exception) {
+            System.out.println(exception.getMessage());
+        }
     }
 
     /** Displays matching equipment or the filter error. */
