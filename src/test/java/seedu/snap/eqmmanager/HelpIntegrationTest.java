@@ -174,6 +174,7 @@ class HelpIntegrationTest {
         "view loan | Format: view loan/<LOAN ID>",
         "backup | Format: backup path/<DIRECTORY>",
         "restore | Format: restore path/<DIRECTORY>",
+        "list borrower | Format: list borrower/<BORROWER ID>",
         "list overdue | Format: list overdue",
         "history | Format: history id/<ITEM ID>",
         "filter | Format: filter [id/<ID>]",

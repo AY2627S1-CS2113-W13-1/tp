@@ -201,6 +201,16 @@ public final class Help {
                         Legacy loans without a saved snapshot report that the issue condition was not recorded.
                         This read-only command does not change equipment, loans or saved records.
                         """)),
+                new CommandHelp("list borrower", "Loans", lineEndings("""
+                        EQUIPMENT HELD BY MEMBER
+                        Format: list borrower/<BORROWER ID>
+                        Example: list borrower/002
+                        The equivalent alias list member/<MEMBER ID> is also accepted.
+                        Shows only active equipment held by the selected borrower, with loan details.
+                        Returned loans and loans held by other borrowers are excluded.
+                        An unknown borrower ID and a known borrower with no active loans receive clear messages.
+                        This read-only query does not change equipment, loans or saved files.
+                        """)),
                 new CommandHelp("list overdue", "Loans", lineEndings("""
                         LIST OVERDUE LOANS
                         Format: list overdue
