@@ -148,6 +148,7 @@ public class EquipmentHandler {
                     parseDamage(value, Tripod.TripodDamage.class, current.getType()), normalisedRemarks);
             default -> throw new IllegalArgumentException("Unsupported equipment type for return assessment.");
             };
+            proposed.restoreRecordId(current.getRecordId());
             proposed.setServiceable(serviceable);
             return proposed;
         } catch (EquipmentAdditionUnsuccessful exception) {
@@ -167,7 +168,8 @@ public class EquipmentHandler {
     public void saveReturnAssessment(Equipment current, Equipment assessed) throws IOException {
         int index = inventory.indexOf(current);
         if (index < 0 || assessed == null || current.getClass() != assessed.getClass()
-                || !current.getItemId().equals(assessed.getItemId())) {
+                || !current.getItemId().equals(assessed.getItemId())
+                || !current.getRecordId().equals(assessed.getRecordId())) {
             throw new IllegalArgumentException("The return assessment must belong to equipment in the inventory.");
         }
         ArrayList<Equipment> proposedInventory = new ArrayList<>(inventory);
@@ -615,6 +617,7 @@ public class EquipmentHandler {
             throws EquipmentAdditionUnsuccessful, EquipmentUpdateUnsuccessful {
         Equipment proposed = createValidatedEquipment(name, target.getItemId(), target.getType(),
                 Integer.toString(condition), target.getDetails(), target.getRemarks());
+        proposed.restoreRecordId(target.getRecordId());
         proposed.setServiceable(target.isServiceable());
         ArrayList<Equipment> updatedInventory = new ArrayList<>(inventory);
         updatedInventory.set(inventory.indexOf(target), proposed);
