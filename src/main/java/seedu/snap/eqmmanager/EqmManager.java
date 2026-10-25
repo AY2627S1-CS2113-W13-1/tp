@@ -13,6 +13,7 @@ import seedu.snap.equipment.Equipment;
 import seedu.snap.bundle.Bundle;
 import seedu.snap.bundle.BundleHandler;
 import seedu.snap.exceptions.BundleAdditionUnsuccessful;
+import seedu.snap.exceptions.BundleHistoryUnsuccessful;
 import seedu.snap.equipment.EquipmentFilter;
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
@@ -65,7 +66,7 @@ public class EqmManager {
         this.equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
         this.loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"),
                 dataDirectory.resolve("loan-sequence.txt"), clock);
-        this.bundles = new BundleHandler(equipment);
+        this.bundles = new BundleHandler(equipment, dataDirectory.resolve("bundles.txt"));
         List<String> loadErrors = new ArrayList<>();
         try {
             equipment.loadFromStorage();
@@ -78,6 +79,12 @@ public class EqmManager {
         } catch (IOException e) {
             loadErrors.add("loans.txt: " + e.getMessage());
             logger.log(Level.SEVERE, "Could not load saved loan data", e);
+        }
+        try {
+            bundles.loadFromStorage();
+        } catch (IOException e) {
+            loadErrors.add("bundles.txt: " + e.getMessage());
+            logger.log(Level.SEVERE, "Could not load saved bundle data", e);
         }
         this.startupError = loadErrors.isEmpty() ? null : String.join(System.lineSeparator(), loadErrors);
         this.isRunning = true;
@@ -108,6 +115,8 @@ public class EqmManager {
             addLoan(normalizedInput);
         } else if (normalizedInput.matches("(?sU)return(?:\\s.*)?")) {
             returnEquipment(normalizedInput);
+        } else if (normalizedInput.startsWith("history bundle/")) {
+            viewBundleLoanHistory(normalizedInput);
         } else if (normalizedInput.matches("(?sU)history(?:\\s.*)?")) {
             viewLoanHistory(normalizedInput);
         } else if (normalizedInput.matches("(?U)view(?:\\s.*)?")) {
@@ -176,6 +185,12 @@ public class EqmManager {
         } catch (IOException e) {
             saveErrors.add("loans.txt: " + e.getMessage());
             logger.log(Level.SEVERE, "Could not save loan data before exit", e);
+        }
+        try {
+            bundles.saveToStorage();
+        } catch (IOException e) {
+            saveErrors.add("bundles.txt: " + e.getMessage());
+            logger.log(Level.SEVERE, "Could not save bundle data before exit", e);
         }
 
         if (!saveErrors.isEmpty()) {
@@ -292,6 +307,15 @@ public class EqmManager {
         try {
             loans.viewLoanHistory(input);
         } catch (LoanHistoryUnsuccessful exception) {
+            System.out.println(exception.getMessage());
+        }
+    }
+
+    /** Displays the selected bundle's active and returned loan history. */
+    private void viewBundleLoanHistory(String input) {
+        try {
+            bundles.viewBundleLoanHistory(input, loans);
+        } catch (BundleHistoryUnsuccessful exception) {
             System.out.println(exception.getMessage());
         }
     }

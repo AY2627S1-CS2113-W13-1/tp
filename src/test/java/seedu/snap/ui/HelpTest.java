@@ -48,6 +48,8 @@ class HelpTest {
                 Arguments.of("add-to-bundle id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]",
                         "add-to-bundle id/001 001 002 003"),
                 Arguments.of("list bundles", "list bundles"),
+                Arguments.of("history bundle/id/<BUNDLE ID>", "history bundle/id/001"),
+                Arguments.of("history bundle/name/<NAME>", "history bundle/name/Studio kit"),
                 Arguments.of("help", "help"),
                 Arguments.of("bye", "bye"));
     }
@@ -151,11 +153,11 @@ class HelpTest {
     }
 
     @Test
-    void getText_bundles_explainSessionLifetimeCompositionAndAvailability() {
+    void getText_bundles_explainPersistenceCompositionAndAvailability() {
         String text = Help.getText();
 
         assertTrue(text.contains("Requires a name of 1-100 characters."));
-        assertTrue(text.contains("Bundles exist only for the current session"));
+        assertTrue(text.contains("Bundles and their equipment memberships are restored between application runs"));
         assertTrue(text.contains("at least one existing, serviceable, unloaned equipment item."));
         assertTrue(text.contains("An item may appear only once per bundle."));
         assertTrue(text.contains("exactly one camera, at least one lens and at least one battery."));
