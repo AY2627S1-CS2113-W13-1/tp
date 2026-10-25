@@ -15,7 +15,8 @@ import org.junit.jupiter.params.provider.ValueSource;
  */
 class CompatibilityTextTest {
     @ParameterizedTest
-    @ValueSource(strings = {"Canon RF", "APS-C", "1/4\"-20", "LP-E17", "unspecified", "Mount  with  spaces"})
+    @ValueSource(strings = {"Canon RF", "APS-C", "1/4\"-20", "LP-E17",
+        "unspecified", "Mount  with  spaces", "Canon\tRF"})
 
     void normalize_validText_preservesValue(String value) {
         assertEquals(value, CompatibilityText.normalize(value));
@@ -46,7 +47,7 @@ class CompatibilityTextTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"Canon\tRF", "Canon\u0000RF", "Canon\u001BRF"})
+    @ValueSource(strings = {"Canon\u0000RF", "Canon\u001BRF"})
     void normalize_controlCharacter_throwsException(String value) {
         assertThrows(
                 IllegalArgumentException.class,

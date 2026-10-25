@@ -79,11 +79,14 @@ After `cond/`, you can add the fields for the equipment type, followed by
 * Fields belonging to another equipment type, invalid damage values,
   repeated fields and fields in the wrong order are rejected.
 * Compatibility comparisons ignore letter case.
-* A result is reported as unknown when an attribute needed for comparison
-  was omitted. A known conflicting attribute is considered incompatible.
+* Compatibility comparison is currently provided as an internal API for
+  follow-up features such as bundle construction. This version does not
+  provide a CLI command that displays compatibility results.
+* The internal comparison returns `UNKNOWN` when a required attribute was
+  omitted. A known conflicting attribute takes precedence and returns
+  `INCOMPATIBLE`.
 * Compatibility attributes are saved, restored and preserved when the
   equipment name or condition is updated.
-* There is currently no separate user command that displays a compatibility result.
 
 Examples:
 

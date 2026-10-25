@@ -127,7 +127,12 @@ class EquipmentOptionalFieldsTest {
         EquipmentHandler handler = new EquipmentHandler(file);
         Equipment original = handler.addEquipment(command(type, "001"));
         String saved = Files.readString(file);
-        String wrongMarker = type.type().equals("camera") ? "zoom/" : "sensor/";
+        String wrongMarker = switch (type.type()) {
+        case "camera" -> "zoom/";
+        case "lens" -> "capacity/";
+        case "battery", "tripod" -> "sensor/";
+        default -> throw new AssertionError("Unexpected equipment type.");
+        };
         String[] invalidTails = {
             type.marker() + type.value() + " " + type.marker() + "Repeated",
             "damage/NONE damage/" + type.damage(),

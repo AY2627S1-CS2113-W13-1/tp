@@ -2,13 +2,20 @@ package seedu.snap.equipment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+
+import java.nio.file.Path;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 // @@author Rohita-29
 
 /** Tests compatibility comparisons between equipment subclasses. */
 class EquipmentCompatibilityTest {
+    @TempDir
+    private Path temporaryDirectory;
+
     @Test
     void compare_matchingCameraAndLens_returnsCompatible() {
         Camera camera = createCamera(
@@ -66,7 +73,7 @@ class EquipmentCompatibilityTest {
     }
 
     @Test
-    void compare_missingLensInformation_returnsUnknown() {
+    void compare_compatibleAndUnknownAttributes_returnsUnknown() {
         Camera camera = createCamera(
                 "Canon RF",
                 "Full frame",
@@ -157,6 +164,59 @@ class EquipmentCompatibilityTest {
         assertThrows(
                 IllegalArgumentException.class,
                 () -> EquipmentCompatibility.compare(battery, null));
+    }
+
+    @Test
+    void compare_reloadedEquipment_preservesCompatibilityResults()
+            throws Exception {
+        Path file = temporaryDirectory.resolve("equipment.txt");
+        EquipmentHandler originalHandler = new EquipmentHandler(file);
+
+        originalHandler.addEquipment(
+                "add i/Camera id/001 type/camera cond/5 "
+                        + "sensor/Full frame mount/Canon RF");
+        originalHandler.addEquipment(
+                "add i/Compatible Lens id/002 type/lens cond/5 "
+                        + "mount/Canon RF sensor/Full frame");
+        originalHandler.addEquipment(
+                "add i/Incompatible Lens id/003 type/lens cond/5 "
+                        + "mount/Nikon Z sensor/Full frame");
+
+        EquipmentHandler reloadedHandler = new EquipmentHandler(file);
+        reloadedHandler.loadFromStorage();
+
+        Camera camera = assertInstanceOf(
+                Camera.class,
+                reloadedHandler.getEquipmentById("001"));
+        Lens compatibleLens = assertInstanceOf(
+                Lens.class,
+                reloadedHandler.getEquipmentById("002"));
+        Lens incompatibleLens = assertInstanceOf(
+                Lens.class,
+                reloadedHandler.getEquipmentById("003"));
+
+        assertEquals(
+                CompatibilityResult.COMPATIBLE,
+                EquipmentCompatibility.compare(camera, compatibleLens));
+        assertEquals(
+                CompatibilityResult.INCOMPATIBLE,
+                EquipmentCompatibility.compare(camera, incompatibleLens));
+    }
+
+    @Test
+    void compare_incompatibleAndUnknownAttributes_returnsIncompatible() {
+        Camera camera = createCamera(
+                "Canon RF",
+                "Full frame",
+                "1/4\"-20",
+                "Li-ion");
+        Lens lens = createLens(
+                "Nikon Z",
+                CompatibilityText.UNSPECIFIED);
+
+        assertEquals(
+                CompatibilityResult.INCOMPATIBLE,
+                EquipmentCompatibility.compare(camera, lens));
     }
 
     /** Creates a camera with explicit comparison attributes. */

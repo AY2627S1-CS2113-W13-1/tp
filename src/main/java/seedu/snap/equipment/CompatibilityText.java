@@ -36,7 +36,8 @@ final class CompatibilityText {
         }
 
         for (int index = 0; index < normalized.length(); index++) {
-            if (Character.isISOControl(normalized.charAt(index))) {
+            if (Character.isISOControl(normalized.charAt(index))
+                    && normalized.charAt(index) != '\t') {
                 throw new IllegalArgumentException(
                         "Compatibility detail must not contain control characters.");
             }

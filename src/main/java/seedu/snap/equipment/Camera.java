@@ -144,24 +144,23 @@ public class Camera extends Equipment {
         StringBuilder details = new StringBuilder("sensor/")
                 .append(sensorFormat);
 
-        appendCompatibilityDetail(details, "mount/", lensMount);
-        appendCompatibilityDetail(details, "thread/", tripodThread);
-        appendCompatibilityDetail(details, "battery/", batteryType);
+        EquipmentDetailFormatter.appendIfSpecified(
+                details,
+                EquipmentDetailField.MOUNT,
+                lensMount);
+        EquipmentDetailFormatter.appendIfSpecified(
+                details,
+                EquipmentDetailField.THREAD,
+                tripodThread);
+        EquipmentDetailFormatter.appendIfSpecified(
+                details,
+                EquipmentDetailField.BATTERY_TYPE,
+                batteryType);
 
-        return details.append(" damage/")
+        return details.append(' ')
+                .append(EquipmentDetailField.DAMAGE.getMarker())
                 .append(damage.name())
                 .toString();
     }
-
-    /** Adds a supplied compatibility field while omitting unspecified defaults. */
-    private static void appendCompatibilityDetail(
-            StringBuilder details, String marker, String value) {
-        if (!CompatibilityText.UNSPECIFIED.equals(value)) {
-            details.append(' ')
-                    .append(marker)
-                    .append(value);
-        }
-    }
-
     // @@author
 }

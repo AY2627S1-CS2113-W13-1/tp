@@ -129,7 +129,7 @@ class EquipmentDetailParserTest {
         assertThrows(
                 EquipmentAdditionUnsuccessful.class,
                 () -> EquipmentDetailParser.parse(
-                        "mount/Canon\tRF",
+                        "mount/Canon\u0000RF",
                         "camera",
                         CAMERA_FIELDS));
     }
