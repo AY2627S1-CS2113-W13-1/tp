@@ -9,10 +9,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.stream.Stream;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.EquipmentHandler;
@@ -56,6 +59,22 @@ class LoanUpdateHandlerTest {
         assertEquals("001", camera.getLoanId());
         assertFalse(tripod.isLoaned());
         assertTrue(Files.readString(loanFile).contains("b/007 issued/01-10-26 due/15-10-26"));
+    }
+
+    @Test
+    void updateLoan_borrowerZero_updatesWithinDocumentedBoundary() throws Exception {
+        Loan updated = loans.updateLoan("update loan/001 b/000");
+
+        assertEquals("000", updated.getBorrowerId());
+        assertTrue(Files.readString(loanFile).contains("b/000"));
+    }
+
+    @Test
+    void updateLoan_issueDateAndDueDateEqual_areAccepted() throws Exception {
+        Loan updated = loans.updateLoan("update loan/001 issued/10-10-26 due/10-10-26");
+
+        assertEquals(LocalDateTime.of(2026, 10, 10, 0, 0), updated.getIssuedDate());
+        assertEquals(LocalDateTime.of(2026, 10, 10, 0, 0), updated.getDueDate());
     }
 
     @Test
@@ -126,6 +145,47 @@ class LoanUpdateHandlerTest {
     }
 
     @Test
+    void updateLoan_unserviceableReplacement_rejectsWithoutChangingHistory() throws Exception {
+        loans.addLoan("loan id/002 b/003 issued/01-10-26 due/10-10-26");
+        loans.returnLoan("return loan/002 serviceable/no damage/NONE");
+        Loan original = loans.getLoanList().getFirst();
+        String saved = Files.readString(loanFile);
+
+        assertThrows(LoanUpdateUnsuccessful.class,
+                () -> loans.updateLoan("update loan/001 id/002"));
+
+        assertEquals("001", original.getItemId());
+        assertTrue(camera.isLoaned());
+        assertFalse(tripod.isLoaned());
+        assertFalse(tripod.isServiceable());
+        assertEquals(saved, Files.readString(loanFile));
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidUpdateCommands")
+    void updateLoan_invalidCommand_preservesLoanAndSavedFile(String command) throws Exception {
+        Loan original = loans.getLoanList().getFirst();
+        String saved = Files.readString(loanFile);
+
+        assertThrows(LoanUpdateUnsuccessful.class, () -> loans.updateLoan(command), command);
+
+        assertSame(original, loans.getLoanList().getFirst());
+        assertEquals("001", original.getItemId());
+        assertEquals("002", original.getBorrowerId());
+        assertTrue(camera.isLoaned());
+        assertFalse(tripod.isLoaned());
+        assertEquals(saved, Files.readString(loanFile));
+    }
+
+    private static Stream<String> invalidUpdateCommands() {
+        return Stream.of(null, "", "update", "update loan", "update loan/001",
+                "update loan/001 b/007 b/008", "update loan/001 issued/11-10-26",
+                "update loan/001 due/31-02-26", "update loan/001 id/999", "update loan/001 id/000",
+                "update loan/001 id/003", "update loan/999 b/007", "update loan/001 unknown/007",
+                "update loan/001 b/007\n due/15-10-26");
+    }
+
+    @Test
     void updateLoan_saveFailure_preservesLiveLoanAndSavedFile() throws Exception {
         Loan original = loans.getLoanList().getFirst();
         String saved = Files.readString(loanFile);
@@ -145,6 +205,30 @@ class LoanUpdateHandlerTest {
         Files.delete(sentinel);
         Files.delete(loanFile);
         Files.writeString(loanFile, saved);
+    }
+
+    @Test
+    void updateLoan_sequenceSaveFailure_rollsBackLoanFileAndLiveState() throws Exception {
+        Loan original = loans.getLoanList().getFirst();
+        String savedLoans = Files.readString(loanFile);
+        Path sequenceFile = temporaryDirectory.resolve("loan-sequence.txt");
+        String savedSequence = Files.readString(sequenceFile);
+        Files.delete(sequenceFile);
+        Files.createDirectory(sequenceFile);
+        Path sentinel = sequenceFile.resolve("keep.txt");
+        Files.writeString(sentinel, "retain blocked sequence path");
+
+        assertThrows(LoanUpdateUnsuccessful.class,
+                () -> loans.updateLoan("update loan/001 b/007 due/15-10-26"));
+
+        assertEquals(savedLoans, Files.readString(loanFile));
+        assertEquals("002", original.getBorrowerId());
+        assertTrue(camera.isLoaned());
+        assertEquals("retain blocked sequence path", Files.readString(sentinel));
+
+        Files.delete(sentinel);
+        Files.delete(sequenceFile);
+        Files.writeString(sequenceFile, savedSequence);
     }
 
     @Test

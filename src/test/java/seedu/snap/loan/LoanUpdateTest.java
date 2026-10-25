@@ -43,6 +43,15 @@ class LoanUpdateTest {
         assertNull(update.dueDate());
     }
 
+    @Test
+    void parse_borrowerBoundaryValues_acceptsDocumentedRange() throws LoanUpdateUnsuccessful {
+        LoanUpdate zero = LoanUpdate.parse("update loan/001 b/000");
+        LoanUpdate maximum = LoanUpdate.parse("update loan/001 b/999");
+
+        assertEquals("000", zero.borrowerId());
+        assertEquals("999", maximum.borrowerId());
+    }
+
     @ParameterizedTest
     @MethodSource("invalidCommands")
     void parse_invalidCommand_rejectsWithoutCreatingAnUpdate(String command) {
@@ -52,7 +61,7 @@ class LoanUpdateTest {
     private static Stream<String> invalidCommands() {
         return Stream.of(null, "", "update", "update loan/001", "update item/001 b/002",
                 "update loan/000 b/002", "update loan/01 b/002", "update loan/001 id/000",
-                "update loan/001 b/000", "update loan/001 id/002 id/003", "update loan/001 unknown/002",
+                "update loan/001 b/00", "update loan/001 id/002 id/003", "update loan/001 unknown/002",
                 "update loan/001 due/31-02-26", "update loan/001 issued/20-10-26 due/19-10-26",
                 "update loan/001 b/002\n due/20-10-26");
     }

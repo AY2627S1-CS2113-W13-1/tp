@@ -48,7 +48,7 @@ record LoanUpdate(String loanId, String itemId, String borrowerId,
             } else if (argument.startsWith("b/")) {
                 field = "b";
                 value = argument.substring("b/".length());
-                borrowerId = parseIdentifier(value, "borrower ID");
+                borrowerId = parseBorrowerId(value);
             } else if (argument.startsWith("issued/")) {
                 field = "issued";
                 value = argument.substring("issued/".length());
@@ -95,6 +95,14 @@ record LoanUpdate(String loanId, String itemId, String borrowerId,
     private static String parseIdentifier(String value, String name) throws LoanUpdateUnsuccessful {
         if (!value.matches(ID_FORMAT) || value.equals("000")) {
             throw new LoanUpdateUnsuccessful(name + " must be exactly three digits from 001 to 999.");
+        }
+        return value;
+    }
+
+    /** Parses the borrower identifier range, which includes the valid boundary value 000. */
+    private static String parseBorrowerId(String value) throws LoanUpdateUnsuccessful {
+        if (!value.matches(ID_FORMAT)) {
+            throw new LoanUpdateUnsuccessful("Borrower ID must be exactly three digits from 000 to 999.");
         }
         return value;
     }
