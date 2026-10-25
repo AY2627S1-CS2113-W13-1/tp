@@ -3,11 +3,11 @@ package seedu.snap.eqmmanager;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Clock;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.time.LocalDate;
 
 import seedu.snap.equipment.Equipment;
 import seedu.snap.bundle.Bundle;
@@ -35,6 +35,7 @@ public class EqmManager {
     private final LoanHandler loans;
     private final EquipmentHandler equipment;
     private final BundleHandler bundles;
+    private final Clock clock;
     private final String startupError;
     private boolean isRunning;
 
@@ -59,6 +60,7 @@ public class EqmManager {
             throw new IllegalArgumentException("Data directory must not be null.");
         }
         this.parser = new Parser();
+        this.clock = clock;
         this.equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
         this.loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"),
                 dataDirectory.resolve("loan-sequence.txt"), clock);
@@ -113,7 +115,7 @@ public class EqmManager {
             updateEquipment(normalizedInput);
         } else if (normalizedInput.equals("list overdue")) {
             viewOverdueLoans();
-        }else if (normalizedInput.equals("list loans")) {
+        } else if (normalizedInput.equals("list loans")) {
             loans.viewAllLoans();
         } else if (normalizedInput.equals("add-bundle") || normalizedInput.startsWith("add-bundle ")) {
             addBundle(normalizedInput);
@@ -307,7 +309,7 @@ public class EqmManager {
 
     /** Displays loans that are overdue as of the current local date. */
     private void viewOverdueLoans() {
-        LocalDate referenceDate = LocalDate.now();
+        LocalDate referenceDate = LocalDate.now(clock);
         loans.viewOverdueLoans(referenceDate);
     }
 

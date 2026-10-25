@@ -537,6 +537,7 @@ public class LoanHandler {
 
         ArrayList<Loan> overdueLoans = new ArrayList<>();
         for (Loan loan : loans) {
+            assert loan != null : "Loan list must not contain null items";
             if (loan.isOverdue(referenceDate)) {
                 overdueLoans.add(loan);
             }
@@ -551,12 +552,11 @@ public class LoanHandler {
      */
     public void viewOverdueLoans(LocalDate referenceDate) {
         List<Loan> overdueLoans = getOverdueLoans(referenceDate);
+        logger.log(Level.INFO, "Viewing {0} overdue loan(s)", overdueLoans.size());
         if (overdueLoans.isEmpty()) {
             System.out.println("No overdue loans found.");
             return;
         }
-
-        logger.log(Level.INFO, "Viewing {0} overdue loan(s)", overdueLoans.size());
         System.out.printf(
                 "%-4s %-12s | %-12s | %-16s%n",
                 "No.", "ITEM ID", "BORROWER ID", "DUE DATE"

@@ -10,6 +10,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -397,6 +401,27 @@ class EqmManagerTest {
 
         assertEquals(
                 "No overdue loans found." + System.lineSeparator(),
+                output.toString(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void listOverdue_usesInjectedClockForReferenceDate() {
+        Clock clock = Clock.fixed(
+                Instant.parse("2026-10-25T12:00:00Z"),
+                ZoneOffset.UTC);
+        EqmManager manager =
+                new EqmManager(temporaryDirectory, clock);
+        manager.executeInput(ADD_CAMERA);
+        manager.executeInput(
+                "loan id/001 b/002 "
+                        + "issued/24-10-26 due/25-10-26");
+        output.reset();
+
+        manager.executeInput("list overdue");
+
+        assertEquals(
+                "No overdue loans found."
+                        + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
     }
 

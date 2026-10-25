@@ -56,6 +56,14 @@ public class LoanTest {
         assertEquals("Reference date must not be null", exception.getMessage());
     }
 
+    @Test
+    public void isOverdue_activeLoanDueAtEndOfReferenceDate_returnsFalse() {
+        Loan loan =
+                createLoan(REFERENCE_DATE.atTime(23, 59));
+
+        assertFalse(loan.isOverdue(REFERENCE_DATE));
+    }
+
     /**
      * Creates an active loan whose issue date is five days before its due date.
      *
@@ -63,9 +71,24 @@ public class LoanTest {
      * @return active loan using the supplied due date
      */
     private Loan createLoan(LocalDate dueDate) {
-        LocalDateTime dueDateTime = dueDate.atStartOfDay();
-        LocalDateTime issuedDateTime = dueDate.minusDays(5).atStartOfDay();
-        return new Loan("001", "001", "002", issuedDateTime, dueDateTime);
+        return createLoan(dueDate.atStartOfDay());
+    }
+
+    /**
+     * Creates an active loan whose issue time is five days before its due time.
+     *
+     * @param dueDateTime required due date and time
+     * @return active loan using the supplied due date and time
+     */
+    private Loan createLoan(LocalDateTime dueDateTime) {
+        LocalDateTime issuedDateTime =
+                dueDateTime.minusDays(5);
+        return new Loan(
+                "001",
+                "001",
+                "002",
+                issuedDateTime,
+                dueDateTime);
     }
 }
 
