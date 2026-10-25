@@ -12,7 +12,16 @@ public class Camera extends Equipment {
     public enum CameraDamage {
         NONE,
         SENSOR_DAMAGE,
-        SHUTTER_FAULT
+        SHUTTER_FAULT,
+
+        // @@author Rohita-29
+
+        WATER_DAMAGE,
+        BODY_CRACK,
+        MISSING_CAP,
+        OTHER
+
+        // @@author
     }
 
     private final String sensorFormat;
