@@ -10,18 +10,22 @@ import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 import seedu.snap.exceptions.LoanReturnUnsuccessful;
+import seedu.snap.exceptions.LoanHistoryUnsuccessful;
 
 /** Parses loan commands and stores successfully created loans. */
 public class LoanHandler {
@@ -32,6 +36,7 @@ public class LoanHandler {
     private static final String ID_FORMAT = "[0-9]{3}";
     private static final String LOAN_COMMAND_FORMAT = "Invalid command format. Use: loan id/[ITEM ID] "
             + "b/[BORROWER ID] [issued/DD-MM-YY] due/[DD-MM-YY]. Omitted issued/ uses today's date.";
+    private static final Pattern HISTORY_COMMAND = Pattern.compile("(?U)\\Ahistory\\s+id/([0-9]{3})\\z");
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-uu")
             .withResolverStyle(ResolverStyle.STRICT);
 
@@ -111,6 +116,7 @@ public class LoanHandler {
         List<Loan> loaded = result.loans();
         Set<String> activeItemIds = new HashSet<>();
         List<Equipment> activeEquipment = new ArrayList<>();
+        boolean identitiesAdded = false;
         for (Loan loan : loaded) {
             if (loan.isReturned()) {
                 continue;
@@ -119,7 +125,15 @@ public class LoanHandler {
                 throw new IOException("Multiple active loans found for item ID " + loan.getItemId() + ".");
             }
             try {
-                activeEquipment.add(findEquipment(loan.getItemId()));
+                Equipment item = findEquipment(loan.getItemId());
+                if (loan.getEquipmentRecordId() == null) {
+                    loan.bindEquipmentRecordId(item);
+                    identitiesAdded = true;
+                } else if (!loan.getEquipmentRecordId().equals(item.getRecordId())) {
+                    throw new IOException("Active loan " + loan.getLoanId()
+                            + " belongs to a different equipment record for item ID " + loan.getItemId() + ".");
+                }
+                activeEquipment.add(item);
             } catch (LoanAdditionUnsuccessful exception) {
                 throw new IOException("Invalid active loan for item ID " + loan.getItemId() + ": "
                         + exception.getMessage(), exception);
@@ -127,9 +141,9 @@ public class LoanHandler {
         }
 
         // Persist migration before changing the current list, counter, equipment flags or links.
-        if (result.migrated()) {
+        if (result.migrated() || identitiesAdded) {
             LoanStorage.save(storageFile, loaded, sequenceFile, result.nextLoanNumber());
-            logger.log(Level.INFO, "Migrated legacy loan records to persistent loan IDs.");
+            logger.log(Level.INFO, "Migrated legacy loans to persistent loan IDs and known equipment identities.");
         }
         for (Loan loan : loans) {
             loan.detachEquipment();
@@ -515,12 +529,75 @@ public class LoanHandler {
     public void viewAllLoans() {
         assert numLoans == loans.size() : "numLoans should match the size of the loans list";
         logger.log(Level.INFO, "Viewing {0} loan(s)", numLoans);
+        printLoans(loans);
+    }
+
+    /**
+     * Selects active and returned loans for the currently registered physical item.
+     * The query sorts a copy and never guesses associations from a reused Item ID.
+     *
+     * @param input command in the form {@code history id/001}
+     * @return an unmodifiable list in issue-date order, then loan-ID order for equal dates
+     * @throws LoanHistoryUnsuccessful if syntax is invalid or the item is missing or ambiguous
+     */
+    public List<Loan> getLoanHistory(String input) throws LoanHistoryUnsuccessful {
+        String itemId = parseHistoryItemId(input);
+        Equipment current;
+        try {
+            current = findEquipment(itemId);
+        } catch (LoanAdditionUnsuccessful exception) {
+            throw new LoanHistoryUnsuccessful(exception.getMessage());
+        }
+        ArrayList<Loan> history = new ArrayList<>();
+        for (Loan loan : loans) {
+            if (itemId.equals(loan.getItemId()) && current.getRecordId().equals(loan.getEquipmentRecordId())) {
+                history.add(loan);
+            }
+        }
+        history.sort(Comparator.comparing(Loan::getIssuedDate)
+                .thenComparingInt(loan -> Integer.parseInt(loan.getLoanId())));
+        logger.log(Level.FINE, "Selected {0} history record(s) for item ID {1}.",
+                new Object[]{history.size(), itemId});
+        return List.copyOf(history);
+    }
+
+    /** Displays a physical item's history and explains any older returned records that cannot be attributed. */
+    public void viewLoanHistory(String input) throws LoanHistoryUnsuccessful {
+        List<Loan> history = getLoanHistory(input);
+        String itemId = parseHistoryItemId(input);
+        if (history.isEmpty()) {
+            System.out.println("No loan history for item ID " + itemId + ".");
+        } else {
+            System.out.println("Loan history for item ID " + itemId + ":");
+            printLoans(history);
+        }
+        boolean hasUnattributedHistory = loans.stream().anyMatch(loan -> itemId.equals(loan.getItemId())
+                && loan.isReturned() && loan.getEquipmentRecordId() == null);
+        if (hasUnattributedHistory) {
+            System.out.println("Earlier returned loans for this Item ID cannot be attributed to the current item. "
+                    + "Use list loans to view them.");
+        }
+    }
+
+    /** Checks history syntax without reading or writing any record. */
+    private static String parseHistoryItemId(String input) throws LoanHistoryUnsuccessful {
+        if (input != null && !input.matches("(?s).*\\R.*")) {
+            Matcher matcher = HISTORY_COMMAND.matcher(input.replaceAll("(?U)^\\s+|\\s+$", ""));
+            if (matcher.matches() && !matcher.group(1).equals("000")) {
+                return matcher.group(1);
+            }
+        }
+        throw new LoanHistoryUnsuccessful("Invalid format. Use: history id/[ITEM ID], from 001 to 999.");
+    }
+
+    /** Shares the displayed borrowing details between all-loan and individual-item views. */
+    private static void printLoans(List<Loan> records) {
         System.out.printf(
                 "%-4s %-12s | %-12s | %-12s | %-16s | %-16s | %-8s%n",
                 "No.", "LOAN ID", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE", "RETURNED"
         );
-        for (int i = 0; i < numLoans; i++) {
-            Loan item = loans.get(i);
+        for (int i = 0; i < records.size(); i++) {
+            Loan item = records.get(i);
             assert item != null : "Loan list must not contain null items";
             System.out.printf(
                     "%-4s %-12s | %-12s | %-12s | %-16s | %-16s | %-8s%n",

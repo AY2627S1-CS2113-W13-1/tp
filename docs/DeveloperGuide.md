@@ -34,6 +34,40 @@ Tests cover every equipment optional-field subset across all four subtypes, whit
 fixed local dates, explicit dates, one clock read at midnight, invalid supplied values, strict stored records,
 omitted and empty return remarks, required assessments, and failed saves followed by successful retries.
 
+### Viewing the history of a physical equipment item
+
+`history id/001` selects the equipment currently registered under Item ID `001` and displays its active and
+returned loans. `LoanHandler.getLoanHistory(...)` validates the command and finds a unique current item, then
+selects loans whose Item ID and permanent equipment record ID both match. It sorts a copy by issue date and
+numeric loan ID, returning an unmodifiable list. `viewLoanHistory(...)` uses the usual loan table, with a clear
+empty-history message and a separate error for unknown equipment. The query performs no writes.
+
+The three-digit Item ID can be reused after deletion, so it cannot identify a physical item across its lifetime.
+Each new `Equipment` therefore receives a random UUID in `recordId`. Equipment storage writes this identifier
+before the serviceability metadata and the add record, with tabs separating metadata from free text. Names,
+subtype attributes and remarks cannot be mistaken for identity metadata. Duplicate or non-canonical UUIDs are
+rejected before any records are published or migrated.
+
+Loans created from equipment retain the permanent identity in `equipmentRecordId`. Loan storage appends
+`equipment/UUID` after the returned flag. Returning equipment copies the identity into its detached loan proposal;
+equipment assessment and normal-update proposals also retain the original identity. A replacement item receives
+a fresh UUID even if its Item ID, name and type are identical to the deleted item's details.
+
+Legacy equipment records receive UUIDs only after the complete file has been validated. The migrated file must
+be saved successfully before the loaded inventory replaces the current objects. Later loads do not rewrite files
+that already contain identities. Equipment migration may finish before loan migration; retries reuse those saved
+equipment identities rather than generating another set.
+
+An active legacy loan can be attributed to the current item because equipment cannot be deleted during an active
+loan. The loader binds that proposal to the current record ID and persists the migration before changing any live
+loan list, counter, equipment flags or associations. An explicit active identity mismatch is rejected.
+Returned legacy loans cannot be attributed safely because their Item IDs may already have been reused. They retain
+a null identity across future saves and loads and remain visible in `list loans`. Item-specific history excludes
+them and explains relevant omissions. Guessing their ownership from an Item ID would violate history separation.
+
+Tests exercise same-name and different-type replacements, reuse across restarts, retained keys through updates
+and returns, issue-date ordering, read-only queries, malformed metadata, duplicate identities and migration failures.
+
 ### Returning equipment with an assessment
 
 `EqmManager` routes `return loan/001 serviceable/yes damage/none remarks/Checked` to
