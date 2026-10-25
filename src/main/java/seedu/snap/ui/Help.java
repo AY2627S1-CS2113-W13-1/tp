@@ -14,6 +14,8 @@ import seedu.snap.equipment.Tripod;
 /** Provides command help without reading or changing application records. */
 public final class Help {
     private static final String LINE_SEPARATOR = System.lineSeparator();
+    private static final int TEXT_WIDTH = 100;
+    private static final String COMMAND_DIVIDER = "=".repeat(TEXT_WIDTH);
     private static final String OVERVIEW = createOverview();
     private static final List<CommandHelp> COMMANDS = createCommands();
     private static final String TEXT = createText();
@@ -45,7 +47,7 @@ public final class Help {
         }
         for (CommandHelp command : COMMANDS) {
             if (command.command().equals(normalised)) {
-                return OVERVIEW + command.text();
+                return formatReference(command.text(), true) + LINE_SEPARATOR + OVERVIEW;
             }
         }
         return "Unknown help topic. Choose a command from the menu."
@@ -64,17 +66,21 @@ public final class Help {
 
     /** Builds common notation and limits from the equipment model. */
     private static String createOverview() {
-        return lineEndings(String.format(Locale.ROOT, """
+        return formatReference(lineEndings(String.format(Locale.ROOT, """
                 snAp command help
                 <VALUE> is a placeholder. [field/<VALUE>] is optional. Do not type angle or square brackets.
+
                 Commands and field prefixes use exact lowercase spelling. Separate fields with whitespace.
+
                 Equipment, loan and bundle IDs: exactly three digits, 001-999. Borrower IDs: 000-999.
                 Equipment names: 1-%d characters; condition: %d-%d; remarks: 0-%d characters after trimming.
                 Type details: 1-100 characters. Type details and remarks must remain on one line.
+
                 Empty supplied details, damage, IDs or dates are invalid; defaults apply to omitted fields.
+                Wrapped formats and examples must be entered as a single line.
                 """,
                 Equipment.MAX_NAME_LENGTH, Equipment.MIN_CONDITION, Equipment.MAX_CONDITION,
-                Equipment.MAX_REMARKS_LENGTH)) + LINE_SEPARATOR;
+                Equipment.MAX_REMARKS_LENGTH)), false);
     }
 
     /** Keeps each command's description in one immutable entry for every help view. */
@@ -86,16 +92,20 @@ public final class Help {
                         [remarks/<TEXT>]
                         Example: add i/Canon EOS R10 id/001 type/camera cond/1 sensor/APS-C mount/Canon RF damage/NONE
                         Name, unused Item ID, type and condition are required, in that order.
+
                         Type and damage values are case-insensitive. Use the field and damage list for the type:
                           camera: sensor/<TEXT> mount/<TEXT> thread/<TEXT> battery/<TEXT>; damage: %s
                           lens: zoom/<TEXT> mount/<TEXT> sensor/<TEXT>; damage: %s
                           battery: capacity/<TEXT> battery/<TEXT>; damage: %s
                           tripod: thread/<TEXT>; damage: %s
+
                         Optional order: subtype fields in the order shown, then damage/, then final remarks/.
                         Each optional field may be omitted independently.
+
                         Omitted subtype and compatibility details default to unspecified;
                         omitted damage defaults to NONE;
                         omitted remarks default to empty text. Text after final remarks/ is kept as remarks.
+
                         Compatibility comparisons ignore letter case. Missing comparison data produces UNKNOWN;
                         a known mismatch produces INCOMPATIBLE, even when another comparison value is unknown.
                         """,
@@ -114,6 +124,7 @@ public final class Help {
                         Format: delete item/<ID>
                         Example: delete item/001
                         Requires an existing Item ID. Active loans and bundle membership block deletion.
+
                         Existing loans remain in list loans; a replacement using this Item ID has separate history.
                         """)),
                 new CommandHelp("loan", "Loans", lineEndings("""
@@ -121,9 +132,12 @@ public final class Help {
                         Format: loan id/<ITEM ID> b/<BORROWER ID> [issued/<DD-MM-YY>] due/<DD-MM-YY>
                         Example: loan id/001 b/002 issued/24-10-26 due/31-10-26
                         Item ID, borrower ID and due/ are required. Keep the displayed field order.
+
                         Omitted issued/ defaults to today's date in the application's local time zone, at midnight.
                         Both dates use DD-MM-YY. Issue date must be on or before the required due date.
+
                         Equipment must exist, be serviceable and have no active loan.
+
                         Loan IDs are assigned automatically from 001 to 999 and are never reused after deletion.
                         """)),
                 new CommandHelp("return", "Loans", lineEndings(String.format(Locale.ROOT, """
@@ -132,12 +146,16 @@ public final class Help {
                         Example: return loan/001 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair
                         Requires an active Loan ID and explicit serviceable/ and damage/ assessment, in that order.
                         Serviceable yes/no and subtype damage values are case-insensitive; use NONE for no damage.
+
                         Serviceability determines whether the item may be borrowed again; damage alone does not.
+
                         Optional remarks/ must be last. Omitted or empty remarks clear the item's previous remarks.
                         The assessment replaces damage and remarks, preserving subtype details,
                         compatibility attributes and bundle memberships.
+
                         Return permanently marks the retained loan returned; it cannot be returned twice or reactivated.
                         Unserviceable equipment remains unavailable. Changing its numeric condition does not repair it.
+
                         Damage choices by equipment type:
                           camera: %s
                           lens: %s
@@ -152,6 +170,7 @@ public final class Help {
                         Format: delete loan/<LOAN ID>
                         Example: delete loan/001
                         Removes one loan record and its history. Deleting an active loan releases its equipment.
+
                         Deleting returned history leaves newer active loans unchanged. Deleted IDs are never reused.
                         """)),
                 new CommandHelp("list loans", "Loans", lineEndings("""
@@ -174,6 +193,7 @@ public final class Help {
                         Example: history id/001
                         Requires an existing Item ID. Includes its physical item's active and returned loans.
                         Sorted by issue date, earliest first, then Loan ID. Reused Item IDs keep separate histories.
+
                         Older returned records without a proven item association remain available in list loans.
                         """)),
                 new CommandHelp("filter", "Equipment", lineEndings("""
@@ -181,8 +201,10 @@ public final class Help {
                         Format: filter [id/<ID>] [i/<NAME>] [type/<TYPE>] [cond/<N|MIN-MAX>] [status/<STATUS>]
                         Example: filter type/camera cond/1-3 status/available
                         Supply at least one filter, in any order, with each prefix once. All filters must match (AND).
+
                         Names use case-insensitive partial matching; types use case-insensitive full matching.
                         cond/ accepts one value or an inclusive ascending range, such as 1-3.
+
                         status/ accepts available or loaned. Available excludes active loans and unserviceable items.
                         """)),
                 new CommandHelp("update", "Equipment", lineEndings("""
@@ -190,6 +212,7 @@ public final class Help {
                         Format: update id/<ID> [i/<NAME>] [type/<TYPE>] [cond/<N>]
                         Example: update id/001 i/Studio camera cond/5
                         Requires an existing Item ID and at least one update field, in any order, each prefix once.
+
                         Omitted fields retain their current values. Type is fixed; type/ must match the current type.
                         Updates retain subtype details, damage, remarks, serviceability, loans and bundle membership.
                         """)),
@@ -198,6 +221,7 @@ public final class Help {
                         Format: add-bundle name/<NAME>
                         Example: add-bundle name/Studio kit
                         Requires a name of 1-100 characters. Bundle IDs are assigned automatically, 001-999.
+
                         Bundles exist only for the current session and are not saved between application runs.
                         """)),
                 new CommandHelp("add-to-bundle", "Bundles", lineEndings("""
@@ -206,6 +230,7 @@ public final class Help {
                         Example: add-to-bundle id/001 001 002 003
                         Requires an existing bundle and at least one existing, serviceable, unloaned equipment item.
                         An item may appear only once per bundle. Each requested Item ID receives its own result.
+
                         A complete bundle has exactly one camera, at least one lens and at least one battery.
                         A tripod is optional, with at most one. Additional cameras and tripods are rejected.
                         """)),
@@ -227,6 +252,7 @@ public final class Help {
                         Format: help all
                         Example: help all
                         Shows the complete command guide.
+
                         Unknown topics report an error and show the command menu.
                         Help never changes records, identifiers or saved data, and never ends the session.
                         """)),
@@ -241,20 +267,107 @@ public final class Help {
 
     /** Builds the full reference from the same descriptions used for topic help. */
     private static String createText() {
-        return OVERVIEW + COMMANDS.stream().map(CommandHelp::text).collect(Collectors.joining(LINE_SEPARATOR));
+        String commandGap = LINE_SEPARATOR.repeat(2);
+        return OVERVIEW + commandGap + COMMANDS.stream()
+                .map(command -> formatReference(command.text(), true)).collect(Collectors.joining(commandGap));
     }
 
     /** Groups command names from the reference so the menu cannot omit an existing entry. */
     private static String createMenu() {
-        StringBuilder menu = new StringBuilder("snAp command menu").append(LINE_SEPARATOR);
+        String border = "+" + "-".repeat(TEXT_WIDTH - 2) + "+" + LINE_SEPARATOR;
+        StringBuilder menu = new StringBuilder(border);
+        appendMenuRow(menu, "snAp command menu");
+        menu.append(border);
         for (String group : List.of("Equipment", "Loans", "Bundles", "General")) {
             String commands = COMMANDS.stream().filter(command -> command.group().equals(group))
                     .map(CommandHelp::command).collect(Collectors.joining(" | "));
-            menu.append(group).append(": ").append(commands).append(LINE_SEPARATOR);
+            appendMenuRow(menu, group + ": " + commands);
         }
-        return menu.append(LINE_SEPARATOR)
-                .append("Details: help <COMMAND> (for example, help loan or help list overdue)")
-                .append(LINE_SEPARATOR).append("Complete reference: help all").append(LINE_SEPARATOR).toString();
+        appendMenuRow(menu, "");
+        appendMenuRow(menu, "Type help <COMMAND> for details (for example, help loan or help list overdue).");
+        appendMenuRow(menu, "Type help all for the complete reference.");
+        return menu.append(border).toString();
+    }
+
+    /** Pads each menu row to the same width, including its ASCII borders. */
+    private static void appendMenuRow(StringBuilder menu, String text) {
+        menu.append("| ").append(text).append(" ".repeat(TEXT_WIDTH - 4 - text.length()))
+                .append(" |").append(LINE_SEPARATOR);
+    }
+
+    /** Separates headings, command examples and note paragraphs while preserving their content. */
+    private static String formatReference(String text, boolean showNotesHeading) {
+        List<String> lines = text.lines().toList();
+        String title = lines.getFirst();
+        StringBuilder formatted = new StringBuilder();
+        if (showNotesHeading) {
+            formatted.append(COMMAND_DIVIDER).append(LINE_SEPARATOR);
+        }
+        formatted.append(title).append(LINE_SEPARATOR)
+                .append(showNotesHeading ? COMMAND_DIVIDER : "-".repeat(title.length()))
+                .append(LINE_SEPARATOR).append(LINE_SEPARATOR);
+        boolean needsNotesHeading = showNotesHeading;
+        int index = 1;
+        while (index < lines.size()) {
+            String line = lines.get(index);
+            if (line.isBlank()) {
+                index++;
+                continue;
+            }
+            if (isCommandExample(line)) {
+                int colon = line.indexOf(':');
+                formatted.append(line, 0, colon + 1).append(LINE_SEPARATOR);
+                appendWrapped(formatted, line.substring(colon + 1).strip(), "  ", "  ");
+                formatted.append(LINE_SEPARATOR);
+                needsNotesHeading = showNotesHeading;
+                index++;
+                continue;
+            }
+            if (needsNotesHeading) {
+                formatted.append("Notes:").append(LINE_SEPARATOR);
+                needsNotesHeading = false;
+            }
+            if (line.startsWith("  ")) {
+                while (index < lines.size() && lines.get(index).startsWith("  ")) {
+                    appendWrapped(formatted, lines.get(index++).strip(), "    ", "      ");
+                }
+            } else {
+                StringBuilder paragraph = new StringBuilder();
+                while (index < lines.size() && !lines.get(index).isBlank()
+                        && !isCommandExample(lines.get(index)) && !lines.get(index).startsWith("  ")) {
+                    if (!paragraph.isEmpty()) {
+                        paragraph.append(' ');
+                    }
+                    paragraph.append(lines.get(index++));
+                }
+                appendWrapped(formatted, paragraph.toString(), "  ", "  ");
+            }
+            formatted.append(LINE_SEPARATOR);
+        }
+        return formatted.toString().stripTrailing() + LINE_SEPARATOR;
+    }
+
+    /** Identifies syntax and example lines before their display labels are separated. */
+    private static boolean isCommandExample(String line) {
+        return line.startsWith("Format: ") || line.startsWith("Example: ");
+    }
+
+    /** Wraps at spaces so words and field values are retained, with indented continuation lines. */
+    private static void appendWrapped(StringBuilder output, String text, String indent, String continuation) {
+        StringBuilder line = new StringBuilder(indent);
+        int contentStart = indent.length();
+        for (String word : text.split(" +")) {
+            if (line.length() > contentStart && line.length() + 1 + word.length() > TEXT_WIDTH) {
+                output.append(line).append(LINE_SEPARATOR);
+                line = new StringBuilder(continuation);
+                contentStart = continuation.length();
+            }
+            if (line.length() > contentStart) {
+                line.append(' ');
+            }
+            line.append(word);
+        }
+        output.append(line).append(LINE_SEPARATOR);
     }
 
     /** Converts the fixed text blocks to platform line endings. */

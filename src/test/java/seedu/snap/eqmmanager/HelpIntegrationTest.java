@@ -21,6 +21,7 @@ import java.time.ZoneOffset;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
@@ -124,9 +125,9 @@ class HelpIntegrationTest {
 
         manager.executeInput(command);
 
-        assertTrue(printed().contains("Command not recognised"));
-        assertTrue(printed().contains("Type help"));
-        assertFalse(printed().contains("loan id/"));
+        assertTrue(printedContent().contains("Command not recognised"));
+        assertTrue(printedContent().contains("Type help"));
+        assertFalse(printedContent().contains("loan id/"));
         assertEquals(before, snapshot(manager));
         assertSavedFilesUnchanged(filesBefore);
         assertEquals(pathsBefore, treePaths(dataDirectory));
@@ -137,9 +138,23 @@ class HelpIntegrationTest {
         manager.executeInput("help");
 
         assertMenuPrinted();
-        assertFalse(printed().contains("Format: loan id/"));
-        assertFalse(printed().contains("damage/SENSOR_DAMAGE"));
+        assertFalse(printedContent().contains("Format: loan id/"));
+        assertFalse(printedContent().contains("damage/SENSOR_DAMAGE"));
         assertTrue(printed().lines().count() <= 24, "The command menu should fit a normal terminal screen");
+    }
+
+    @Test
+    void help_all_wrapsTextAndKeepsCommandBlocksSeparate() {
+        manager.executeInput("help all");
+
+        List<String> lines = printed().lines().toList();
+        assertTrue(lines.stream().allMatch(line -> line.length() <= 100));
+        assertEquals(18, lines.stream().filter("Format:"::equals).count());
+        assertEquals(18, lines.stream().filter("Example:"::equals).count());
+        assertTrue(printed().contains(System.lineSeparator() + System.lineSeparator() + "Format:"
+                + System.lineSeparator() + "  "));
+        assertTrue(printed().contains(System.lineSeparator() + System.lineSeparator() + "Example:"
+                + System.lineSeparator() + "  "));
     }
 
     @ParameterizedTest
@@ -164,12 +179,12 @@ class HelpIntegrationTest {
     void help_commandTopic_showsOnlyRequestedCommandWithExample(String topic, String expectedFormat) {
         manager.executeInput("help " + topic);
 
-        assertTrue(printed().contains(expectedFormat), topic);
-        assertTrue(printed().contains("Example: " + topic), topic);
-        assertFalse(printed().contains("Command not recognised"), topic);
-        assertFalse(printed().contains("Unknown help topic"), topic);
+        assertTrue(printedContent().contains(expectedFormat), topic);
+        assertTrue(printedContent().contains("Example: " + topic), topic);
+        assertFalse(printedContent().contains("Command not recognised"), topic);
+        assertFalse(printedContent().contains("Unknown help topic"), topic);
         String unrelated = topic.equals("loan") ? "Format: add i/" : "Format: loan id/";
-        assertFalse(printed().contains(unrelated), "Topic help should omit unrelated command sections");
+        assertFalse(printedContent().contains(unrelated), "Topic help should omit unrelated command sections");
     }
 
     @ParameterizedTest
@@ -178,9 +193,9 @@ class HelpIntegrationTest {
     void help_singleWordTopicWhitespace_showsLoanSyntax(String command) {
         manager.executeInput(command);
 
-        assertTrue(printed().contains("Format: loan id/<ITEM ID>"));
-        assertTrue(printed().contains("Omitted issued/ defaults to today's date"));
-        assertFalse(printed().contains("Format: return loan/"));
+        assertTrue(printedContent().contains("Format: loan id/<ITEM ID>"));
+        assertTrue(printedContent().contains("Omitted issued/ defaults to today's date"));
+        assertFalse(printedContent().contains("Format: return loan/"));
     }
 
     @ParameterizedTest
@@ -189,9 +204,9 @@ class HelpIntegrationTest {
     void help_multiWordTopicWhitespace_showsExactOverdueTopic(String command) {
         manager.executeInput(command);
 
-        assertTrue(printed().contains("Format: list overdue"));
-        assertTrue(printed().contains("Returned loans and loans due today or later are excluded."));
-        assertFalse(printed().contains("Format: list loans"));
+        assertTrue(printedContent().contains("Format: list overdue"));
+        assertTrue(printedContent().contains("Returned loans and loans due today or later are excluded."));
+        assertFalse(printedContent().contains("Format: list loans"));
     }
 
     @ParameterizedTest
@@ -199,12 +214,12 @@ class HelpIntegrationTest {
     void help_all_showsCompleteReference(String command) {
         manager.executeInput(command);
 
-        assertTrue(printed().contains("Format: add i/<NAME>"));
-        assertTrue(printed().contains("Format: loan id/<ITEM ID>"));
-        assertTrue(printed().contains("Format: return loan/<LOAN ID>"));
-        assertTrue(printed().contains("Format: add-to-bundle id/<BUNDLE ID>"));
-        assertTrue(printed().contains("Format: bye"));
-        assertTrue(printed().contains("Omitted issued/ defaults to today's date"));
+        assertTrue(printedContent().contains("Format: add i/<NAME>"));
+        assertTrue(printedContent().contains("Format: loan id/<ITEM ID>"));
+        assertTrue(printedContent().contains("Format: return loan/<LOAN ID>"));
+        assertTrue(printedContent().contains("Format: add-to-bundle id/<BUNDLE ID>"));
+        assertTrue(printedContent().contains("Format: bye"));
+        assertTrue(printedContent().contains("Omitted issued/ defaults to today's date"));
     }
 
     @ParameterizedTest
@@ -213,10 +228,10 @@ class HelpIntegrationTest {
     void help_unknownTopic_showsErrorAndRecoverableMenu(String command) {
         manager.executeInput(command);
 
-        assertTrue(printed().contains("Unknown help topic"));
+        assertTrue(printedContent().contains("Unknown help topic"));
         assertMenuPrinted();
-        assertFalse(printed().contains("Command not recognised"));
-        assertFalse(printed().contains("Format: loan id/"));
+        assertFalse(printedContent().contains("Command not recognised"));
+        assertFalse(printedContent().contains("Format: loan id/"));
     }
 
     @Test
@@ -250,8 +265,8 @@ class HelpIntegrationTest {
 
         executeAllHelpForms(manager, before);
 
-        assertFalse(printed().contains("Could not save"));
-        assertFalse(printed().contains("Could not load"));
+        assertFalse(printedContent().contains("Could not save"));
+        assertFalse(printedContent().contains("Could not load"));
         assertEquals(before, snapshot(manager));
         assertSavedFilesUnchanged(blockedFiles);
         assertEquals(blockedPaths, treePaths(dataDirectory));
@@ -267,8 +282,8 @@ class HelpIntegrationTest {
         manager.executeInput("loan id/006 b/333 due/25-10-26");
         manager.executeInput("add-bundle name/Next kit");
 
-        assertTrue(printed().contains("Loan 003 added successfully."));
-        assertTrue(printed().contains("Bundle 002 added successfully."));
+        assertTrue(printedContent().contains("Loan 003 added successfully."));
+        assertTrue(printedContent().contains("Bundle 002 added successfully."));
         assertEquals("004", readField(manager, "loans", LoanHandler.class).getNextLoanId());
         assertEquals(3, readField(manager, "loans", LoanHandler.class).getLoanCount());
         assertEquals("003", readField(manager, "equipment", EquipmentHandler.class)
@@ -284,9 +299,9 @@ class HelpIntegrationTest {
         manager.executeInput("list loans");
         manager.executeInput("history id/001");
 
-        assertTrue(printed().contains("updated successfully"));
-        assertTrue(printed().contains("BORROWER ID"));
-        assertTrue(printed().contains("222"));
+        assertTrue(printedContent().contains("updated successfully"));
+        assertTrue(printedContent().contains("BORROWER ID"));
+        assertTrue(printedContent().contains("222"));
         assertEquals("Updated spare battery", readField(manager, "equipment", EquipmentHandler.class)
                 .getEquipmentById("006").getItemName());
         assertTrue(readField(manager, "isRunning", Boolean.class));
@@ -300,15 +315,51 @@ class HelpIntegrationTest {
 
         interactive.run();
 
-        assertTrue(printed().contains("Welcome to snAp."));
-        assertTrue(printed().contains("Type help"));
+        assertTrue(printedContent().contains("Welcome to snAp."));
+        assertTrue(printedContent().contains("Type help"));
         assertMenuPrinted();
-        assertTrue(printed().contains("Format: loan id/<ITEM ID>"));
-        assertTrue(printed().contains("Unknown help topic"));
-        assertTrue(printed().contains("Goodbye."));
+        assertTrue(printedContent().contains("Format: loan id/<ITEM ID>"));
+        assertTrue(printedContent().contains("Unknown help topic"));
+        assertTrue(printedContent().contains("Goodbye."));
         assertFalse(readField(interactive, "isRunning", Boolean.class));
         assertTrue(printed().indexOf("Welcome") < printed().indexOf("loan id/"));
         assertTrue(printed().indexOf("loan id/") < printed().indexOf("Goodbye."));
+
+        String newline = System.lineSeparator();
+        String divider = "-".repeat(100);
+        String inputBoundary = newline + divider + newline + ">>> " + newline + divider + newline + newline;
+        String[] responses = printed().split(Pattern.quote(inputBoundary), -1);
+        assertEquals(7, responses.length, "Each of the six input prompts must have dividers and surrounding spacing.");
+        assertTrue(responses[0].contains("Welcome to snAp."));
+        assertTrue(responses[1].contains("snAp command menu"));
+        assertTrue(responses[2].contains("ADD LOAN"));
+        assertTrue(responses[3].contains("Unknown help topic"));
+        assertTrue(responses[4].contains("ADD EQUIPMENT"));
+        assertTrue(responses[5].contains("EXIT"));
+        assertEquals("Goodbye." + newline, responses[6]);
+    }
+
+    @Test
+    void run_byeOnly_printsBoxedMenuBetweenWelcomeAndFirstPrompt() throws Exception {
+        System.setIn(new ByteArrayInputStream("bye\n".getBytes(StandardCharsets.UTF_8)));
+        EqmManager interactive = new EqmManager(temporaryDirectory.resolve("startup-menu-data"), FIXED_CLOCK);
+
+        interactive.run();
+
+        assertMenuPrinted();
+        String text = printed();
+        String border = text.lines().filter(line -> line.matches("\\+-+\\+")).findFirst().orElseThrow();
+        int welcome = text.indexOf("Welcome to snAp.");
+        int menu = text.indexOf(border);
+        int prompt = text.indexOf(">>>");
+        assertTrue(welcome >= 0 && welcome < menu);
+        assertTrue(menu < text.indexOf("snAp command menu"));
+        assertTrue(text.indexOf("snAp command menu") < prompt);
+        assertTrue(text.lastIndexOf(border) < prompt, "The complete box should precede the first input prompt.");
+        assertEquals(1, text.lines().filter(line -> line.contains("snAp command menu")).count());
+        assertFalse(printedContent().contains("Format:"), "Startup should show the compact menu.");
+        assertTrue(printedContent().contains("Goodbye."));
+        assertFalse(readField(interactive, "isRunning", Boolean.class));
     }
 
     @Test
@@ -323,9 +374,9 @@ class HelpIntegrationTest {
 
         invalid.run();
 
-        assertTrue(printed().contains("Could not load saved data"));
-        assertFalse(printed().contains("Welcome to snAp."));
-        assertFalse(printed().contains("loan id/"));
+        assertTrue(printedContent().contains("Could not load saved data"));
+        assertFalse(printedContent().contains("Welcome to snAp."));
+        assertFalse(printedContent().contains("loan id/"));
         assertEquals(original, Files.readString(invalidLoans));
         assertFalse(Files.exists(invalidDirectory.resolve("equipment.txt")));
         assertFalse(Files.exists(invalidDirectory.resolve("loan-sequence.txt")));
@@ -399,10 +450,10 @@ class HelpIntegrationTest {
             for (String command : HELP_COMMANDS) {
                 output.reset();
                 target.executeInput(command);
-                assertFalse(printed().contains("Command not recognised"), command);
-                assertFalse(printed().contains("Could not save"), command);
-                assertFalse(printed().contains("Could not load"), command);
-                assertTrue(printed().contains("help"), command);
+                assertFalse(printedContent().contains("Command not recognised"), command);
+                assertFalse(printedContent().contains("Could not save"), command);
+                assertFalse(printedContent().contains("Could not load"), command);
+                assertTrue(printedContent().contains("help"), command);
                 assertEquals(expected, snapshot(target), command);
             }
         }
@@ -410,17 +461,25 @@ class HelpIntegrationTest {
 
     /** Checks the discovery menu independently of the production text generator. */
     private void assertMenuPrinted() {
-        assertTrue(printed().contains("help all"));
-        assertTrue(printed().contains("help loan"));
-        assertTrue(printed().contains("list overdue"));
-        assertTrue(printed().contains("delete item"));
-        assertTrue(printed().contains("add-to-bundle"));
-        assertTrue(printed().contains("list bundles"));
+        assertTrue(printedContent().contains("help all"));
+        assertTrue(printedContent().contains("help <COMMAND>"));
+        assertTrue(printedContent().contains("help list overdue"));
+        assertTrue(printedContent().contains("list overdue"));
+        assertTrue(printedContent().contains("delete item"));
+        assertTrue(printedContent().contains("add-to-bundle"));
+        assertTrue(printedContent().contains("list bundles"));
+        assertTrue(printed().lines().anyMatch(line -> line.matches("\\+-+\\+")));
+        assertTrue(printed().lines().anyMatch(line -> line.startsWith("| ") && line.endsWith(" |")));
     }
 
-    /** Reads captured application output independently of line endings or table spacing. */
+    /** Reads captured application output with its original line endings and spacing. */
     private String printed() {
         return output.toString(StandardCharsets.UTF_8);
+    }
+
+    /** Ignores display wrapping while preserving wording in help and application messages. */
+    private String printedContent() {
+        return printed().replaceAll("\\s+", " ").strip();
     }
 
     /** Includes the identity and assessment of each physical item and its current loan ownership. */

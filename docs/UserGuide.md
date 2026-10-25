@@ -11,11 +11,30 @@ application sessions. Bundles group equipment during the current session.
 2. From the project directory, run `./gradlew run` on macOS/Linux or `.\gradlew.bat run` on Windows.
 3. Enter one command per line. Type `bye` to exit.
 
+The welcome screen displays the snAp logo. It uses green on supported
+interactive terminals and plain text when output is redirected. Gradle pipes the application's output, so you
+can request colour in PowerShell with `$env:SNAP_COLOUR = 'always'` before running the application. On
+macOS/Linux, use `SNAP_COLOUR=always ./gradlew run`. Set `SNAP_COLOUR=never` to disable colour, or remove the
+variable to restore automatic detection. A non-empty `NO_COLOR` variable or `TERM=dumb` also disables colour.
+
+The logo uses `#` by default, preserving every space and line break in the original artwork.
+Use `$env:SNAP_LOGO = 'ascii'` in PowerShell to force `#`, or `$env:SNAP_LOGO = 'unicode'` to request `█`.
+On macOS/Linux, use `SNAP_LOGO=ascii ./gradlew run` or `SNAP_LOGO=unicode ./gradlew run`.
+Even with `SNAP_LOGO=unicode`, an output encoding that cannot represent `█` falls back to `#`.
+The optional `SNAP_LOGO=auto` mode uses blocks only on an attached terminal with a suitable output encoding;
+redirected output, including Gradle runs, and `TERM=dumb` terminals use `#`. Font support cannot be detected.
+Remove `SNAP_LOGO` to restore the ASCII default. Colour works with either version.
+
+After the logo and loaded-record counts, snAp displays a boxed command menu automatically. The menu groups
+commands by Equipment, Loans, Bundles and General, and shows how to request more help.
+The `>>>` input prompt is separated from the previous output and the next response by horizontal lines
+and blank lines.
+
 ## Getting help: `help`
 
 | Format | What it displays | Example |
 | --- | --- | --- |
-| `help` | A compact command menu grouped into Equipment, Loans, Bundles and General | `help` |
+| `help` | The same boxed command menu shown at startup | `help` |
 | `help <command>` | The format, example, fields, defaults and restrictions for one command | `help loan` |
 | `help all` | The complete command reference | `help all` |
 
@@ -32,7 +51,11 @@ they are not help topics. An unknown topic, such as `help loans`, displays an er
 menu so that you can choose a supported topic.
 
 Help uses `<VALUE>` for a value you must replace and `[field/<VALUE>]` for a field you can omit.
-The welcome message and unrecognised-command errors point to `help`.
+Command details have separate headings, formats, examples and notes, with blank lines between them.
+Each command heading has a full-width divider above and below it. In `help all`, two blank lines separate
+each command from the previous section.
+Help text wraps at 100 columns. A long displayed format or example can span several rows; enter each command
+on one line. Unrecognised-command errors point to `help`.
 
 Every help request, including an unknown topic, leaves equipment, loans, bundles, availability, identifiers and
 saved records unchanged. You can then enter another command normally. Help does not save data or end the session.

@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
@@ -63,8 +64,8 @@ class HelpTest {
     void getText_eachCommand_includesSyntaxAndExample(String topic, String format, String example) {
         String text = Help.getText();
 
-        assertTrue(text.lines().anyMatch(line -> line.equals("Format: " + format)), format);
-        assertTrue(text.lines().anyMatch(line -> line.equals("Example: " + example)), example);
+        assertTrue(labelledValues(text, "Format:").contains(format), format);
+        assertTrue(labelledValues(text, "Example:").contains(example), example);
     }
 
     @ParameterizedTest
@@ -72,16 +73,17 @@ class HelpTest {
     void getText_commandTopic_includesOnlyItsGuideAndSharedNotation(String topic, String format, String example) {
         String text = Help.getText(topic);
 
-        assertTrue(text.lines().anyMatch(line -> line.equals("Format: " + format)), topic);
-        assertTrue(text.lines().anyMatch(line -> line.equals("Example: " + example)), topic);
-        assertTrue(text.contains("<VALUE> is a placeholder. [field/<VALUE>] is optional."));
-        assertTrue(text.contains("Commands and field prefixes use exact lowercase spelling."));
-        assertTrue(text.contains("001-999. Borrower IDs: 000-999."));
+        assertTrue(labelledValues(text, "Format:").contains(format), topic);
+        assertTrue(labelledValues(text, "Example:").contains(example), topic);
+        String prose = normaliseWhitespace(text);
+        assertTrue(prose.contains("<VALUE> is a placeholder. [field/<VALUE>] is optional."));
+        assertTrue(prose.contains("Commands and field prefixes use exact lowercase spelling."));
+        assertTrue(prose.contains("001-999. Borrower IDs: 000-999."));
         commandExamples().forEach(arguments -> {
             String otherTopic = (String) arguments.get()[0];
             String otherFormat = (String) arguments.get()[1];
             if (!topic.equals(otherTopic)) {
-                assertFalse(text.lines().anyMatch(line -> line.equals("Format: " + otherFormat)),
+                assertFalse(labelledValues(text, "Format:").contains(otherFormat),
                         topic + " should not include the guide for " + otherTopic);
             }
         });
@@ -96,7 +98,8 @@ class HelpTest {
         for (String group : List.of("equipment", "loan", "bundle")) {
             assertTrue(lowerCaseText.contains(group), "The menu should group " + group + " commands.");
         }
-        List<String> groupLines = text.lines()
+        List<String> groupLines = text.lines().filter(line -> line.startsWith("| ") && line.endsWith(" |"))
+                .map(line -> line.substring(2, line.length() - 2).stripTrailing())
                 .filter(line -> line.matches("(?:Equipment|Loans|Bundles|General): .*"))
                 .toList();
         assertEquals(4, groupLines.size());
@@ -115,6 +118,78 @@ class HelpTest {
     }
 
     @Test
+    void getText_menu_usesAlignedAsciiBoxWithinTerminalWidth() {
+        List<String> lines = Help.getText("").lines().toList();
+        String border = lines.getFirst();
+
+        assertTrue(border.matches("\\+-+\\+"));
+        assertEquals(border, lines.getLast());
+        assertTrue(border.length() <= 100, "The menu should fit within 100 terminal columns.");
+        for (String line : lines) {
+            assertEquals(border.length(), line.length(), "All box edges must align.");
+            assertTrue(line.equals(border) || line.startsWith("| ") && line.endsWith(" |"), line);
+            assertTrue(line.chars().allMatch(character -> character >= 32 && character <= 126),
+                    "The box must work without Unicode border characters.");
+        }
+    }
+
+    @ParameterizedTest
+    @MethodSource("printTopics")
+    void getText_eachGuide_limitsLineWidthAndSeparatesSyntaxFromExamples(String topic) {
+        String text = Help.getText(topic);
+        List<String> lines = text.lines().toList();
+
+        for (int index = 0; index < lines.size(); index++) {
+            String line = lines.get(index);
+            assertTrue(line.length() <= 100, "Line exceeds 100 columns: " + line);
+            if (line.equals("Format:") || line.equals("Example:")) {
+                assertTrue(index + 1 < lines.size(), "A label must have command text.");
+                assertTrue(lines.get(index + 1).startsWith("  "),
+                        "Syntax and examples should be indented beneath their labels.");
+                assertTrue(index > 0 && lines.get(index - 1).isBlank(),
+                        "Labels should have a blank line before them.");
+            }
+        }
+    }
+
+    @Test
+    void getText_topic_placesRequestedCommandBeforeSharedRulesAndUsesHeadingSeparators() {
+        String text = Help.getText("loan");
+        List<String> lines = text.lines().toList();
+
+        assertEquals("=".repeat(100), lines.getFirst());
+        assertEquals("ADD LOAN", lines.get(1));
+        assertEquals(lines.getFirst(), lines.get(2));
+        assertTrue(lines.get(3).isBlank());
+        assertTrue(text.indexOf("Format:") < text.indexOf("snAp command help"));
+        assertTrue(text.contains(System.lineSeparator() + "Notes:" + System.lineSeparator()));
+    }
+
+    @Test
+    void getText_all_separatesEveryCommandWithSpacedFullWidthHeadingBands() {
+        List<String> lines = Help.getText("all").lines().toList();
+        List<String> headings = List.of("ADD EQUIPMENT", "LIST EQUIPMENT", "DELETE EQUIPMENT", "ADD LOAN",
+                "RETURN EQUIPMENT", "DELETE LOAN", "LIST LOANS", "LIST OVERDUE LOANS", "ITEM LOAN HISTORY",
+                "FILTER EQUIPMENT", "UPDATE EQUIPMENT", "CREATE BUNDLE", "ADD EQUIPMENT TO BUNDLE",
+                "LIST BUNDLES", "HELP", "EXIT");
+        String divider = "=".repeat(100);
+
+        assertEquals(headings.size() * 2L, lines.stream().filter(divider::equals).count());
+        int previousHeading = -1;
+        for (String heading : headings) {
+            int index = lines.indexOf(heading);
+            assertTrue(index > previousHeading, "Each command must appear once in the documented order: " + heading);
+            assertTrue(index >= 3, "A command heading must follow a divider and two blank lines: " + heading);
+            assertTrue(lines.get(index - 3).isBlank(), "Leave two blank lines before " + heading);
+            assertTrue(lines.get(index - 2).isBlank(), "Leave two blank lines before " + heading);
+            assertEquals(divider, lines.get(index - 1), heading);
+            assertEquals(divider, lines.get(index + 1), heading);
+            assertTrue(lines.get(index + 2).isBlank(), "Separate the heading from its command syntax: " + heading);
+            previousHeading = index;
+        }
+    }
+
+    @Test
     void getText_allTopic_retainsCompleteReference() {
         assertEquals(Help.getText(), Help.getText("all"));
         assertEquals(Help.getText(), Help.getText(" \tall\u2003 "));
@@ -128,8 +203,8 @@ class HelpTest {
         assertEquals(Help.getText("list loans"), Help.getText("list\nloans"));
         assertEquals(Help.getText("list overdue"), Help.getText("list\u00a0overdue"));
         assertEquals(Help.getText("list bundles"), Help.getText("list\u2009\u202fbundles"));
-        assertFalse(Help.getText("list").contains("Format: list loans"));
-        assertFalse(Help.getText("delete item").contains("Format: delete loan/<LOAN ID>"));
+        assertFalse(labelledValues(Help.getText("list"), "Format:").contains("list loans"));
+        assertFalse(labelledValues(Help.getText("delete item"), "Format:").contains("delete loan/<LOAN ID>"));
     }
 
     /** Supplies misspellings, partial topics and aliases that must not select a command guide. */
@@ -145,28 +220,28 @@ class HelpTest {
 
         assertTrue(text.toLowerCase(Locale.ROOT).contains("unknown"), topic);
         assertTrue(text.contains(Help.getText("")), "The error should include the same compact menu.");
-        assertFalse(text.contains("Format: add i/<NAME>"));
+        assertTrue(labelledValues(text, "Format:").isEmpty());
     }
 
     @Test
     void getText_topicGuides_retainRelevantRequirementsDefaultsAndRestrictions() {
-        assertTrue(Help.getText("add").contains("Name, unused Item ID, type and condition are required"));
-        assertTrue(Help.getText("add").contains("omitted damage defaults to NONE;"));
-        assertTrue(Help.getText("delete item").contains("Active loans and bundle membership block deletion."));
-        assertTrue(Help.getText("loan").contains("Omitted issued/ defaults to today's date"));
-        assertTrue(Help.getText("loan").contains("Issue date must be on or before the required due date."));
-        assertTrue(Help.getText("return").contains("explicit serviceable/ and damage/ assessment"));
-        assertTrue(Help.getText("return").contains("Omitted or empty remarks clear the item's previous remarks."));
-        assertTrue(Help.getText("delete loan").contains(
+        assertTrue(proseFor("add").contains("Name, unused Item ID, type and condition are required"));
+        assertTrue(proseFor("add").contains("omitted damage defaults to NONE;"));
+        assertTrue(proseFor("delete item").contains("Active loans and bundle membership block deletion."));
+        assertTrue(proseFor("loan").contains("Omitted issued/ defaults to today's date"));
+        assertTrue(proseFor("loan").contains("Issue date must be on or before the required due date."));
+        assertTrue(proseFor("return").contains("explicit serviceable/ and damage/ assessment"));
+        assertTrue(proseFor("return").contains("Omitted or empty remarks clear the item's previous remarks."));
+        assertTrue(proseFor("delete loan").contains(
                 "Deleting returned history leaves newer active loans unchanged."));
-        assertTrue(Help.getText("list overdue").contains("Returned loans and loans due today or later are excluded."));
-        assertTrue(Help.getText("history").contains("Reused Item IDs keep separate histories."));
-        assertTrue(Help.getText("filter").contains("All filters must match (AND)."));
-        assertTrue(Help.getText("update").contains("Omitted fields retain their current values."));
-        assertTrue(Help.getText("add-bundle").contains("Bundles exist only for the current session"));
-        assertTrue(Help.getText("add-to-bundle").contains(
+        assertTrue(proseFor("list overdue").contains("Returned loans and loans due today or later are excluded."));
+        assertTrue(proseFor("history").contains("Reused Item IDs keep separate histories."));
+        assertTrue(proseFor("filter").contains("All filters must match (AND)."));
+        assertTrue(proseFor("update").contains("Omitted fields retain their current values."));
+        assertTrue(proseFor("add-bundle").contains("Bundles exist only for the current session"));
+        assertTrue(proseFor("add-to-bundle").contains(
                 "exactly one camera, at least one lens and at least one battery."));
-        assertTrue(Help.getText("bye").contains("A save failure keeps the application running;"));
+        assertTrue(proseFor("bye").contains("A save failure keeps the application running;"));
     }
 
     @Test
@@ -180,7 +255,7 @@ class HelpTest {
 
     @Test
     void getText_notationAndLimits_distinguishOptionalFieldsAndIdentifierRanges() {
-        String text = Help.getText();
+        String text = normaliseWhitespace(Help.getText());
 
         assertTrue(text.contains("<VALUE> is a placeholder. [field/<VALUE>] is optional."));
         assertTrue(text.contains("Commands and field prefixes use exact lowercase spelling."));
@@ -195,7 +270,7 @@ class HelpTest {
 
     @Test
     void getText_addEquipment_explainsIndependentDefaultsAndSubtypeDamageChoices() {
-        String text = Help.getText();
+        String text = normaliseWhitespace(Help.getText());
 
         assertTrue(text.contains("Name, unused Item ID, type and condition are required"));
         assertTrue(text.contains(
@@ -221,7 +296,7 @@ class HelpTest {
 
     @Test
     void getText_loanAndReturn_explainDateDefaultsAssessmentAndRetainedHistory() {
-        String text = Help.getText();
+        String text = normaliseWhitespace(Help.getText());
 
         assertTrue(text.contains("Item ID, borrower ID and due/ are required."));
         assertTrue(text.contains("Omitted issued/ defaults to today's date"));
@@ -240,7 +315,7 @@ class HelpTest {
 
     @Test
     void getText_historyAndDeletion_distinguishPhysicalItemsAndLoanRemoval() {
-        String text = Help.getText();
+        String text = normaliseWhitespace(Help.getText());
 
         assertTrue(text.contains("Active loans and bundle membership block deletion."));
         assertTrue(text.contains("Removes one loan record and its history."));
@@ -253,7 +328,7 @@ class HelpTest {
 
     @Test
     void getText_filterAndUpdate_explainFieldCombinationsMatchingAndPreservation() {
-        String text = Help.getText();
+        String text = normaliseWhitespace(Help.getText());
 
         assertTrue(text.contains("Supply at least one filter, in any order, with each prefix once."));
         assertTrue(text.contains("All filters must match (AND)."));
@@ -269,7 +344,7 @@ class HelpTest {
 
     @Test
     void getText_bundles_explainSessionLifetimeCompositionAndAvailability() {
-        String text = Help.getText();
+        String text = normaliseWhitespace(Help.getText());
 
         assertTrue(text.contains("Requires a name of 1-100 characters."));
         assertTrue(text.contains("Bundles exist only for the current session"));
@@ -281,7 +356,7 @@ class HelpTest {
 
     @Test
     void getText_overdueLoans_explainsEligibilityAndReadOnlyBehaviour() {
-        String text = Help.getText();
+        String text = normaliseWhitespace(Help.getText());
 
         assertTrue(text.contains("Format: list overdue"));
         assertTrue(text.contains(
@@ -296,12 +371,9 @@ class HelpTest {
     void getText_helpAndExit_explainArgumentsSaveFailureAndImplementedCommandsOnly() {
         String text = Help.getText();
 
-        assertTrue(text.lines().anyMatch(line -> line.equals("Format: help")));
-        assertTrue(text.lines().anyMatch(line -> line.equals("Format: help <COMMAND>")));
-        assertTrue(text.lines().anyMatch(line -> line.equals("Format: help all")));
-        assertTrue(text.lines().anyMatch(line -> line.equals("Example: help")));
-        assertTrue(text.lines().anyMatch(line -> line.equals("Example: help loan")));
-        assertTrue(text.lines().anyMatch(line -> line.equals("Example: help all")));
+        assertTrue(labelledValues(text, "Format:").containsAll(List.of("help", "help <COMMAND>", "help all")));
+        assertTrue(labelledValues(text, "Example:").containsAll(List.of("help", "help loan", "help all")));
+        text = normaliseWhitespace(text);
         assertTrue(text.contains("Saves equipment and loans before exiting."));
         assertTrue(text.contains("A save failure keeps the application running;"));
         assertTrue(text.contains("fix the reported file problem and retry bye."));
@@ -346,6 +418,39 @@ class HelpTest {
 
         assertEquals(Help.getText(topic), text);
         assertPlatformLineEndingsAndFinalNewline(text);
+    }
+
+    /** Reassembles labelled command blocks so wrapping cannot change their executable syntax. */
+    private static List<String> labelledValues(String text, String label) {
+        List<String> values = new ArrayList<>();
+        StringBuilder value = null;
+        for (String line : text.lines().toList()) {
+            if (line.equals(label)) {
+                value = new StringBuilder();
+            } else if (value != null && line.startsWith("  ") && !line.isBlank()) {
+                if (!value.isEmpty()) {
+                    value.append(' ');
+                }
+                value.append(line.strip());
+            } else if (value != null) {
+                values.add(value.toString());
+                value = null;
+            }
+        }
+        if (value != null) {
+            values.add(value.toString());
+        }
+        return values;
+    }
+
+    /** Ignores display wrapping when checking the wording and limits for one command. */
+    private static String proseFor(String topic) {
+        return normaliseWhitespace(Help.getText(topic));
+    }
+
+    /** Preserves words and punctuation while treating terminal wrapping as ordinary whitespace. */
+    private static String normaliseWhitespace(String text) {
+        return text.replaceAll("\\s+", " ").strip();
     }
 
     /** Rejects mixed newline conventions and accidental blank lines at the end of any guide. */

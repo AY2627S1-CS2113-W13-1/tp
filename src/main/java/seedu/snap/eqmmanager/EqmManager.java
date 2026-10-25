@@ -27,6 +27,7 @@ import seedu.snap.loan.Loan;
 import seedu.snap.loan.LoanHandler;
 import seedu.snap.parser.Parser;
 import seedu.snap.ui.Help;
+import seedu.snap.ui.Welcome;
 
 /** Coordinates command input and execution for the SNAP application. */
 public class EqmManager {
@@ -141,10 +142,11 @@ public class EqmManager {
             return;
         }
 
+        Welcome.printLogo();
         System.out.println("Welcome to snAp. Loaded " + equipment.getEquipmentList().size()
                 + " equipment record(s) and " + loans.getLoanCount() + " loan(s).");
-        System.out.println("Type help for the command menu, help <COMMAND> for details,"
-                + " or help all for the full guide.");
+        System.out.println();
+        Help.print();
 
         // main process
         String input;
