@@ -99,6 +99,9 @@ validation, and saving finish before the existing equipment object is changed.
 methods; it does not store equipment. Keeping these responsibilities separate lets the handler
 check the command against the inventory while the parser deals with field syntax.
 
+`EquipmentFields.parse(...)` and `EquipmentStorage.save(...)` are static, package-private
+operations. Neither helper needs an object to be created for an update.
+
 <!-- Add class diagram here: EqmManager uses EquipmentHandler; EquipmentHandler holds Equipment
      objects and uses EquipmentFields and EquipmentStorage. Show only the update-related methods. -->
 
@@ -189,9 +192,10 @@ field and the inventory order remain unchanged, including when one supplied valu
 and another is invalid. Successful updates are checked for object identity as well as values.
 Command-level tests also check that a valid update succeeds after a rejected command.
 
-`EquipmentUpdatePersistenceTest` checks that successful updates are saved and can be loaded again.
-It also checks that a failed save leaves the original equipment details, object identity, and
-inventory order unchanged.
+`EquipmentUpdatePersistenceTest` checks that a restart restores the updated details while
+retaining omitted fields. It also checks that rejected values preserve the saved file,
+a failed write preserves the original object and inventory order, and an update succeeds
+after the storage problem is fixed.
 
 ### Overdue loan identification
 
