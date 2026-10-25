@@ -7,15 +7,21 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.equipment.Equipment;
+import seedu.snap.bundle.Bundle;
+import seedu.snap.bundle.BundleHandler;
+import seedu.snap.exceptions.BundleAdditionUnsuccessful;
+import seedu.snap.equipment.EquipmentFilter;
+import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
+import seedu.snap.exceptions.EquipmentFilteringUnsuccessful;
+import seedu.snap.exceptions.EquipmentUpdateUnsuccessful;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
+import seedu.snap.loan.Loan;
 import seedu.snap.loan.LoanHandler;
 import seedu.snap.parser.Parser;
-import seedu.snap.loan.Loan;
 
 /** Coordinates command input and execution for the SNAP application. */
 public class EqmManager {
@@ -23,6 +29,7 @@ public class EqmManager {
     private final Parser parser;
     private final LoanHandler loans;
     private final EquipmentHandler equipment;
+    private final BundleHandler bundles;
     private final String startupError;
     private boolean isRunning;
 
@@ -42,8 +49,9 @@ public class EqmManager {
             throw new IllegalArgumentException("Data directory must not be null.");
         }
         this.parser = new Parser();
-        this.loans = new LoanHandler(dataDirectory.resolve("loans.txt"));
         this.equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
+        this.loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"));
+        this.bundles = new BundleHandler(equipment);
         List<String> loadErrors = new ArrayList<>();
         try {
             equipment.loadFromStorage();
@@ -67,49 +75,38 @@ public class EqmManager {
      * @param input command to execute
      */
     public void executeInput(String input) {
+        String normalizedInput = input == null ? "" : input.replaceAll("(?U)^\\s+|\\s+$", "");
         if (startupError != null) {
             System.out.println("Could not load saved data: " + startupError);
-            return;
-        }
-        if (input.equals("bye")) {
+        } else if (normalizedInput.equals("bye")) {
             isRunning = !saveBeforeExit();
-        } else if (input.equals("delete-loan") || input.startsWith("delete-loan ")){
-            try{
-                Loan deletedLoan = loans.deleteLoan(input);
-                System.out.println("Loan for item ID " + deletedLoan.getItemId() + " deleted successfully.");
-            } catch (LoanDeletionUnsuccessful e){
-                System.out.println(e.getMessage());
-            }
-        } else if (input.equals("delete") || input.startsWith("delete ")) {
-            try {
-                Equipment target = equipment.getEquipmentForDeletion(input);
-                if (loans.hasActiveLoanForItem(target.getItemId())) {
-                    throw new EquipmentDeletionUnsuccessful("Cannot delete item ID " + target.getItemId()
-                            + " while it has an active loan.");
-                }
-                Equipment deletedEquipment = equipment.deleteEquipment(input);
-                System.out.println("Equipment with item ID " + deletedEquipment.getItemId()
-                        + " deleted successfully.");
-            } catch (EquipmentDeletionUnsuccessful e) {
-                System.out.println(e.getMessage());
-            }
-        } else if (input.equals("add") || input.startsWith("add ")) {
-            try {
-                equipment.addEquipment(input);
-                System.out.println("Equipment added successfully.");
-            } catch (EquipmentAdditionUnsuccessful e) {
-                System.out.println(e.getMessage());
-            }
-        } else if (input.equals("loan") || input.startsWith("loan ")) {
-            try {
-                loans.addLoan(input);
-                System.out.println("Loan added successfully.");
-            } catch (LoanAdditionUnsuccessful e) {
-                System.out.println(e.getMessage());
-            }
-        } else if (input.equals("list loans")) {
+        } else if (normalizedInput.equals("delete loan")
+                || normalizedInput.startsWith("delete loan/")
+                || normalizedInput.startsWith("delete loan ")) {
+            deleteLoan(normalizedInput);
+        } else if (normalizedInput.equals("delete") || normalizedInput.startsWith("delete ")) {
+            deleteEquipment(normalizedInput);
+        } else if (normalizedInput.matches("(?U)add(?:\\s.*)?")) {
+            addEquipment(normalizedInput);
+        } else if (normalizedInput.equals("loan") || normalizedInput.startsWith("loan ")) {
+            addLoan(normalizedInput);
+        } else if (normalizedInput.matches("(?U)filter(?:\\s.*)?")) {
+            filterEquipment(normalizedInput);
+        } else if (normalizedInput.matches("(?U)update(?:\\s.*)?")) {
+            updateEquipment(normalizedInput);
+        } else if (normalizedInput.equals("list loans")) {
             loans.viewAllLoans();
-        } else if (input.equals("list") || input.startsWith("list ")) {
+        } else if (normalizedInput.equals("add-bundle") || normalizedInput.startsWith("add-bundle ")) {
+            addBundle(normalizedInput);
+        } else if (normalizedInput.equals("add-to-bundle") || normalizedInput.startsWith("add-to-bundle ")) {
+            addItemsToBundle(normalizedInput);
+        } else if (normalizedInput.equals("list bundles")) {
+            try {
+                bundles.viewAllBundles(normalizedInput);
+            } catch (BundleAdditionUnsuccessful e) {
+                System.out.println(e.getMessage());
+            }
+        } else if (normalizedInput.equals("list") || normalizedInput.startsWith("list ")) {
             equipment.viewAllEquipment();
         } else {
             System.out.println("Command not recognised. Please try again.");
@@ -162,5 +159,107 @@ public class EqmManager {
         }
         logger.log(Level.FINE, "Saved application data before exit");
         return true;
+    }
+
+    /** Displays the outcome of a loan deletion. */
+    private void deleteLoan(String input) {
+        // @@author Rohita-29
+        try {
+            Loan deleted = loans.deleteLoan(input);
+            System.out.println("Loan " + deleted.getLoanId() + " for item ID " + deleted.getItemId()
+                    + " deleted successfully.");
+        } catch (LoanDeletionUnsuccessful e) {
+            System.out.println(e.getMessage());
+        }
+        // @@author
+    }
+
+    /** Prevents deletion of borrowed equipment before asking the inventory to remove it. */
+    private void deleteEquipment(String input) {
+        try {
+            Equipment target = equipment.getEquipmentForDeletion(input);
+            if (bundles.containsEquipmentId(target.getItemId())) {
+                throw new EquipmentDeletionUnsuccessful("Cannot delete item ID " + target.getItemId()
+                        + " while it belongs to a bundle.");
+            }
+            if (loans.hasActiveLoanForItem(target.getItemId())) {
+                throw new EquipmentDeletionUnsuccessful("Cannot delete item ID " + target.getItemId()
+                        + " while it has an active loan.");
+            }
+            // @@author Yi An
+            equipment.deleteEquipment(input);
+            System.out.println("Equipment with item ID " + target.getItemId() + " deleted successfully.");
+        } catch (EquipmentDeletionUnsuccessful e) {
+            System.out.println(e.getMessage());
+        }
+        // @@author
+    }
+
+    /** Creates a bundle and reports its assigned identifier. */
+    private void addBundle(String input) {
+        try {
+            Bundle bundle = bundles.addBundle(input);
+            System.out.println("Bundle " + bundle.getBundleId() + " added successfully.");
+        } catch (BundleAdditionUnsuccessful e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    /** Reports each equipment addition to a bundle independently. */
+    private void addItemsToBundle(String input) {
+        try {
+            for (String message : bundles.addItemsToBundle(input)) {
+                System.out.println(message);
+            }
+        } catch (BundleAdditionUnsuccessful e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    /** Displays the outcome of equipment addition. */
+    private void addEquipment(String input) {
+        try {
+            equipment.addEquipment(input);
+            System.out.println("Equipment added successfully.");
+        } catch (EquipmentAdditionUnsuccessful e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    /** Displays the outcome of loan addition. */
+    private void addLoan(String input) {
+        // @@author Yi An
+        try {
+            Loan added = loans.addLoan(input);
+            System.out.println("Loan " + added.getLoanId() + " added successfully.");
+        } catch (LoanAdditionUnsuccessful e) {
+            System.out.println(e.getMessage());
+        }
+        // @@author
+    }
+
+    /** Displays matching equipment or the filter error. */
+    private void filterEquipment(String input) {
+        try {
+            EquipmentFilter filter = EquipmentFilter.parse(input);
+            List<Equipment> matches = filter.apply(equipment.getEquipmentList(), loans);
+            if (matches.isEmpty()) {
+                System.out.println("No equipment matches the filters.");
+            } else {
+                equipment.viewEquipment(matches);
+            }
+        } catch (EquipmentFilteringUnsuccessful e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    /** Displays an update result while leaving validation and persistence to the handler. */
+    private void updateEquipment(String input) {
+        try {
+            Equipment updated = equipment.updateEquipment(input);
+            System.out.println("Equipment with item ID " + updated.getItemId() + " updated successfully.");
+        } catch (EquipmentUpdateUnsuccessful e) {
+            System.out.println(e.getMessage());
+        }
     }
 }

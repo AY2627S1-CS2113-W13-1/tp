@@ -30,7 +30,7 @@ class MainTest {
     /** Verifies that user validation and diagnostic logging work independently of Java assertions. */
     private void verifyEquipmentDiagnostics(boolean areAssertionsEnabled) throws Exception {
         String commands = "add i/Camera id/001 type/camera cond/1\n"
-                + "add i/Tripod id/002 type/accessories cond/11\n"
+                + "add i/Tripod id/002 type/tripod cond/11\n"
                 + "add i/\u2003 id/002 type/camera cond/1\n"
                 + "add i/Camera id/002 type/\u2003 cond/1\nbye\n";
         String output = runApplication(commands, areAssertionsEnabled);
@@ -59,41 +59,96 @@ class MainTest {
     void main_equipmentAndLoanCommands_shareLogsWithoutConsoleDiagnostics() throws Exception {
         String output = runApplication("add i/Camera id/001 type/camera cond/1\n"
                 + "loan id/001 b/001 issued/15-10-26 due/16-10-26\n"
-                + "delete-loan id/001\ndelete-loan id/999\nbye\n", true);
+                + "delete loan/001\ndelete loan/999\nbye\n", true);
         assertTrue(output.contains("Equipment added successfully."));
-        assertTrue(output.contains("Loan for item ID 001 deleted successfully."));
-        assertTrue(output.contains("No loan found for item ID 999."));
+        assertTrue(output.contains("Loan 001 for item ID 001 deleted successfully."));
+        assertTrue(output.contains("No loan found for loan ID 999."));
         assertFalse(output.contains("Added equipment with item ID"));
-        assertFalse(output.contains("Deleted loan for item ID"));
+        assertFalse(output.contains("Deleted loan 001 for item ID"));
         assertFalse(output.contains("WARNING:"));
         assertFalse(output.contains("INFO:"));
         String logs = Files.readString(temporaryDirectory.resolve("logs/snap.log.0"));
-        for (String message : new String[]{"Added equipment with item ID 001", "Deleted loan for item ID 001",
-            "No loan found for item ID 999"}) {
+        for (String message : new String[]{"Added equipment with item ID 001", "Deleted loan 001 for item ID 001",
+            "No loan found for loan ID 999"}) {
             assertEquals(1L, logs.lines().filter(line -> line.contains(message)).count());
         }
     }
 
     @Test
     void main_restart_loadsPersistedEquipmentAndLoans() throws Exception {
-        String firstRun = runApplication("add i/Camera id/001 type/camera cond/1\n"
+        String firstRun = runApplication("add i/Camera id/001 type/camera cond/1"
+                + " sensor/Full frame damage/SHUTTER_FAULT\n"
                 + "loan id/001 b/002 issued/01-10-26 due/02-10-26\nbye\n", true);
 
         assertTrue(firstRun.contains("Equipment added successfully."));
-        assertTrue(firstRun.contains("Loan added successfully."));
+        assertTrue(firstRun.contains("Loan 001 added successfully."));
         assertTrue(Files.exists(temporaryDirectory.resolve("data/equipment.txt")));
         assertTrue(Files.exists(temporaryDirectory.resolve("data/loans.txt")));
         assertTrue(Files.readString(temporaryDirectory.resolve("data/equipment.txt"))
-                .contains("add i/Camera id/001 type/camera cond/1"));
+                .contains("add i/Camera id/001 type/camera cond/1 sensor/Full frame damage/SHUTTER_FAULT"));
         assertTrue(Files.readString(temporaryDirectory.resolve("data/loans.txt"))
-                .contains("loan id/001 b/002 issued/01-10-26 due/02-10-26 returned/false"));
+                .contains("loan loanId/001 id/001 b/002 issued/01-10-26 due/02-10-26 returned/false"));
 
         String secondRun = runApplication("list\nlist loans\nbye\n", true);
 
         assertTrue(secondRun.contains("Welcome to snAp. Loaded 1 equipment record(s) and 1 loan(s)."));
         assertTrue(secondRun.contains("Camera"));
+        assertTrue(secondRun.contains("sensor/Full frame damage/SHUTTER_FAULT"));
         assertTrue(secondRun.contains("001"));
         assertTrue(secondRun.contains("002"));
+    }
+
+    @Test
+    void main_restart_restoresAvailabilityAndPersistsLoanDeletion() throws Exception {
+        Path dataDirectory = temporaryDirectory.resolve("data");
+        Files.createDirectories(dataDirectory);
+        Files.writeString(dataDirectory.resolve("equipment.txt"),
+                "add i/Camera id/001 type/camera cond/7 sensor/Full frame damage/SHUTTER_FAULT\n"
+                + "add i/Lens id/002 type/lens cond/6 zoom/24 to 70 mm damage/NONE\n"
+                + "add i/Battery id/003 type/battery cond/5 capacity/2000 mAh damage/CONTACT_DAMAGE\n"
+                + "add i/Tripod id/004 type/tripod cond/4 thread/Quarter inch damage/NONE\n");
+        Files.writeString(dataDirectory.resolve("loans.txt"),
+                "loan id/001 b/010 issued/01-10-26 due/02-10-26 returned/false\n"
+                + "loan id/002 b/020 issued/01-10-26 due/02-10-26 returned/true\n"
+                + "loan id/003 b/030 issued/01-10-26 due/02-10-26 returned/false\n"
+                + "loan id/004 b/040 issued/01-10-26 due/02-10-26 returned/true\n");
+
+        String firstRun = runApplication("list\ndelete loan/001\nbye\n", true);
+
+        assertTrue(firstRun.contains("Welcome to snAp. Loaded 4 equipment record(s) and 4 loan(s)."));
+        assertTrue(firstRun.contains(equipmentRow("1)", "Camera", "001", "camera", 7,
+                "Loaned", "sensor/Full frame damage/SHUTTER_FAULT")));
+        assertTrue(firstRun.contains(equipmentRow("2)", "Lens", "002", "lens", 6,
+                "Available", "zoom/24 to 70 mm damage/NONE")));
+        assertTrue(firstRun.contains(equipmentRow("3)", "Battery", "003", "battery", 5,
+                "Loaned", "capacity/2000 mAh damage/CONTACT_DAMAGE")));
+        assertTrue(firstRun.contains(equipmentRow("4)", "Tripod", "004", "tripod", 4,
+                "Available", "thread/Quarter inch damage/NONE")));
+        assertTrue(firstRun.contains("Loan 001 for item ID 001 deleted successfully."));
+
+        String secondRun = runApplication("list\nbye\n", true);
+
+        assertTrue(secondRun.contains("Welcome to snAp. Loaded 4 equipment record(s) and 3 loan(s)."));
+        assertTrue(secondRun.contains(equipmentRow("1)", "Camera", "001", "camera", 7,
+                "Available", "sensor/Full frame damage/SHUTTER_FAULT")));
+        assertTrue(secondRun.contains(equipmentRow("2)", "Lens", "002", "lens", 6,
+                "Available", "zoom/24 to 70 mm damage/NONE")));
+        assertTrue(secondRun.contains(equipmentRow("3)", "Battery", "003", "battery", 5,
+                "Loaned", "capacity/2000 mAh damage/CONTACT_DAMAGE")));
+        assertTrue(secondRun.contains(equipmentRow("4)", "Tripod", "004", "tripod", 4,
+                "Available", "thread/Quarter inch damage/NONE")));
+        String savedLoans = Files.readString(dataDirectory.resolve("loans.txt"));
+        assertFalse(savedLoans.contains("loan loanId/001 "));
+        assertTrue(savedLoans.contains("loan loanId/002 id/002 b/020 issued/01-10-26 due/02-10-26 returned/true"));
+        assertTrue(savedLoans.contains("loan loanId/003 id/003 b/030 issued/01-10-26 due/02-10-26 returned/false"));
+        assertTrue(savedLoans.contains("loan loanId/004 id/004 b/040 issued/01-10-26 due/02-10-26 returned/true"));
+    }
+
+    /** Formats one complete row so restart checks associate each status with its equipment ID. */
+    private String equipmentRow(String number, String name, String id, String type, int condition,
+            String status, String details) {
+        return String.format("%-4s %-24s | %-6s | %-15s | %-9d | %-10s | %-30s | %-30s%n",
+                number, name, id, type, condition, status, details, "");
     }
 
     @Test

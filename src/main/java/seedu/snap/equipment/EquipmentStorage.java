@@ -80,9 +80,14 @@ final class EquipmentStorage {
 
     /** Converts an equipment record to the documented add-command format. */
     private static String toStorageLine(Equipment equipment) {
-        return "add i/" + equipment.getItemName()
+        String record = "add i/" + equipment.getItemName()
                 + " id/" + equipment.getItemId()
                 + " type/" + equipment.getType()
-                + " cond/" + equipment.getCondition();
+                + " cond/" + equipment.getCondition()
+                + " " + equipment.getDetails();
+        if (!equipment.getRemarks().isEmpty()) {
+            record += " remarks/" + equipment.getRemarks();
+        }
+        return record;
     }
 }
