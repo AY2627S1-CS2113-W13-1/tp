@@ -146,4 +146,25 @@ class LoanUpdateHandlerTest {
         Files.delete(loanFile);
         Files.writeString(loanFile, saved);
     }
+
+    @Test
+    void updateLoan_reloadedHandler_preservesEditedDetailsAndEquipmentAssociation() throws Exception {
+        loans.updateLoan("update loan/001 id/002 b/007 issued/03-10-26 due/15-10-26");
+        equipment.saveToStorage();
+
+        EquipmentHandler reloadedEquipment = new EquipmentHandler(temporaryDirectory.resolve("equipment.txt"));
+        reloadedEquipment.loadFromStorage();
+        LoanHandler reloadedLoans = new LoanHandler(reloadedEquipment, loanFile);
+        reloadedLoans.loadFromStorage();
+        Loan reloaded = reloadedLoans.getLoanList().getFirst();
+
+        assertEquals("001", reloaded.getLoanId());
+        assertEquals("002", reloaded.getItemId());
+        assertEquals("007", reloaded.getBorrowerId());
+        assertEquals(LocalDateTime.of(2026, 10, 3, 0, 0), reloaded.getIssuedDate());
+        assertEquals(LocalDateTime.of(2026, 10, 15, 0, 0), reloaded.getDueDate());
+        assertFalse(reloadedEquipment.getEquipmentById("001").isLoaned());
+        assertTrue(reloadedEquipment.getEquipmentById("002").isLoaned());
+        assertEquals("001", reloadedEquipment.getEquipmentById("002").getLoanId());
+    }
 }

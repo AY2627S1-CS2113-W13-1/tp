@@ -68,4 +68,20 @@ class LoanUpdateIntegrationTest {
         assertTrue(actual.contains("Issued date must not be later than the due date."));
         assertTrue(actual.contains("001          | 001          | 002"));
     }
+
+    @Test
+    void updateLoanCommand_restartedManagerLoadsEditedLoan() throws Exception {
+        EqmManager manager = new EqmManager(temporaryDirectory);
+        manager.executeInput("add i/Camera id/001 type/camera cond/4");
+        manager.executeInput("loan id/001 b/002 issued/01-10-26 due/10-10-26");
+        manager.executeInput("update loan/001 b/007 due/15-10-26");
+
+        EqmManager restarted = new EqmManager(temporaryDirectory);
+        output.reset();
+        restarted.executeInput("list loans");
+
+        String actual = output.toString(StandardCharsets.UTF_8);
+        assertTrue(actual.contains("001          | 001          | 007"));
+        assertTrue(actual.contains("2026-10-15T00:00"));
+    }
 }
