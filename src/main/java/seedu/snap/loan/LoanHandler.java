@@ -530,6 +530,7 @@ public class LoanHandler {
      *
      * @param referenceDate date against which loan due dates are checked
      * @return an unmodifiable list containing the overdue loans
+     * @throws NullPointerException if the reference date is null
      */
     public List<Loan> getOverdueLoans(LocalDate referenceDate) {
         Objects.requireNonNull(referenceDate, "Reference date must not be null");
@@ -549,6 +550,7 @@ public class LoanHandler {
      * Displays active loans whose due dates are before the reference date.
      *
      * @param referenceDate date against which loan due dates are checked
+     * @throws NullPointerException if the reference date is null
      */
     public void viewOverdueLoans(LocalDate referenceDate) {
         List<Loan> overdueLoans = getOverdueLoans(referenceDate);
