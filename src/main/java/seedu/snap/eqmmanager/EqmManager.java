@@ -23,6 +23,7 @@ import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 import seedu.snap.exceptions.LoanReturnUnsuccessful;
 import seedu.snap.exceptions.LoanHistoryUnsuccessful;
+import seedu.snap.exceptions.LoanViewingUnsuccessful;
 import seedu.snap.loan.Loan;
 import seedu.snap.loan.LoanHandler;
 import seedu.snap.parser.Parser;
@@ -109,6 +110,9 @@ public class EqmManager {
             returnEquipment(normalizedInput);
         } else if (normalizedInput.matches("(?sU)history(?:\\s.*)?")) {
             viewLoanHistory(normalizedInput);
+        } else if (normalizedInput.equals("view")
+                || normalizedInput.startsWith("view ")) {
+            viewLoanIssueCondition(normalizedInput);
         } else if (normalizedInput.matches("(?U)filter(?:\\s.*)?")) {
             filterEquipment(normalizedInput);
         } else if (normalizedInput.matches("(?U)update(?:\\s.*)?")) {
@@ -182,6 +186,19 @@ public class EqmManager {
         logger.log(Level.FINE, "Saved application data before exit");
         return true;
     }
+
+    // @@author Rohita-29
+
+    /** Displays a loan's issue-time equipment condition. */
+    private void viewLoanIssueCondition(String input) {
+        try {
+            loans.viewLoanIssueCondition(input);
+        } catch (LoanViewingUnsuccessful exception) {
+            System.out.println(exception.getMessage());
+        }
+    }
+
+    // @@author
 
     /** Displays the outcome of a loan deletion. */
     private void deleteLoan(String input) {

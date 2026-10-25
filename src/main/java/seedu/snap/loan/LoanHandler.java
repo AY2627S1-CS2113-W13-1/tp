@@ -27,6 +27,7 @@ import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 import seedu.snap.exceptions.LoanReturnUnsuccessful;
 import seedu.snap.exceptions.LoanHistoryUnsuccessful;
+import seedu.snap.exceptions.LoanViewingUnsuccessful;
 
 /** Parses loan commands and stores successfully created loans. */
 public class LoanHandler {
@@ -570,6 +571,116 @@ public class LoanHandler {
                     (i + 1) + ")", loan.getItemId(), loan.getBorrowerId(), loan.getDueDate()
             );
         }
+    }
+
+    // @@author
+
+    // @@author Rohita-29
+
+    /**
+     * Displays the issue-time equipment condition for one loan.
+     *
+     * @param input complete view-loan command
+     * @throws LoanViewingUnsuccessful if the command or loan ID is invalid
+     */
+    public void viewLoanIssueCondition(String input)
+            throws LoanViewingUnsuccessful {
+        String loanId = parseViewLoanId(input);
+        Loan loan = findLoanForViewing(loanId);
+        EquipmentConditionSnapshot snapshot =
+                loan.getIssueConditionSnapshot();
+
+        if (snapshot == null) {
+            System.out.println(
+                    "Loan "
+                            + loanId
+                            + " issue-time condition: Not recorded");
+            return;
+        }
+
+        System.out.println(
+                "Loan "
+                        + loanId
+                        + " issue-time condition:");
+        System.out.println("Item ID: " + loan.getItemId());
+        System.out.println(
+                "Type: " + snapshot.getEquipmentType());
+        System.out.println(
+                "Condition: " + snapshot.getCondition());
+        System.out.println(
+                "Damage: " + snapshot.getDamage());
+
+        String remarks =
+                snapshot.getRemarks().isEmpty()
+                        ? "None"
+                        : snapshot.getRemarks();
+        System.out.println("Remarks: " + remarks);
+        logger.log(
+                Level.INFO,
+                "Viewed issue-time condition for loan {0}.",
+                loanId);
+    }
+
+    /** Extracts and validates a loan ID from a viewing command. */
+    private static String parseViewLoanId(String input)
+            throws LoanViewingUnsuccessful {
+        String normalizedInput =
+                input == null
+                        ? ""
+                        : input.replaceAll("(?U)^\\s+|\\s+$", "");
+        String[] arguments =
+                normalizedInput.isEmpty()
+                        ? new String[0]
+                        : normalizedInput.split("(?U)\\s+");
+
+        if (arguments.length != 2
+                || !arguments[0].equals("view")
+                || !arguments[1].startsWith("loan/")) {
+            throw new LoanViewingUnsuccessful(
+                    "Invalid command format. Expected: "
+                            + "view loan/[LOAN ID].");
+        }
+
+        String loanId =
+                arguments[1].substring("loan/".length());
+        if (!loanId.matches(ID_FORMAT)
+                || loanId.equals("000")) {
+            throw new LoanViewingUnsuccessful(
+                    "Invalid loan ID \""
+                            + loanId
+                            + "\". Loan ID must be exactly "
+                            + "three digits from 001 to 999.");
+        }
+
+        return loanId;
+    }
+
+    /** Finds the unique loan matching an ID without modifying it. */
+    private Loan findLoanForViewing(String loanId)
+            throws LoanViewingUnsuccessful {
+        Loan matchingLoan = null;
+
+        for (Loan loan : loans) {
+            if (!loanId.equals(loan.getLoanId())) {
+                continue;
+            }
+            if (matchingLoan != null) {
+                throw new LoanViewingUnsuccessful(
+                        "Loan ID "
+                                + loanId
+                                + " is not unique.");
+            }
+            matchingLoan = loan;
+        }
+
+        if (matchingLoan == null) {
+            throw new LoanViewingUnsuccessful(
+                    "No loan found for loan ID "
+                            + loanId
+                            + ".");
+        }
+
+        return matchingLoan;
     }
 
     // @@author
