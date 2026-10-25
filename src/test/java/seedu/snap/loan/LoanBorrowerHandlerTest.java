@@ -9,8 +9,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -21,12 +27,15 @@ import seedu.snap.exceptions.LoanBorrowerUnsuccessful;
 
 /** Tests borrower loan selection without changing loans, equipment or persistence. */
 class LoanBorrowerHandlerTest {
+    private static final Logger LOAN_LOGGER = Logger.getLogger(LoanHandler.class.getName());
     private EquipmentHandler equipment;
     private LoanHandler loans;
     private Equipment camera;
     private Equipment tripod;
     private Equipment lens;
     private Path loanFile;
+    private RecordingHandler logHandler;
+    private Level originalLoggerLevel;
 
     @TempDir
     private Path temporaryDirectory;
@@ -39,6 +48,17 @@ class LoanBorrowerHandlerTest {
         lens = equipment.addEquipment("add i/Lens id/003 type/lens cond/5");
         loanFile = temporaryDirectory.resolve("loans.txt");
         loans = new LoanHandler(equipment, loanFile);
+        logHandler = new RecordingHandler();
+        logHandler.setLevel(Level.ALL);
+        originalLoggerLevel = LOAN_LOGGER.getLevel();
+        LOAN_LOGGER.setLevel(Level.ALL);
+        LOAN_LOGGER.addHandler(logHandler);
+    }
+
+    @AfterEach
+    void restoreLogger() {
+        LOAN_LOGGER.removeHandler(logHandler);
+        LOAN_LOGGER.setLevel(originalLoggerLevel);
     }
 
     @Test
@@ -53,6 +73,7 @@ class LoanBorrowerHandlerTest {
         assertFalse(result.contains(otherBorrower));
         assertTrue(camera.isLoaned());
         assertTrue(tripod.isLoaned());
+        assertTrue(logHandler.contains(Level.INFO, "Viewed {0} active loan(s) for borrower ID {1}."));
     }
 
     @Test
@@ -77,6 +98,7 @@ class LoanBorrowerHandlerTest {
         assertEquals("No member found for borrower ID 999.", error.getMessage());
         assertEquals(0, loans.getLoanCount());
         assertFalse(camera.isLoaned());
+        assertTrue(logHandler.contains(Level.WARNING, "Borrower loan query found no borrower with ID {0}."));
     }
 
     @Test
@@ -89,6 +111,7 @@ class LoanBorrowerHandlerTest {
         assertTrue(result.isEmpty());
         assertTrue(returned.isReturned());
         assertFalse(camera.isLoaned());
+        assertTrue(logHandler.contains(Level.INFO, "Viewed {0} active loan(s) for borrower ID {1}."));
     }
 
     @Test
@@ -109,9 +132,42 @@ class LoanBorrowerHandlerTest {
         assertEquals(LocalDateTime.of(2026, 10, 1, 0, 0), matching.getIssuedDate());
     }
 
+    @Test
+    void getActiveLoansForBorrower_invalidCommand_logsWarning() {
+        assertThrows(LoanBorrowerUnsuccessful.class,
+                () -> loans.getActiveLoansForBorrower("list borrower/abc"));
+
+        assertTrue(logHandler.contains(Level.WARNING, "Borrower loan query rejected: {0}"));
+    }
+
     /** Adds a persisted loan with fixed dates so each selection case is deterministic. */
     private Loan addLoan(String itemId, String borrowerId, String issued, String due) throws Exception {
         return loans.addLoan("loan id/" + itemId + " b/" + borrowerId
                 + " issued/" + issued + " due/" + due);
+    }
+
+    /** Captures borrower-query records without changing the application's configured handlers. */
+    private static class RecordingHandler extends Handler {
+        private final List<LogRecord> records = new ArrayList<>();
+
+        @Override
+        public void publish(LogRecord record) {
+            records.add(record);
+        }
+
+        @Override
+        public void flush() {
+            // Records are kept in memory and need no flushing.
+        }
+
+        @Override
+        public void close() {
+            // Records are owned by the test and need no external resource cleanup.
+        }
+
+        boolean contains(Level level, String message) {
+            return records.stream().anyMatch(record -> record.getLevel().equals(level)
+                    && record.getMessage().equals(message));
+        }
     }
 }
