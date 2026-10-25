@@ -434,7 +434,7 @@ class HelpTest {
 
     @Test
     void getText_borrowerLoans_explainsFilteringAliasesAndReadOnlyBehaviour() {
-        String text = Help.getText();
+        String text = normaliseWhitespace(Help.getText());
 
         assertTrue(text.contains("EQUIPMENT HELD BY MEMBER"));
         assertTrue(text.contains("The equivalent alias list member/<MEMBER ID> is also accepted."));

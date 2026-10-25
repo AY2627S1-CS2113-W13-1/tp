@@ -64,6 +64,20 @@ class LoanBorrowerIntegrationTest {
     }
 
     @Test
+    void listBorrower_missingId_reportsErrorInsteadOfListingAllEquipment() {
+        EqmManager manager = createManagerWithLoans();
+        output.reset();
+
+        manager.executeInput("list borrower");
+        manager.executeInput("list member");
+
+        String printed = output.toString(StandardCharsets.UTF_8);
+        String error = "Invalid format. Use: list borrower/[BORROWER ID], from 000 to 999.";
+        assertEquals(2, printed.lines().filter(error::equals).count());
+        assertFalse(printed.contains("NAME"));
+    }
+
+    @Test
     void listBorrower_knownBorrowerWithNoActiveLoans_reportsEmptyResult() {
         EqmManager manager = new EqmManager(temporaryDirectory);
         manager.executeInput("add i/Camera id/001 type/camera cond/4");

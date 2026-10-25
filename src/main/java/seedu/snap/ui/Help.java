@@ -347,9 +347,10 @@ public final class Help {
         for (String group : List.of("Equipment", "Loans", "Bundles", "General")) {
             List<String> groupCommands = COMMANDS.stream().filter(command -> command.group().equals(group))
                     .map(CommandHelp::command).toList();
-            String commands = groupCommands.stream().collect(Collectors.joining(" | "));
-            if ((group + ": " + commands).length() > TEXT_WIDTH - 4) {
-                commands = groupCommands.stream().collect(Collectors.joining("|"));
+            String commands = String.join(" | ", groupCommands);
+            String spacedRow = group + ": " + commands;
+            if (spacedRow.length() > TEXT_WIDTH - 4) {
+                commands = String.join("|", groupCommands);
             }
             appendMenuRow(menu, group + ": " + commands);
         }

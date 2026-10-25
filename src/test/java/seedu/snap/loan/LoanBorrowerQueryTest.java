@@ -33,6 +33,13 @@ class LoanBorrowerQueryTest {
         assertEquals("999", LoanBorrowerQuery.parse("list borrower/999").borrowerId());
     }
 
+    @Test
+    void parse_unicodeWhitespaceAroundCommand_acceptsTrimmedInput() throws Exception {
+        LoanBorrowerQuery query = LoanBorrowerQuery.parse("\tlist\u2003member/007\u00a0");
+
+        assertEquals("007", query.borrowerId());
+    }
+
     @ParameterizedTest
     @MethodSource("invalidCommands")
     void parse_invalidCommand_rejectsWithoutCreatingAQuery(String command) {

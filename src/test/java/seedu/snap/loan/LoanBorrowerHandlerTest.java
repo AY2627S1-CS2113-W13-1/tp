@@ -8,6 +8,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.MessageFormat;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -73,7 +74,7 @@ class LoanBorrowerHandlerTest {
         assertFalse(result.contains(otherBorrower));
         assertTrue(camera.isLoaned());
         assertTrue(tripod.isLoaned());
-        assertTrue(logHandler.contains(Level.INFO, "Viewed {0} active loan(s) for borrower ID {1}."));
+        assertTrue(logHandler.containsFormatted(Level.INFO, "Viewed 1 active loan(s) for borrower ID 002."));
     }
 
     @Test
@@ -98,7 +99,8 @@ class LoanBorrowerHandlerTest {
         assertEquals("No member found for borrower ID 999.", error.getMessage());
         assertEquals(0, loans.getLoanCount());
         assertFalse(camera.isLoaned());
-        assertTrue(logHandler.contains(Level.WARNING, "Borrower loan query found no borrower with ID {0}."));
+        assertTrue(logHandler.containsFormatted(Level.WARNING,
+                "Borrower loan query found no borrower with ID 999."));
     }
 
     @Test
@@ -111,7 +113,7 @@ class LoanBorrowerHandlerTest {
         assertTrue(result.isEmpty());
         assertTrue(returned.isReturned());
         assertFalse(camera.isLoaned());
-        assertTrue(logHandler.contains(Level.INFO, "Viewed {0} active loan(s) for borrower ID {1}."));
+        assertTrue(logHandler.containsFormatted(Level.INFO, "Viewed 0 active loan(s) for borrower ID 002."));
     }
 
     @Test
@@ -137,7 +139,8 @@ class LoanBorrowerHandlerTest {
         assertThrows(LoanBorrowerUnsuccessful.class,
                 () -> loans.getActiveLoansForBorrower("list borrower/abc"));
 
-        assertTrue(logHandler.contains(Level.WARNING, "Borrower loan query rejected: {0}"));
+        assertTrue(logHandler.containsFormatted(Level.WARNING,
+                "Borrower loan query rejected: Invalid format. Use: list borrower/[BORROWER ID], from 000 to 999."));
     }
 
     /** Adds a persisted loan with fixed dates so each selection case is deterministic. */
@@ -165,9 +168,9 @@ class LoanBorrowerHandlerTest {
             // Records are owned by the test and need no external resource cleanup.
         }
 
-        boolean contains(Level level, String message) {
+        boolean containsFormatted(Level level, String message) {
             return records.stream().anyMatch(record -> record.getLevel().equals(level)
-                    && record.getMessage().equals(message));
+                    && MessageFormat.format(record.getMessage(), record.getParameters()).equals(message));
         }
     }
 }
