@@ -9,8 +9,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -23,6 +30,7 @@ import seedu.snap.exceptions.LoanUpdateUnsuccessful;
 
 /** Tests validated loan updates, equipment ownership and save-before-mutate behaviour. */
 class LoanUpdateHandlerTest {
+    private static final Logger LOAN_LOGGER = Logger.getLogger(LoanHandler.class.getName());
     private static final String ORIGINAL_LOAN =
             "loan id/001 b/002 issued/01-10-26 due/10-10-26";
     private EquipmentHandler equipment;
@@ -30,6 +38,8 @@ class LoanUpdateHandlerTest {
     private Equipment camera;
     private Equipment tripod;
     private Path loanFile;
+    private RecordingHandler logHandler;
+    private Level originalLoggerLevel;
 
     @TempDir
     private Path temporaryDirectory;
@@ -42,6 +52,16 @@ class LoanUpdateHandlerTest {
         loanFile = temporaryDirectory.resolve("loans.txt");
         loans = new LoanHandler(equipment, loanFile);
         loans.addLoan(ORIGINAL_LOAN);
+        logHandler = new RecordingHandler();
+        originalLoggerLevel = LOAN_LOGGER.getLevel();
+        LOAN_LOGGER.setLevel(Level.ALL);
+        LOAN_LOGGER.addHandler(logHandler);
+    }
+
+    @AfterEach
+    void restoreLogger() {
+        LOAN_LOGGER.removeHandler(logHandler);
+        LOAN_LOGGER.setLevel(originalLoggerLevel);
     }
 
     @Test
@@ -116,6 +136,7 @@ class LoanUpdateHandlerTest {
         assertEquals("002", original.getBorrowerId());
         assertEquals(LocalDateTime.of(2026, 10, 10, 0, 0), original.getDueDate());
         assertEquals(saved, Files.readString(loanFile));
+        assertTrue(logHandler.contains(Level.WARNING, "Loan update rejected: {0}"));
     }
 
     @Test
@@ -201,6 +222,7 @@ class LoanUpdateHandlerTest {
         assertTrue(camera.isLoaned());
         assertTrue(Files.isDirectory(loanFile));
         assertEquals("retain blocked path", Files.readString(sentinel));
+        assertTrue(logHandler.contains(Level.WARNING, "Loan update could not be saved"));
 
         Files.delete(sentinel);
         Files.delete(loanFile);
@@ -250,5 +272,38 @@ class LoanUpdateHandlerTest {
         assertFalse(reloadedEquipment.getEquipmentById("001").isLoaned());
         assertTrue(reloadedEquipment.getEquipmentById("002").isLoaned());
         assertEquals("001", reloadedEquipment.getEquipmentById("002").getLoanId());
+        assertTrue(logHandler.contains(Level.INFO, "Updated loan {0}; item ID {1}, borrower ID {2}."));
+    }
+
+    @Test
+    void updateLoan_malformedCommand_logsWarning() {
+        assertThrows(LoanUpdateUnsuccessful.class, () -> loans.updateLoan("update loan/001 due/31-02-26"));
+
+        assertTrue(logHandler.contains(Level.WARNING, "Loan update rejected: {0}"));
+    }
+
+    /** Captures only the loan handler records needed to verify update diagnostics. */
+    private static class RecordingHandler extends Handler {
+        private final List<LogRecord> records = new ArrayList<>();
+
+        @Override
+        public void publish(LogRecord record) {
+            records.add(record);
+        }
+
+        @Override
+        public void flush() {
+            // No external stream is buffered by this test handler.
+        }
+
+        @Override
+        public void close() {
+            // Nothing needs closing because records are kept in memory.
+        }
+
+        boolean contains(Level level, String message) {
+            return records.stream().anyMatch(record -> record.getLevel().equals(level)
+                    && record.getMessage().equals(message));
+        }
     }
 }

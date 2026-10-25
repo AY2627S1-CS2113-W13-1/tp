@@ -215,11 +215,16 @@ public class LoanHandler {
 
     /** Updates one active loan after validating every supplied field and saving the proposal first. */
     public Loan updateLoan(String input) throws LoanUpdateUnsuccessful {
-        LoanUpdate update = LoanUpdate.parse(input);
+        LoanUpdate update;
+        try {
+            update = LoanUpdate.parse(input);
+        } catch (LoanUpdateUnsuccessful exception) {
+            logger.log(Level.WARNING, "Loan update rejected: {0}", exception.getMessage());
+            throw exception;
+        }
         Loan loan = findLoanForUpdate(update.loanId());
         if (loan.isReturned()) {
-            logger.log(Level.WARNING, "Loan update rejected: loan {0} has already been returned.", update.loanId());
-            throw new LoanUpdateUnsuccessful("Loan " + update.loanId()
+            throw rejectLoanUpdate("Loan " + update.loanId()
                     + " has already been returned and cannot be updated.");
         }
 
@@ -228,19 +233,17 @@ public class LoanHandler {
         try {
             current = findEquipment(loan.getItemId());
             if (!loan.ownsEquipment(current)) {
-                throw new LoanUpdateUnsuccessful("Loan " + loan.getLoanId()
+                throw rejectLoanUpdate("Loan " + loan.getLoanId()
                         + " no longer owns its equipment. No update was recorded.");
             }
             replacement = update.changesItem() ? findEquipment(update.itemId()) : current;
             if (replacement != current) {
                 if (hasActiveLoanForItem(replacement.getItemId()) || replacement.isLoaned()) {
-                    logger.log(Level.WARNING, "Loan update rejected: item ID {0} is already loaned out.",
-                            replacement.getItemId());
-                    throw new LoanUpdateUnsuccessful("Item ID " + replacement.getItemId()
+                    throw rejectLoanUpdate("Item ID " + replacement.getItemId()
                             + " is already loaned out.");
                 }
                 if (!replacement.isServiceable()) {
-                    throw new LoanUpdateUnsuccessful("Item ID " + replacement.getItemId()
+                    throw rejectLoanUpdate("Item ID " + replacement.getItemId()
                             + " is unserviceable and cannot be assigned to a loan.");
                 }
             }
@@ -253,7 +256,7 @@ public class LoanHandler {
         LocalDateTime issuedDate = update.changesIssuedDate() ? update.issuedDate() : loan.getIssuedDate();
         LocalDateTime dueDate = update.changesDueDate() ? update.dueDate() : loan.getDueDate();
         if (issuedDate.isAfter(dueDate)) {
-            throw new LoanUpdateUnsuccessful("Issued date must not be later than the due date.");
+            throw rejectLoanUpdate("Issued date must not be later than the due date.");
         }
 
         Loan proposal = loan.updatedCopy(replacement.getItemId(), replacement.getRecordId(),
@@ -281,16 +284,21 @@ public class LoanHandler {
         for (Loan candidate : loans) {
             if (loanId.equals(candidate.getLoanId())) {
                 if (match != null) {
-                    throw new LoanUpdateUnsuccessful("Loan ID " + loanId + " is not unique.");
+                    throw rejectLoanUpdate("Loan ID " + loanId + " is not unique.");
                 }
                 match = candidate;
             }
         }
         if (match == null) {
-            logger.log(Level.WARNING, "No loan found for update with loan ID {0}.", loanId);
-            throw new LoanUpdateUnsuccessful("No loan found for loan ID " + loanId + ".");
+            throw rejectLoanUpdate("No loan found for loan ID " + loanId + ".");
         }
         return match;
+    }
+
+    /** Logs and creates a consistent rejection for a loan update that failed business validation. */
+    private LoanUpdateUnsuccessful rejectLoanUpdate(String message) {
+        logger.log(Level.WARNING, "Loan update rejected: {0}", message);
+        return new LoanUpdateUnsuccessful(message);
     }
 
     /** Finds one matching item without changing its availability, including during reload validation. */
