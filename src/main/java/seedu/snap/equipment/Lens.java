@@ -16,7 +16,7 @@ public class Lens extends Equipment {
     }
 
     private final String zoomRange;
-    private final LensDamage damage;
+    private LensDamage damage;
 
     /**
      * Creates a lens with unspecified zoom range and no recorded damage.
@@ -67,6 +67,15 @@ public class Lens extends Equipment {
 
     public LensDamage getDamage() {
         return damage;
+    }
+
+    @Override
+    protected void applyDamageAssessment(Equipment assessed) {
+        Lens lens = (Lens) assessed;
+        if (!zoomRange.equals(lens.zoomRange) || lens.damage == null) {
+            throw new IllegalArgumentException("A return assessment cannot change the lens zoom range.");
+        }
+        damage = lens.damage;
     }
 
     @Override

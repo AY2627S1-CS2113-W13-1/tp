@@ -16,7 +16,7 @@ public class Tripod extends Equipment {
     }
 
     private final String thread;
-    private final TripodDamage damage;
+    private TripodDamage damage;
 
     /**
      * Creates a tripod with unspecified thread and no recorded damage.
@@ -67,6 +67,15 @@ public class Tripod extends Equipment {
 
     public TripodDamage getDamage() {
         return damage;
+    }
+
+    @Override
+    protected void applyDamageAssessment(Equipment assessed) {
+        Tripod tripod = (Tripod) assessed;
+        if (!thread.equals(tripod.thread) || tripod.damage == null) {
+            throw new IllegalArgumentException("A return assessment cannot change the tripod thread.");
+        }
+        damage = tripod.damage;
     }
 
     @Override

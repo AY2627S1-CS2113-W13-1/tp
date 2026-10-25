@@ -7,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -273,8 +274,8 @@ final class LoanStorage {
             java.time.LocalDateTime issuedDate, java.time.LocalDateTime dueDate, boolean returned) {
     }
 
-    /** Captures a file before a two-file replacement so failed saves can be rolled back. */
-    private record FileSnapshot(Path path, boolean existed, boolean regularFile, byte[] contents) {
+    /** Captures a file before replacement so failed loan and return saves can be rolled back. */
+    record FileSnapshot(Path path, boolean existed, boolean regularFile, byte[] contents) {
         static FileSnapshot capture(Path path) throws IOException {
             boolean exists = Files.exists(path);
             boolean regular = exists && Files.isRegularFile(path);
@@ -284,7 +285,9 @@ final class LoanStorage {
 
         void restore() throws IOException {
             if (existed && regularFile) {
-                Files.write(path, contents);
+                if (!Files.isRegularFile(path) || !Arrays.equals(Files.readAllBytes(path), contents)) {
+                    Files.write(path, contents);
+                }
             } else if (!existed && Files.exists(path) && Files.isRegularFile(path)) {
                 Files.delete(path);
             }
