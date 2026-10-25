@@ -108,7 +108,7 @@ class EquipmentReturnIntegrationTest {
 
         manager.executeInput("return loan/001 serviceable/maybe damage/NONE remarks/Rejected");
         manager.executeInput("return loan/999 serviceable/yes damage/NONE remarks/Unknown");
-        manager.executeInput("return loan/001 serviceable/yes damage/NONE");
+        manager.executeInput("return loan/001 serviceable/yes");
 
         assertFalse(printed().contains("returned successfully"));
         assertEquals(equipmentBefore, Files.readString(temporaryDirectory.resolve("equipment.txt")));

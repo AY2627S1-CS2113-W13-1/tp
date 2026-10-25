@@ -205,7 +205,6 @@ class LoanReturnTest {
                 "return loan/999 serviceable/yes damage/NONE remarks/",
                 "return loan/001 damage/NONE remarks/",
                 "return loan/001 serviceable/yes remarks/",
-                "return loan/001 serviceable/yes damage/NONE",
                 "return loan/001 serviceable/true damage/NONE remarks/",
                 "return loan/001 serviceable/ damage/NONE remarks/",
                 "return loan/001 serviceable/yes damage/ remarks/",

@@ -105,10 +105,16 @@ public class LoanHandlerTest {
     @Test
     public void persistence_addDeleteAndReload_preservesLoansAcrossHandlers() throws Exception {
         Path file = temporaryDirectory.resolve("data/loans.txt");
-        LoanHandler firstHandler = new LoanHandler(equipment, file);
+        Path equipmentFile = temporaryDirectory.resolve("data/equipment.txt");
+        EquipmentHandler firstInventory = new EquipmentHandler(equipmentFile);
+        firstInventory.addEquipment("add i/Camera id/001 type/camera cond/1");
+        firstInventory.addEquipment("add i/Tripod id/003 type/tripod cond/2");
+        LoanHandler firstHandler = new LoanHandler(firstInventory, file);
         firstHandler.addLoan(FIRST_LOAN);
 
-        EquipmentHandler secondInventory = createInventory();
+        // A restart reloads the same physical items instead of constructing replacements with reused IDs.
+        EquipmentHandler secondInventory = new EquipmentHandler(equipmentFile);
+        secondInventory.loadFromStorage();
         LoanHandler secondHandler = new LoanHandler(secondInventory, file);
         secondHandler.loadFromStorage();
         assertEquals(1, secondHandler.getLoanCount());
@@ -117,9 +123,13 @@ public class LoanHandlerTest {
         assertEquals("001", secondHandler.getLoanList().getFirst().getLoanId());
         assertEquals("001", secondInventory.getEquipmentList().getFirst().getLoanId());
         assertTrue(secondInventory.getEquipmentList().getFirst().isLoaned());
+        assertEquals(firstInventory.getEquipmentList().getFirst().getRecordId(),
+                secondHandler.getLoanList().getFirst().getEquipmentRecordId());
 
         secondHandler.deleteLoan("delete loan/001");
-        LoanHandler thirdHandler = new LoanHandler(createInventory(), file);
+        EquipmentHandler thirdInventory = new EquipmentHandler(equipmentFile);
+        thirdInventory.loadFromStorage();
+        LoanHandler thirdHandler = new LoanHandler(thirdInventory, file);
         thirdHandler.loadFromStorage();
         assertEquals(0, thirdHandler.getLoanCount());
     }

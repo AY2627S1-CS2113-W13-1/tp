@@ -146,6 +146,7 @@ public class EquipmentHandler {
                     parseDamage(value, Tripod.TripodDamage.class, current.getType()), normalisedRemarks);
             default -> throw new IllegalArgumentException("Unsupported equipment type for return assessment.");
             };
+            proposed.restoreRecordId(current.getRecordId());
             proposed.setServiceable(serviceable);
             return proposed;
         } catch (EquipmentAdditionUnsuccessful exception) {
@@ -165,7 +166,8 @@ public class EquipmentHandler {
     public void saveReturnAssessment(Equipment current, Equipment assessed) throws IOException {
         int index = inventory.indexOf(current);
         if (index < 0 || assessed == null || current.getClass() != assessed.getClass()
-                || !current.getItemId().equals(assessed.getItemId())) {
+                || !current.getItemId().equals(assessed.getItemId())
+                || !current.getRecordId().equals(assessed.getRecordId())) {
             throw new IllegalArgumentException("The return assessment must belong to equipment in the inventory.");
         }
         ArrayList<Equipment> proposedInventory = new ArrayList<>(inventory);
@@ -454,6 +456,24 @@ public class EquipmentHandler {
         }
     }
 
+    /** Converts the command value to the damage enum belonging to the selected equipment type. */
+    private static <T extends Enum<T>> T parseDamage(
+            String value,
+            Class<T> damageClass,
+            String type)
+            throws EquipmentAdditionUnsuccessful {
+        try {
+            return Enum.valueOf(
+                    damageClass,
+                    value.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            throw new EquipmentAdditionUnsuccessful(
+                    "Invalid damage for " + type + ". Use: "
+                            + Arrays.toString(
+                            damageClass.getEnumConstants())
+                            + ".");
+        }
+    }
     /**
      * Finds a field prefix at the start or after whitespace, ignoring prefix-like text inside words.
      * The starting index also allows callers to detect repeated prefixes.
@@ -598,6 +618,7 @@ public class EquipmentHandler {
             throws EquipmentAdditionUnsuccessful, EquipmentUpdateUnsuccessful {
         Equipment proposed = createValidatedEquipment(name, target.getItemId(), target.getType(),
                 Integer.toString(condition), target.getDetails(), target.getRemarks());
+        proposed.restoreRecordId(target.getRecordId());
         proposed.setServiceable(target.isServiceable());
         ArrayList<Equipment> updatedInventory = new ArrayList<>(inventory);
         updatedInventory.set(inventory.indexOf(target), proposed);

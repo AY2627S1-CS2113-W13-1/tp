@@ -1,0 +1,48 @@
+@startuml
+!include style.puml
+hide footbox
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 170
+
+participant ":EqmManager" as Manager
+participant ":LoanHandler" as Handler
+participant ":EquipmentHandler" as Inventory
+participant "loan:Loan" as Loan
+participant "LoanReturnStorage" as Store <<utility>>
+participant "item:Equipment" as Item
+
+Manager -> Handler: returnLoan(input)
+activate Handler
+note over Handler, Inventory
+Parse LoanReturn; find a unique active loan and current item.
+Check object identity, active loan ID and permanent record ID.
+end note
+Handler -> Inventory: prepareReturnAssessment(...)
+Inventory --> Handler: detached assessed item
+Handler -> Loan: returnedCopy()
+Loan --> Handler: detached returned loan
+Handler -> Store: save(...)
+activate Store
+note over Store
+Save proposals across the equipment,
+loan and sequence files.
+See ReturnSaveFailure for failure handling.
+end note
+Store --> Handler: saved successfully
+deactivate Store
+Handler -> Item: applyReturnAssessment(assessed)
+Handler -> Loan: setReturned(true)
+activate Loan
+Loan -> Item: setLoanId(null)
+note over Loan, Item
+Clears the active loan flag.
+Serviceability still controls availability.
+end note
+deactivate Loan
+Handler --> Manager: original loan, now returned
+deactivate Handler
+note over Loan, Item
+Original objects and permanent IDs are retained.
+The loan count and next loan ID do not change.
+end note
+@enduml

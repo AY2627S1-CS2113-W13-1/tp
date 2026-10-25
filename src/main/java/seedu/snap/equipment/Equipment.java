@@ -1,5 +1,6 @@
 package seedu.snap.equipment;
 
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -27,6 +28,8 @@ public abstract class Equipment {
     private static final Logger logger = Logger.getLogger(Equipment.class.getName());
     private String itemName;
     private final String itemId;
+    /** Permanent identity of this physical item; the visible three-digit Item ID may later be reused. */
+    private String recordId = UUID.randomUUID().toString();
     private int condition;
     private boolean isLoaned = false;
     /** Whether this item has passed the latest return assessment and can be loaned again. */
@@ -80,6 +83,23 @@ public abstract class Equipment {
         return itemId;
     }
 
+    /** Returns this physical item's permanent identity, retained when its visible details change. */
+    public String getRecordId() {
+        return recordId;
+    }
+
+    /** Restores a canonical saved identity or retains it when creating a detached update proposal. */
+    final void restoreRecordId(String savedRecordId) {
+        try {
+            if (savedRecordId == null || !UUID.fromString(savedRecordId).toString().equals(savedRecordId)) {
+                throw new IllegalArgumentException("Equipment record ID must be a canonical UUID.");
+            }
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("Equipment record ID must be a canonical UUID.", exception);
+        }
+        recordId = savedRecordId;
+    }
+
     /**
      * Returns the canonical type represented by this equipment subclass.
      *
@@ -121,7 +141,8 @@ public abstract class Equipment {
      */
     public final void applyReturnAssessment(Equipment assessed) {
         if (assessed == null || assessed.getClass() != getClass()
-                || !itemId.equals(assessed.itemId) || !itemName.equals(assessed.itemName)
+                || !itemId.equals(assessed.itemId) || !recordId.equals(assessed.recordId)
+                || !itemName.equals(assessed.itemName)
                 || condition != assessed.condition || assessed.remarks == null
                 || assessed.remarks.length() > MAX_REMARKS_LENGTH
                 || assessed.remarks.matches("(?s).*\\R.*")) {
