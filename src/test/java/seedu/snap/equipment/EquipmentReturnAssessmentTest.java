@@ -48,6 +48,73 @@ class EquipmentReturnAssessmentTest {
                 Arguments.of("tripod", "thread/Quarter inch", "HEAD_FAULT"));
     }
 
+    /** Supplies equipment containing every compatibility field affected by a return. */
+    private static Stream<Arguments> compatibilityAttributes() {
+        return Stream.of(
+                Arguments.of(
+                        "camera",
+                        "add i/Camera id/001 type/camera cond/7 "
+                                + "sensor/Full frame mount/Canon RF "
+                                + "thread/Quarter inch battery/LP-E17",
+                        "SHUTTER_FAULT",
+                        "sensor/Full frame mount/Canon RF "
+                                + "thread/Quarter inch battery/LP-E17 "
+                                + "damage/SHUTTER_FAULT"),
+                Arguments.of(
+                        "lens",
+                        "add i/Lens id/001 type/lens cond/7 "
+                                + "zoom/24-70 mm mount/Canon RF "
+                                + "sensor/Full frame",
+                        "SCRATCHED_GLASS",
+                        "zoom/24-70 mm mount/Canon RF "
+                                + "sensor/Full frame "
+                                + "damage/SCRATCHED_GLASS"),
+                Arguments.of(
+                        "battery",
+                        "add i/Battery id/001 type/battery cond/7 "
+                                + "capacity/2130 mAh battery/LP-E17",
+                        "CONTACT_DAMAGE",
+                        "capacity/2130 mAh battery/LP-E17 "
+                                + "damage/CONTACT_DAMAGE"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("compatibilityAttributes")
+    void assessment_compatibilityAttributes_survivePrepareApplyAndRestart(
+            String type,
+            String command,
+            String damage,
+            String expectedDetails)
+            throws Exception {
+        Path file = temporaryDirectory.resolve(
+                type + "-compatibility.txt");
+        EquipmentHandler handler = new EquipmentHandler(file);
+        Equipment original = handler.addEquipment(command);
+
+        Equipment assessed = handler.prepareReturnAssessment(
+                original,
+                false,
+                damage,
+                "Checked after return");
+
+        assertEquals(expectedDetails, assessed.getDetails());
+
+        handler.saveReturnAssessment(original, assessed);
+        original.applyReturnAssessment(assessed);
+
+        assertEquals(expectedDetails, original.getDetails());
+        assertFalse(original.isServiceable());
+
+        EquipmentHandler restarted = new EquipmentHandler(file);
+        restarted.loadFromStorage();
+        Equipment restored =
+                restarted.getEquipmentList().getFirst();
+
+        assertEquals(expectedDetails, restored.getDetails());
+        assertEquals("Checked after return", restored.getRemarks());
+        assertFalse(restored.isServiceable());
+    }
+
     @ParameterizedTest
     @MethodSource("supportedDamageValues")
     void assessment_allSubtypeDamageValues_preserveReferencesAndAttributes(String type, String attribute, String damage)

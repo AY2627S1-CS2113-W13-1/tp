@@ -131,19 +131,61 @@ public class EquipmentHandler {
             }
             String normalisedRemarks = EquipmentFields.trimWhitespace(remarks);
             validateRemarks(normalisedRemarks);
-            String value = damage.trim();
+            String value = EquipmentFields.trimWhitespace(damage);
             String name = current.getItemName();
             String id = current.getItemId();
             int condition = current.getCondition();
             Equipment proposed = switch (current) {
-            case Camera camera -> new Camera(name, id, condition, camera.getSensorFormat(),
-                    parseDamage(value, Camera.CameraDamage.class, current.getType()), normalisedRemarks);
-            case Lens lens -> new Lens(name, id, condition, lens.getZoomRange(),
-                    parseDamage(value, Lens.LensDamage.class, current.getType()), normalisedRemarks);
-            case Battery battery -> new Battery(name, id, condition, battery.getCapacity(),
-                    parseDamage(value, Battery.BatteryDamage.class, current.getType()), normalisedRemarks);
-            case Tripod tripod -> new Tripod(name, id, condition, tripod.getThread(),
-                    parseDamage(value, Tripod.TripodDamage.class, current.getType()), normalisedRemarks);
+            case Camera camera -> new Camera(
+                    name,
+                    id,
+                    condition,
+                    camera.getSensorFormat(),
+                    EquipmentDetailParser.parseEnumValue(
+                            value,
+                            EquipmentDetailField.DAMAGE,
+                            Camera.CameraDamage.class,
+                            current.getType()),
+                    normalisedRemarks,
+                    camera.getLensMount(),
+                    camera.getTripodThread(),
+                    camera.getBatteryType());
+            case Lens lens -> new Lens(
+                    name,
+                    id,
+                    condition,
+                    lens.getZoomRange(),
+                    EquipmentDetailParser.parseEnumValue(
+                            value,
+                            EquipmentDetailField.DAMAGE,
+                            Lens.LensDamage.class,
+                            current.getType()),
+                    normalisedRemarks,
+                    lens.getLensMount(),
+                    lens.getSensorFormat());
+            case Battery battery -> new Battery(
+                    name,
+                    id,
+                    condition,
+                    battery.getCapacity(),
+                    EquipmentDetailParser.parseEnumValue(
+                            value,
+                            EquipmentDetailField.DAMAGE,
+                            Battery.BatteryDamage.class,
+                            current.getType()),
+                    normalisedRemarks,
+                    battery.getBatteryType());
+            case Tripod tripod -> new Tripod(
+                    name,
+                    id,
+                    condition,
+                    tripod.getThread(),
+                    EquipmentDetailParser.parseEnumValue(
+                            value,
+                            EquipmentDetailField.DAMAGE,
+                            Tripod.TripodDamage.class,
+                            current.getType()),
+                    normalisedRemarks);
             default -> throw new IllegalArgumentException("Unsupported equipment type for return assessment.");
             };
             proposed.restoreRecordId(current.getRecordId());
@@ -456,24 +498,6 @@ public class EquipmentHandler {
         }
     }
 
-    /** Converts the command value to the damage enum belonging to the selected equipment type. */
-    private static <T extends Enum<T>> T parseDamage(
-            String value,
-            Class<T> damageClass,
-            String type)
-            throws EquipmentAdditionUnsuccessful {
-        try {
-            return Enum.valueOf(
-                    damageClass,
-                    value.toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException exception) {
-            throw new EquipmentAdditionUnsuccessful(
-                    "Invalid damage for " + type + ". Use: "
-                            + Arrays.toString(
-                            damageClass.getEnumConstants())
-                            + ".");
-        }
-    }
     /**
      * Finds a field prefix at the start or after whitespace, ignoring prefix-like text inside words.
      * The starting index also allows callers to detect repeated prefixes.

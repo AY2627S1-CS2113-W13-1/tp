@@ -3,11 +3,11 @@ package seedu.snap.equipment;
 import java.util.Arrays;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-import java.util.Locale;
 
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 
@@ -105,16 +105,40 @@ final class EquipmentDetailParser {
                 field,
                 defaultValue.name());
 
+        return parseEnumValue(
+                value,
+                field,
+                enumClass,
+                equipmentType);
+    }
+
+    /**
+     * Converts one supplied detail value into its corresponding enum.
+     *
+     * @param value supplied field value
+     * @param field enum-backed field being parsed
+     * @param enumClass enum class used for conversion
+     * @param equipmentType equipment type used in error messages
+     * @param <T> enum type
+     * @return parsed enum value
+     * @throws EquipmentAdditionUnsuccessful if the value is invalid
+     */
+    static <T extends Enum<T>> T parseEnumValue(
+            String value,
+            EquipmentDetailField field,
+            Class<T> enumClass,
+            String equipmentType)
+            throws EquipmentAdditionUnsuccessful {
         try {
             return Enum.valueOf(
                     enumClass,
-                    value.toUpperCase(Locale.ROOT));
+                    EquipmentFields.trimWhitespace(value)
+                            .toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException exception) {
             throw new EquipmentAdditionUnsuccessful(
                     "Invalid " + field.getFieldName()
                             + " for " + equipmentType + ". Use: "
-                            + Arrays.toString(
-                            enumClass.getEnumConstants())
+                            + Arrays.toString(enumClass.getEnumConstants())
                             + ".");
         }
     }
