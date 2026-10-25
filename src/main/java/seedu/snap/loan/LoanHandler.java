@@ -2,6 +2,7 @@ package seedu.snap.loan;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -33,6 +34,8 @@ public class LoanHandler {
     private static final int MAX_LOAN_NUMBER = 999;
     private static final Logger logger = Logger.getLogger(LoanHandler.class.getName());
     private static final String ID_FORMAT = "[0-9]{3}";
+    private static final String LOAN_COMMAND_FORMAT = "Invalid command format. Use: loan id/[ITEM ID] "
+            + "b/[BORROWER ID] [issued/DD-MM-YY] due/[DD-MM-YY]. Omitted issued/ uses today's date.";
     private static final Pattern HISTORY_COMMAND = Pattern.compile("(?U)\\Ahistory\\s+id/([0-9]{3})\\z");
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-uu")
             .withResolverStyle(ResolverStyle.STRICT);
@@ -47,6 +50,8 @@ public class LoanHandler {
     private final Path storageFile;
     /** File storing the next identifier independently of deleted loan records. */
     private final Path sequenceFile;
+    /** Supplies the local date once when an interactive loan command omits its issue date. */
+    private final Clock clock;
     private int nextLoanNumber = FIRST_LOAN_NUMBER;
 
     /** Creates an in-memory loan handler, mainly useful for isolated unit tests. */
@@ -61,10 +66,19 @@ public class LoanHandler {
 
     /** Creates a handler with explicit loan and sequence files and a required equipment inventory. */
     public LoanHandler(EquipmentHandler equipment, Path storageFile, Path sequenceFile) {
+        this(equipment, storageFile, sequenceFile, Clock.systemDefaultZone());
+    }
+
+    /** Creates a handler with an explicit clock so omitted issue dates can be tested without the system date. */
+    public LoanHandler(EquipmentHandler equipment, Path storageFile, Path sequenceFile, Clock clock) {
+        if (clock == null) {
+            throw new IllegalArgumentException("Clock must not be null.");
+        }
         assert equipment != null : "Loan handler requires an inventory";
         this.equipment = equipment;
         this.storageFile = storageFile;
         this.sequenceFile = sequenceFile;
+        this.clock = clock;
     }
 
     /** Returns the next loan ID, or 1000 when all supported identifiers have been used. */
@@ -162,7 +176,7 @@ public class LoanHandler {
      * @throws LoanAdditionUnsuccessful when the command cannot be added
      */
     public Loan addLoan(String input) throws LoanAdditionUnsuccessful {
-        Loan parsed = parseLoanRecord(input);
+        Loan parsed = parseLoanCommand(input);
         String itemId = parsed.getItemId();
 
         if (hasActiveLoanForItem(itemId)) {
@@ -347,19 +361,32 @@ public class LoanHandler {
         return loan;
     }
 
-    /**
-     * Parses a loan record without changing the current list.
-     * This is also used when validating persisted records.
-     */
+    /** Parses interactive loan syntax, supplying an issue date only when the complete field is absent. */
+    private Loan parseLoanCommand(String input) throws LoanAdditionUnsuccessful {
+        if (input == null || input.matches("(?s).*\\R.*")) {
+            throw new LoanAdditionUnsuccessful(LOAN_COMMAND_FORMAT);
+        }
+        String[] arguments = input.replaceAll("(?U)^\\s+|\\s+$", "").split("(?U)\\s+");
+        if (arguments.length != EXPECTED_ADD_ARGUMENT_COUNT
+                && arguments.length != EXPECTED_ADD_ARGUMENT_COUNT - 1) {
+            throw new LoanAdditionUnsuccessful(LOAN_COMMAND_FORMAT);
+        }
+        return parseLoanArguments(arguments, clock);
+    }
+
+    /** Requires explicit dates in stored records; loading never supplies a current-date default. */
     static Loan parseLoanRecord(String input) throws LoanAdditionUnsuccessful {
         String[] arguments = input == null ? new String[0] : input.trim().split("\\s+");
         if (arguments.length != EXPECTED_ADD_ARGUMENT_COUNT) {
             throw new LoanAdditionUnsuccessful("Incorrect number of arguments.");
         }
+        return parseLoanArguments(arguments, null);
+    }
 
+    /** Shares ID, supplied-date and date-order validation between commands and complete stored records. */
+    private static Loan parseLoanArguments(String[] arguments, Clock clock) throws LoanAdditionUnsuccessful {
         if (!arguments[0].equals("loan")) {
-            throw new LoanAdditionUnsuccessful("Invalid command format. Expected: "
-                    + "loan id/[ITEM ID] b/[BORROWER ID] issued/[DD-MM-YY] due/[DD-MM-YY].");
+            throw new LoanAdditionUnsuccessful(LOAN_COMMAND_FORMAT);
         }
 
         String itemId = parseArgument(arguments[1], "id/", "/id", "item ID");
@@ -367,8 +394,16 @@ public class LoanHandler {
             throw new LoanAdditionUnsuccessful("Item ID must be from 001 to 999.");
         }
         String borrowerId = parseArgument(arguments[2], "b/", "/b", "borrower ID");
-        LocalDateTime issuedDate = parseDateArgument(arguments[3], "issued/", "/issued");
-        LocalDateTime dueDate = parseDateArgument(arguments[4], "due/", "/due");
+        LocalDateTime issuedDate;
+        LocalDateTime dueDate;
+        if (arguments.length == EXPECTED_ADD_ARGUMENT_COUNT) {
+            issuedDate = parseDateArgument(arguments[3], "issued/", "/issued");
+            dueDate = parseDateArgument(arguments[4], "due/", "/due");
+        } else {
+            // Validate the required due date before reading the clock. Never default an invalid issued/ field.
+            dueDate = parseDateArgument(arguments[3], "due/", "/due");
+            issuedDate = LocalDate.now(clock).atStartOfDay();
+        }
 
         if (issuedDate.isAfter(dueDate)) {
             throw new LoanAdditionUnsuccessful("Issued date must not be later than the due date.");
