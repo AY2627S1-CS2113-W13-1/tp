@@ -13,16 +13,29 @@ application sessions. Bundles group equipment during the current session.
 
 ## Getting help: `help`
 
-Format: `help`
+| Format | What it displays | Example |
+| --- | --- | --- |
+| `help` | A compact command menu grouped into Equipment, Loans, Bundles and General | `help` |
+| `help <command>` | The format, example, fields, defaults and restrictions for one command | `help loan` |
+| `help all` | The complete command reference | `help all` |
 
-Example: `help`
+Replace `<command>` with one of these exact lowercase topics:
 
-This displays every available command with its format, an example, required and optional fields, defaults and
-important restrictions. Help uses `<VALUE>` for a value you must replace and `[field/<VALUE>]` for a field you
-can omit. Enter `help` without arguments. The welcome message and unrecognised-command errors point to it.
+* Equipment: `add`, `list`, `delete item`, `filter`, `update`.
+* Loans: `loan`, `return`, `delete loan`, `list loans`, `list overdue`, `history`.
+* Bundles: `add-bundle`, `add-to-bundle`, `list bundles`.
+* General: `help`, `bye`.
 
-Requesting help leaves equipment, loans, bundles, availability, identifiers and saved records unchanged.
-You can then enter another command normally. Help does not save data or end the session.
+Include the whole topic for commands with more than one word, for example `help list overdue` or
+`help delete loan`. Extra whitespace around or between words is accepted. The group names are menu labels;
+they are not help topics. An unknown topic, such as `help loans`, displays an error followed by the compact
+menu so that you can choose a supported topic.
+
+Help uses `<VALUE>` for a value you must replace and `[field/<VALUE>]` for a field you can omit.
+The welcome message and unrecognised-command errors point to `help`.
+
+Every help request, including an unknown topic, leaves equipment, loans, bundles, availability, identifiers and
+saved records unchanged. You can then enter another command normally. Help does not save data or end the session.
 
 ## Optional fields and defaults
 
@@ -421,7 +434,9 @@ reports the problem and stops.
 
 | Action | Command |
 | --- | --- |
-| Show command formats, examples and defaults | `help` |
+| Show the compact command menu | `help` |
+| Show one command's format, example and defaults | `help <command>` |
+| Show the complete command reference | `help all` |
 | Add equipment | `add i/[ITEM] id/[ITEM ID] type/[TYPE] cond/[CONDITION]` with optional details, damage and remarks |
 | Delete equipment | `delete item/[ITEM ID]` |
 | Add loan | `loan id/[ITEM ID] b/[BORROWER ID] [issued/DD-MM-YY] due/[DD-MM-YY]` |

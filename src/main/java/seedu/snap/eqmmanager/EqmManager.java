@@ -91,8 +91,8 @@ public class EqmManager {
         String normalizedInput = input == null ? "" : input.replaceAll("(?U)^\\s+|\\s+$", "");
         if (startupError != null) {
             System.out.println("Could not load saved data: " + startupError);
-        } else if (normalizedInput.equals("help")) {
-            Help.print();
+        } else if (normalizedInput.matches("(?sU)help(?:\\s.*)?")) {
+            Help.print(normalizedInput.substring("help".length()));
         } else if (normalizedInput.equals("bye")) {
             isRunning = !saveBeforeExit();
         } else if (normalizedInput.equals("delete loan")
@@ -143,7 +143,8 @@ public class EqmManager {
 
         System.out.println("Welcome to snAp. Loaded " + equipment.getEquipmentList().size()
                 + " equipment record(s) and " + loans.getLoanCount() + " loan(s).");
-        System.out.println("Type help for command formats, examples and defaults.");
+        System.out.println("Type help for the command menu, help <COMMAND> for details,"
+                + " or help all for the full guide.");
 
         // main process
         String input;

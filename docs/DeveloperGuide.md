@@ -323,27 +323,35 @@ return remarks, required assessments, and failed saves followed by successful re
 
 #### Implementation and sequence
 
-`help` displays all 16 supported command formats and examples, required and optional fields, defaults and
-restrictions. The welcome message and unknown-command error direct users to it. `EqmManager.executeInput(...)`
-recognises the exact command after trimming surrounding whitespace; `help add` follows the unknown-command path.
-The existing startup-error check remains first: the input loop stops if saved data cannot be loaded.
+`help` displays a compact menu grouped into Equipment, Loans, Bundles and General. `help <command>` displays
+one command's format, example, fields, defaults and restrictions; `help all` displays the complete reference
+for all 16 commands. Topics use exact lowercase command names, including multiword names such as `delete loan`
+and `list overdue`. Group names are menu labels, not topics. Unknown topics print an error and the compact menu.
 
-![Help sequence: EqmManager calls Help.print, which prints the fixed reference without using record or storage handlers.](images/HelpSequence.svg)
+`EqmManager.executeInput(...)` recognises `help` followed by whitespace or the end of the input and passes the
+optional topic to `Help`. `Help` trims surrounding Unicode whitespace and normalises whitespace between topic
+words before lookup. This does not make other command names or fields case-insensitive. The existing
+startup-error check remains first: the input loop stops if saved data cannot be loaded.
 
-*Figure 6. Help prints a reference and returns control to the command loop.*
+![Help sequence: EqmManager calls Help with a topic, which prints the menu, one command or the full reference without using record or storage handlers.](images/HelpSequence.svg)
+
+*Figure 6. Help selects the requested text and returns control to the command loop.*
 [PlantUML source](diagrams/HelpSequence.puml)
 
-`Help` is a utility class containing a fixed reference built once as `TEXT`. It uses immutable equipment limits
-and damage enums when constructing the text, so those values come from the model. `Help.print()` only calls
-`System.out.print(TEXT)`. It has no equipment, loan or bundle handler references and performs no storage operations.
-Consequently, requesting help does not consume identifiers, save files, alter records or end the session.
+`Help` is a utility class containing an immutable list of command descriptions. The compact menu, command-specific
+help and complete reference use this list, so changes to a command remain consistent in all three views. It uses immutable
+equipment limits and damage enums when constructing the text, so those values come from the model. Printing help
+has no equipment, loan or bundle handler references and performs no storage operations. Consequently, any help
+request, including an invalid topic, does not consume identifiers, save files, alter records or end the session.
 
 #### Design choices and alternatives
 
-A fixed reference is sufficient for one no-argument help command. Per-command help would need additional command
-syntax, while generating descriptions by reflection would need metadata that the handlers do not currently
-provide. Both add work beyond the present requirement. Reading constants and enum values reduces duplicated
-limits, but command syntax and explanatory prose still need to be updated when supported behaviour changes.
+An explicit topic for each command gives short help requests an unambiguous meaning, including commands such as
+`delete item` and `delete loan`. Abbreviated topics and group topics would need extra rules to distinguish them.
+Generating descriptions by reflection would need metadata that the handlers do not currently provide. Fixed
+descriptions and exact topic lookup are sufficient for the supported commands. Reading constants and enum values
+reduces duplicated limits, but command syntax and explanatory prose still need to be updated when supported
+behaviour changes.
 
 Printing independently of handlers also means help does not require a writeable data directory after successful
 startup. Calling save methods from a general command-completion path would make this read-only request depend
@@ -351,11 +359,13 @@ on storage and could change files unnecessarily.
 
 #### Verification
 
-`HelpTest` checks formats and examples for every command, defaults, limits, subtype damage values and output
-line endings. `HelpIntegrationTest` compares record contents, object references, permanent IDs, assessments,
-counts, next identifiers, bundle completion, file bytes and modification times before and after repeated requests.
-It also checks missing and blocked storage paths, surrounding Unicode whitespace, invalid help topics, continued
-commands and the interactive help-then-exit loop. Invalid saved data still causes the existing startup abort.
+`HelpTest` checks the compact menu, each command topic, complete reference, invalid topics, formats and examples,
+defaults, limits, subtype damage values and output line endings. `HelpIntegrationTest` compares record contents,
+object references, permanent IDs, assessments, counts, next identifiers, bundle completion, file bytes and
+modification times before and after repeated requests.
+It also checks missing and blocked storage paths, Unicode whitespace around and between topic words, invalid help
+topics, continued commands and the interactive help-then-exit loop. These checks cover the menu, individual topics,
+the complete reference and invalid-topic requests. Invalid saved data still causes the existing startup abort.
 
 ### Updating equipment details
 

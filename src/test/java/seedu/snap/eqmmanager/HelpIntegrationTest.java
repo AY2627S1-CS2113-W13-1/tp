@@ -28,6 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import seedu.snap.bundle.Bundle;
@@ -40,6 +41,11 @@ import seedu.snap.loan.LoanHandler;
 /** Verifies that help is discoverable and leaves application records, files and counters unchanged. */
 class HelpIntegrationTest {
     private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-10-24T12:00:00Z"), ZoneOffset.UTC);
+    private static final List<String> HELP_COMMANDS = List.of("help", "help all", "help add", "help list",
+            "help delete item", "help loan", "help return", "help delete loan", "help list loans",
+            "help list overdue", "help history", "help filter", "help update", "help add-bundle",
+            "help add-to-bundle", "help list bundles", "help help", "help bye", "help unknown",
+            "help list overdue extra", "help add i/Camera", "help Loan", "help all extra");
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
     private PrintStream originalOutput;
     private InputStream originalInput;
@@ -89,31 +95,29 @@ class HelpIntegrationTest {
         Map<Path, SavedFile> filesBefore = savedFiles(dataDirectory);
         List<Path> pathsBefore = treePaths(dataDirectory);
 
-        manager.executeInput("help");
-        manager.executeInput("help");
-        manager.executeInput("help");
+        executeAllHelpForms(manager, before);
 
-        assertHelpPrinted();
         assertEquals(before, snapshot(manager));
         assertSavedFilesUnchanged(filesBefore);
         assertEquals(pathsBefore, treePaths(dataDirectory));
     }
 
-    @Test
-    void help_outerUnicodeWhitespace_isNormalisedWithoutChangingRecords() throws Exception {
+    @ParameterizedTest
+    @ValueSource(strings = {"\u2003\t help \u00a0\u2003", "help\u00a0", "help\t\u2003\n"})
+    void help_outerUnicodeWhitespace_isNormalisedWithoutChangingRecords(String command) throws Exception {
         ApplicationState before = snapshot(manager);
         Map<Path, SavedFile> filesBefore = savedFiles(dataDirectory);
 
-        manager.executeInput("\u2003\t help \u00a0\u2003");
+        manager.executeInput(command);
 
-        assertHelpPrinted();
+        assertMenuPrinted();
         assertEquals(before, snapshot(manager));
         assertSavedFilesUnchanged(filesBefore);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"HELP", "helper", "help add", "help topic", "help\u2003add"})
-    void help_similarOrTopicCommands_followUnknownCommandPathAndPreserveRecords(String command) throws Exception {
+    @ValueSource(strings = {"HELP", "helper", "helpall", "helpful", "help/all", "help-loan"})
+    void help_similarCommands_followUnknownCommandPathAndPreserveRecords(String command) throws Exception {
         ApplicationState before = snapshot(manager);
         Map<Path, SavedFile> filesBefore = savedFiles(dataDirectory);
         List<Path> pathsBefore = treePaths(dataDirectory);
@@ -129,16 +133,101 @@ class HelpIntegrationTest {
     }
 
     @Test
+    void help_withoutTopic_showsCompactGroupedMenu() {
+        manager.executeInput("help");
+
+        assertMenuPrinted();
+        assertFalse(printed().contains("Format: loan id/"));
+        assertFalse(printed().contains("damage/SENSOR_DAMAGE"));
+        assertTrue(printed().lines().count() <= 24, "The command menu should fit a normal terminal screen");
+    }
+
+    @ParameterizedTest
+    @CsvSource(delimiter = '|', value = {
+        "add | Format: add i/<NAME>",
+        "list | Format: list",
+        "delete item | Format: delete item/<ID>",
+        "loan | Format: loan id/<ITEM ID>",
+        "return | Format: return loan/<LOAN ID>",
+        "delete loan | Format: delete loan/<LOAN ID>",
+        "list loans | Format: list loans",
+        "list overdue | Format: list overdue",
+        "history | Format: history id/<ITEM ID>",
+        "filter | Format: filter [id/<ID>]",
+        "update | Format: update id/<ID>",
+        "add-bundle | Format: add-bundle name/<NAME>",
+        "add-to-bundle | Format: add-to-bundle id/<BUNDLE ID>",
+        "list bundles | Format: list bundles",
+        "help | Format: help",
+        "bye | Format: bye"
+    })
+    void help_commandTopic_showsOnlyRequestedCommandWithExample(String topic, String expectedFormat) {
+        manager.executeInput("help " + topic);
+
+        assertTrue(printed().contains(expectedFormat), topic);
+        assertTrue(printed().contains("Example: " + topic), topic);
+        assertFalse(printed().contains("Command not recognised"), topic);
+        assertFalse(printed().contains("Unknown help topic"), topic);
+        String unrelated = topic.equals("loan") ? "Format: add i/" : "Format: loan id/";
+        assertFalse(printed().contains(unrelated), "Topic help should omit unrelated command sections");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"help loan", "\u2003help\tloan\u00a0", "help\u2003loan",
+        "help\u00a0loan", "help\t\tloan"})
+    void help_singleWordTopicWhitespace_showsLoanSyntax(String command) {
+        manager.executeInput(command);
+
+        assertTrue(printed().contains("Format: loan id/<ITEM ID>"));
+        assertTrue(printed().contains("Omitted issued/ defaults to today's date"));
+        assertFalse(printed().contains("Format: return loan/"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"help list overdue", "\u2003help\tlist\u00a0overdue\u2003",
+        "help\u2003list\u2003overdue", "help\nlist\r\noverdue", "help  list   overdue"})
+    void help_multiWordTopicWhitespace_showsExactOverdueTopic(String command) {
+        manager.executeInput(command);
+
+        assertTrue(printed().contains("Format: list overdue"));
+        assertTrue(printed().contains("Returned loans and loans due today or later are excluded."));
+        assertFalse(printed().contains("Format: list loans"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"help all", "\u2003help\tall\u00a0", "help\u2003all"})
+    void help_all_showsCompleteReference(String command) {
+        manager.executeInput(command);
+
+        assertTrue(printed().contains("Format: add i/<NAME>"));
+        assertTrue(printed().contains("Format: loan id/<ITEM ID>"));
+        assertTrue(printed().contains("Format: return loan/<LOAN ID>"));
+        assertTrue(printed().contains("Format: add-to-bundle id/<BUNDLE ID>"));
+        assertTrue(printed().contains("Format: bye"));
+        assertTrue(printed().contains("Omitted issued/ defaults to today's date"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"help unknown", "help list overdue extra", "help add i/Camera", "help Loan",
+        "help all extra", "help loan/001", "help delete", "help list over"})
+    void help_unknownTopic_showsErrorAndRecoverableMenu(String command) {
+        manager.executeInput(command);
+
+        assertTrue(printed().contains("Unknown help topic"));
+        assertMenuPrinted();
+        assertFalse(printed().contains("Command not recognised"));
+        assertFalse(printed().contains("Format: loan id/"));
+    }
+
+    @Test
     void help_emptyWorkspace_createsNoDataDirectoriesOrFiles() throws Exception {
         Path missingDirectory = temporaryDirectory.resolve("empty").resolve("nested-data");
         EqmManager empty = new EqmManager(missingDirectory, FIXED_CLOCK);
         ApplicationState before = snapshot(empty);
         assertFalse(Files.exists(missingDirectory.getParent()));
 
-        empty.executeInput("help");
-        empty.executeInput("help");
+        executeAllHelpForms(empty, before);
 
-        assertHelpPrinted();
         assertEquals(before, snapshot(empty));
         assertFalse(Files.exists(missingDirectory));
         assertFalse(Files.exists(missingDirectory.getParent()));
@@ -159,10 +248,8 @@ class HelpIntegrationTest {
         Map<Path, SavedFile> blockedFiles = savedFiles(dataDirectory);
         List<Path> blockedPaths = treePaths(dataDirectory);
 
-        manager.executeInput("help");
-        manager.executeInput("help");
+        executeAllHelpForms(manager, before);
 
-        assertHelpPrinted();
         assertFalse(printed().contains("Could not save"));
         assertFalse(printed().contains("Could not load"));
         assertEquals(before, snapshot(manager));
@@ -190,8 +277,7 @@ class HelpIntegrationTest {
 
     @Test
     void help_followedByOtherCommands_keepsTheSessionRunning() throws Exception {
-        manager.executeInput("help");
-        assertTrue(readField(manager, "isRunning", Boolean.class));
+        executeAllHelpForms(manager, snapshot(manager));
         output.reset();
 
         manager.executeInput("update id/006 i/Updated spare battery cond/9");
@@ -208,14 +294,17 @@ class HelpIntegrationTest {
 
     @Test
     void run_helpThenBye_showsDiscoveryAndEndsOnlyAfterBye() throws Exception {
-        System.setIn(new ByteArrayInputStream("help\nbye\n".getBytes(StandardCharsets.UTF_8)));
+        System.setIn(new ByteArrayInputStream("help\nhelp loan\nhelp unknown\nhelp all\nhelp bye\nbye\n"
+                .getBytes(StandardCharsets.UTF_8)));
         EqmManager interactive = new EqmManager(temporaryDirectory.resolve("interactive-data"), FIXED_CLOCK);
 
         interactive.run();
 
         assertTrue(printed().contains("Welcome to snAp."));
         assertTrue(printed().contains("Type help"));
-        assertHelpPrinted();
+        assertMenuPrinted();
+        assertTrue(printed().contains("Format: loan id/<ITEM ID>"));
+        assertTrue(printed().contains("Unknown help topic"));
         assertTrue(printed().contains("Goodbye."));
         assertFalse(readField(interactive, "isRunning", Boolean.class));
         assertTrue(printed().indexOf("Welcome") < printed().indexOf("loan id/"));
@@ -304,11 +393,29 @@ class HelpIntegrationTest {
                 dataDirectory.resolve("loan-sequence.txt"));
     }
 
-    /** Checks routing to the catalogue without duplicating the separate catalogue content tests. */
-    private void assertHelpPrinted() {
-        assertTrue(printed().contains("loan id/"));
-        assertTrue(printed().contains("return loan/"));
-        assertTrue(printed().contains("history id/"));
+    /** Repeats every help form so command names in a topic cannot execute or consume identifiers. */
+    private void executeAllHelpForms(EqmManager target, ApplicationState expected) throws Exception {
+        for (int repetition = 0; repetition < 2; repetition++) {
+            for (String command : HELP_COMMANDS) {
+                output.reset();
+                target.executeInput(command);
+                assertFalse(printed().contains("Command not recognised"), command);
+                assertFalse(printed().contains("Could not save"), command);
+                assertFalse(printed().contains("Could not load"), command);
+                assertTrue(printed().contains("help"), command);
+                assertEquals(expected, snapshot(target), command);
+            }
+        }
+    }
+
+    /** Checks the discovery menu independently of the production text generator. */
+    private void assertMenuPrinted() {
+        assertTrue(printed().contains("help all"));
+        assertTrue(printed().contains("help loan"));
+        assertTrue(printed().contains("list overdue"));
+        assertTrue(printed().contains("delete item"));
+        assertTrue(printed().contains("add-to-bundle"));
+        assertTrue(printed().contains("list bundles"));
     }
 
     /** Reads captured application output independently of line endings or table spacing. */

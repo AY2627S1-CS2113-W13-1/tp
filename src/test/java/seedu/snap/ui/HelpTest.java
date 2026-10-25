@@ -7,6 +7,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Locale;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -22,42 +25,157 @@ import seedu.snap.equipment.Tripod;
 
 /** Checks the command guide covers executable syntax, meaningful defaults and important restrictions. */
 class HelpTest {
+    private static final List<String> TOPICS = List.of("add", "list", "delete item", "loan", "return", "delete loan",
+            "list loans", "list overdue", "history", "filter", "update", "add-bundle", "add-to-bundle",
+            "list bundles", "help", "bye");
+
     /** Supplies the user-facing syntax and example for each supported command. */
     private static Stream<Arguments> commandExamples() {
         return Stream.of(
-                Arguments.of("add i/<NAME> id/<ID> type/<TYPE> cond/<N>"
+                Arguments.of("add", "add i/<NAME> id/<ID> type/<TYPE> cond/<N>"
                         + " [TYPE DETAIL] [damage/<DAMAGE>] [remarks/<TEXT>]",
                         "add i/Canon EOS R10 id/001 type/camera cond/1 "
                                 + "sensor/APS-C mount/Canon RF damage/NONE"),
-                Arguments.of("list", "list"),
-                Arguments.of("delete item/<ID>", "delete item/001"),
-                Arguments.of("loan id/<ITEM ID> b/<BORROWER ID> [issued/<DD-MM-YY>] due/<DD-MM-YY>",
+                Arguments.of("list", "list", "list"),
+                Arguments.of("delete item", "delete item/<ID>", "delete item/001"),
+                Arguments.of("loan", "loan id/<ITEM ID> b/<BORROWER ID> [issued/<DD-MM-YY>] due/<DD-MM-YY>",
                         "loan id/001 b/002 issued/24-10-26 due/31-10-26"),
-                Arguments.of("return loan/<LOAN ID> serviceable/<yes|no> damage/<DAMAGE> [remarks/<TEXT>]",
+                Arguments.of("return", "return loan/<LOAN ID> serviceable/<yes|no> damage/<DAMAGE> [remarks/<TEXT>]",
                         "return loan/001 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair"),
-                Arguments.of("delete loan/<LOAN ID>", "delete loan/001"),
-                Arguments.of("list loans", "list loans"),
-                Arguments.of("list overdue", "list overdue"),
-                Arguments.of("history id/<ITEM ID>", "history id/001"),
-                Arguments.of("filter [id/<ID>] [i/<NAME>] [type/<TYPE>] [cond/<N|MIN-MAX>] [status/<STATUS>]",
+                Arguments.of("delete loan", "delete loan/<LOAN ID>", "delete loan/001"),
+                Arguments.of("list loans", "list loans", "list loans"),
+                Arguments.of("list overdue", "list overdue", "list overdue"),
+                Arguments.of("history", "history id/<ITEM ID>", "history id/001"),
+                Arguments.of("filter", "filter [id/<ID>] [i/<NAME>] [type/<TYPE>] [cond/<N|MIN-MAX>] [status/<STATUS>]",
                         "filter type/camera cond/1-3 status/available"),
-                Arguments.of("update id/<ID> [i/<NAME>] [type/<TYPE>] [cond/<N>]",
+                Arguments.of("update", "update id/<ID> [i/<NAME>] [type/<TYPE>] [cond/<N>]",
                         "update id/001 i/Studio camera cond/5"),
-                Arguments.of("add-bundle name/<NAME>", "add-bundle name/Studio kit"),
-                Arguments.of("add-to-bundle id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]",
+                Arguments.of("add-bundle", "add-bundle name/<NAME>", "add-bundle name/Studio kit"),
+                Arguments.of("add-to-bundle", "add-to-bundle id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]",
                         "add-to-bundle id/001 001 002 003"),
-                Arguments.of("list bundles", "list bundles"),
-                Arguments.of("help", "help"),
-                Arguments.of("bye", "bye"));
+                Arguments.of("list bundles", "list bundles", "list bundles"),
+                Arguments.of("help", "help", "help"),
+                Arguments.of("bye", "bye", "bye"));
     }
 
     @ParameterizedTest
     @MethodSource("commandExamples")
-    void getText_eachCommand_includesSyntaxAndExample(String format, String example) {
+    void getText_eachCommand_includesSyntaxAndExample(String topic, String format, String example) {
         String text = Help.getText();
 
         assertTrue(text.lines().anyMatch(line -> line.equals("Format: " + format)), format);
         assertTrue(text.lines().anyMatch(line -> line.equals("Example: " + example)), example);
+    }
+
+    @ParameterizedTest
+    @MethodSource("commandExamples")
+    void getText_commandTopic_includesOnlyItsGuideAndSharedNotation(String topic, String format, String example) {
+        String text = Help.getText(topic);
+
+        assertTrue(text.lines().anyMatch(line -> line.equals("Format: " + format)), topic);
+        assertTrue(text.lines().anyMatch(line -> line.equals("Example: " + example)), topic);
+        assertTrue(text.contains("<VALUE> is a placeholder. [field/<VALUE>] is optional."));
+        assertTrue(text.contains("Commands and field prefixes use exact lowercase spelling."));
+        assertTrue(text.contains("001-999. Borrower IDs: 000-999."));
+        commandExamples().forEach(arguments -> {
+            String otherTopic = (String) arguments.get()[0];
+            String otherFormat = (String) arguments.get()[1];
+            if (!topic.equals(otherTopic)) {
+                assertFalse(text.lines().anyMatch(line -> line.equals("Format: " + otherFormat)),
+                        topic + " should not include the guide for " + otherTopic);
+            }
+        });
+    }
+
+    @Test
+    void getText_noTopic_returnsCompactGroupedMenu() {
+        String text = Help.getText("");
+        String lowerCaseText = text.toLowerCase(Locale.ROOT);
+
+        assertTrue(text.lines().count() < 20, "The default menu must fit in a small terminal.");
+        for (String group : List.of("equipment", "loan", "bundle")) {
+            assertTrue(lowerCaseText.contains(group), "The menu should group " + group + " commands.");
+        }
+        List<String> groupLines = text.lines()
+                .filter(line -> line.matches("(?:Equipment|Loans|Bundles|General): .*"))
+                .toList();
+        assertEquals(4, groupLines.size());
+        List<String> menuTopics = groupLines.stream()
+                .flatMap(line -> Arrays.stream(line.substring(line.indexOf(':') + 1).strip().split("\\s*\\|\\s*")))
+                .sorted().toList();
+        assertEquals(TOPICS.stream().sorted().toList(), menuTopics,
+                "Each supported command must appear exactly once in the grouped menu.");
+        assertTrue(text.contains("help <COMMAND>"));
+        assertTrue(text.contains("help all"));
+        assertFalse(text.contains("sensor/<TEXT>"));
+        assertFalse(text.contains("[TYPE DETAIL]"));
+        assertFalse(text.contains("Format:"));
+        assertEquals(text, Help.getText((String) null));
+        assertEquals(text, Help.getText(" \t\r\n\u2003\u00a0 "));
+    }
+
+    @Test
+    void getText_allTopic_retainsCompleteReference() {
+        assertEquals(Help.getText(), Help.getText("all"));
+        assertEquals(Help.getText(), Help.getText(" \tall\u2003 "));
+        assertTrue(Help.getText("all").lines().count() > Help.getText("").lines().count());
+    }
+
+    @Test
+    void getText_multiwordTopics_selectExactGuideAfterWhitespaceNormalisation() {
+        assertEquals(Help.getText("delete item"), Help.getText(" \tdelete\u2003item\u00a0 "));
+        assertEquals(Help.getText("delete loan"), Help.getText("delete  \tloan"));
+        assertEquals(Help.getText("list loans"), Help.getText("list\nloans"));
+        assertEquals(Help.getText("list overdue"), Help.getText("list\u00a0overdue"));
+        assertEquals(Help.getText("list bundles"), Help.getText("list\u2009\u202fbundles"));
+        assertFalse(Help.getText("list").contains("Format: list loans"));
+        assertFalse(Help.getText("delete item").contains("Format: delete loan/<LOAN ID>"));
+    }
+
+    /** Supplies misspellings, partial topics and aliases that must not select a command guide. */
+    private static Stream<String> unknownTopics() {
+        return Stream.of("unknown", "HELP", "ADD", "helpall", "helpful", "equipment", "loans", "bundles",
+                "delete", "list loan", "list items", "list loans extra", "help add", "all extra");
+    }
+
+    @ParameterizedTest
+    @MethodSource("unknownTopics")
+    void getText_unknownTopic_reportsProblemAndListsSupportedChoices(String topic) {
+        String text = Help.getText(topic);
+
+        assertTrue(text.toLowerCase(Locale.ROOT).contains("unknown"), topic);
+        assertTrue(text.contains(Help.getText("")), "The error should include the same compact menu.");
+        assertFalse(text.contains("Format: add i/<NAME>"));
+    }
+
+    @Test
+    void getText_topicGuides_retainRelevantRequirementsDefaultsAndRestrictions() {
+        assertTrue(Help.getText("add").contains("Name, unused Item ID, type and condition are required"));
+        assertTrue(Help.getText("add").contains("omitted damage defaults to NONE;"));
+        assertTrue(Help.getText("delete item").contains("Active loans and bundle membership block deletion."));
+        assertTrue(Help.getText("loan").contains("Omitted issued/ defaults to today's date"));
+        assertTrue(Help.getText("loan").contains("Issue date must be on or before the required due date."));
+        assertTrue(Help.getText("return").contains("explicit serviceable/ and damage/ assessment"));
+        assertTrue(Help.getText("return").contains("Omitted or empty remarks clear the item's previous remarks."));
+        assertTrue(Help.getText("delete loan").contains(
+                "Deleting returned history leaves newer active loans unchanged."));
+        assertTrue(Help.getText("list overdue").contains("Returned loans and loans due today or later are excluded."));
+        assertTrue(Help.getText("history").contains("Reused Item IDs keep separate histories."));
+        assertTrue(Help.getText("filter").contains("All filters must match (AND)."));
+        assertTrue(Help.getText("update").contains("Omitted fields retain their current values."));
+        assertTrue(Help.getText("add-bundle").contains("Bundles exist only for the current session"));
+        assertTrue(Help.getText("add-to-bundle").contains(
+                "exactly one camera, at least one lens and at least one battery."));
+        assertTrue(Help.getText("bye").contains("A save failure keeps the application running;"));
+    }
+
+    @Test
+    void getText_addAndReturnTopics_showAllCurrentSubtypeDamageValues() {
+        Stream.of(Camera.CameraDamage.values(), Lens.LensDamage.values(), Battery.BatteryDamage.values(),
+                Tripod.TripodDamage.values()).flatMap(Stream::of).forEach(damage -> {
+                    assertTrue(Help.getText("add").contains(damage.name()), damage.name());
+                    assertTrue(Help.getText("return").contains(damage.name()), damage.name());
+                });
     }
 
     @Test
@@ -178,16 +296,21 @@ class HelpTest {
     void getText_helpAndExit_explainArgumentsSaveFailureAndImplementedCommandsOnly() {
         String text = Help.getText();
 
-        assertTrue(text.contains("Shows this complete command guide. No arguments are accepted."));
+        assertTrue(text.lines().anyMatch(line -> line.equals("Format: help")));
+        assertTrue(text.lines().anyMatch(line -> line.equals("Format: help <COMMAND>")));
+        assertTrue(text.lines().anyMatch(line -> line.equals("Format: help all")));
+        assertTrue(text.lines().anyMatch(line -> line.equals("Example: help")));
+        assertTrue(text.lines().anyMatch(line -> line.equals("Example: help loan")));
+        assertTrue(text.lines().anyMatch(line -> line.equals("Example: help all")));
         assertTrue(text.contains("Saves equipment and loans before exiting."));
         assertTrue(text.contains("A save failure keeps the application running;"));
         assertTrue(text.contains("fix the reported file problem and retry bye."));
         assertFalse(text.contains("Format: repair"));
-        assertFalse(text.contains("Format: help <"));
+        assertFalse(text.contains("No arguments are accepted."));
     }
 
     @Test
-    void print_completeGuide_usesPlatformLineEndingsAndOneFinalNewline() {
+    void print_noArguments_printsCompactMenu() {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         PrintStream original = System.out;
         try (PrintStream capture = new PrintStream(output, true, StandardCharsets.UTF_8)) {
@@ -197,9 +320,38 @@ class HelpTest {
             System.setOut(original);
         }
         String text = output.toString(StandardCharsets.UTF_8);
+
+        assertEquals(Help.getText(""), text);
+        assertPlatformLineEndingsAndFinalNewline(text);
+    }
+
+    /** Covers printed menu, reference, every command topic and representative invalid input. */
+    private static Stream<String> printTopics() {
+        return Stream.concat(Stream.of(null, "", " \t\u2003 ", "all", "unknown", "HELP", "list\u00a0loans"),
+                TOPICS.stream());
+    }
+
+    @ParameterizedTest
+    @MethodSource("printTopics")
+    void print_topic_printsMatchingTextWithPlatformLineEndingsAndOneFinalNewline(String topic) {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        PrintStream original = System.out;
+        try (PrintStream capture = new PrintStream(output, true, StandardCharsets.UTF_8)) {
+            System.setOut(capture);
+            Help.print(topic);
+        } finally {
+            System.setOut(original);
+        }
+        String text = output.toString(StandardCharsets.UTF_8);
+
+        assertEquals(Help.getText(topic), text);
+        assertPlatformLineEndingsAndFinalNewline(text);
+    }
+
+    /** Rejects mixed newline conventions and accidental blank lines at the end of any guide. */
+    private static void assertPlatformLineEndingsAndFinalNewline(String text) {
         String lineSeparator = System.lineSeparator();
 
-        assertEquals(Help.getText(), text);
         assertTrue(text.endsWith(lineSeparator));
         assertFalse(text.endsWith(lineSeparator + lineSeparator));
         assertFalse(text.replace(lineSeparator, "").contains("\n"));
