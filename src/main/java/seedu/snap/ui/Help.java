@@ -41,16 +41,20 @@ public final class Help {
 
                 ADD EQUIPMENT
                 Format: add i/<NAME> id/<ID> type/<TYPE> cond/<N> [TYPE DETAIL] [damage/<DAMAGE>] [remarks/<TEXT>]
-                Example: add i/Canon EOS R10 id/001 type/camera cond/1 sensor/APS-C damage/NONE
+                Example: add i/Canon EOS R10 id/001 type/camera cond/1 sensor/APS-C mount/Canon RF damage/NONE
                 Name, unused Item ID, type and condition are required, in that order.
                 Type and damage values are case-insensitive. Use the field and damage list for the type:
-                  camera: sensor/<TEXT>; damage: %s
-                  lens: zoom/<TEXT>; damage: %s
-                  battery: capacity/<TEXT>; damage: %s
+                  camera: sensor/<TEXT> mount/<TEXT> thread/<TEXT> battery/<TEXT>; damage: %s
+                  lens: zoom/<TEXT> mount/<TEXT> sensor/<TEXT>; damage: %s
+                  battery: capacity/<TEXT> battery/<TEXT>; damage: %s
                   tripod: thread/<TEXT>; damage: %s
-                Optional order: type detail, then damage/, then final remarks/. Each may be omitted.
-                Omitted type detail defaults to unspecified; omitted damage defaults to NONE;
+                Optional order: subtype fields in the order shown, then damage/, then final remarks/.
+                Each optional field may be omitted independently.
+                Omitted subtype and compatibility details default to unspecified;
+                omitted damage defaults to NONE;
                 omitted remarks default to empty text. Text after final remarks/ is kept as remarks.
+                Compatibility comparisons ignore letter case. Missing comparison data produces UNKNOWN;
+                a known mismatch produces INCOMPATIBLE, even when another comparison value is unknown.
 
                 LIST EQUIPMENT
                 Format: list
@@ -80,7 +84,8 @@ public final class Help {
                 Serviceable yes/no and subtype damage values are case-insensitive; use NONE for no damage.
                 Serviceability determines whether the item may be borrowed again; damage alone does not.
                 Optional remarks/ must be last. Omitted or empty remarks clear the item's previous remarks.
-                The assessment replaces damage and remarks, preserving other details and bundle memberships.
+                The assessment replaces damage and remarks, preserving subtype details,
+                compatibility attributes and bundle memberships.
                 Return permanently marks the retained loan returned; it cannot be returned twice or reactivated.
                 Unserviceable equipment remains unavailable. Changing its numeric condition does not repair it.
 
