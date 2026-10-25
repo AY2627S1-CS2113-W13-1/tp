@@ -52,6 +52,10 @@ final class TripodDetailsParser {
                         Tripod.TripodDamage.NONE,
                         Tripod.TripodDamage.class,
                         "tripod");
+        EquipmentDetailParser.validateDamageRemarks(
+                damage,
+                remarks,
+                "tripod");
 
         return new Tripod(
                 name,

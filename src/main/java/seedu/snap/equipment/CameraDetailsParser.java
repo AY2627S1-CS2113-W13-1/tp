@@ -67,6 +67,10 @@ final class CameraDetailsParser {
                         Camera.CameraDamage.NONE,
                         Camera.CameraDamage.class,
                         "camera");
+        EquipmentDetailParser.validateDamageRemarks(
+                damage,
+                remarks,
+                "camera");
 
         return new Camera(
                 name,

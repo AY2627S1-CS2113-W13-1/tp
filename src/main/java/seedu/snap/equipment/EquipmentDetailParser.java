@@ -143,6 +143,31 @@ final class EquipmentDetailParser {
         }
     }
 
+    /**
+     * Ensures that an OTHER damage classification includes an explanation.
+     *
+     * @param damage parsed equipment-specific damage value
+     * @param remarks optional equipment remarks
+     * @param equipmentType equipment type used in the error message
+     * @throws EquipmentAdditionUnsuccessful if OTHER has no remarks
+     */
+    static void validateDamageRemarks(
+            Enum<?> damage,
+            String remarks,
+            String equipmentType)
+            throws EquipmentAdditionUnsuccessful {
+        assert damage != null : "Damage must be supplied internally.";
+        assert remarks != null : "Remarks must be supplied internally.";
+        assert equipmentType != null && !equipmentType.isBlank()
+                : "Equipment type must be supplied internally.";
+
+        if ("OTHER".equals(damage.name()) && remarks.isBlank()) {
+            throw new EquipmentAdditionUnsuccessful(
+                    "Damage OTHER for " + equipmentType
+                            + " requires non-empty remarks.");
+        }
+    }
+
     /** Checks the parser configuration supplied by application code. */
     private static void validateConfiguration(
             String equipmentType,
