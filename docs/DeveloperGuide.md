@@ -6,103 +6,289 @@
 
 ## Design & implementation
 
-### Optional command fields and explicit defaults
+The following sections describe the implemented return ([#78](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/78)),
+item history ([#53](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/53)), optional fields
+([#55](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/55)) and help
+([#56](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/56)) enhancements.
+`EqmManager` routes commands and displays outcomes; handlers validate requests against current records;
+model objects hold equipment and loan state; storage utilities read and write files.
 
-Equipment addition already defaults omitted subtype details to `unspecified`, damage to `NONE` and remarks to empty
-text. Updates retain omitted details, and filters impose no restriction for an omitted criterion. Required fields
-and supplied invalid values remain validated. Optional equipment details and damage use the same Unicode whitespace
-trimming as the common fields, so a supplied whitespace-only detail is rejected instead of being stored as text.
-
-Interactive loan commands may omit the entire `issued/` field. `LoanHandler.parseLoanCommand(...)` accepts either
-four or five arguments. The shared validator checks the required IDs and due date; only the four-argument form
-reads `LocalDate.now(clock)` once and uses that date at midnight. A supplied issue date is parsed strictly and never
-uses the clock. Invalid supplied fields and issue dates after the due date are rejected before saving or consuming
-a loan ID. Existing constructors use the system's local time zone. An explicit `Clock` constructor allows fixed-date,
-time-zone and midnight-boundary tests without changing the computer's date.
-
-`parseLoanRecord(...)` remains a separate strict entry point for storage, requiring both dates explicitly. The
-selected default is saved as an ordinary issue date, and restart loading never replaces a missing or invalid date
-with today's date. Separating interactive defaults from stored-record validation prevents corrupt data from changing
-meaning according to the day it is loaded.
-
-Return commands may omit final `remarks/`. `LoanReturn.parse(...)` supplies an empty string through the existing
-assessment and save-before-mutation path, clearing previous remarks only after a successful save. Loan ID,
-serviceability and damage remain mandatory. Explicit empty remarks have the same meaning; supplied text is validated
-and all text after the final prefix remains literal. A failed return preserves the previous remarks and assessment.
-
-Tests cover every equipment optional-field subset across all four subtypes, whitespace validation, persistence,
-fixed local dates, explicit dates, one clock read at midnight, invalid supplied values, strict stored records,
-omitted and empty return remarks, required assessments, and failed saves followed by successful retries.
-
-### Viewing the history of a physical equipment item
-
-`history id/001` selects the equipment currently registered under Item ID `001` and displays its active and
-returned loans. `LoanHandler.getLoanHistory(...)` validates the command and finds a unique current item, then
-selects loans whose Item ID and permanent equipment record ID both match. It sorts a copy by issue date and
-numeric loan ID, returning an unmodifiable list. `viewLoanHistory(...)` uses the usual loan table, with a clear
-empty-history message and a separate error for unknown equipment. The query performs no writes.
-
-The three-digit Item ID can be reused after deletion, so it cannot identify a physical item across its lifetime.
-Each new `Equipment` therefore receives a random UUID in `recordId`. Equipment storage writes this identifier
-before the serviceability metadata and the add record, with tabs separating metadata from free text. Names,
-subtype attributes and remarks cannot be mistaken for identity metadata. Duplicate or non-canonical UUIDs are
-rejected before any records are published or migrated.
-
-Loans created from equipment retain the permanent identity in `equipmentRecordId`. Loan storage appends
-`equipment/UUID` after the returned flag. Returning equipment copies the identity into its detached loan proposal;
-equipment assessment and normal-update proposals also retain the original identity. A replacement item receives
-a fresh UUID even if its Item ID, name and type are identical to the deleted item's details.
-
-Legacy equipment records receive UUIDs only after the complete file has been validated. The migrated file must
-be saved successfully before the loaded inventory replaces the current objects. Later loads do not rewrite files
-that already contain identities. Equipment migration may finish before loan migration; retries reuse those saved
-equipment identities rather than generating another set.
-
-An active legacy loan can be attributed to the current item because equipment cannot be deleted during an active
-loan. The loader binds that proposal to the current record ID and persists the migration before changing any live
-loan list, counter, equipment flags or associations. An explicit active identity mismatch is rejected.
-Returned legacy loans cannot be attributed safely because their Item IDs may already have been reused. They retain
-a null identity across future saves and loads and remain visible in `list loans`. Item-specific history excludes
-them and explains relevant omissions. Guessing their ownership from an Item ID would violate history separation.
-
-Tests exercise same-name and different-type replacements, reuse across restarts, retained keys through updates
-and returns, issue-date ordering, read-only queries, malformed metadata, duplicate identities and migration failures.
+The diagrams show only interactions needed to explain each design. `...` means parameters are omitted.
+Notes summarise checks or local processing; messages such as selecting records describe processing rather than
+additional Java methods. Lifelines with names such as `item:Equipment` represent objects; utility lifelines
+represent classes with static methods. Editable PlantUML sources are linked below each figure.
 
 ### Returning equipment with an assessment
 
-`EqmManager` routes `return loan/001 serviceable/yes damage/none remarks/Checked` to
-`LoanHandler.returnLoan(...)`. `LoanReturn` parses the required fields in their documented order.
-Loan IDs must be from `001` to `999`. A serviceability decision and a type-specific damage value are mandatory.
-The final remarks field is optional and defaults to empty text. Supplied remarks must be single-line text of at most
-200 characters after trimming. Text after `remarks/` is kept as text, rather than parsed as more fields.
+#### Purpose and responsibilities
 
-The handler finds exactly one active loan and checks that it still owns the same equipment object in the inventory.
-Checking both object identity and the active loan ID prevents a stale association from assessing or releasing
-replacement equipment. Missing, duplicated, already returned or mismatched records are rejected before saving.
+A return must end the active loan while retaining the original borrowing record.
+It must also record whether the item can be used again. For example,
+`return loan/001 serviceable/no damage/SENSOR_DAMAGE remarks/Needs repair` retains loan `001` as returned
+and records an unserviceable camera. Deleting that loan instead would lose its borrowing history.
 
-`EquipmentHandler.prepareReturnAssessment(...)` validates damage with the existing equipment-specific enums
-and creates a detached equipment proposal. The proposal preserves the numeric condition, name, ID and type-specific
-attributes. A detached returned loan proposal preserves the loan ID, borrower and dates. Neither proposal changes
-the live inventory or the active loan.
+| Class | Responsibility in a return |
+| --- | --- |
+| `EqmManager` | Routes the command and displays success or `LoanReturnUnsuccessful`. |
+| `LoanReturn` | Parses the ordered assessment fields into a record without changing equipment. |
+| `LoanHandler` | Checks the loan and its ownership, prepares proposals, requests saving, then changes the original objects. |
+| `EquipmentHandler` | Validates subtype-specific damage and prepares and saves the proposed equipment assessment. |
+| `LoanReturnStorage` | Captures the configured files, saves both proposals and attempts restoration after a write failure. |
+| `Equipment` and `Loan` | Apply the saved assessment and permanent returned state while preserving their identities. |
 
-`LoanReturnStorage` captures the existing equipment, loan and sequence files, then saves the proposed assessment
-and returned loan. If an `IOException` occurs, it attempts to restore every captured file independently;
-restoration errors are retained and reported. Only after all saves succeed does the handler apply the assessment
-to the original equipment object and call `Loan.setReturned(true)` on the original loan. Bundle references therefore
-continue to point to the same object. Returns retain the loan count and next loan ID.
+#### Successful return
 
-Serviceability is independent of loan status. An unserviceable returned item has no active loan, but new loans,
-new bundle additions and `status/available` filtering reject it. Equipment listing displays `Unserviceable`.
-Normal name and numeric-condition updates preserve this assessment. There is no repair command in this feature.
-Storage writes serviceability before the existing add record, separated by a tab, so the new metadata cannot
-be confused with free-form names, type attributes or remarks. Legacy records default to serviceable.
+The sequence below assumes an active loan `001` and an assessment valid for its equipment subtype.
+Parsing and repeated inventory checks are summarised in the first note to keep attention on the order of saving
+and changing records.
 
-The file snapshots handle reported save failures. They do not form a recovery log for abrupt process termination
-or power loss during a multi-file save. Such recovery would require an additional transaction journal.
+![Return sequence: prepare detached proposals, save them, then change the original equipment and loan.](images/ReturnSequence.svg)
 
-Tests cover serviceable and unserviceable returns, type-specific damage, validation and command recovery,
-permanent returned state, new loan IDs on subsequent borrowing, restart persistence, stale associations,
-bundle identity, and equipment, loan and sequence save failures followed by successful retries.
+*Figure 1. A successful return changes the original records only after saving succeeds.*
+[PlantUML source](diagrams/ReturnSequence.puml)
+
+1. `LoanReturn.parse(...)` requires a Loan ID from `001` to `999`, an explicit serviceability decision and
+   a damage value. Final `remarks/` is optional and defaults to empty text. Supplied remarks must be a single
+   line of at most 200 characters after trimming; text after that final prefix remains literal.
+2. `LoanHandler.findLoanForReturn(...)` requires exactly one active loan. The handler finds the current equipment
+   and calls `Loan.ownsEquipment(...)`, checking the object reference, active loan ID and permanent equipment
+   record ID. It also rejects another active loan for the same Item ID. These checks prevent a stale association
+   from assessing or releasing replacement equipment.
+3. `EquipmentHandler.prepareReturnAssessment(...)` uses the equipment subtype's damage enum to create a detached
+   proposal. It preserves the name, Item ID, permanent record ID, numeric condition and subtype attributes.
+   `Loan.returnedCopy()` creates a detached returned loan with the same loan ID, equipment identity, borrower
+   and dates. The proposals do not change either live object.
+4. `LoanReturnStorage.save(...)` saves a proposed inventory containing the assessment and a proposed loan list
+   containing the returned copy. The next loan number is saved without being incremented.
+5. After saving succeeds, `Equipment.applyReturnAssessment(...)` changes the original item and
+   `Loan.setReturned(true)` changes the original loan. The latter detaches its active equipment reference and
+   clears the item's loan ID and loaned flag. The loan remains in the list; its count and next ID are unchanged.
+
+The original equipment object is retained because bundles and active loan associations use object references.
+Replacing the inventory entry alone could leave a bundle pointing to old details. Returning a loan is permanent:
+it cannot be returned twice or reactivated. Later borrowing creates a new loan with a new ID.
+
+Serviceability is separate from the loaned flag. An unserviceable returned item has no active loan, but new loans,
+new bundle additions and `status/available` filtering reject it. Listing displays `Unserviceable`.
+Normal name and numeric-condition updates retain the assessment. There is no repair command in this feature.
+Storage prefixes each add record with `recordId/UUID`, then `serviceable/yes|no`, separated by tabs.
+This keeps metadata separate from free-form names, subtype attributes and remarks. Legacy equipment without an
+assessment defaults to serviceable.
+
+#### Save failures and recovery
+
+The next diagram expands the storage step in Figure 1. It shows a loan or sequence save failing after the
+equipment proposal was written. An equipment-save failure enters the same restoration loop. Only configured
+files are captured. A snapshot records regular-file bytes, absence or a pre-existing non-regular path.
+
+![Failed return save: capture configured files, attempt writes, restore every snapshot, then report the failure.](images/ReturnSaveFailure.svg)
+
+*Figure 2. A reported write failure triggers restoration before the return is rejected.*
+[PlantUML source](diagrams/ReturnSaveFailure.puml)
+
+All snapshots are captured before any return writes begin. If capture itself fails, no proposed records are
+written. On a write failure, `LoanReturnStorage` attempts each restoration independently, even if an earlier
+restoration also fails. Restoration errors are attached to the original exception. `LoanHandler` reports them
+in `LoanReturnUnsuccessful` and leaves the live equipment, active loan and counters unchanged. The user must
+check saved files if restoration also failed; the application does not report a successful return.
+
+Snapshots handle reported I/O failures, but do not provide recovery after abrupt process termination or power
+loss between file replacements. That would need a persistent transaction journal or transactional database.
+
+#### Design choices and alternatives
+
+| Decision | Reason and alternative considered |
+| --- | --- |
+| Retain the loan and mark it returned | Deleting the loan would discard the borrowing record needed by history. |
+| Prepare detached proposals and save before changing records | Changing live objects first would need reversal after a failed save. In particular, a returned loan cannot be reactivated. |
+| Apply the saved result to the original objects | Replacing objects would require updating every bundle and loan reference. |
+| Record serviceability separately | Deriving it from `isLoaned` or numeric condition would treat some returned damaged items as available without an explicit assessment. |
+| Snapshot files for a multi-file return | Independent writes could leave equipment and loans inconsistent after a reported failure. A journal would also cover crash recovery, but adds a separate recovery mechanism. |
+
+#### Verification
+
+`LoanReturnTest`, `EquipmentReturnAssessmentTest` and `EquipmentReturnIntegrationTest` cover valid assessments
+for each subtype, required fields, permanent returned state, stale ownership, unchanged bundle references and
+serviceability restrictions. Persistence tests reload returned records and verify the assessment. Failure tests
+block equipment, loan and sequence saves, check that records and previous files are retained where restoration
+is possible, and retry successfully after the storage problem is removed.
+
+### Viewing the history of a physical equipment item
+
+#### Permanent identity
+
+`history id/001` displays active and returned loans for the physical item currently registered as `001`.
+The three-digit Item ID can be reused after deletion. Matching only that value would mix the old and replacement
+items' histories, even if the replacement has the same name and type.
+
+Each new `Equipment` receives a UUID stored as the `recordId` string. A loan created from that equipment copies
+it into `equipmentRecordId`. These stored values survive restarts. The class diagram shows the distinction
+between that permanent identity and an active object reference; unrelated fields, subclasses and storage classes
+are omitted.
+
+![History class diagram: handlers manage records; loans store the permanent equipment identity and an optional active reference.](images/EquipmentIdentity.svg)
+
+*Figure 3. History uses stored identity values, while an active loan also refers to an equipment object.*
+[PlantUML source](diagrams/EquipmentIdentity.puml)
+
+`LoanHandler` selects a record only when **both** its Item ID and permanent equipment ID match the current item.
+A replacement receives a fresh UUID even if all user-visible details are identical. Return and update proposals
+preserve the original UUID. A returned loan keeps its identity string after its active object reference is cleared.
+
+Equipment storage writes `recordId/UUID` before serviceability and the add record, with tab delimiters.
+Loan storage appends `equipment/UUID` after its returned flag. Both loaders validate UUID syntax;
+`EquipmentStorage` also rejects duplicate equipment record IDs before publishing the inventory. Multiple loans
+may intentionally share an equipment identity. An active loan whose explicit identity does not match the current
+item is rejected.
+
+#### Query sequence
+
+The following sequence assumes Item ID `001` exists uniquely. Invalid syntax, a missing item or an ambiguous
+Item ID produces `LoanHistoryUnsuccessful` before selection.
+
+![History query sequence: find the current item, match both identifiers, sort a separate list and display it without saving.](images/HistorySequence.svg)
+
+*Figure 4. A history query sorts a selected copy and leaves the managed records unchanged.*
+[PlantUML source](diagrams/HistorySequence.puml)
+
+`getLoanHistory(...)` sorts the selected copy by issue date and then numeric loan ID, returning `List.copyOf(...)`.
+`viewLoanHistory(...)` uses the shared loan table or prints a clear empty-history message. Sorting the main loan
+list instead would change the order used by later `list loans` requests. The query performs no storage operations.
+
+#### Loading older records
+
+Older equipment files lack permanent IDs. The parser assigns UUIDs to proposed records, then validates the
+complete file. The migration must be saved successfully before the loaded inventory replaces the current objects.
+Later loads do not rewrite files that already contain identities. If equipment migration succeeds but loan
+migration fails, a retry reuses the saved equipment IDs rather than generating another set.
+
+An active legacy loan can be associated with the current item because equipment cannot be deleted while it has
+an active loan. The loader binds its proposed record to the current UUID and saves the migration before changing
+the live loan list, counters, equipment flags or associations.
+
+Returned legacy loans cannot be associated safely because their Item IDs may already have been reused.
+They retain a null identity across saves and loads and remain visible in `list loans`. Item-specific history
+excludes them and prints an omission note when relevant. This preserves the evidence available in the old data
+without guessing which physical item was borrowed.
+
+#### Design choices and alternatives
+
+| Decision | Reason and alternative considered |
+| --- | --- |
+| Store a UUID separately from the Item ID | Item IDs are reusable. Combining an ID with a name or type still fails for an identical replacement. |
+| Persist identity values in equipment and loans | Java object references change after restart and cannot link saved historical records on their own. |
+| Leave uncertain returned legacy loans unattributed | Assigning them to today's item would create false borrowing history. They remain accessible in the full loan list. |
+| Return an unmodifiable sorted copy | Sorting or exposing the managed list would allow a display request or caller to reorder the application's records. |
+
+#### Verification
+
+`EquipmentLoanHistoryTest` and `EquipmentLoanHistoryIntegrationTest` exercise same-name and different-type
+replacement items, Item ID reuse across restarts, preserved identities through updates and returns, chronological
+ordering, empty histories and read-only queries. Storage tests also reject malformed or duplicate identities and
+check that failed migrations do not publish partial in-memory state. A retry must retain any identities already
+saved by a successful equipment migration.
+
+### Optional command fields and explicit defaults
+
+#### Rules and responsibilities
+
+Optional fields shorten commands while preserving validation. Defaults apply only when the whole field is absent;
+an invalid supplied value is rejected so that a typing mistake does not silently change its meaning.
+
+| Command or field | Behaviour when omitted |
+| --- | --- |
+| Equipment subtype detail | `unspecified` |
+| Equipment `damage/` | `NONE` |
+| Equipment `remarks/` | Empty text |
+| Loan `issued/` | Today's date in the application's local time zone, at midnight |
+| Return `remarks/` | Empty text, replacing previous remarks after a successful save |
+| An update field | Keep its current value |
+| A filter criterion | Impose no restriction for that criterion |
+
+Equipment addition supplies its defaults through `EquipmentHandler`. Optional details and damage use the same
+Unicode whitespace trimming as common fields; a supplied whitespace-only detail is rejected.
+`LoanReturn.parse(...)` supplies omitted final remarks as an empty string through the existing assessment and
+save-before-change path. An explicitly empty remark has the same meaning. Loan ID, serviceability and damage
+remain mandatory, so the application cannot assume that a return assessment was performed.
+
+#### Default issue-date sequence
+
+For this example, assume the application's local date is 24 October 2026 and the equipment is available.
+`loan id/001 b/002 due/31-10-26` stores 24 October 2026 at midnight as its issue date.
+The diagram omits model construction and ordinary availability checks to focus on when the default is chosen.
+
+![Optional issue-date sequence: validate required input, read the local date once, save explicit dates and then publish the loan.](images/LoanDateDefault.svg)
+
+*Figure 5. The optional date is resolved during command parsing and stored as an ordinary explicit date.*
+[PlantUML source](diagrams/LoanDateDefault.puml)
+
+`LoanHandler.parseLoanCommand(...)` accepts four or five arguments and delegates to `parseLoanArguments(...)`.
+For the four-argument form, the shared validator checks the IDs and required due date, then reads
+`LocalDate.now(clock)` once and calls `atStartOfDay()`. It rejects an issue date after the due date before saving
+or consuming a loan ID. The five-argument form strictly parses the supplied issue date without reading the clock.
+
+The `Clock` is supplied through constructors, with existing constructors using the system's local time zone.
+Tests can supply a fixed clock and check date boundaries without changing the computer's date. Reading once
+also prevents one command from obtaining inconsistent defaults if the clock crosses midnight.
+
+`parseLoanRecord(...)` is a separate entry point requiring both dates explicitly, while sharing value validation
+with commands. Restart loading never replaces a missing or invalid historical date with today's date.
+
+#### Design choices and alternatives
+
+Keeping `due/` mandatory leaves the intended loan duration to the user. Inventing a default duration would require
+an additional rule that has not been specified. Defaulting empty or invalid `issued/` values was also rejected
+because it would hide input errors. A supplied `Clock` is preferable to direct system-date calls because local
+dates and midnight boundaries can be tested consistently.
+
+Using the permissive command parser for storage would make the meaning of an incomplete saved record depend on
+when it was loaded. The separate strict entry point prevents that. Similarly, omitted return remarks clear the
+previous assessment's notes; retaining them could present an old damage note as part of the new assessment.
+
+#### Verification
+
+`EquipmentOptionalFieldsTest` checks every subset of optional equipment fields for all four subtypes.
+`LoanOptionalFieldsTest` checks fixed local dates, explicit dates, time zones, one clock read at midnight, invalid
+supplied values and strict stored records. `OptionalFieldsIntegrationTest` checks persistence, omitted and empty
+return remarks, required assessments, and failed saves followed by successful retries.
+
+### Showing command help without changing records
+
+#### Implementation and sequence
+
+`help` displays all 15 supported command formats and examples, required and optional fields, defaults and
+restrictions. The welcome message and unknown-command error direct users to it. `EqmManager.executeInput(...)`
+recognises the exact command after trimming surrounding whitespace; `help add` follows the unknown-command path.
+The existing startup-error check remains first: the input loop stops if saved data cannot be loaded.
+
+![Help sequence: EqmManager calls Help.print, which prints the fixed reference without using record or storage handlers.](images/HelpSequence.svg)
+
+*Figure 6. Help prints a reference and returns control to the command loop.*
+[PlantUML source](diagrams/HelpSequence.puml)
+
+`Help` is a utility class containing a fixed reference built once as `TEXT`. It uses immutable equipment limits
+and damage enums when constructing the text, so those values come from the model. `Help.print()` only calls
+`System.out.print(TEXT)`. It has no equipment, loan or bundle handler references and performs no storage operations.
+Consequently, requesting help does not consume identifiers, save files, alter records or end the session.
+
+#### Design choices and alternatives
+
+A fixed reference is sufficient for one no-argument help command. Per-command help would need additional command
+syntax, while generating descriptions by reflection would need metadata that the handlers do not currently
+provide. Both add work beyond the present requirement. Reading constants and enum values reduces duplicated
+limits, but command syntax and explanatory prose still need to be updated when supported behaviour changes.
+
+Printing independently of handlers also means help does not require a writeable data directory after successful
+startup. Calling save methods from a general command-completion path would make this read-only request depend
+on storage and could change files unnecessarily.
+
+#### Verification
+
+`HelpTest` checks formats and examples for every command, defaults, limits, subtype damage values and output
+line endings. `HelpIntegrationTest` compares record contents, object references, permanent IDs, assessments,
+counts, next identifiers, bundle completion, file bytes and modification times before and after repeated requests.
+It also checks missing and blocked storage paths, surrounding Unicode whitespace, invalid help topics, continued
+commands and the interactive help-then-exit loop. Invalid saved data still causes the existing startup abort.
 
 ### Updating equipment details
 
@@ -231,11 +417,14 @@ retaining omitted fields. It also checks that rejected values preserve the saved
 a failed write preserves the original object and inventory order, and an update succeeds
 after the storage problem is fixed.
 
-### Overdue loan identification
+### Overdue loan identification (planned)
+
+This section describes a proposed design. `list overdue` and `Loan.isOverdue(...)` are not implemented in the
+current code. The responsibilities and execution flow below describe the intended enhancement.
 
 #### Overview
 
-The overdue-loan feature allows equipment managers to identify active loans whose due dates have passed. Users access the feature with the `list overdue` command. The command displays the item ID, borrower ID, and due date of every overdue loan. If there are no overdue loans, the application displays a clear message instead of an empty table.
+The proposed overdue-loan feature would allow equipment managers to identify active loans whose due dates have passed. Users would access the feature with the `list overdue` command. The command would display the item ID, borrower ID, and due date of every overdue loan. If there were no overdue loans, the application would display a clear message instead of an empty table.
 
 A loan is considered overdue only when both of the following conditions are satisfied:
 
@@ -248,13 +437,13 @@ The feature performs a read-only operation. Listing overdue loans does not add, 
 
 #### Component responsibilities
 
-The implementation distributes responsibilities among the existing loan-management classes.
+The proposed design distributes responsibilities among the existing loan-management classes.
 
-`EqmManager` recognises the exact `list overdue` command and delegates the request to `LoanHandler`. It obtains the current date once and supplies it as the reference date for the whole operation. Using one reference date ensures that every loan in the same command is evaluated consistently.
+`EqmManager` would recognise the exact `list overdue` command and delegate the request to `LoanHandler`. It would obtain the current date once and supply it as the reference date for the whole operation. Using one reference date ensures that every loan in the same command is evaluated consistently.
 
-`LoanHandler` examines the stored loans and selects those that are overdue. It preserves their existing order so that the displayed results remain predictable. It is also responsible for formatting the output and displaying the no-results message.
+`LoanHandler` would examine the stored loans and select those that are overdue. It would preserve their existing order so that the displayed results remain predictable. It would also format the output and display the no-results message.
 
-`Loan` determines whether one loan is overdue. The planned `isOverdue(referenceDate)` method checks the loan's due date and returned status without changing either field. Keeping this rule in `Loan` places behaviour together with the data that it evaluates and prevents the same condition from being duplicated across command-handling classes.
+`Loan` would determine whether one loan is overdue. The planned `isOverdue(referenceDate)` method would check the loan's due date and returned status without changing either field. Keeping this rule in `Loan` places behaviour together with the data that it evaluates and prevents the same condition from being duplicated across command-handling classes.
 
 Conceptually, the overdue condition is:
 
@@ -266,9 +455,9 @@ The reference date is passed into the method instead of being obtained inside `L
 
 #### Command execution
 
-When the user enters `list overdue`, `EqmManager` recognises the command and obtains the current local date. It then asks `LoanHandler` to display loans that are overdue on that date.
+When the user enters `list overdue`, `EqmManager` would recognise the command and obtain the current local date. It would then ask `LoanHandler` to display loans that are overdue on that date.
 
-`LoanHandler` checks every loan using `Loan.isOverdue(referenceDate)`. Loans that have been returned are excluded even when their due dates are in the past. Active loans due today or in the future are also excluded. Matching loans are displayed without modifying the underlying loan list.
+`LoanHandler` would check every loan using `Loan.isOverdue(referenceDate)`. Loans that have been returned would be excluded even when their due dates are in the past. Active loans due today or in the future would also be excluded. Matching loans would be displayed without modifying the underlying loan list.
 
 If no loans match, the user receives a message such as:
 

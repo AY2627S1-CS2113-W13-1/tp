@@ -252,7 +252,7 @@ class EqmManagerTest {
         manager.executeInput("gibberish");
 
         assertEquals(
-                "Command not recognised. Please try again." + System.lineSeparator(),
+                "Command not recognised. Type help for available commands." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8)
         );
     }
