@@ -1,11 +1,13 @@
 package seedu.snap.eqmmanager;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.junit.jupiter.api.AfterEach;
@@ -73,6 +75,29 @@ class LoanBorrowerIntegrationTest {
 
         assertTrue(output.toString(StandardCharsets.UTF_8)
                 .contains("No active loans found for borrower ID 002."));
+    }
+
+    @Test
+    void listBorrower_afterRestartReadsPersistedActiveLoansWithoutWriting() throws Exception {
+        createManagerWithLoans();
+        Path equipmentFile = temporaryDirectory.resolve("equipment.txt");
+        Path loanFile = temporaryDirectory.resolve("loans.txt");
+        Path sequenceFile = temporaryDirectory.resolve("loan-sequence.txt");
+        String savedEquipment = Files.readString(equipmentFile);
+        String savedLoans = Files.readString(loanFile);
+        String savedSequence = Files.readString(sequenceFile);
+        EqmManager restarted = new EqmManager(temporaryDirectory);
+        output.reset();
+
+        restarted.executeInput("list borrower/002");
+
+        String printed = output.toString(StandardCharsets.UTF_8);
+        assertTrue(printed.contains("Equipment currently held by borrower ID 002:"));
+        assertTrue(printed.contains("002          | 002          | 002"));
+        assertFalse(printed.contains("001          | 001          | 002"));
+        assertEquals(savedEquipment, Files.readString(equipmentFile));
+        assertEquals(savedLoans, Files.readString(loanFile));
+        assertEquals(savedSequence, Files.readString(sequenceFile));
     }
 
     /** Creates active, returned and unrelated loans for the routing scenarios. */
