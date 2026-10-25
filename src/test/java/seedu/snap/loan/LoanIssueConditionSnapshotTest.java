@@ -109,4 +109,3 @@ class LoanIssueConditionSnapshotTest {
 }
 
 // @@author
-
