@@ -36,6 +36,7 @@ class HelpTest {
                         "return loan/001 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair"),
                 Arguments.of("delete loan/<LOAN ID>", "delete loan/001"),
                 Arguments.of("list loans", "list loans"),
+                Arguments.of("list overdue", "list overdue"),
                 Arguments.of("history id/<ITEM ID>", "history id/001"),
                 Arguments.of("filter [id/<ID>] [i/<NAME>] [type/<TYPE>] [cond/<N|MIN-MAX>] [status/<STATUS>]",
                         "filter type/camera cond/1-3 status/available"),
@@ -149,6 +150,19 @@ class HelpTest {
     }
 
     @Test
+    void getText_overdueLoans_explainsEligibilityAndReadOnlyBehaviour() {
+        String text = Help.getText();
+
+        assertTrue(text.contains("Format: list overdue"));
+        assertTrue(text.contains(
+                "Shows active loans with due dates earlier than today's local date."));
+        assertTrue(text.contains(
+                "Returned loans and loans due today or later are excluded."));
+        assertTrue(text.contains(
+                "Displays Item ID, borrower ID and due date without changing any records."));
+    }
+
+    @Test
     void getText_helpAndExit_explainArgumentsSaveFailureAndImplementedCommandsOnly() {
         String text = Help.getText();
 
@@ -156,7 +170,6 @@ class HelpTest {
         assertTrue(text.contains("Saves equipment and loans before exiting."));
         assertTrue(text.contains("A save failure keeps the application running;"));
         assertTrue(text.contains("fix the reported file problem and retry bye."));
-        assertFalse(text.contains("Format: overdue"));
         assertFalse(text.contains("Format: repair"));
         assertFalse(text.contains("Format: help <"));
     }

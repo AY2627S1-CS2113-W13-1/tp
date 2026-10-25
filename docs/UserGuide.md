@@ -185,6 +185,19 @@ Older saved returned loans may lack enough information to prove which item they 
 in `list loans` and are excluded from item-specific histories. If they use the queried Item ID, the history view
 explains this and points to `list loans`. Existing active loans can be associated with the current item when loaded.
 
+## Viewing overdue loans: `list overdue`
+
+Format: `list overdue`
+
+This displays every active loan whose due date is earlier than the current local date. The results show the
+item ID, borrower ID and due date in the same order as the stored loans.
+
+Returned loans are excluded. A loan due today is not overdue, regardless of its time, and becomes overdue only
+on the following date if it remains active. If no loans are overdue, the application displays
+`No overdue loans found.`
+
+This is a read-only command. It does not modify loan records, equipment availability or saved files.
+
 ## Returning equipment: `return`
 
 Format: `return loan/[LOAN ID] serviceable/[yes|no] damage/[DAMAGE|none] [remarks/[REMARKS]]`
@@ -402,6 +415,7 @@ reports the problem and stops.
 | List equipment | `list` |
 | List loans | `list loans` |
 | View item loan history | `history id/[ITEM ID]` |
+| List overdue loans | `list overdue` |
 | Filter equipment | `filter [id/ID] [i/NAME] [type/TYPE] [cond/1-3] [status/available]` |
 | Update equipment | `update id/ID [i/NAME] [type/TYPE] [cond/CONDITION]` |
 | Create bundle | `add-bundle name/[NAME]` |
