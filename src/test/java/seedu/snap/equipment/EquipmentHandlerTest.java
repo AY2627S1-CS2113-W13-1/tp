@@ -257,7 +257,7 @@ class EquipmentHandlerTest {
         Equipment original = handler.addEquipment("add i/Original camera id/001 type/camera cond/1");
         String saved = Files.readString(file);
         String[] invalidTails = {
-            "zoom/24 mm", "capacity/2000 mAh", "thread/Quarter inch", "unknown/value",
+            "zoom/24 mm", "capacity/2000 mAh", "unknown/value",
             "sensor/", "sensor/   ", "damage/", "damage/   ",
             "sensor/Full frame sensor/Crop", "damage/NONE damage/SHUTTER_FAULT",
             "damage/NONE sensor/Full frame", "sensor/Full frame zoom/24 mm",

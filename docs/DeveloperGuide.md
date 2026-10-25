@@ -8,8 +8,9 @@
 
 The following sections describe the implemented return ([#78](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/78)),
 item history ([#53](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/53)), optional fields
-([#55](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/55)) and help
-([#56](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/56)) enhancements.
+([#55](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/55)), help
+([#56](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/56)) and equipment compatibility
+([#61](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/61)) enhancements.
 `EqmManager` routes commands and displays outcomes; handlers validate requests against current records;
 model objects hold equipment and loan state; storage utilities read and write files.
 
@@ -17,6 +18,72 @@ The diagrams show only interactions needed to explain each design. `...` means p
 Notes summarise checks or local processing; messages such as selecting records describe processing rather than
 additional Java methods. Lifelines with names such as `item:Equipment` represent objects; utility lifelines
 represent classes with static methods. Editable PlantUML sources are linked below each figure.
+
+### Equipment compatibility attributes
+
+#### Purpose and representation
+
+Different equipment subtypes require different information when deciding whether they can be used together.
+The model therefore stores compatibility information on the subtype that owns it instead of adding unrelated
+fields to the base `Equipment` class.
+
+| Equipment subtype | Compatibility attributes |
+| --- | --- |
+| `Camera` | Lens mount, tripod thread and battery type |
+| `Lens` | Lens mount and supported sensor format |
+| `Battery` | Battery type |
+| `Tripod` | Tripod thread |
+
+The existing subtype detail remains separate from these attributes. For example, a camera retains its sensor
+format while also storing its mount, tripod thread and battery type. Every compatibility value is normalised
+through `CompatibilityText`. Leading and trailing Unicode whitespace is removed, values must contain between
+1 and 100 characters, and omitted values use the shared `unspecified` representation.
+
+`EquipmentDetailField` defines the supported command markers. `EquipmentDetailParser` scans the optional fields,
+rejects repeated, reordered or inapplicable markers, and returns the values supplied by the user.
+The subtype-specific parsers then construct `Camera`, `Lens`, `Battery` or `Tripod` objects.
+`EquipmentDetailFormatter` generates the same ordered representation for listing and persistence.
+
+#### Compatibility comparison
+
+`EquipmentCompatibility.compare(first, second)` provides an internal API for bundle and other follow-up
+features. This version does not expose a separate command that prints compatibility results.
+Comparison works in either argument order and follows these relationships:
+
+1. A camera and lens compare their lens mounts and sensor formats.
+2. A camera and battery compare their battery types.
+3. A camera and tripod compare their tripod threads.
+4. Other equipment pairs return `NOT_APPLICABLE`.
+
+Known matching values produce `COMPATIBLE`. A known mismatch produces `INCOMPATIBLE`.
+If a required value is `unspecified`, the result is `UNKNOWN`. For camera-and-lens comparison, a known mismatch
+takes precedence over an unknown value; the pair cannot be compatible when one known attribute conflicts.
+Comparisons ignore letter case because compatibility identifiers may be entered with different capitalisation.
+
+#### Preservation and persistence
+
+Compatibility attributes form part of each subtype's normal equipment details. `EquipmentStorage` therefore
+saves them using the same command-style record used for the other subtype fields. Loading reconstructs the
+correct subclass and restores every supplied attribute. Older records remain valid because omitted compatibility
+fields default to `unspecified`.
+
+Equipment name and condition updates recreate a proposed record from `getDetails()`, so compatibility values
+survive validation, saving and restart. Return assessments also copy every compatibility attribute into the
+detached proposal before saving. Applying an assessment changes damage, remarks and serviceability without
+discarding the equipment information needed by later bundle checks.
+
+#### Design choices and verification
+
+Storing the fields directly on their relevant subclasses keeps invalid combinations unrepresentable; for
+example, a standalone battery does not acquire lens-mount data. Using a shared parser and formatter avoids
+different ordering or validation rules between subtypes. A three-state applicable result distinguishes missing
+information from a confirmed mismatch, while `NOT_APPLICABLE` distinguishes unrelated equipment types.
+
+`EquipmentCompatibilityTest` covers matching, conflicting, unknown and unrelated pairs, reversed arguments,
+precedence rules and comparisons after persistence reload. Subtype parser and integration tests cover optional,
+repeated, reordered and inapplicable fields, Unicode whitespace, listing, updating and legacy saved records.
+`EquipmentReturnAssessmentTest` verifies that compatibility attributes survive assessment preparation,
+application, saving and restart.
 
 ### Returning equipment with an assessment
 

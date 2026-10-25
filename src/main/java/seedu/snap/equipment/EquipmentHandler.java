@@ -29,13 +29,11 @@ public class EquipmentHandler {
     private static final String ID_MARKER = "id/";
     private static final String TYPE_MARKER = "type/";
     private static final String CONDITION_MARKER = "cond/";
-    private static final String DAMAGE_MARKER = "damage/";
-    private static final String[] DETAIL_MARKERS = {"sensor/", "zoom/", "capacity/", "thread/", DAMAGE_MARKER};
+    private static final String[] DETAIL_MARKERS =
+            Arrays.stream(EquipmentDetailField.values())
+                    .map(EquipmentDetailField::getMarker)
+                    .toArray(String[]::new);
     private static final String REMARKS_MARKER = "remarks/";
-
-    /** Optional command fields after the common equipment fields. */
-    private record EquipmentDetails(String attribute, String damage) {
-    }
 
     /** Equipment stored by this handler during the current application session. */
     private final ArrayList<Equipment> inventory = new ArrayList<>();
@@ -133,19 +131,61 @@ public class EquipmentHandler {
             }
             String normalisedRemarks = EquipmentFields.trimWhitespace(remarks);
             validateRemarks(normalisedRemarks);
-            String value = damage.trim();
+            String value = EquipmentFields.trimWhitespace(damage);
             String name = current.getItemName();
             String id = current.getItemId();
             int condition = current.getCondition();
             Equipment proposed = switch (current) {
-            case Camera camera -> new Camera(name, id, condition, camera.getSensorFormat(),
-                    parseDamage(value, Camera.CameraDamage.class, current.getType()), normalisedRemarks);
-            case Lens lens -> new Lens(name, id, condition, lens.getZoomRange(),
-                    parseDamage(value, Lens.LensDamage.class, current.getType()), normalisedRemarks);
-            case Battery battery -> new Battery(name, id, condition, battery.getCapacity(),
-                    parseDamage(value, Battery.BatteryDamage.class, current.getType()), normalisedRemarks);
-            case Tripod tripod -> new Tripod(name, id, condition, tripod.getThread(),
-                    parseDamage(value, Tripod.TripodDamage.class, current.getType()), normalisedRemarks);
+            case Camera camera -> new Camera(
+                    name,
+                    id,
+                    condition,
+                    camera.getSensorFormat(),
+                    EquipmentDetailParser.parseEnumValue(
+                            value,
+                            EquipmentDetailField.DAMAGE,
+                            Camera.CameraDamage.class,
+                            current.getType()),
+                    normalisedRemarks,
+                    camera.getLensMount(),
+                    camera.getTripodThread(),
+                    camera.getBatteryType());
+            case Lens lens -> new Lens(
+                    name,
+                    id,
+                    condition,
+                    lens.getZoomRange(),
+                    EquipmentDetailParser.parseEnumValue(
+                            value,
+                            EquipmentDetailField.DAMAGE,
+                            Lens.LensDamage.class,
+                            current.getType()),
+                    normalisedRemarks,
+                    lens.getLensMount(),
+                    lens.getSensorFormat());
+            case Battery battery -> new Battery(
+                    name,
+                    id,
+                    condition,
+                    battery.getCapacity(),
+                    EquipmentDetailParser.parseEnumValue(
+                            value,
+                            EquipmentDetailField.DAMAGE,
+                            Battery.BatteryDamage.class,
+                            current.getType()),
+                    normalisedRemarks,
+                    battery.getBatteryType());
+            case Tripod tripod -> new Tripod(
+                    name,
+                    id,
+                    condition,
+                    tripod.getThread(),
+                    EquipmentDetailParser.parseEnumValue(
+                            value,
+                            EquipmentDetailField.DAMAGE,
+                            Tripod.TripodDamage.class,
+                            current.getType()),
+                    normalisedRemarks);
             default -> throw new IllegalArgumentException("Unsupported equipment type for return assessment.");
             };
             proposed.restoreRecordId(current.getRecordId());
@@ -372,34 +412,64 @@ public class EquipmentHandler {
         }
     }
 
-    /** Validates extracted values before construction, preserving field-specific error messages. */
-    private static Equipment createValidatedEquipment(String itemName, String id, String type,
-            String conditionString, String detailsString, String remarks) throws EquipmentAdditionUnsuccessful {
-        validateEquipmentDetails(itemName, id, type, conditionString);
+    /** Validates extracted values and creates the correct equipment subclass. */
+    private static Equipment createValidatedEquipment(
+            String itemName,
+            String id,
+            String type,
+            String conditionString,
+            String detailsString,
+            String remarks)
+            throws EquipmentAdditionUnsuccessful {
+        validateEquipmentDetails(
+                itemName,
+                id,
+                type,
+                conditionString);
         validateRemarks(remarks);
-        int condition = Integer.parseInt(conditionString);
 
+        int condition = Integer.parseInt(conditionString);
         String normalisedType = type.toLowerCase(Locale.ROOT);
-        String attributeMarker = switch (normalisedType) {
-        case "camera" -> "sensor/";
-        case "lens" -> "zoom/";
-        case "battery" -> "capacity/";
-        case "tripod" -> "thread/";
-        default -> throw new EquipmentAdditionUnsuccessful(
-                "Unsupported equipment type. Use: camera, lens, battery or tripod.");
-        };
-        EquipmentDetails details = parseDetails(detailsString, attributeMarker);
-        return switch (normalisedType) {
-        case "camera" -> new Camera(itemName, id, condition, details.attribute(),
-                parseDamage(details.damage(), Camera.CameraDamage.class, normalisedType), remarks);
-        case "lens" -> new Lens(itemName, id, condition, details.attribute(),
-                parseDamage(details.damage(), Lens.LensDamage.class, normalisedType), remarks);
-        case "battery" -> new Battery(itemName, id, condition, details.attribute(),
-                parseDamage(details.damage(), Battery.BatteryDamage.class, normalisedType), remarks);
-        case "tripod" -> new Tripod(itemName, id, condition, details.attribute(),
-                parseDamage(details.damage(), Tripod.TripodDamage.class, normalisedType), remarks);
-        default -> throw new AssertionError("Validated equipment type must have a subclass");
-        };
+
+        if (normalisedType.equals("camera")) {
+            return CameraDetailsParser.createCamera(
+                    itemName,
+                    id,
+                    condition,
+                    detailsString,
+                    remarks);
+        }
+
+        if (normalisedType.equals("lens")) {
+            return LensDetailsParser.createLens(
+                    itemName,
+                    id,
+                    condition,
+                    detailsString,
+                    remarks);
+        }
+
+        if (normalisedType.equals("battery")) {
+            return BatteryDetailsParser.createBattery(
+                    itemName,
+                    id,
+                    condition,
+                    detailsString,
+                    remarks);
+        }
+
+        if (normalisedType.equals("tripod")) {
+            return TripodDetailsParser.createTripod(
+                    itemName,
+                    id,
+                    condition,
+                    detailsString,
+                    remarks);
+        }
+
+        throw new EquipmentAdditionUnsuccessful(
+                "Unsupported equipment type. Use: "
+                        + "camera, lens, battery or tripod.");
     }
 
     /** Shares value rules between addition and updates before either changes the inventory. */
@@ -425,52 +495,6 @@ public class EquipmentHandler {
                 || remarks.matches("(?s).*\\R.*")) {
             throw new EquipmentAdditionUnsuccessful(
                     "Remarks must contain at most 200 characters and no line breaks.");
-        }
-    }
-
-    /** Rejects repeated, reordered or inapplicable optional fields before extracting their values. */
-    private static EquipmentDetails parseDetails(String details, String attributeMarker)
-            throws EquipmentAdditionUnsuccessful {
-        if (details.isEmpty()) {
-            return new EquipmentDetails("unspecified", "NONE");
-        }
-        int attributeIndex = findFieldMarker(details, attributeMarker, 0);
-        int damageIndex = findFieldMarker(details, DAMAGE_MARKER, 0);
-        boolean attributeFirst = attributeIndex == 0 && (damageIndex == -1 || damageIndex > attributeIndex);
-        boolean damageOnly = attributeIndex == -1 && damageIndex == 0;
-        if (!attributeFirst && !damageOnly) {
-            throw new EquipmentAdditionUnsuccessful("Optional fields must use " + attributeMarker
-                    + "[DETAIL] followed by damage/[DAMAGE], with either field optional.");
-        }
-        for (String marker : DETAIL_MARKERS) {
-            int index = findFieldMarker(details, marker, 0);
-            if (index != -1 && (!marker.equals(attributeMarker) && !marker.equals(DAMAGE_MARKER)
-                    || findFieldMarker(details, marker, index + marker.length()) != -1)) {
-                throw new EquipmentAdditionUnsuccessful("Repeated or inapplicable equipment detail field: " + marker);
-            }
-        }
-        String attribute = "unspecified";
-        if (attributeFirst) {
-            int attributeEnd = damageIndex == -1 ? details.length() : damageIndex;
-            attribute = EquipmentFields.trimWhitespace(details.substring(attributeMarker.length(), attributeEnd));
-            if (!Equipment.hasText(attribute) || attribute.length() > 100 || attribute.matches("(?s).*\\R.*")) {
-                throw new EquipmentAdditionUnsuccessful(
-                        "Equipment detail must contain 1 to 100 characters on one line.");
-            }
-        }
-        String damage = damageIndex == -1 ? "NONE"
-                : EquipmentFields.trimWhitespace(details.substring(damageIndex + DAMAGE_MARKER.length()));
-        return new EquipmentDetails(attribute, damage);
-    }
-
-    /** Converts the command value to the damage enum belonging to the selected equipment type. */
-    private static <T extends Enum<T>> T parseDamage(String value, Class<T> damageClass, String type)
-            throws EquipmentAdditionUnsuccessful {
-        try {
-            return Enum.valueOf(damageClass, value.toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException exception) {
-            throw new EquipmentAdditionUnsuccessful("Invalid damage for " + type + ". Use: "
-                    + Arrays.toString(damageClass.getEnumConstants()) + ".");
         }
     }
 

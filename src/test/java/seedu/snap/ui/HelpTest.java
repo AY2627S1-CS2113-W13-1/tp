@@ -27,7 +27,8 @@ class HelpTest {
         return Stream.of(
                 Arguments.of("add i/<NAME> id/<ID> type/<TYPE> cond/<N>"
                         + " [TYPE DETAIL] [damage/<DAMAGE>] [remarks/<TEXT>]",
-                        "add i/Canon EOS R10 id/001 type/camera cond/1 sensor/APS-C damage/NONE"),
+                        "add i/Canon EOS R10 id/001 type/camera cond/1 "
+                                + "sensor/APS-C mount/Canon RF damage/NONE"),
                 Arguments.of("list", "list"),
                 Arguments.of("delete item/<ID>", "delete item/001"),
                 Arguments.of("loan id/<ITEM ID> b/<BORROWER ID> [issued/<DD-MM-YY>] due/<DD-MM-YY>",
@@ -79,13 +80,22 @@ class HelpTest {
         String text = Help.getText();
 
         assertTrue(text.contains("Name, unused Item ID, type and condition are required"));
-        assertTrue(text.contains("Optional order: type detail, then damage/, then final remarks/."));
-        assertTrue(text.contains("Omitted type detail defaults to unspecified; omitted damage defaults to NONE;"));
+        assertTrue(text.contains(
+                "Optional order: subtype fields in the order shown, then damage/, then final remarks/."));
+        assertTrue(text.contains("Each optional field may be omitted independently."));
+        assertTrue(text.contains(
+                "Omitted subtype and compatibility details default to unspecified;"));
+        assertTrue(text.contains("omitted damage defaults to NONE;"));
         assertTrue(text.contains("omitted remarks default to empty text."));
-        assertTrue(text.contains("camera: sensor/<TEXT>; damage:"));
-        assertTrue(text.contains("lens: zoom/<TEXT>; damage:"));
-        assertTrue(text.contains("battery: capacity/<TEXT>; damage:"));
+        assertTrue(text.contains(
+                "camera: sensor/<TEXT> mount/<TEXT> thread/<TEXT> battery/<TEXT>; damage:"));
+        assertTrue(text.contains(
+                "lens: zoom/<TEXT> mount/<TEXT> sensor/<TEXT>; damage:"));
+        assertTrue(text.contains(
+                "battery: capacity/<TEXT> battery/<TEXT>; damage:"));
         assertTrue(text.contains("tripod: thread/<TEXT>; damage:"));
+        assertTrue(text.contains("Compatibility comparisons ignore letter case."));
+        assertTrue(text.contains("a known mismatch produces INCOMPATIBLE"));
         Stream.of(Camera.CameraDamage.values(), Lens.LensDamage.values(), Battery.BatteryDamage.values(),
                 Tripod.TripodDamage.values()).flatMap(Stream::of)
                 .forEach(damage -> assertTrue(text.contains(damage.name()), damage.name()));
@@ -103,6 +113,8 @@ class HelpTest {
         assertTrue(text.contains("Loan IDs are assigned automatically from 001 to 999"));
         assertTrue(text.contains("explicit serviceable/ and damage/ assessment"));
         assertTrue(text.contains("Omitted or empty remarks clear the item's previous remarks."));
+        assertTrue(text.contains(
+                "compatibility attributes and bundle memberships."));
         assertTrue(text.contains("Return permanently marks the retained loan returned"));
         assertTrue(text.contains("cannot be returned twice or reactivated."));
         assertTrue(text.contains("Changing its numeric condition does not repair it."));
