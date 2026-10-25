@@ -22,6 +22,7 @@ import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
 import seedu.snap.exceptions.EquipmentFilteringUnsuccessful;
 import seedu.snap.exceptions.EquipmentUpdateUnsuccessful;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
+import seedu.snap.exceptions.LoanBorrowerUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 import seedu.snap.exceptions.LoanReturnUnsuccessful;
 import seedu.snap.exceptions.LoanHistoryUnsuccessful;
@@ -138,6 +139,8 @@ public class EqmManager {
             viewLoanIssueCondition(normalizedInput);
         } else if (normalizedInput.matches("(?U)update\\s+loan(?:\\s.*|/.*)?")) {
             updateLoan(normalizedInput);
+        } else if (normalizedInput.matches("(?sU)list\\s+(?:borrower|member)(?:/.*|\\s.*)?")) {
+            viewActiveLoansForBorrower(normalizedInput);
         } else if (normalizedInput.matches("(?U)filter(?:\\s.*)?")) {
             filterEquipment(normalizedInput);
         } else if (normalizedInput.matches("(?U)update(?:\\s.*)?")) {
@@ -368,6 +371,15 @@ public class EqmManager {
         try {
             bundles.viewBundleLoanHistory(input, loans);
         } catch (BundleHistoryUnsuccessful exception) {
+            System.out.println(exception.getMessage());
+        }
+    }
+
+    /** Displays the active equipment currently held by one borrower or its validation error. */
+    private void viewActiveLoansForBorrower(String input) {
+        try {
+            loans.viewActiveLoansForBorrower(input);
+        } catch (LoanBorrowerUnsuccessful exception) {
             System.out.println(exception.getMessage());
         }
     }
