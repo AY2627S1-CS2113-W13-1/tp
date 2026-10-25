@@ -1,3 +1,8 @@
+---
+layout: default
+title: Developer Guide
+---
+
 # Developer Guide
 
 ## Acknowledgements
@@ -15,6 +20,7 @@ item history ([#53](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/53)), opt
 model objects hold equipment and loan state; storage utilities read and write files.
 
 The diagrams show only interactions needed to explain each design. `...` means parameters are omitted.
+Select a diagram to open its SVG at full size and zoom in to read the labels.
 Notes summarise checks or local processing; messages such as selecting records describe processing rather than
 additional Java methods. Lifelines with names such as `item:Equipment` represent objects; utility lifelines
 represent classes with static methods. Editable PlantUML sources are linked below each figure.
@@ -109,7 +115,7 @@ The sequence below assumes an active loan `001` and an assessment valid for its 
 Parsing and repeated inventory checks are summarised in the first note to keep attention on the order of saving
 and changing records.
 
-![Return sequence: prepare detached proposals, save them, then change the original equipment and loan.](images/ReturnSequence.svg)
+[![Return sequence: prepare detached proposals, save them, then change the original equipment and loan.](images/ReturnSequence.svg)](images/ReturnSequence.svg)
 
 *Figure 1. A successful return changes the original records only after saving succeeds.*
 [PlantUML source](diagrams/ReturnSequence.puml)
@@ -148,7 +154,7 @@ The next diagram expands the storage step in Figure 1. It shows a loan or sequen
 equipment proposal was written. An equipment-save failure enters the same restoration loop. Only configured
 files are captured. A snapshot records regular-file bytes, absence or a pre-existing non-regular path.
 
-![Failed return save: capture configured files, attempt writes, restore every snapshot, then report the failure.](images/ReturnSaveFailure.svg)
+[![Failed return save: capture configured files, attempt writes, restore every snapshot, then report the failure.](images/ReturnSaveFailure.svg)](images/ReturnSaveFailure.svg)
 
 *Figure 2. A reported write failure triggers restoration before the return is rejected.*
 [PlantUML source](diagrams/ReturnSaveFailure.puml)
@@ -193,7 +199,7 @@ it into `equipmentRecordId`. These stored values survive restarts. The class dia
 between that permanent identity and an active object reference; unrelated fields, subclasses and storage classes
 are omitted.
 
-![History class diagram: handlers manage records; loans store the permanent equipment identity and an optional active reference.](images/EquipmentIdentity.svg)
+[![History class diagram: handlers manage records; loans store the permanent equipment identity and an optional active reference.](images/EquipmentIdentity.svg)](images/EquipmentIdentity.svg)
 
 *Figure 3. History uses stored identity values, while an active loan also refers to an equipment object.*
 [PlantUML source](diagrams/EquipmentIdentity.puml)
@@ -213,7 +219,7 @@ item is rejected.
 The following sequence assumes Item ID `001` exists uniquely. Invalid syntax, a missing item or an ambiguous
 Item ID produces `LoanHistoryUnsuccessful` before selection.
 
-![History query sequence: find the current item, match both identifiers, sort a separate list and display it without saving.](images/HistorySequence.svg)
+[![History query sequence: find the current item, match both identifiers, sort a separate list and display it without saving.](images/HistorySequence.svg)](images/HistorySequence.svg)
 
 *Figure 4. A history query sorts a selected copy and leaves the managed records unchanged.*
 [PlantUML source](diagrams/HistorySequence.puml)
@@ -284,7 +290,7 @@ For this example, assume the application's local date is 24 October 2026 and the
 `loan id/001 b/002 due/31-10-26` stores 24 October 2026 at midnight as its issue date.
 The diagram omits model construction and ordinary availability checks to focus on when the default is chosen.
 
-![Optional issue-date sequence: validate required input, read the local date once, save explicit dates and then publish the loan.](images/LoanDateDefault.svg)
+[![Optional issue-date sequence: validate required input, read the local date once, save explicit dates and then publish the loan.](images/LoanDateDefault.svg)](images/LoanDateDefault.svg)
 
 *Figure 5. The optional date is resolved during command parsing and stored as an ordinary explicit date.*
 [PlantUML source](diagrams/LoanDateDefault.puml)
@@ -328,7 +334,7 @@ restrictions. The welcome message and unknown-command error direct users to it. 
 recognises the exact command after trimming surrounding whitespace; `help add` follows the unknown-command path.
 The existing startup-error check remains first: the input loop stops if saved data cannot be loaded.
 
-![Help sequence: EqmManager calls Help.print, which prints the fixed reference without using record or storage handlers.](images/HelpSequence.svg)
+[![Help sequence: EqmManager calls Help.print, which prints the fixed reference without using record or storage handlers.](images/HelpSequence.svg)](images/HelpSequence.svg)
 
 *Figure 6. Help prints a reference and returns control to the command loop.*
 [PlantUML source](diagrams/HelpSequence.puml)

@@ -1,3 +1,8 @@
+---
+layout: default
+title: User Guide
+---
+
 # User Guide
 
 ## Introduction
@@ -7,8 +12,23 @@ application sessions. Bundles group equipment during the current session.
 
 ## Quick Start
 
-1. Install Java 25.
-2. From the project directory, run `./gradlew run` on macOS/Linux or `.\gradlew.bat run` on Windows.
+1. Install Java 25 and ensure that `java -version` reports version 25.
+2. From the project directory, run the command for your shell.
+
+   **macOS/Linux:**
+
+   ```sh
+   ./gradlew run --console=plain --quiet
+   ```
+
+   **Windows PowerShell:**
+
+   ```powershell
+   .\gradlew.bat run --console=plain --quiet
+   ```
+
+   These options remove Gradle's progress display and task logs. Application prompts, command results and
+   errors remain visible.
 3. Enter one command per line. Type `bye` to exit.
 
 ## Getting help: `help`
