@@ -323,7 +323,7 @@ return remarks, required assessments, and failed saves followed by successful re
 
 #### Implementation and sequence
 
-`help` displays all 15 supported command formats and examples, required and optional fields, defaults and
+`help` displays all 16 supported command formats and examples, required and optional fields, defaults and
 restrictions. The welcome message and unknown-command error direct users to it. `EqmManager.executeInput(...)`
 recognises the exact command after trimming surrounding whitespace; `help add` follows the unknown-command path.
 The existing startup-error check remains first: the input loop stops if saved data cannot be loaded.
@@ -484,79 +484,76 @@ retaining omitted fields. It also checks that rejected values preserve the saved
 a failed write preserves the original object and inventory order, and an update succeeds
 after the storage problem is fixed.
 
-### Overdue loan identification (planned)
-
-This section describes a proposed design. `list overdue` and `Loan.isOverdue(...)` are not implemented in the
-current code. The responsibilities and execution flow below describe the intended enhancement.
+### Overdue loan identification
 
 #### Overview
 
-The proposed overdue-loan feature would allow equipment managers to identify active loans whose due dates have passed. Users would access the feature with the `list overdue` command. The command would display the item ID, borrower ID, and due date of every overdue loan. If there were no overdue loans, the application would display a clear message instead of an empty table.
+The overdue-loan feature allows equipment managers to identify active loans whose due dates have passed. Users access the feature with the `list overdue` command. The command displays the item ID, borrower ID, and due date of every overdue loan. If there are no overdue loans, the application displays a clear message instead of an empty table.
 
-A loan is considered overdue only when both of the following conditions are satisfied:
+A loan is overdue only when both conditions are satisfied:
 
-1. The loan has not been marked as returned.
-2. Its due date is earlier than the current date.
+1. The loan has not been returned.
+2. Its due date is earlier than the current local date.
 
-The comparison is date-based because loan commands currently accept dates in `DD-MM-YY` format without a specific time. Therefore, a loan due today is not considered overdue. It becomes overdue on the following day if it has not been returned.
+The comparison is date-based because loan commands accept dates in `DD-MM-YY` format without a specific time. A loan due today is therefore not overdue, even if its stored due time is earlier than the current time. It becomes overdue on the following day if it has not been returned.
 
-The feature performs a read-only operation. Listing overdue loans does not add, remove, return, or otherwise modify any loan record.
+Listing overdue loans is read-only. It does not add, remove, return, or otherwise modify any loan record.
 
 #### Component responsibilities
 
-The proposed design distributes responsibilities among the existing loan-management classes.
+`EqmManager` recognises the exact `list overdue` command. It obtains the current date once from its configured `Clock` and delegates the request to `LoanHandler`. Reading the date once ensures that every loan in the same command is evaluated consistently and allows tests to use a fixed date.
 
-`EqmManager` would recognise the exact `list overdue` command and delegate the request to `LoanHandler`. It would obtain the current date once and supply it as the reference date for the whole operation. Using one reference date ensures that every loan in the same command is evaluated consistently.
+`LoanHandler.getOverdueLoans(referenceDate)` examines the stored loans in their existing order. It selects loans for which `Loan.isOverdue(referenceDate)` returns `true` and returns an unmodifiable result list. `LoanHandler.viewOverdueLoans(referenceDate)` formats the matching loans and displays a clear message when none are found.
 
-`LoanHandler` would examine the stored loans and select those that are overdue. It would preserve their existing order so that the displayed results remain predictable. It would also format the output and display the no-results message.
-
-`Loan` would determine whether one loan is overdue. The planned `isOverdue(referenceDate)` method would check the loan's due date and returned status without changing either field. Keeping this rule in `Loan` places behaviour together with the data that it evaluates and prevents the same condition from being duplicated across command-handling classes.
-
-Conceptually, the overdue condition is:
+`Loan.isOverdue(referenceDate)` owns the overdue-status rule because the loan contains the required due date and returned status. The condition is:
 
 ```text
 not returned AND due date is before reference date
 ```
 
-The reference date is passed into the method instead of being obtained inside `Loan`. This makes the result deterministic during automated testing. Tests can supply a fixed date and verify past, present, and future due dates without depending on the date on which the test suite is executed.
+The reference date is supplied to the method instead of being obtained directly from the system clock. This keeps the model behaviour deterministic and independently testable.
 
 #### Command execution
 
-When the user enters `list overdue`, `EqmManager` would recognise the command and obtain the current local date. It would then ask `LoanHandler` to display loans that are overdue on that date.
+When the user enters `list overdue`, `EqmManager` obtains the current local date using its configured `Clock` and passes that date to `LoanHandler`.
 
-`LoanHandler` would check every loan using `Loan.isOverdue(referenceDate)`. Loans that have been returned would be excluded even when their due dates are in the past. Active loans due today or in the future would also be excluded. Matching loans would be displayed without modifying the underlying loan list.
+`LoanHandler` evaluates every stored loan using `Loan.isOverdue(referenceDate)`. Returned loans are excluded even when their due dates are in the past. Active loans due today or in the future are also excluded. Matching loans retain their existing order and are displayed using the following columns:
 
-If no loans match, the user receives a message such as:
+```text
+No.  ITEM ID      | BORROWER ID  | DUE DATE
+```
+
+If no loans match, the application displays:
 
 ```text
 No overdue loans found.
 ```
 
-This is clearer than displaying only a table heading because it confirms that the command completed successfully.
+The handler records the number of matching loans through diagnostic logging, including the valid zero-result case.
 
 #### Defensive behaviour
 
-The reference date must not be `null`. A null reference date indicates a programming error rather than invalid user input because users do not provide this value directly. The overdue-checking method therefore rejects a null reference date immediately.
+The reference date must not be `null`. A null reference date represents a programming error because users do not provide it directly. `Loan.isOverdue(...)` and `LoanHandler.getOverdueLoans(...)` therefore reject it with a `NullPointerException`.
 
-The feature relies on the existing invariant that every valid loan has a due date and returned status. Assertions can detect violations of this invariant during development.
+`LoanHandler` also asserts that its stored loan count matches the collection size and that the collection contains no null loan entries. These assertions detect corrupted internal state with clear development-time messages.
 
-The operation does not modify the loan collection. Invalid or unrecognised commands are handled by the existing command-routing behaviour and leave all stored records unchanged. Diagnostic logging records that an overdue-loan listing was requested and the number of matching loans without exposing internal diagnostic information to the user.
+The returned overdue-loan list is unmodifiable. Callers therefore cannot use the result to alter or reorder the managed loan collection.
 
 #### Design alternatives
 
-One alternative was to store an `isOverdue` Boolean field in each `Loan`. This was rejected because overdue status changes as time passes. A stored value could become outdated unless every loan were updated regularly. Deriving the status from the due date and reference date ensures that it is always current.
+One alternative was to store an `isOverdue` Boolean field in each `Loan`. This was rejected because overdue status changes as time passes. A stored value could become outdated unless every loan were updated regularly. Deriving the value from the due date and reference date keeps it current.
 
-Another alternative was to place the complete overdue condition inside `LoanHandler`. This would keep `Loan` as a data-only class, but it would separate loan-related behaviour from the object that owns the relevant state. Placing `isOverdue` in `Loan` also allows the rule to be tested independently.
+Another alternative was to place the complete overdue condition inside `LoanHandler`. This was rejected because it would separate loan-related behaviour from the object containing the relevant state. Keeping `isOverdue(...)` in `Loan` also allows the rule to be tested independently.
 
-A third alternative was to compare complete `LocalDateTime` values. This was rejected because users currently provide only a due date. Comparing times would cause a loan due today to become overdue immediately after midnight, which would be surprising to users. Comparing only the date components matches the command format more closely.
+A third alternative was to compare complete `LocalDateTime` values. This was rejected because users provide due dates without specific times. Date-time comparison could mark a loan due today as overdue during that same day. Comparing only dates matches the user-facing command format.
 
-#### Testing strategy
+#### Verification
 
-The `Loan.isOverdue` behaviour will be tested using fixed reference dates. The tests will cover an active loan with a past due date, a loan due on the reference date, a future loan, and a returned loan with a past due date. A null reference date will also be tested.
+`LoanTest` covers active loans with past, current, and future due dates; loans due at different times on the reference date; returned loans; and null reference dates.
 
-`LoanHandler` tests will use collections containing mixtures of overdue, returned, current, and future loans. They will verify that only the correct loans are displayed, that their order is preserved, and that the underlying collection remains unchanged. An empty list and a list containing no overdue loans will verify the no-results message.
+`LoanHandlerTest` covers mixed loan collections, preserved ordering, unmodifiable results, null entries, empty results, formatted output, diagnostic logging, and unchanged managed records.
 
-An integration test through `EqmManager` will verify that `list overdue` is routed correctly and that similar invalid commands do not crash the application or modify saved data.
+`EqmManagerTest` verifies command routing using a fixed `Clock`. It also confirms that `list overdue` does not modify equipment availability, loan records, or persisted files.
 
 ## Product scope
 ### Target user profile

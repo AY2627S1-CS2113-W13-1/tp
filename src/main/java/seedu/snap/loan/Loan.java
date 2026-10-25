@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.time.LocalDate;
+import java.util.Objects;
 
 import seedu.snap.equipment.Equipment;
 
@@ -116,6 +118,23 @@ public class Loan {
         assert issuedDate == null || !issuedDate.isAfter(dueDate) : "Issue date must not be after due date";
         this.dueDate = dueDate;
     }
+
+    // @@author Rohita-29
+
+    /**
+     * Returns whether this loan is active and was due before the reference date.
+     *
+     * @param referenceDate date against which the due date is checked
+     * @return true if the loan has not been returned and is past its due date
+     * @throws NullPointerException if the reference date is null
+     */
+    public boolean isOverdue(LocalDate referenceDate) {
+        Objects.requireNonNull(referenceDate, "Reference date must not be null");
+        LocalDate dueDateOnly = dueDate.toLocalDate();
+        return !isReturned && dueDateOnly.isBefore(referenceDate);
+    }
+
+    // @@author
 
     public boolean isReturned() {
         return isReturned;

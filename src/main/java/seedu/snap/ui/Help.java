@@ -100,6 +100,13 @@ public final class Help {
                 Example: list loans
                 Shows active and returned loans with Loan ID, Item ID, borrower, dates and returned status.
 
+                LIST OVERDUE LOANS
+                Format: list overdue
+                Example: list overdue
+                Shows active loans with due dates earlier than today's local date.
+                Returned loans and loans due today or later are excluded.
+                Displays Item ID, borrower ID and due date without changing any records.
+
                 ITEM LOAN HISTORY
                 Format: history id/<ITEM ID>
                 Example: history id/001

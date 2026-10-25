@@ -10,6 +10,10 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
+
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -333,4 +337,93 @@ class EqmManagerTest {
         assertTrue(message.contains("Could not save data: equipment.txt:"));
         assertTrue(message.contains("loans.txt:"));
     }
+
+    // @@author Rohita-29
+
+    @Test
+    void listOverdue_noLoans_printsClearMessage() {
+        EqmManager manager = new EqmManager(temporaryDirectory);
+        output.reset();
+
+        manager.executeInput("list overdue");
+
+        assertEquals(
+                "No overdue loans found." + System.lineSeparator(),
+                output.toString(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void listOverdue_activePastLoan_printsLoanWithoutChangingSavedData() throws Exception {
+        EqmManager manager = new EqmManager(temporaryDirectory);
+        manager.executeInput(ADD_CAMERA);
+        manager.executeInput(
+                "loan id/001 b/002 issued/01-01-20 due/02-01-20");
+
+        String savedEquipment = Files.readString(
+                temporaryDirectory.resolve("equipment.txt"));
+        String savedLoans = Files.readString(
+                temporaryDirectory.resolve("loans.txt"));
+        output.reset();
+
+        manager.executeInput("list overdue");
+
+        String actual = output.toString(StandardCharsets.UTF_8);
+        assertTrue(actual.contains("ITEM ID"));
+        assertTrue(actual.contains("BORROWER ID"));
+        assertTrue(actual.contains("DUE DATE"));
+        assertTrue(actual.contains("001"));
+        assertTrue(actual.contains("002"));
+        assertTrue(actual.contains("2020-01-02T00:00"));
+        assertEquals(
+                savedEquipment,
+                Files.readString(temporaryDirectory.resolve("equipment.txt")));
+        assertEquals(
+                savedLoans,
+                Files.readString(temporaryDirectory.resolve("loans.txt")));
+    }
+
+    @Test
+    void listOverdue_returnedPastLoan_printsNoResultsMessage() throws Exception {
+        Files.writeString(
+                temporaryDirectory.resolve("equipment.txt"),
+                "add i/Camera id/001 type/camera cond/1"
+                        + System.lineSeparator());
+        Files.writeString(
+                temporaryDirectory.resolve("loans.txt"),
+                "loan loanId/001 id/001 b/002 issued/01-01-20 "
+                        + "due/02-01-20 returned/true"
+                        + System.lineSeparator());
+
+        EqmManager manager = new EqmManager(temporaryDirectory);
+        output.reset();
+
+        manager.executeInput("list overdue");
+
+        assertEquals(
+                "No overdue loans found." + System.lineSeparator(),
+                output.toString(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void listOverdue_usesInjectedClockForReferenceDate() {
+        Clock clock = Clock.fixed(
+                Instant.parse("2026-10-25T12:00:00Z"),
+                ZoneOffset.UTC);
+        EqmManager manager =
+                new EqmManager(temporaryDirectory, clock);
+        manager.executeInput(ADD_CAMERA);
+        manager.executeInput(
+                "loan id/001 b/002 "
+                        + "issued/24-10-26 due/25-10-26");
+        output.reset();
+
+        manager.executeInput("list overdue");
+
+        assertEquals(
+                "No overdue loans found."
+                        + System.lineSeparator(),
+                output.toString(StandardCharsets.UTF_8));
+    }
+
+    // @@author
 }
