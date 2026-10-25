@@ -3,6 +3,12 @@ package seedu.snap.loan;
 import java.util.Locale;
 import java.util.Objects;
 
+import seedu.snap.equipment.Battery;
+import seedu.snap.equipment.Camera;
+import seedu.snap.equipment.Equipment;
+import seedu.snap.equipment.Lens;
+import seedu.snap.equipment.Tripod;
+
 // @@author Rohita-29
 
 /**
@@ -46,6 +52,28 @@ public final class EquipmentConditionSnapshot {
         this.remarks = normalizeRemarks(remarks);
     }
 
+    /**
+     * Captures the current condition information from supported equipment.
+     *
+     * @param equipment equipment being issued
+     * @return immutable snapshot of its current condition
+     * @throws IllegalArgumentException if the equipment is null or unsupported
+     */
+    public static EquipmentConditionSnapshot fromEquipment(
+            Equipment equipment) {
+        if (equipment == null) {
+            throw new IllegalArgumentException(
+                    "Equipment must not be null.");
+        }
+
+        String damage = getDamageName(equipment);
+        return new EquipmentConditionSnapshot(
+                equipment.getType(),
+                equipment.getCondition(),
+                damage,
+                equipment.getRemarks());
+    }
+
     /** Returns the captured equipment type. */
     public String getEquipmentType() {
         return equipmentType;
@@ -64,6 +92,27 @@ public final class EquipmentConditionSnapshot {
     /** Returns the captured equipment remarks. */
     public String getRemarks() {
         return remarks;
+    }
+
+    /** Returns the damage enum name belonging to the equipment subclass. */
+    private static String getDamageName(Equipment equipment) {
+        if (equipment instanceof Camera camera) {
+            return camera.getDamage().name();
+        }
+        if (equipment instanceof Lens lens) {
+            return lens.getDamage().name();
+        }
+        if (equipment instanceof Battery battery) {
+            return battery.getDamage().name();
+        }
+        if (equipment instanceof Tripod tripod) {
+            return tripod.getDamage().name();
+        }
+
+        throw new IllegalArgumentException(
+                "Unsupported equipment type: "
+                        + equipment.getClass().getSimpleName()
+                        + ".");
     }
 
     /** Validates the supported equipment condition range. */
@@ -141,4 +190,3 @@ public final class EquipmentConditionSnapshot {
 }
 
 // @@author
-

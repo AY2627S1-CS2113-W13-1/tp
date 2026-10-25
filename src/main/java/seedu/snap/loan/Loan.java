@@ -22,6 +22,13 @@ public class Loan {
     private LocalDateTime dueDate;
     private boolean isReturned;
 
+    // @@author Rohita-29
+
+    private final EquipmentConditionSnapshot issueConditionSnapshot;
+
+    // @@author
+
+
     /** Creates a detached legacy record for parsing or migration, without assigning a loan ID. */
     public Loan(String itemId, String borrowerId, LocalDateTime issuedDate, LocalDateTime dueDate) {
         this(null, itemId, borrowerId, issuedDate, dueDate);
@@ -30,12 +37,46 @@ public class Loan {
     /** Creates an identified detached record without changing equipment availability. */
     public Loan(String loanId, String itemId, String borrowerId, LocalDateTime issuedDate,
             LocalDateTime dueDate) {
-        this(loanId, itemId, borrowerId, issuedDate, dueDate, null);
+        this(
+                loanId,
+                itemId,
+                borrowerId,
+                issuedDate,
+                dueDate,
+                null,
+                null);
     }
 
     /** Creates a stored record with an optional permanent equipment identity for legacy compatibility. */
     public Loan(String loanId, String itemId, String borrowerId, LocalDateTime issuedDate,
             LocalDateTime dueDate, String equipmentRecordId) {
+        this(
+                loanId,
+                itemId,
+                borrowerId,
+                issuedDate,
+                dueDate,
+                equipmentRecordId,
+                null);
+    }
+
+    /** Creates a detached record with an optional saved issue-condition snapshot. */
+    Loan(String loanId, String itemId, String borrowerId, LocalDateTime issuedDate,
+            LocalDateTime dueDate, EquipmentConditionSnapshot issueConditionSnapshot) {
+        this(
+                loanId,
+                itemId,
+                borrowerId,
+                issuedDate,
+                dueDate,
+                null,
+                issueConditionSnapshot);
+    }
+
+    /** Creates a stored record with optional identity and issue-condition information. */
+    Loan(String loanId, String itemId, String borrowerId, LocalDateTime issuedDate,
+            LocalDateTime dueDate, String equipmentRecordId,
+            EquipmentConditionSnapshot issueConditionSnapshot) {
         if (equipmentRecordId != null && !isValidEquipmentRecordId(equipmentRecordId)) {
             throw new IllegalArgumentException("Equipment record identity must be a canonical UUID.");
         }
@@ -50,6 +91,7 @@ public class Loan {
         this.issuedDate = issuedDate;
         this.dueDate = dueDate;
         this.equipmentRecordId = equipmentRecordId;
+        this.issueConditionSnapshot = issueConditionSnapshot;
     }
 
     /** Creates a legacy candidate without retaining or reserving its equipment before saving. */
@@ -60,7 +102,14 @@ public class Loan {
     /** Creates an identified candidate; the handler attaches its equipment only after saving. */
     public Loan(String loanId, Equipment equipment, String borrowerId, LocalDateTime issuedDate,
             LocalDateTime dueDate) {
-        this(loanId, getAvailableItemId(equipment), borrowerId, issuedDate, dueDate, equipment.getRecordId());
+        this(
+                loanId,
+                getAvailableItemId(equipment),
+                borrowerId,
+                issuedDate,
+                dueDate,
+                equipment.getRecordId(),
+                EquipmentConditionSnapshot.fromEquipment(equipment));
         logger.log(Level.FINE, "Created loan candidate {0} for item ID {1}.", new Object[]{loanId, itemId});
     }
 
@@ -140,6 +189,16 @@ public class Loan {
         return isReturned;
     }
 
+    // @@author Rohita-29
+
+    /** Returns the equipment-condition snapshot captured when this loan was issued. */
+    public EquipmentConditionSnapshot getIssueConditionSnapshot() {
+        return issueConditionSnapshot;
+    }
+
+    // @@author
+
+
     /** Checks object identity as well as loan ownership before a return can assess live equipment. */
     boolean ownsEquipment(Equipment item) {
         return !isReturned && equipment == item && item.isLoaned()
@@ -149,7 +208,15 @@ public class Loan {
 
     /** Creates a detached storage proposal without changing or logging a return on the live loan. */
     Loan returnedCopy() {
-        Loan returned = new Loan(loanId, itemId, borrowerId, issuedDate, dueDate, equipmentRecordId);
+        Loan returned =
+                new Loan(
+                        loanId,
+                        itemId,
+                        borrowerId,
+                        issuedDate,
+                        dueDate,
+                        equipmentRecordId,
+                        issueConditionSnapshot);
         returned.isReturned = true;
         return returned;
     }
