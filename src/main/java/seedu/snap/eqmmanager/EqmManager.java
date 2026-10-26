@@ -30,6 +30,7 @@ import seedu.snap.exceptions.MaintenanceInspectionUnsuccessful;
 import seedu.snap.loan.Loan;
 import seedu.snap.loan.LoanHandler;
 import seedu.snap.exceptions.MaintenanceRecordUnsuccessful;
+import seedu.snap.exceptions.MaintenanceSummaryUnsuccessful;
 import seedu.snap.maintenance.MaintenanceHandler;
 import seedu.snap.maintenance.MaintenanceRecord;
 import seedu.snap.parser.Parser;
@@ -138,6 +139,9 @@ public class EqmManager {
         } else if (normalizedInput.equals("list maintenance-due")
                 || normalizedInput.startsWith("list maintenance-due ")) {
             viewMaintenanceDue(normalizedInput);
+        } else if (normalizedInput.equals("summary maintenance")
+                || normalizedInput.startsWith("summary maintenance ")) {
+            viewMaintenanceSummary(normalizedInput);
         } else if (normalizedInput.equals("history maintenance")
                 || normalizedInput.startsWith("history maintenance/")) {
             viewMaintenanceHistory(normalizedInput);
@@ -372,6 +376,15 @@ public class EqmManager {
         try {
             maintenance.viewMaintenanceDue(input);
         } catch (MaintenanceInspectionUnsuccessful exception) {
+            System.out.println(exception.getMessage());
+        }
+    }
+
+    /** Displays overdue and frequently repaired equipment or its validation error. */
+    private void viewMaintenanceSummary(String input) {
+        try {
+            maintenance.viewMaintenanceSummary(input);
+        } catch (MaintenanceSummaryUnsuccessful exception) {
             System.out.println(exception.getMessage());
         }
     }

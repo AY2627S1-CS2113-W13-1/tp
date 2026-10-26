@@ -219,4 +219,59 @@ class MaintenanceIntegrationTest {
         assertTrue(Files.notExists(temporaryDirectory.resolve("maintenance.txt")));
         assertTrue(Files.readString(temporaryDirectory.resolve("loans.txt")).contains("returned/false"));
     }
+
+    @Test
+    void summaryMaintenance_afterRestart_identifiesOverdueAndFrequentRepairs() throws Exception {
+        EqmManager manager = new EqmManager(temporaryDirectory);
+        manager.executeInput("add i/Frequent id/001 type/camera cond/5");
+        manager.executeInput("add i/Overdue id/002 type/lens cond/5");
+        manager.executeInput("maintain id/001 date/25-10-26 work/Repair A outcome/Completed");
+        manager.executeInput("maintain id/001 date/26-10-26 work/Repair B outcome/Completed");
+        manager.executeInput("loan id/002 b/002 issued/24-10-26 due/27-10-26");
+        manager.executeInput("return loan/001 serviceable/no damage/AUTOFOCUS_FAULT");
+        EqmManager restarted = new EqmManager(temporaryDirectory);
+        byte[] equipmentBefore = Files.readAllBytes(temporaryDirectory.resolve("equipment.txt"));
+        byte[] maintenanceBefore = Files.readAllBytes(temporaryDirectory.resolve("maintenance.txt"));
+        output.reset();
+
+        restarted.executeInput("summary maintenance");
+
+        String printed = output.toString(StandardCharsets.UTF_8);
+        assertTrue(printed.contains("Maintenance summary:"));
+        assertTrue(printed.contains("Frequently repaired threshold: at least 2 repairs."));
+        assertTrue(printed.contains("Frequent"));
+        assertTrue(printed.contains("Overdue"));
+        assertTrue(printed.contains("YES"));
+        assertTrue(printed.contains("2026-10-26"));
+        assertTrue(printed.indexOf("001") < printed.indexOf("002"));
+        assertArrayEquals(equipmentBefore, Files.readAllBytes(temporaryDirectory.resolve("equipment.txt")));
+        assertArrayEquals(maintenanceBefore, Files.readAllBytes(temporaryDirectory.resolve("maintenance.txt")));
+    }
+
+    @Test
+    void summaryMaintenance_emptyData_displaysClearMessage() throws Exception {
+        EqmManager manager = new EqmManager(temporaryDirectory);
+        manager.executeInput("add i/Camera id/001 type/camera cond/5");
+        output.reset();
+
+        manager.executeInput("summary maintenance");
+
+        assertEquals("No overdue maintenance or frequent repair records found." + System.lineSeparator(),
+                output.toString(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void summaryMaintenance_invalidCommand_reportsErrorAndPreservesRecords() throws Exception {
+        EqmManager manager = new EqmManager(temporaryDirectory);
+        manager.executeInput("add i/Camera id/001 type/camera cond/5");
+        manager.executeInput("maintain id/001 date/27-10-26 work/Repair outcome/Completed");
+        byte[] maintenanceBefore = Files.readAllBytes(temporaryDirectory.resolve("maintenance.txt"));
+        output.reset();
+
+        manager.executeInput("summary maintenance extra");
+
+        assertEquals("Invalid format. Use: summary maintenance." + System.lineSeparator(),
+                output.toString(StandardCharsets.UTF_8));
+        assertArrayEquals(maintenanceBefore, Files.readAllBytes(temporaryDirectory.resolve("maintenance.txt")));
+    }
 }
