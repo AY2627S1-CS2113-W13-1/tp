@@ -179,6 +179,7 @@ class HelpIntegrationTest {
         "history | Format: history id/<ITEM ID>",
         "filter | Format: filter [id/<ID>]",
         "update | Format: update id/<ID>",
+        "maintain | Format: maintain id/<ITEM ID>",
         "add-bundle | Format: add-bundle name/<NAME>",
         "add-to-bundle | Format: add-to-bundle id/<BUNDLE ID>",
         "remove-from-bundle | Format: remove-from-bundle id/<BUNDLE ID>",
