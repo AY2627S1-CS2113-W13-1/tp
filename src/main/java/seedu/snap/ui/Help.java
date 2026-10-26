@@ -118,7 +118,7 @@ public final class Help {
                         Format: list
                         Example: list
                         Shows all equipment, including status, subtype details, damage and remarks.
-                        Status is Available, Loaned or Unserviceable.
+                        Status is Available, Loaned, Unserviceable, Missing or Lost.
                         """)),
                 new CommandHelp("delete item", "Equipment", lineEndings("""
                         DELETE EQUIPMENT
@@ -205,6 +205,22 @@ public final class Help {
                         Sorted by issue date, earliest first, then Loan ID. Reused Item IDs keep separate histories.
 
                         Older returned records without a proven item association remain available in list loans.
+                        """)),
+                new CommandHelp("mark", "Equipment", lineEndings("""
+                        MARK EQUIPMENT STATUS
+                        Format: mark id/<ITEM ID> status/<missing|lost>
+                        Example: mark id/001 status/missing
+                        Records a missing or lost state for one existing physical item. Items with active loans cannot be marked.
+                        The equipment record, loan history, permanent identity and maintenance information are retained.
+                        A marked item is not available for loan or bundle membership. Reusing its Item ID starts a new history.
+                        """)),
+                new CommandHelp("status-history", "Equipment", lineEndings("""
+                        EQUIPMENT STATUS HISTORY
+                        Format: status-history id/<ITEM ID>
+                        Example: status-history id/001
+                        Shows the current physical-item state and status changes in chronological order.
+                        Status history is tied to the permanent physical-item identity and persists after restarting.
+                        Items without recorded changes show an empty-history message. The command is read-only.
                         """)),
                 new CommandHelp("filter", "Equipment", lineEndings("""
                         FILTER EQUIPMENT

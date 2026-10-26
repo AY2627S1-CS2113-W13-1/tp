@@ -204,6 +204,17 @@ Removing an older returned loan does not change the assessment or affect a newer
 
 A returned loan cannot be made active again. To borrow the same item again, create a new loan.
 
+An equipment officer can mark an item `Missing` or `Lost` without deleting its record:
+
+```text
+mark id/001 status/missing
+mark id/001 status/lost
+```
+
+An item with an active loan cannot be marked missing or lost, because doing so would leave an inconsistent
+loan relationship. Marked items remain in the inventory and are not eligible for new loans or bundles.
+Their status and status history remain tied to the permanent physical-item identity.
+
 ## Loaning out equipment: `loan`
 
 Format: `loan id/[ITEM ID] b/[BORROWER ID] [issued/DD-MM-YY] due/[DD-MM-YY]`
@@ -269,6 +280,18 @@ from the replacement's history. This separation survives restarting and normal e
 Older saved returned loans may lack enough information to prove which item they belonged to. Such loans remain
 in `list loans` and are excluded from item-specific histories. If they use the queried Item ID, the history view
 explains this and points to `list loans`. Existing active loans can be associated with the current item when loaded.
+
+## Viewing an item's status history: `status-history`
+
+Format: `status-history id/[ITEM ID]`
+
+Example: `status-history id/001`
+
+This displays the current physical-item state and each recorded `Missing` or `Lost` transition in chronological order.
+Status history is tied to the equipment record's permanent identity, not only its reusable Item ID. Deleting an item
+and adding a replacement under the same Item ID therefore starts an empty status history for the replacement.
+Items without recorded status changes show `No status changes recorded.` The command is read-only and does not change
+equipment, loans, histories or saved files.
 
 ## Viewing overdue loans: `list overdue`
 
@@ -472,10 +495,14 @@ Existing records of supported types without optional fields are also accepted, u
 Records created before remarks were supported may omit the `remarks/` field; they load with empty remarks.
 Records with `damage/OTHER` require non-empty remarks; invalid saved records are reported when loaded.
 Remarks are shown in the `list` equipment table and are restored when the application starts again.
-Saved records may start with `serviceable/yes` or `serviceable/no`, followed by a tab and the add record.
+Saved records may start with `serviceable/yes` or `serviceable/no`, followed by status metadata and a tab before
+the add record.
 This prefix is storage metadata, not an add-command field. Older records without the prefix are serviceable.
 New records also start with `recordId/` and a permanent equipment identifier, followed by a tab before
 the serviceability prefix. The application assigns this identifier; it is separate from the reusable Item ID.
+New records include `status/present`, `status/missing` or `status/lost` metadata and timestamped
+`statusHistory/<STATUS>@<INSTANT>` entries when status changes have been recorded. Older records without status
+metadata load as `present` with an empty status history and are upgraded safely.
 Older equipment records are upgraded and saved with permanent identifiers when first loaded. If that save fails,
 startup reports the error instead of using identifiers that could change on the next restart.
 
@@ -527,6 +554,8 @@ duplicate records, the application reports the problem and stops.
 | View issue-time equipment condition | `view loan/[LOAN ID]` |
 | View item loan history | `history id/[ITEM ID]` |
 | View bundle loan history | `history bundle/id/[BUNDLE ID]` or `history bundle/name/[NAME]` |
+| Mark equipment missing or lost | `mark id/[ITEM ID] status/[missing\|lost]` |
+| View equipment status history | `status-history id/[ITEM ID]` |
 | List overdue loans | `list overdue` |
 | Filter equipment | `filter [id/ID] [i/NAME] [type/TYPE] [cond/1-3] [status/available]` |
 | Update equipment | `update id/ID [i/NAME] [type/TYPE] [cond/CONDITION]` |
