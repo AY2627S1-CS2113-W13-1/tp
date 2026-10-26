@@ -243,8 +243,9 @@ public final class Help {
                         VIEW MAINTENANCE HISTORY
                         Format: history maintenance/id/<ITEM ID>
                         Example: history maintenance/id/001
-                        Requires an existing Item ID. Displays maintenance dates, work performed and outcomes for that item.
-                        Records are sorted by maintenance date, earliest first. An item without records shows a clear message.
+                        Requires an existing Item ID. Displays maintenance dates, work performed and outcomes for that
+                        item. Records are sorted by maintenance date, earliest first. An item without records shows a
+                        clear message.
                         Viewing history does not change equipment, loans, maintenance records or saved files.
                         """)),
                 new CommandHelp("add-bundle", "Bundles", lineEndings("""
