@@ -164,4 +164,26 @@ class MaintenanceHandlerTest {
                 () -> handler.getMaintenanceHistory("history maintenance/id/999"));
         assertEquals("Equipment ID 999 does not exist.", exception.getMessage());
     }
+
+    @Test
+    void getMaintenanceHistory_reusedItemId_excludesPreviousPhysicalItem() throws Exception {
+        Path equipmentFile = temporaryDirectory.resolve("equipment.txt");
+        Path maintenanceFile = temporaryDirectory.resolve("maintenance.txt");
+        EquipmentHandler equipment = new EquipmentHandler(equipmentFile);
+        Equipment original = equipment.addEquipment(ADD_CAMERA);
+        MaintenanceHandler handler = new MaintenanceHandler(equipment, maintenanceFile);
+        handler.addMaintenanceRecord("maintain id/001 date/27-10-26 work/Original outcome/Completed");
+
+        equipment.deleteEquipment("delete item/001");
+        Equipment replacement = equipment.addEquipment("add i/Replacement id/001 type/camera cond/5");
+        assertFalse(original.getRecordId().equals(replacement.getRecordId()));
+        assertTrue(handler.getMaintenanceHistory("history maintenance/id/001").isEmpty());
+
+        EquipmentHandler reloadedEquipment = new EquipmentHandler(equipmentFile);
+        reloadedEquipment.loadFromStorage();
+        MaintenanceHandler reloaded = new MaintenanceHandler(reloadedEquipment, maintenanceFile);
+        reloaded.loadFromStorage();
+
+        assertTrue(reloaded.getMaintenanceHistory("history maintenance/id/001").isEmpty());
+    }
 }
