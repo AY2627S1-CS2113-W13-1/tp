@@ -18,6 +18,8 @@ final class EquipmentStorage {
     private static final String RECORD_ID_PREFIX = "recordId/";
     /** Storage-only metadata appears before the add record so free-form fields remain unambiguous. */
     private static final String SERVICEABILITY_PREFIX = "serviceable/";
+    /** Optional storage-location metadata appears before the add record. */
+    private static final String STORAGE_LOCATION_PREFIX = "location/";
 
     private EquipmentStorage() {
         // Utility class; do not instantiate.
@@ -97,7 +99,7 @@ final class EquipmentStorage {
     /** Loads legacy add records as serviceable and reads assessment metadata without parsing free-form field text. */
     private static Equipment parseServiceabilityLine(String line) throws EquipmentAdditionUnsuccessful {
         if (!line.startsWith(SERVICEABILITY_PREFIX)) {
-            return EquipmentHandler.parseEquipment(line);
+            return parseLocationLine(line);
         }
         int delimiter = line.indexOf('\t');
         if (delimiter < 0) {
@@ -107,8 +109,23 @@ final class EquipmentStorage {
         if (!serviceability.equals("yes") && !serviceability.equals("no")) {
             throw new IllegalArgumentException("Saved serviceability must be yes or no.");
         }
-        Equipment equipment = EquipmentHandler.parseEquipment(line.substring(delimiter + 1));
+        Equipment equipment = parseLocationLine(line.substring(delimiter + 1));
         equipment.setServiceable(serviceability.equals("yes"));
+        return equipment;
+    }
+
+    /** Reads optional location metadata before parsing the free-form add record. */
+    private static Equipment parseLocationLine(String line) throws EquipmentAdditionUnsuccessful {
+        if (!line.startsWith(STORAGE_LOCATION_PREFIX)) {
+            return EquipmentHandler.parseEquipment(line);
+        }
+        int delimiter = line.indexOf('\t');
+        if (delimiter < 0) {
+            throw new IllegalArgumentException("Storage location metadata must precede a tab and an add record.");
+        }
+        String location = line.substring(STORAGE_LOCATION_PREFIX.length(), delimiter);
+        Equipment equipment = EquipmentHandler.parseEquipment(line.substring(delimiter + 1));
+        equipment.setStorageLocation(location);
         return equipment;
     }
 
@@ -140,7 +157,8 @@ final class EquipmentStorage {
     /** Adds permanent identity and serviceability metadata before the add record, preserving free-form field values. */
     private static String toStorageLine(Equipment equipment) {
         String record = RECORD_ID_PREFIX + equipment.getRecordId() + "\t"
-                + SERVICEABILITY_PREFIX + (equipment.isServiceable() ? "yes" : "no") + "\tadd i/"
+                + SERVICEABILITY_PREFIX + (equipment.isServiceable() ? "yes" : "no")
+                + "\t" + STORAGE_LOCATION_PREFIX + equipment.getStorageLocation() + "\tadd i/"
                 + equipment.getItemName()
                 + " id/" + equipment.getItemId()
                 + " type/" + equipment.getType()
