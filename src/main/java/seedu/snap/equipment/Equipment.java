@@ -1,5 +1,8 @@
 package seedu.snap.equipment;
 
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -34,6 +37,10 @@ public abstract class Equipment {
     private boolean isLoaned = false;
     /** Whether this item has passed the latest return assessment and can be loaned again. */
     private boolean isServiceable = true;
+    /** Persistent physical-item state, separate from temporary loan and serviceability status. */
+    private EquipmentStatus status = EquipmentStatus.PRESENT;
+    /** Chronological status changes for this physical item. */
+    private final ArrayList<EquipmentStatusChange> statusHistory = new ArrayList<>();
     /** Current active loan identifier, rebuilt from saved loan records rather than duplicated in equipment storage. */
     private String loanId;
     /** Optional single-line remarks retained with this equipment record. */
@@ -124,9 +131,55 @@ public abstract class Equipment {
         return isServiceable;
     }
 
+    /** Returns the persistent physical-item state, independent of current loan availability. */
+    public EquipmentStatus getStatus() {
+        return status;
+    }
+
+    /** Returns an immutable snapshot of this physical item's status history. */
+    public List<EquipmentStatusChange> getStatusHistory() {
+        return List.copyOf(statusHistory);
+    }
+
+    /** Returns whether the item is explicitly marked missing or lost. */
+    public boolean isMissingOrLost() {
+        return status == EquipmentStatus.MISSING || status == EquipmentStatus.LOST;
+    }
+
+    /** Returns the status shown to users, including temporary loan and serviceability state. */
+    public String getStatusLabel() {
+        if (status == EquipmentStatus.MISSING || status == EquipmentStatus.LOST) {
+            return status.getStorageValue();
+        }
+        return isLoaned ? "loaned" : isServiceable ? "available" : "unserviceable";
+    }
+
+    /** Returns whether this item can be selected for a new loan or bundle. */
+    public boolean isAvailableForLoan() {
+        return !isLoaned && isServiceable && status == EquipmentStatus.PRESENT;
+    }
+
     /** Sets serviceability on a detached proposal or equipment freshly read from storage. */
     final void setServiceable(boolean serviceable) {
         isServiceable = serviceable;
+    }
+
+    /** Replaces persistent status metadata on a detached object after storage validation. */
+    final void restoreStatusState(EquipmentStatus restoredStatus, List<EquipmentStatusChange> restoredHistory) {
+        if (restoredStatus == null || restoredHistory == null || !isValidStatusHistory(restoredStatus, restoredHistory)) {
+            throw new IllegalArgumentException("Equipment status history is invalid.");
+        }
+        status = restoredStatus;
+        statusHistory.clear();
+        statusHistory.addAll(restoredHistory);
+    }
+
+    /** Copies persistent status metadata to a detached update or return proposal. */
+    final void copyStatusStateTo(Equipment target) {
+        if (target == null) {
+            throw new IllegalArgumentException("Status metadata target must not be null.");
+        }
+        target.restoreStatusState(status, statusHistory);
     }
 
     /** Copies subtype damage after the common return-assessment identity checks have passed. */
@@ -145,12 +198,14 @@ public abstract class Equipment {
                 || !itemName.equals(assessed.itemName)
                 || condition != assessed.condition || assessed.remarks == null
                 || assessed.remarks.length() > MAX_REMARKS_LENGTH
-                || assessed.remarks.matches("(?s).*\\R.*")) {
+                || assessed.remarks.matches("(?s).*\\R.*")
+                || status != assessed.status || !statusHistory.equals(assessed.statusHistory)) {
             throw new IllegalArgumentException("The return assessment must belong to the same equipment.");
         }
         applyDamageAssessment(assessed);
         remarks = assessed.remarks;
         isServiceable = assessed.isServiceable;
+        restoreStatusState(assessed.status, assessed.statusHistory);
     }
 
     /** Returns the current active loan identifier, or null when no identified loan owns this item. */
@@ -217,7 +272,24 @@ public abstract class Equipment {
                 && isValidItemId(itemId)
                 && condition >= MIN_CONDITION && condition <= MAX_CONDITION
                 && remarks != null && remarks.length() <= MAX_REMARKS_LENGTH
-                && !remarks.contains("\n") && !remarks.contains("\r");
+                && !remarks.contains("\n") && !remarks.contains("\r")
+                && isValidStatusHistory(status, statusHistory);
+    }
+
+    /** Checks that status events are immutable, supported and ordered for one physical item. */
+    private static boolean isValidStatusHistory(EquipmentStatus currentStatus,
+            List<EquipmentStatusChange> history) {
+        Instant previousTimestamp = null;
+        EquipmentStatus lastStatus = EquipmentStatus.PRESENT;
+        for (EquipmentStatusChange change : history) {
+            if (change == null || change.status() == EquipmentStatus.PRESENT
+                    || previousTimestamp != null && !previousTimestamp.isBefore(change.changedAt())) {
+                return false;
+            }
+            previousTimestamp = change.changedAt();
+            lastStatus = change.status();
+        }
+        return history.isEmpty() ? currentStatus == EquipmentStatus.PRESENT : currentStatus == lastStatus;
     }
 
     /**
