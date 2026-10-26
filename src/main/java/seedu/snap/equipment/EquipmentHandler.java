@@ -15,6 +15,7 @@ import java.util.regex.Pattern;
 
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
+import seedu.snap.exceptions.EquipmentSummaryUnsuccessful;
 import seedu.snap.exceptions.EquipmentUpdateUnsuccessful;
 
 /** Handles adding, updating, deleting, and displaying equipment, including filtered and persistent records. */
@@ -247,6 +248,38 @@ public class EquipmentHandler {
         }
         logger.log(Level.WARNING, "No equipment found for item ID {0}.", itemId);
         return null;
+    }
+
+    /** Selects exactly one equipment item for a read-only summary command. */
+    public Equipment getEquipmentForSummary(String input) throws EquipmentSummaryUnsuccessful {
+        try {
+            Map<String, String> fields = EquipmentFields.parse(input, "summary", EquipmentFields.ID_FIELD);
+            if (fields.size() != 1) {
+                throw new EquipmentSummaryUnsuccessful("Use: summary id/[ITEM ID].");
+            }
+            String id = fields.get(EquipmentFields.ID_FIELD);
+            if (!Equipment.isValidItemId(id)) {
+                throw new EquipmentSummaryUnsuccessful("Item ID must be from 001 to 999.");
+            }
+            Equipment match = null;
+            for (Equipment item : inventory) {
+                if (item.getItemId().equals(id)) {
+                    if (match != null) {
+                        throw new EquipmentSummaryUnsuccessful("Item ID " + id + " is not unique.");
+                    }
+                    match = item;
+                }
+            }
+            if (match == null) {
+                throw new EquipmentSummaryUnsuccessful("Item ID " + id + " does not exist.");
+            }
+            assert match.getItemId().equals(id) : "Summary selection must preserve the requested Item ID";
+            logger.log(Level.FINE, "Selected item ID {0} for an equipment summary.", id);
+            return match;
+        } catch (IllegalArgumentException | EquipmentSummaryUnsuccessful exception) {
+            logger.log(Level.FINE, "Equipment summary rejected: {0}", exception.getMessage());
+            throw new EquipmentSummaryUnsuccessful(exception.getMessage());
+        }
     }
 
     /**
