@@ -27,6 +27,9 @@ import seedu.snap.exceptions.LoanHistoryUnsuccessful;
 import seedu.snap.exceptions.LoanViewingUnsuccessful;
 import seedu.snap.loan.Loan;
 import seedu.snap.loan.LoanHandler;
+import seedu.snap.exceptions.MaintenanceRecordUnsuccessful;
+import seedu.snap.maintenance.MaintenanceHandler;
+import seedu.snap.maintenance.MaintenanceRecord;
 import seedu.snap.parser.Parser;
 import seedu.snap.ui.Help;
 import seedu.snap.ui.Welcome;
@@ -37,6 +40,7 @@ public class EqmManager {
     private final Parser parser;
     private final LoanHandler loans;
     private final EquipmentHandler equipment;
+    private final MaintenanceHandler maintenance;
     private final BundleHandler bundles;
     private final Clock clock;
     private final String startupError;
@@ -48,7 +52,7 @@ public class EqmManager {
     }
 
     /**
-     * Creates a manager using the supplied directory for persistent equipment and loan files.
+     * Creates a manager using the supplied directory for persistent equipment, loan, and maintenance files.
      * A missing directory or file is treated as an empty data set.
      *
      * @param dataDirectory directory containing equipment.txt and loans.txt
@@ -67,6 +71,7 @@ public class EqmManager {
         this.equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
         this.loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"),
                 dataDirectory.resolve("loan-sequence.txt"), clock);
+        this.maintenance = new MaintenanceHandler(equipment, dataDirectory.resolve("maintenance.txt"));
         this.bundles = new BundleHandler(equipment, dataDirectory.resolve("bundles.txt"));
         List<String> loadErrors = new ArrayList<>();
         try {
@@ -80,6 +85,12 @@ public class EqmManager {
         } catch (IOException e) {
             loadErrors.add("loans.txt: " + e.getMessage());
             logger.log(Level.SEVERE, "Could not load saved loan data", e);
+        }
+        try {
+            maintenance.loadFromStorage();
+        } catch (IOException e) {
+            loadErrors.add("maintenance.txt: " + e.getMessage());
+            logger.log(Level.SEVERE, "Could not load saved maintenance data", e);
         }
         try {
             bundles.loadFromStorage();
@@ -116,6 +127,8 @@ public class EqmManager {
             addLoan(normalizedInput);
         } else if (normalizedInput.matches("(?sU)return(?:\\s.*)?")) {
             returnEquipment(normalizedInput);
+        } else if (normalizedInput.matches("(?sU)maintain(?:\\s.*)?")) {
+            recordMaintenance(normalizedInput);
         } else if (normalizedInput.startsWith("history bundle/")) {
             viewBundleLoanHistory(normalizedInput);
         } else if (normalizedInput.matches("(?sU)history(?:\\s.*)?")) {
@@ -190,6 +203,12 @@ public class EqmManager {
         } catch (IOException e) {
             saveErrors.add("loans.txt: " + e.getMessage());
             logger.log(Level.SEVERE, "Could not save loan data before exit", e);
+        }
+        try {
+            maintenance.saveToStorage();
+        } catch (IOException e) {
+            saveErrors.add("maintenance.txt: " + e.getMessage());
+            logger.log(Level.SEVERE, "Could not save maintenance data before exit", e);
         }
         try {
             bundles.saveToStorage();
@@ -314,6 +333,17 @@ public class EqmManager {
             System.out.println("Loan " + returned.getLoanId() + " for item ID " + returned.getItemId()
                     + " returned successfully.");
         } catch (LoanReturnUnsuccessful exception) {
+            System.out.println(exception.getMessage());
+        }
+    }
+
+    /** Displays the outcome of recording a maintenance activity. */
+    private void recordMaintenance(String input) {
+        try {
+            MaintenanceRecord record = maintenance.addMaintenanceRecord(input);
+            assert record != null : "A successful maintenance command must return a record";
+            System.out.println("Maintenance recorded successfully.");
+        } catch (MaintenanceRecordUnsuccessful exception) {
             System.out.println(exception.getMessage());
         }
     }
