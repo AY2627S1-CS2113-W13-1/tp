@@ -25,6 +25,7 @@ import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 import seedu.snap.exceptions.LoanReturnUnsuccessful;
 import seedu.snap.exceptions.LoanHistoryUnsuccessful;
 import seedu.snap.exceptions.LoanViewingUnsuccessful;
+import seedu.snap.exceptions.MaintenanceHistoryUnsuccessful;
 import seedu.snap.loan.Loan;
 import seedu.snap.loan.LoanHandler;
 import seedu.snap.exceptions.MaintenanceRecordUnsuccessful;
@@ -131,6 +132,9 @@ public class EqmManager {
             recordMaintenance(normalizedInput);
         } else if (normalizedInput.startsWith("history bundle/")) {
             viewBundleLoanHistory(normalizedInput);
+        } else if (normalizedInput.equals("history maintenance")
+                || normalizedInput.startsWith("history maintenance/")) {
+            viewMaintenanceHistory(normalizedInput);
         } else if (normalizedInput.matches("(?sU)history(?:\\s.*)?")) {
             viewLoanHistory(normalizedInput);
         } else if (normalizedInput.matches("(?U)view(?:\\s.*)?")) {
@@ -344,6 +348,15 @@ public class EqmManager {
             assert record != null : "A successful maintenance command must return a record";
             System.out.println("Maintenance recorded successfully.");
         } catch (MaintenanceRecordUnsuccessful exception) {
+            System.out.println(exception.getMessage());
+        }
+    }
+
+    /** Displays the selected equipment's maintenance history or its validation error. */
+    private void viewMaintenanceHistory(String input) {
+        try {
+            maintenance.viewMaintenanceHistory(input);
+        } catch (MaintenanceHistoryUnsuccessful exception) {
             System.out.println(exception.getMessage());
         }
     }
