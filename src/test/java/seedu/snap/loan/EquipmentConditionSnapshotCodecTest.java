@@ -65,6 +65,22 @@ class EquipmentConditionSnapshotCodecTest {
                         invalidFields,
                         0));
     }
+    @Test
+    void decode_malformedPercentEncoding_throwsException() {
+        String[] malformedFields = {
+            "issueType/camera",
+            "issueCondition/6",
+            "issueDamage/NONE",
+            "issueRemarks/%ZZ"
+        };
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> EquipmentConditionSnapshotCodec.decode(
+                        malformedFields,
+                        0));
+    }
+
 }
 
 // @@author

@@ -110,8 +110,7 @@ public class EqmManager {
             returnEquipment(normalizedInput);
         } else if (normalizedInput.matches("(?sU)history(?:\\s.*)?")) {
             viewLoanHistory(normalizedInput);
-        } else if (normalizedInput.equals("view")
-                || normalizedInput.startsWith("view ")) {
+        } else if (normalizedInput.matches("(?U)view(?:\\s.*)?")) {
             viewLoanIssueCondition(normalizedInput);
         } else if (normalizedInput.matches("(?U)filter(?:\\s.*)?")) {
             filterEquipment(normalizedInput);

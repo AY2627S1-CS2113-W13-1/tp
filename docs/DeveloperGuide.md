@@ -398,7 +398,7 @@ Legacy snapshots are left absent rather than inferred from present equipment. In
 
 `EquipmentConditionSnapshotTest` covers normalization, valid boundaries, invalid values, equality and subtype extraction. `LoanIssueConditionSnapshotTest` verifies capture, immutability and preservation through returned copies. `EquipmentConditionSnapshotCodecTest` covers valid round trips and malformed encoded values.
 
-`LoanConditionSnapshotStorageTest` verifies saving, restarting, legacy records and damaged snapshot data. `LoanIssueConditionViewTest` and `LoanIssueConditionCommandTest` cover successful viewing, missing snapshots, invalid and unknown loan IDs, formatted output and unchanged application records.
+`LoanConditionSnapshotStorageTest` verifies direct save/load round trips, legacy records and malformed snapshot data. `LoanIssueConditionViewTest` covers handler-level output for recorded and missing snapshots, invalid and unknown loan IDs, and formatting. `LoanIssueConditionCommandTest` covers CLI routing, persistence across application restart, and that viewing leaves `equipment.txt`, `loans.txt` and `loan-sequence.txt` unchanged.
 
 ### Updating equipment details
 

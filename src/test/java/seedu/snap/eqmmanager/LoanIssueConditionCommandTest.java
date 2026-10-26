@@ -4,8 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.junit.jupiter.api.AfterEach;
@@ -106,6 +108,40 @@ class LoanIssueConditionCommandTest {
                         + "view loan/[LOAN ID]."
                         + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void executeInput_tabSeparatedViewCommand_printsIssueCondition() {
+        EqmManager manager = new EqmManager(temporaryDirectory);
+        addEquipmentAndLoan(manager);
+        output.reset();
+
+        manager.executeInput("view\tloan/001");
+
+        assertTrue(
+                output.toString(StandardCharsets.UTF_8)
+                        .contains("Condition: 6"));
+    }
+
+    @Test
+    void executeInput_viewCommand_doesNotChangeSavedFiles()
+            throws IOException {
+        EqmManager manager = new EqmManager(temporaryDirectory);
+        addEquipmentAndLoan(manager);
+
+        Path equipmentFile = temporaryDirectory.resolve("equipment.txt");
+        Path loansFile = temporaryDirectory.resolve("loans.txt");
+        Path sequenceFile = temporaryDirectory.resolve("loan-sequence.txt");
+        String equipmentBefore = Files.readString(equipmentFile);
+        String loansBefore = Files.readString(loansFile);
+        String sequenceBefore = Files.readString(sequenceFile);
+        output.reset();
+
+        manager.executeInput("view loan/001");
+
+        assertEquals(equipmentBefore, Files.readString(equipmentFile));
+        assertEquals(loansBefore, Files.readString(loansFile));
+        assertEquals(sequenceBefore, Files.readString(sequenceFile));
     }
 
     /** Adds one camera and creates its first loan. */
