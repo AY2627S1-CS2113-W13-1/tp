@@ -65,4 +65,25 @@ class EquipmentStorageLocationPersistenceTest {
         assertFalse(exception.getMessage().isBlank());
         assertEquals(saved, Files.readString(file));
     }
+
+    @Test
+    void returnAssessment_preservesLocationAndPhysicalIdentity() throws Exception {
+        Path file = temporaryDirectory.resolve("equipment.txt");
+        EquipmentHandler handler = new EquipmentHandler(file);
+        Equipment camera = handler.addEquipment("add i/Camera id/001 type/camera cond/5");
+        handler.updateEquipment("update id/001 location/Cabinet A-3");
+        String recordId = camera.getRecordId();
+        Equipment assessed = handler.prepareReturnAssessment(camera, false, "SHUTTER_FAULT", "Needs repair");
+
+        handler.saveReturnAssessment(camera, assessed);
+        camera.applyReturnAssessment(assessed);
+        Equipment restored = EquipmentStorage.load(file).getFirst();
+
+        assertEquals(recordId, camera.getRecordId());
+        assertEquals(recordId, restored.getRecordId());
+        assertEquals("Cabinet A-3", camera.getStorageLocation());
+        assertEquals("Cabinet A-3", restored.getStorageLocation());
+        assertFalse(camera.isServiceable());
+        assertFalse(restored.isServiceable());
+    }
 }
