@@ -195,6 +195,30 @@ class BundleHandlerTest {
     }
 
     @Test
+    void removeItemsFromBundle_removesMembersAndReportsEachResult() throws Exception {
+        Bundle bundle = bundleHandler.addBundle("add-bundle name/Travel Kit");
+        bundleHandler.addItemsToBundle("add-to-bundle id/001 001 002 005");
+
+        List<String> messages = bundleHandler.removeItemsFromBundle("remove-from-bundle id/001 002 999 001");
+
+        assertEquals(3, messages.size());
+        assertTrue(messages.get(0).contains("removed from bundle 001 successfully"));
+        assertTrue(messages.get(1).contains("not in bundle 001"));
+        assertTrue(messages.get(2).contains("removed from bundle 001 successfully"));
+        assertEquals(List.of(equipmentHandler.getEquipmentById("005")), bundle.getEquipmentList());
+        assertFalse(bundleHandler.containsEquipmentId("001"));
+        assertFalse(bundleHandler.containsEquipmentId("002"));
+    }
+
+    @Test
+    void removeItemsFromBundle_invalidCommandOrUnknownBundle_throwsException() {
+        assertThrows(BundleAdditionUnsuccessful.class,
+                () -> bundleHandler.removeItemsFromBundle("remove-from-bundle id/001"));
+        assertThrows(BundleAdditionUnsuccessful.class,
+                () -> bundleHandler.removeItemsFromBundle("remove-from-bundle id/999 001"));
+    }
+
+    @Test
     void containsEquipmentId_checksAllBundlesWithoutChangingContents() throws BundleAdditionUnsuccessful {
         Bundle first = bundleHandler.addBundle("add-bundle name/First Kit");
         Bundle second = bundleHandler.addBundle("add-bundle name/Second Kit");

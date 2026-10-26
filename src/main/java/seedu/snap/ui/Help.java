@@ -150,6 +150,12 @@ public final class Help {
                 A complete bundle has exactly one camera, at least one lens and at least one battery.
                 A tripod is optional, with at most one. Additional cameras and tripods are rejected.
 
+                REMOVE EQUIPMENT FROM BUNDLE
+                Format: remove-from-bundle id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]
+                Example: remove-from-bundle id/001 001
+                Removes the requested memberships without deleting the equipment. This can make an item
+                eligible for deletion after it has been removed from every bundle.
+
                 LIST BUNDLES
                 Format: list bundles
                 Example: list bundles

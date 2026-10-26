@@ -150,8 +150,9 @@ Equipment with an active (unreturned) loan cannot be deleted. This prevents its 
 for a different item while the original loan is still active. Deletion is allowed once there are no active
 loans for that ID; returned loan records do not block deletion.
 
-Equipment that belongs to a bundle cannot be deleted during that session. This keeps each bundle's contents
-and completion status consistent with the inventory. Bundles are cleared when the application restarts.
+Equipment that belongs to a bundle cannot be deleted. Use `remove-from-bundle` to remove the item from every
+bundle that contains it before deleting the equipment. This keeps each persisted bundle's contents and completion
+status consistent with the inventory.
 
 Invalid delete syntax produces an error followed by the delete command format.
 An ID that does not exist produces an error without changing the saved records.
@@ -380,6 +381,16 @@ Returning a serviceable item or deleting its active loan makes it available for 
 Unserviceable equipment cannot be added to a bundle. Existing bundle memberships are retained on return.
 Updating a bundled item's name or condition also updates the item shown in the bundle.
 
+## Removing equipment from a bundle: `remove-from-bundle`
+
+Format: `remove-from-bundle id/[BUNDLE ID] [EQUIPMENT ID]...`
+
+Example: `remove-from-bundle id/001 001`
+
+The bundle must exist. Each requested equipment ID is removed independently, and an equipment item can be
+deleted only after it has been removed from every bundle that contains it. Bundle membership changes are saved
+when `bye` is entered.
+
 ## Viewing bundles: `list bundles`
 
 Format: `list bundles`
@@ -480,5 +491,6 @@ duplicate records, the application reports the problem and stops.
 | Update equipment | `update id/ID [i/NAME] [type/TYPE] [cond/CONDITION]` |
 | Create bundle | `add-bundle name/[NAME]` |
 | Add equipment to bundle | `add-to-bundle id/[BUNDLE ID] [EQUIPMENT ID]...` |
+| Remove equipment from bundle | `remove-from-bundle id/[BUNDLE ID] [EQUIPMENT ID]...` |
 | List bundles | `list bundles` |
 | Exit | `bye` |

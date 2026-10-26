@@ -22,6 +22,7 @@ import seedu.snap.loan.LoanHandler;
 public class BundleHandler {
     private static final String ADD_BUNDLE_COMMAND = "add-bundle";
     private static final String ADD_TO_BUNDLE_COMMAND = "add-to-bundle";
+    private static final String REMOVE_FROM_BUNDLE_COMMAND = "remove-from-bundle";
     private static final String LIST_BUNDLES_COMMAND = "list bundles";
     private static final String HISTORY_COMMAND_PREFIX = "history bundle/";
     private static final String NAME_MARKER = "name/";
@@ -183,6 +184,35 @@ public class BundleHandler {
     }
 
     /**
+     * Removes every requested equipment ID from one bundle and reports each result.
+     *
+     * @param input command in the form {@code remove-from-bundle id/[BUNDLE ID] [EQUIPMENT ID]...}
+     * @return one success or failure message for every requested equipment ID
+     * @throws BundleAdditionUnsuccessful when the command syntax or bundle ID is invalid
+     */
+    public List<String> removeItemsFromBundle(String input) throws BundleAdditionUnsuccessful {
+        String[] arguments = input == null ? new String[0] : input.trim().split("\\s+");
+        if (arguments.length < 3 || !arguments[0].equals(REMOVE_FROM_BUNDLE_COMMAND)) {
+            throw new BundleAdditionUnsuccessful(
+                    "Invalid format. Use: remove-from-bundle id/[BUNDLE ID] [EQUIPMENT ID]...");
+        }
+
+        String bundleId = parseBundleId(arguments[1]);
+        Bundle bundle = findBundle(bundleId);
+        if (bundle == null) {
+            LOGGER.log(Level.WARNING, "No bundle found for ID {0}.", bundleId);
+            throw new BundleAdditionUnsuccessful("Bundle ID " + bundleId + " does not exist.");
+        }
+
+        ArrayList<String> messages = new ArrayList<>();
+        for (int index = 2; index < arguments.length; index++) {
+            messages.add(removeItemFromBundle(bundle, arguments[index]));
+        }
+        assert messages.size() == arguments.length - 2 : "Every requested item must produce a result.";
+        return Collections.unmodifiableList(messages);
+    }
+
+    /**
      * Prints all bundles and their contained equipment.
      *
      * @param input command that must be {@code list bundles}
@@ -279,6 +309,17 @@ public class BundleHandler {
         LOGGER.log(Level.INFO, "Added equipment {0} to bundle {1}.",
                 new Object[] {itemId, bundle.getBundleId()});
         return "Equipment ID " + itemId + " added to bundle " + bundle.getBundleId() + " successfully.";
+    }
+
+    /** Removes one equipment ID from a bundle without affecting the inventory record. */
+    private String removeItemFromBundle(Bundle bundle, String itemId) {
+        if (!bundle.removeEquipmentById(itemId)) {
+            LOGGER.log(Level.WARNING, "Could not remove equipment {0} from bundle {1}: not a member.",
+                    new Object[] {itemId, bundle.getBundleId()});
+            return "Equipment ID " + itemId + " was not removed: it is not in bundle "
+                    + bundle.getBundleId() + ".";
+        }
+        return "Equipment ID " + itemId + " removed from bundle " + bundle.getBundleId() + " successfully.";
     }
 
     private Bundle findBundle(String bundleId) {

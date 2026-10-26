@@ -47,6 +47,8 @@ class HelpTest {
                 Arguments.of("add-bundle name/<NAME>", "add-bundle name/Studio kit"),
                 Arguments.of("add-to-bundle id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]",
                         "add-to-bundle id/001 001 002 003"),
+                Arguments.of("remove-from-bundle id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]",
+                        "remove-from-bundle id/001 001"),
                 Arguments.of("list bundles", "list bundles"),
                 Arguments.of("history bundle/id/<BUNDLE ID>", "history bundle/id/001"),
                 Arguments.of("history bundle/name/<NAME>", "history bundle/name/Studio kit"),
@@ -162,6 +164,8 @@ class HelpTest {
         assertTrue(text.contains("An item may appear only once per bundle."));
         assertTrue(text.contains("exactly one camera, at least one lens and at least one battery."));
         assertTrue(text.contains("A tripod is optional, with at most one."));
+        assertTrue(text.contains("Format: remove-from-bundle id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]"));
+        assertTrue(text.contains("eligible for deletion after it has been removed from every bundle."));
     }
 
     @Test

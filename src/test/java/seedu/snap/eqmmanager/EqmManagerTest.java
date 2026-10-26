@@ -60,6 +60,28 @@ class EqmManagerTest {
     }
 
     @Test
+    void removeFromBundle_afterRestart_allowsEquipmentDeletion() throws Exception {
+        EqmManager manager = new EqmManager(temporaryDirectory);
+        manager.executeInput(ADD_CAMERA);
+        manager.executeInput("add-bundle name/Camera kit");
+        manager.executeInput("add-to-bundle id/001 001");
+        manager.executeInput("bye");
+
+        output.reset();
+        EqmManager restarted = new EqmManager(temporaryDirectory);
+        restarted.executeInput("remove-from-bundle id/001 001");
+        restarted.executeInput("delete item/001");
+        restarted.executeInput("bye");
+
+        String actual = output.toString(StandardCharsets.UTF_8);
+        assertTrue(actual.contains("Equipment ID 001 removed from bundle 001 successfully."));
+        assertTrue(actual.contains("Equipment with item ID 001 deleted successfully."));
+        assertEquals("", Files.readString(temporaryDirectory.resolve("equipment.txt")));
+        assertEquals("bundle id/001 name64/Q2FtZXJhIGtpdA items/" + System.lineSeparator(),
+                Files.readString(temporaryDirectory.resolve("bundles.txt")));
+    }
+
+    @Test
     void addEquipment_duplicateId_printsErrorAndAcceptsNextValidCommand() {
         EqmManager manager = new EqmManager(temporaryDirectory);
         manager.executeInput(ADD_CAMERA);

@@ -133,6 +133,8 @@ public class EqmManager {
             addBundle(normalizedInput);
         } else if (normalizedInput.equals("add-to-bundle") || normalizedInput.startsWith("add-to-bundle ")) {
             addItemsToBundle(normalizedInput);
+        } else if (normalizedInput.matches("(?U)remove-from-bundle(?:\\s.*)?")) {
+            removeItemsFromBundle(normalizedInput);
         } else if (normalizedInput.equals("list bundles")) {
             try {
                 bundles.viewAllBundles(normalizedInput);
@@ -262,6 +264,17 @@ public class EqmManager {
     private void addItemsToBundle(String input) {
         try {
             for (String message : bundles.addItemsToBundle(input)) {
+                System.out.println(message);
+            }
+        } catch (BundleAdditionUnsuccessful e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    /** Reports the outcome of removing equipment from a persisted bundle. */
+    private void removeItemsFromBundle(String input) {
+        try {
+            for (String message : bundles.removeItemsFromBundle(input)) {
                 System.out.println(message);
             }
         } catch (BundleAdditionUnsuccessful e) {
