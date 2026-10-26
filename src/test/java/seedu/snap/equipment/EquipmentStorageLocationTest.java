@@ -22,8 +22,14 @@ class EquipmentStorageLocationTest {
         Equipment camera = new Camera("Camera", "001", 5);
         camera.setStorageLocation("Cabinet A-3");
 
-        for (String invalid : new String[]{null, "x".repeat(Equipment.MAX_STORAGE_LOCATION_LENGTH + 1),
-                "two\nlines", "two\rlines", "two\tcolumns"}) {
+        String[] invalidLocations = {
+            null,
+            "x".repeat(Equipment.MAX_STORAGE_LOCATION_LENGTH + 1),
+            "two\nlines",
+            "two\rlines",
+            "two\tcolumns"
+        };
+        for (String invalid : invalidLocations) {
             assertThrows(IllegalArgumentException.class, () -> camera.setStorageLocation(invalid), invalid);
             assertEquals("Cabinet A-3", camera.getStorageLocation(), invalid);
         }

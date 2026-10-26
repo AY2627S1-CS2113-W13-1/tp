@@ -218,7 +218,7 @@ public final class Help {
 
                         status/ accepts available or loaned. Available excludes active loans and unserviceable items.
                         """)),
-                new CommandHelp("update", "Equipment", lineEndings("""
+                new CommandHelp("update", "Equipment", lineEndings(String.format(Locale.ROOT, """
                         UPDATE EQUIPMENT
                         Format: update id/<ID> [i/<NAME>] [type/<TYPE>] [cond/<N>] [location/<LOCATION|none>]
                         Example: update id/001 location/Cabinet A-3
@@ -227,7 +227,7 @@ public final class Help {
                         Omitted fields retain their current values. Type is fixed; type/ must match the current type.
                         Storage locations may contain up to %d characters; use location/none to clear one.
                         Updates retain subtype details, damage, remarks, serviceability, loans and bundle membership.
-                        """, Equipment.MAX_STORAGE_LOCATION_LENGTH)),
+                        """, Equipment.MAX_STORAGE_LOCATION_LENGTH))),
                 new CommandHelp("add-bundle", "Bundles", lineEndings("""
                         CREATE BUNDLE
                         Format: add-bundle name/<NAME>
