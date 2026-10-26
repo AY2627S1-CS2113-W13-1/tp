@@ -1,6 +1,7 @@
 package seedu.snap.maintenance;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.EquipmentHandler;
+import seedu.snap.exceptions.MaintenanceHistoryUnsuccessful;
 import seedu.snap.exceptions.MaintenanceRecordUnsuccessful;
 
 /** Tests maintenance command validation, equipment identity binding, and persistence boundaries. */
@@ -107,5 +109,59 @@ class MaintenanceHandlerTest {
 
         assertTrue(handler.getMaintenanceRecords().isEmpty());
         assertEquals("keep this record", Files.readString(destination.resolve("keep.txt")));
+    }
+
+    @Test
+    void getMaintenanceHistory_returnsMatchingRecordsInChronologicalOrder() throws Exception {
+        EquipmentHandler equipment = new EquipmentHandler();
+        Equipment camera = equipment.addEquipment(ADD_CAMERA);
+        equipment.addEquipment("add i/Lens id/002 type/lens cond/5");
+        MaintenanceHandler handler = new MaintenanceHandler(equipment);
+        handler.addMaintenanceRecord("maintain id/001 date/27-10-26 work/Later outcome/Completed");
+        handler.addMaintenanceRecord("maintain id/002 date/25-10-26 work/Other outcome/Completed");
+        handler.addMaintenanceRecord("maintain id/001 date/24-10-26 work/Earlier outcome/Completed");
+
+        List<MaintenanceRecord> history = handler.getMaintenanceHistory("history maintenance/id/001");
+
+        assertEquals(2, history.size());
+        assertEquals(camera.getRecordId(), history.getFirst().getEquipmentRecordId());
+        assertEquals(LocalDate.of(2026, 10, 24), history.getFirst().getMaintenanceDate());
+        assertEquals(LocalDate.of(2026, 10, 27), history.getLast().getMaintenanceDate());
+        assertFalse(history.stream().anyMatch(record -> record.getWork().equals("Other")));
+    }
+
+    @Test
+    void getMaintenanceHistory_emptyHistory_returnsEmptyReadOnlyList() throws Exception {
+        EquipmentHandler equipment = new EquipmentHandler();
+        equipment.addEquipment(ADD_CAMERA);
+        MaintenanceHandler handler = new MaintenanceHandler(equipment);
+
+        List<MaintenanceRecord> history = handler.getMaintenanceHistory("history maintenance/id/001");
+
+        assertTrue(history.isEmpty());
+        assertThrows(UnsupportedOperationException.class,
+                () -> history.add(new MaintenanceRecord(
+                        equipment.getEquipmentById("001").getRecordId(),
+                        LocalDate.of(2026, 10, 27), "Repair", "Completed")));
+    }
+
+    @Test
+    void getMaintenanceHistory_invalidAndUnknownIdentifiers_areRejected() throws Exception {
+        EquipmentHandler equipment = new EquipmentHandler();
+        equipment.addEquipment(ADD_CAMERA);
+        MaintenanceHandler handler = new MaintenanceHandler(equipment);
+
+        for (String command : new String[]{
+            "history maintenance",
+            "history maintenance/id/000",
+            "history maintenance/id/01",
+            "history maintenance/id/001 extra",
+            "history id/001"}) {
+            assertThrows(MaintenanceHistoryUnsuccessful.class,
+                    () -> handler.getMaintenanceHistory(command), command);
+        }
+        MaintenanceHistoryUnsuccessful exception = assertThrows(MaintenanceHistoryUnsuccessful.class,
+                () -> handler.getMaintenanceHistory("history maintenance/id/999"));
+        assertEquals("Equipment ID 999 does not exist.", exception.getMessage());
     }
 }
