@@ -117,6 +117,8 @@ public class EqmManager {
             viewOverdueLoans();
         } else if (normalizedInput.equals("list loans")) {
             loans.viewAllLoans();
+        } else if (normalizedInput.startsWith("list loans ")) {
+            viewActiveLoansForBorrower(normalizedInput);
         } else if (normalizedInput.equals("add-bundle") || normalizedInput.startsWith("add-bundle ")) {
             addBundle(normalizedInput);
         } else if (normalizedInput.equals("add-to-bundle") || normalizedInput.startsWith("add-to-bundle ")) {
@@ -275,6 +277,15 @@ public class EqmManager {
     private void viewLoanHistory(String input) {
         try {
             loans.viewLoanHistory(input);
+        } catch (LoanHistoryUnsuccessful exception) {
+            System.out.println(exception.getMessage());
+        }
+    }
+
+    /** Displays the active loans held by one borrower or the corresponding validation error. */
+    private void viewActiveLoansForBorrower(String input) {
+        try {
+            loans.viewActiveLoansForBorrower(input);
         } catch (LoanHistoryUnsuccessful exception) {
             System.out.println(exception.getMessage());
         }

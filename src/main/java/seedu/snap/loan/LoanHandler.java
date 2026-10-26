@@ -612,6 +612,20 @@ public class LoanHandler {
         return List.copyOf(activeLoans);
     }
 
+    /** Displays the active equipment currently held by a borrower without changing any loan record. */
+    public void viewActiveLoansForBorrower(String input) throws LoanHistoryUnsuccessful {
+        List<Loan> activeLoans = getActiveLoansForBorrower(input);
+        String borrowerId = parseBorrowerLoanListId(input);
+        logger.log(Level.INFO, "Viewing {0} active loan(s) for borrower ID {1}.",
+                new Object[]{activeLoans.size(), borrowerId});
+        if (activeLoans.isEmpty()) {
+            System.out.println("No active loans found for borrower ID " + borrowerId + ".");
+            return;
+        }
+        System.out.println("Active loans for borrower ID " + borrowerId + ":");
+        printLoans(activeLoans);
+    }
+
     /**
      * Selects active and returned loans for the currently registered physical item.
      * The query sorts a copy and never guesses associations from a reused Item ID.
