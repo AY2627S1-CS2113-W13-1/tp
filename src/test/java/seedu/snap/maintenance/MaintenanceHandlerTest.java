@@ -16,6 +16,7 @@ import org.junit.jupiter.api.io.TempDir;
 import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.MaintenanceHistoryUnsuccessful;
+import seedu.snap.exceptions.MaintenanceInspectionUnsuccessful;
 import seedu.snap.exceptions.MaintenanceRecordUnsuccessful;
 
 /** Tests maintenance command validation, equipment identity binding, and persistence boundaries. */
@@ -185,5 +186,33 @@ class MaintenanceHandlerTest {
         reloaded.loadFromStorage();
 
         assertTrue(reloaded.getMaintenanceHistory("history maintenance/id/001").isEmpty());
+    }
+
+    @Test
+    void getMaintenanceDueEquipment_returnsUnserviceableItemsInIdOrder() throws Exception {
+        EquipmentHandler equipment = new EquipmentHandler();
+        Equipment first = equipment.addEquipment("add i/First id/002 type/camera cond/5");
+        Equipment second = equipment.addEquipment("add i/Second id/001 type/lens cond/6");
+        Equipment serviceable = equipment.addEquipment("add i/Serviceable id/003 type/battery cond/4");
+        first.applyReturnAssessment(equipment.prepareReturnAssessment(first, false, "NONE", ""));
+        second.applyReturnAssessment(equipment.prepareReturnAssessment(second, false, "NONE", ""));
+        MaintenanceHandler handler = new MaintenanceHandler(equipment);
+
+        List<Equipment> due = handler.getMaintenanceDueEquipment();
+
+        assertEquals(List.of(second, first), due);
+        assertFalse(due.contains(serviceable));
+        assertThrows(UnsupportedOperationException.class, () -> due.clear());
+    }
+
+    @Test
+    void viewMaintenanceDue_emptyAndInvalidCommands_areHandled() throws Exception {
+        EquipmentHandler equipment = new EquipmentHandler();
+        equipment.addEquipment(ADD_CAMERA);
+        MaintenanceHandler handler = new MaintenanceHandler(equipment);
+
+        assertThrows(MaintenanceInspectionUnsuccessful.class,
+                () -> handler.viewMaintenanceDue("list maintenance-due extra"));
+        handler.viewMaintenanceDue("list maintenance-due");
     }
 }
