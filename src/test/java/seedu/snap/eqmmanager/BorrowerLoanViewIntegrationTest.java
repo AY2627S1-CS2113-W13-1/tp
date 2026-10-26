@@ -52,6 +52,9 @@ class BorrowerLoanViewIntegrationTest {
 
         String printed = printed();
         assertTrue(printed.contains("Active loans for borrower ID 111"));
+        assertTrue(printed.contains("LOAN ID"));
+        assertTrue(printed.contains("ITEM ID"));
+        assertTrue(printed.contains("DUE DATE"));
         assertTrue(printed.contains("001"));
         assertTrue(printed.contains("002"));
         assertFalse(printed.contains("003"));
@@ -101,8 +104,10 @@ class BorrowerLoanViewIntegrationTest {
         manager.executeInput("loan id/001 b/111 issued/01-10-26 due/02-10-26");
         Path loansFile = temporaryDirectory.resolve("loans.txt");
         Path sequenceFile = temporaryDirectory.resolve("loan-sequence.txt");
+        Path equipmentFile = temporaryDirectory.resolve("equipment.txt");
         String loansBefore = Files.readString(loansFile);
         String sequenceBefore = Files.readString(sequenceFile);
+        String equipmentBefore = Files.readString(equipmentFile);
         output.reset();
         EqmManager restarted = new EqmManager(temporaryDirectory);
 
@@ -111,6 +116,7 @@ class BorrowerLoanViewIntegrationTest {
         assertTrue(printed().contains("001"));
         assertEquals(loansBefore, Files.readString(loansFile));
         assertEquals(sequenceBefore, Files.readString(sequenceFile));
+        assertEquals(equipmentBefore, Files.readString(equipmentFile));
         assertNotEquals("", loansBefore);
     }
 
