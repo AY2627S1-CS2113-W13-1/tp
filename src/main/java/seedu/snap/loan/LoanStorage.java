@@ -88,8 +88,15 @@ final class LoanStorage {
             if (!allLoanIds.add(loanId)) {
                 throw new IOException("Duplicate loan ID " + loanId + ".");
             }
-            Loan loan = new Loan(loanId, record.itemId(), record.borrowerId(),
-                    record.issuedDate(), record.dueDate(), record.equipmentRecordId());
+            Loan loan =
+                    new Loan(
+                            loanId,
+                            record.itemId(),
+                            record.borrowerId(),
+                            record.issuedDate(),
+                            record.dueDate(),
+                            record.equipmentRecordId(),
+                            record.issueConditionSnapshot());
             loan.setReturned(record.returned());
             loaded.add(loan);
         }
@@ -175,22 +182,37 @@ final class LoanStorage {
         if (loan.getLoanId() == null) {
             throw new IOException("Saved loans must have a loan ID.");
         }
-        return "loan loanId/" + loan.getLoanId()
-                + " id/" + loan.getItemId()
-                + " b/" + loan.getBorrowerId()
-                + " issued/" + DATE_FORMATTER.format(loan.getIssuedDate())
-                + " due/" + DATE_FORMATTER.format(loan.getDueDate())
-                + " returned/" + loan.isReturned()
-                + (loan.getEquipmentRecordId() == null ? "" : " equipment/" + loan.getEquipmentRecordId());
+
+        String record =
+                "loan loanId/" + loan.getLoanId()
+                        + " id/" + loan.getItemId()
+                        + " b/" + loan.getBorrowerId()
+                        + " issued/"
+                        + DATE_FORMATTER.format(loan.getIssuedDate())
+                        + " due/"
+                        + DATE_FORMATTER.format(loan.getDueDate())
+                        + " returned/" + loan.isReturned();
+
+        if (loan.getEquipmentRecordId() != null) {
+            record += " equipment/" + loan.getEquipmentRecordId();
+        }
+
+        EquipmentConditionSnapshot snapshot =
+                loan.getIssueConditionSnapshot();
+        if (snapshot != null) {
+            record += " "
+                    + EquipmentConditionSnapshotCodec.encode(snapshot);
+        }
+
+        return record;
     }
 
-    /** Parses either the new loan-ID record format or the legacy format without a loan ID. */
+    /** Parses records with optional return status, equipment identity and issue snapshot. */
     private static LoanRecord parseRecord(String line) throws LoanAdditionUnsuccessful {
         String[] fields = line.split("\\s+");
         boolean hasLoanId = fields.length >= 2 && fields[1].startsWith("loanId/");
         int expectedMinimumFields = hasLoanId ? 6 : 5;
-        int expectedMaximumFields = expectedMinimumFields + 2;
-        if (fields.length < expectedMinimumFields || fields.length > expectedMaximumFields
+        if (fields.length < expectedMinimumFields
                 || !fields[0].equals("loan")) {
             throw new IllegalArgumentException("Expected loanId/NNN id/NNN b/NNN issued/DD-MM-YY due/DD-MM-YY.");
         }
@@ -203,28 +225,57 @@ final class LoanStorage {
         String dueText = parseField(fields[4 + offset], "due/");
         Loan parsed = LoanHandler.parseLoanRecord("loan id/" + itemId + " b/" + borrowerId
                 + " issued/" + issuedText + " due/" + dueText);
+
         boolean returned = false;
         int nextField = expectedMinimumFields;
+
         if (nextField < fields.length && fields[nextField].startsWith("returned/")) {
-            String returnedField = fields[nextField++];
-            String returnedValue = returnedField.substring("returned/".length());
-            if (!returnedValue.equals("true") && !returnedValue.equals("false")) {
-                throw new IllegalArgumentException("Expected returned/true or returned/false.");
-            }
-            returned = Boolean.parseBoolean(returnedValue);
+            returned = parseReturnedField(fields[nextField++]);
         }
+
         String equipmentRecordId = null;
-        if (nextField < fields.length) {
+        if (nextField < fields.length
+                && fields[nextField].startsWith("equipment/")) {
             equipmentRecordId = parseField(fields[nextField++], "equipment/");
             if (!Loan.isValidEquipmentRecordId(equipmentRecordId)) {
                 throw new IllegalArgumentException("Equipment record identity must be a canonical UUID.");
             }
         }
-        if (nextField != fields.length) {
-            throw new IllegalArgumentException("Unexpected fields after the equipment record identity.");
+
+        EquipmentConditionSnapshot issueConditionSnapshot = null;
+        if (nextField < fields.length) {
+            int remainingFields = fields.length - nextField;
+            if (remainingFields
+                    != EquipmentConditionSnapshotCodec.FIELD_COUNT) {
+                throw new IllegalArgumentException(
+                        "Incomplete or unexpected issue-condition snapshot.");
+            }
+            issueConditionSnapshot =
+                    EquipmentConditionSnapshotCodec.decode(
+                            fields,
+                            nextField);
+            nextField += EquipmentConditionSnapshotCodec.FIELD_COUNT;
         }
+
+        if (nextField != fields.length) {
+            throw new IllegalArgumentException(
+                    "Unexpected optional loan storage fields.");
+        }
+
         return new LoanRecord(loanId, parsed.getItemId(), parsed.getBorrowerId(),
-                parsed.getIssuedDate(), parsed.getDueDate(), returned, equipmentRecordId);
+                parsed.getIssuedDate(), parsed.getDueDate(), returned,
+                equipmentRecordId, issueConditionSnapshot);
+    }
+
+    /** Parses the optional returned status from a storage field. */
+    private static boolean parseReturnedField(String field) {
+        String returnedValue = parseField(field, "returned/");
+        if (!returnedValue.equals("true")
+                && !returnedValue.equals("false")) {
+            throw new IllegalArgumentException(
+                    "Expected returned/true or returned/false.");
+        }
+        return Boolean.parseBoolean(returnedValue);
     }
 
     private static String parseLoanIdField(String field) {
@@ -281,7 +332,8 @@ final class LoanStorage {
 
     private record LoanRecord(String loanId, String itemId, String borrowerId,
             java.time.LocalDateTime issuedDate, java.time.LocalDateTime dueDate, boolean returned,
-            String equipmentRecordId) {
+            String equipmentRecordId,
+            EquipmentConditionSnapshot issueConditionSnapshot) {
     }
 
     /** Captures a file before replacement so failed loan and return saves can be rolled back. */

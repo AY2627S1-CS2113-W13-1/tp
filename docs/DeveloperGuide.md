@@ -329,7 +329,7 @@ return remarks, required assessments, and failed saves followed by successful re
 
 #### Implementation and sequence
 
-`help` displays all 16 supported command formats and examples, required and optional fields, defaults and
+`help` displays all 17 supported command formats and examples, required and optional fields, defaults and
 restrictions. The welcome message and unknown-command error direct users to it. `EqmManager.executeInput(...)`
 recognises the exact command after trimming surrounding whitespace; `help add` follows the unknown-command path.
 The existing startup-error check remains first: the input loop stops if saved data cannot be loaded.
@@ -362,6 +362,49 @@ line endings. `HelpIntegrationTest` compares record contents, object references,
 counts, next identifiers, bundle completion, file bytes and modification times before and after repeated requests.
 It also checks missing and blocked storage paths, surrounding Unicode whitespace, invalid help topics, continued
 commands and the interactive help-then-exit loop. Invalid saved data still causes the existing startup abort.
+
+### Preserving equipment condition when a loan is issued
+
+#### Purpose and responsibilities
+
+Each new loan preserves the condition of its equipment at the moment the loan is issued. This historical snapshot remains unchanged if the equipment is later updated, damaged, repaired or returned.
+
+| Class | Responsibility |
+| --- | --- |
+| `EquipmentConditionSnapshot` | Stores an immutable copy of the equipment type, numeric condition, damage and remarks. |
+| `Loan` | Owns the optional issue-time snapshot and preserves it when a returned copy is created. |
+| `LoanHandler` | Creates loans from available equipment and displays a snapshot for `view loan/[LOAN ID]`. |
+| `EqmManager` | Routes the view command and displays validation errors without changing records. |
+| `EquipmentConditionSnapshotCodec` | Converts snapshots between model values and their saved representation. |
+| `LoanStorage` | Saves and restores optional snapshots while continuing to accept legacy loan records. |
+
+#### Capture and query flow
+
+When a valid loan is created from an equipment object, `EquipmentConditionSnapshot.fromEquipment(...)` copies the relevant condition fields into a separate immutable value object. The loan stores this snapshot together with its identifiers, borrower and dates.
+
+The snapshot contains copied values rather than a reference to the equipment. Consequently, a later return assessment or equipment update cannot rewrite historical issue-time information. `Loan.returnedCopy()` carries the same snapshot into the returned record.
+
+For `view loan/001`, `EqmManager` delegates to `LoanHandler.viewLoanIssueCondition(...)`. The handler validates the exact three-digit loan ID, finds one matching loan and prints the recorded equipment type, condition, damage and remarks. The command performs no save and does not alter the managed loan or equipment collections.
+
+#### Persistence and backward compatibility
+
+`LoanStorage` delegates snapshot encoding and decoding to `EquipmentConditionSnapshotCodec`. New loan records append the snapshot data after the existing loan and equipment-identity fields. Loading reconstructs an equivalent immutable snapshot before publishing the proposed loan list.
+
+Snapshot fields are optional for backward compatibility. A legacy record without them loads with no snapshot and remains available through the normal loan commands. Querying that record reports that its issue condition was not recorded. Incomplete or malformed snapshot metadata is rejected as damaged saved data instead of being silently replaced with current equipment information.
+
+#### Design choices and alternatives
+
+A copied snapshot was chosen instead of consulting the current equipment object because current condition data can change after issue. Consulting current data would incorrectly present a return assessment as the original issue condition.
+
+The snapshot is stored inside `Loan` because it describes that specific borrowing event. Storing one historical condition in `Equipment` would not support repeated loans with different issue conditions. A dedicated value object and codec keep validation and storage conversion separate from command routing.
+
+Legacy snapshots are left absent rather than inferred from present equipment. Inference could create false historical information, especially after equipment updates, returns or Item ID reuse.
+
+#### Verification
+
+`EquipmentConditionSnapshotTest` covers normalization, valid boundaries, invalid values, equality and subtype extraction. `LoanIssueConditionSnapshotTest` verifies capture, immutability and preservation through returned copies. `EquipmentConditionSnapshotCodecTest` covers valid round trips and malformed encoded values.
+
+`LoanConditionSnapshotStorageTest` verifies direct save/load round trips, legacy records and malformed snapshot data. `LoanIssueConditionViewTest` covers handler-level output for recorded and missing snapshots, invalid and unknown loan IDs, and formatting. `LoanIssueConditionCommandTest` covers CLI routing, persistence across application restart, and that viewing leaves `equipment.txt`, `loans.txt` and `loan-sequence.txt` unchanged.
 
 ### Updating equipment details
 
