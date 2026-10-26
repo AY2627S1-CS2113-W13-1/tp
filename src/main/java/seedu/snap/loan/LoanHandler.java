@@ -38,6 +38,8 @@ public class LoanHandler {
     private static final String LOAN_COMMAND_FORMAT = "Invalid command format. Use: loan id/[ITEM ID] "
             + "b/[BORROWER ID] [issued/DD-MM-YY] due/[DD-MM-YY]. Omitted issued/ uses today's date.";
     private static final Pattern HISTORY_COMMAND = Pattern.compile("(?U)\\Ahistory\\s+id/([0-9]{3})\\z");
+    private static final Pattern BORROWER_LOAN_LIST_COMMAND = Pattern.compile(
+            "(?U)\\Alist\\s+loans\\s+(?:b|borrower|member)/([0-9]{3})\\z");
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-uu")
             .withResolverStyle(ResolverStyle.STRICT);
 
@@ -584,6 +586,33 @@ public class LoanHandler {
     }
 
     /**
+     * Selects the equipment currently held by one borrower.
+     * Returned loans and loans belonging to other borrowers are excluded.
+     * The returned list is a read-only snapshot and the stored loan order is preserved.
+     *
+     * @param input command in the form {@code list loans b/111}
+     * @return an unmodifiable list containing the borrower's active loans
+     * @throws LoanHistoryUnsuccessful if the command or borrower ID is invalid
+     */
+    public List<Loan> getActiveLoansForBorrower(String input) throws LoanHistoryUnsuccessful {
+        String borrowerId = parseBorrowerLoanListId(input);
+        assert numLoans == loans.size() : "numLoans should match the size of the loans list";
+
+        ArrayList<Loan> activeLoans = new ArrayList<>();
+        for (Loan loan : loans) {
+            assert loan != null : "Loan list must not contain null items";
+            if (borrowerId.equals(loan.getBorrowerId()) && !loan.isReturned()) {
+                activeLoans.add(loan);
+            }
+        }
+        assert activeLoans.stream().allMatch(loan -> borrowerId.equals(loan.getBorrowerId())
+                && !loan.isReturned()) : "Borrower query must return only matching active loans";
+        logger.log(Level.FINE, "Selected {0} active loan(s) for borrower ID {1}.",
+                new Object[]{activeLoans.size(), borrowerId});
+        return List.copyOf(activeLoans);
+    }
+
+    /**
      * Selects active and returned loans for the currently registered physical item.
      * The query sorts a copy and never guesses associations from a reused Item ID.
      *
@@ -639,6 +668,18 @@ public class LoanHandler {
             }
         }
         throw new LoanHistoryUnsuccessful("Invalid format. Use: history id/[ITEM ID], from 001 to 999.");
+    }
+
+    /** Checks the borrower-specific list command and returns its three-digit borrower ID. */
+    private static String parseBorrowerLoanListId(String input) throws LoanHistoryUnsuccessful {
+        if (input != null && !input.matches("(?s).*\\R.*")) {
+            Matcher matcher = BORROWER_LOAN_LIST_COMMAND.matcher(input.replaceAll("(?U)^\\s+|\\s+$", ""));
+            if (matcher.matches()) {
+                return matcher.group(1);
+            }
+        }
+        throw new LoanHistoryUnsuccessful(
+                "Invalid format. Use: list loans b/[BORROWER ID], with a three-digit ID.");
     }
 
     /** Shares the displayed borrowing details between all-loan and individual-item views. */
