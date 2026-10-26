@@ -115,7 +115,7 @@ class HelpTest {
                 .map(line -> line.substring(2, line.length() - 2).stripTrailing())
                 .filter(line -> line.matches("(?:Equipment|Loans|Bundles|General): .*"))
                 .toList();
-        assertEquals(4, groupLines.size());
+        assertEquals(4, groupLines.stream().map(line -> line.substring(0, line.indexOf(':'))).distinct().count());
         List<String> menuTopics = groupLines.stream()
                 .flatMap(line -> Arrays.stream(line.substring(line.indexOf(':') + 1).strip().split("\\s*\\|\\s*")))
                 .sorted().toList();
@@ -357,6 +357,10 @@ class HelpTest {
         assertTrue(text.contains("Displays maintenance dates, work performed and outcomes for that item."));
         assertTrue(text.contains("Records are sorted by maintenance date, earliest first."));
         assertTrue(text.contains("Viewing history does not change equipment, loans, maintenance records"));
+        assertTrue(text.contains(
+                "Lists equipment marked unserviceable and therefore due for maintenance or inspection."));
+        assertTrue(text.contains("PASS makes equipment serviceable and available"));
+        assertTrue(text.contains("Both outcomes are recorded in maintenance history."));
     }
 
     @Test

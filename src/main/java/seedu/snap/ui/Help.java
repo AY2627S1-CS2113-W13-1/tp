@@ -258,8 +258,9 @@ public final class Help {
                         VIEW MAINTENANCE HISTORY
                         Format: history maintenance/id/<ITEM ID>
                         Example: history maintenance/id/001
-                        Requires an existing Item ID. Displays maintenance dates, work performed and outcomes for that item.
-                        Records are sorted by maintenance date, earliest first. An item without records shows a clear message.
+                        Requires an existing Item ID. Displays maintenance dates, work performed and outcomes for that
+                        item. Records are sorted by maintenance date, earliest first. An item without records shows a
+                        clear message.
                         Viewing history does not change equipment, loans, maintenance records or saved files.
                         """)),
                 new CommandHelp("add-bundle", "Bundles", lineEndings("""
@@ -343,19 +344,34 @@ public final class Help {
         appendMenuRow(menu, "snAp command menu");
         menu.append(border);
         for (String group : List.of("Equipment", "Loans", "Bundles", "General")) {
-            List<String> groupCommands = COMMANDS.stream().filter(command -> command.group().equals(group))
-                    .map(CommandHelp::command).toList();
-            String commands = String.join(" | ", groupCommands);
-            String spacedRow = group + ": " + commands;
-            if (spacedRow.length() > TEXT_WIDTH - 4) {
-                commands = String.join("|", groupCommands);
-            }
-            appendMenuRow(menu, group + ": " + commands);
+            appendGroupRows(menu, group);
         }
         appendMenuRow(menu, "");
         appendMenuRow(menu, "Type help <COMMAND> for details (for example, help loan or help list overdue).");
         appendMenuRow(menu, "Type help all for the complete reference.");
         return menu.append(border).toString();
+    }
+
+    /** Splits long command groups into aligned rows while keeping every command visible. */
+    private static void appendGroupRows(StringBuilder menu, String group) {
+        List<String> groupCommands = COMMANDS.stream().filter(command -> command.group().equals(group))
+                .map(CommandHelp::command).toList();
+        String prefix = group + ": ";
+        StringBuilder row = new StringBuilder(prefix);
+        for (String command : groupCommands) {
+            boolean hasCommand = row.length() > prefix.length();
+            int separatorLength = hasCommand ? 1 : 0;
+            if (hasCommand && row.length() + separatorLength + command.length() > TEXT_WIDTH - 4) {
+                appendMenuRow(menu, row.toString());
+                row = new StringBuilder(prefix);
+                hasCommand = false;
+            }
+            if (hasCommand) {
+                row.append('|');
+            }
+            row.append(command);
+        }
+        appendMenuRow(menu, row.toString());
     }
 
     /** Pads each menu row to the same width, including its ASCII borders. */
