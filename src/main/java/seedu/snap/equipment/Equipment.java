@@ -149,12 +149,14 @@ public abstract class Equipment {
                 || !itemName.equals(assessed.itemName)
                 || condition != assessed.condition || assessed.remarks == null
                 || assessed.remarks.length() > MAX_REMARKS_LENGTH
-                || assessed.remarks.matches("(?s).*\\R.*")) {
+                || assessed.remarks.matches("(?s).*\\R.*")
+                || !storageLocation.equals(assessed.storageLocation)) {
             throw new IllegalArgumentException("The return assessment must belong to the same equipment.");
         }
         applyDamageAssessment(assessed);
         remarks = assessed.remarks;
         isServiceable = assessed.isServiceable;
+        storageLocation = assessed.storageLocation;
     }
 
     /** Returns the current active loan identifier, or null when no identified loan owns this item. */
@@ -221,7 +223,9 @@ public abstract class Equipment {
                 && isValidItemId(itemId)
                 && condition >= MIN_CONDITION && condition <= MAX_CONDITION
                 && remarks != null && remarks.length() <= MAX_REMARKS_LENGTH
-                && !remarks.contains("\n") && !remarks.contains("\r");
+                && !remarks.contains("\n") && !remarks.contains("\r")
+                && storageLocation != null && storageLocation.length() <= MAX_STORAGE_LOCATION_LENGTH
+                && !storageLocation.matches("(?s).*\\R.*") && !storageLocation.contains("\t");
     }
 
     /**

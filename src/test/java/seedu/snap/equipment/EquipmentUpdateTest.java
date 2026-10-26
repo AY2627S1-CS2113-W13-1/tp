@@ -54,6 +54,23 @@ class EquipmentUpdateTest {
     }
 
     @Test
+    void updateEquipment_storageLocation_addsUpdatesAndClearsLocation()
+            throws EquipmentUpdateUnsuccessful {
+        String recordId = camera.getRecordId();
+
+        assertSame(camera, handler.updateEquipment("update id/001 location/Cabinet A-3"));
+        assertEquals("Cabinet A-3", camera.getStorageLocation());
+        assertEquals(recordId, camera.getRecordId());
+        assertEquals("Camera", camera.getItemName());
+        assertEquals(1, camera.getCondition());
+
+        handler.updateEquipment("update id/001 location/Drawer B-2");
+        assertEquals("Drawer B-2", camera.getStorageLocation());
+        handler.updateEquipment("update id/001 location/NONE");
+        assertEquals("", camera.getStorageLocation());
+    }
+
+    @Test
     void updateEquipment_allFieldsInAnyOrder_preservesIdentityOrderAndOtherItems()
             throws EquipmentUpdateUnsuccessful {
         List<Equipment> view = handler.getEquipmentList();
@@ -91,6 +108,9 @@ class EquipmentUpdateTest {
             "update id/01 i/Name", "update id/1000 i/Name", "update id/+01 i/Name",
             "update id/555 i/Name", "update id/001 id/999 i/Name", "update id/001 i/A i/B",
             "update id/001 type/a type/b", "update id/001 cond/1 cond/2", "update id/001 status/loaned",
+            "update id/001 location/", "update id/001 location/\u2003",
+            "update id/001 location/" + "x".repeat(Equipment.MAX_STORAGE_LOCATION_LENGTH + 1),
+            "update id/001 location/two\nlines", "update id/001 location/two\tcolumns",
             "update id/001 i/", "update id/001 i/\u2003", "update id/001 type/", "update id/001 type/\u2003",
             "update id/001 i/" + "A".repeat(101), "update id/001 i/Changed cond/0",
             "update id/001 i/Changed cond/11", "update id/001 cond/-1", "update id/001 cond/01",
@@ -104,6 +124,7 @@ class EquipmentUpdateTest {
             assertEquals("Camera", camera.getItemName(), input);
             assertEquals("camera", camera.getType(), input);
             assertEquals(1, camera.getCondition(), input);
+            assertEquals("", camera.getStorageLocation(), input);
             assertEquals("Tripod", tripod.getItemName(), input);
             assertEquals(10, tripod.getCondition(), input);
         }

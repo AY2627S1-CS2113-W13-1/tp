@@ -12,10 +12,11 @@ final class EquipmentFields {
     static final String NAME_FIELD = "i";
     static final String TYPE_FIELD = "type";
     static final String CONDITION_FIELD = "cond";
+    static final String LOCATION_FIELD = "location";
     static final String STATUS_FIELD = "status";
 
     private static final Pattern FIELD = Pattern.compile("(?<!\\S)("
-            + String.join("|", ID_FIELD, NAME_FIELD, TYPE_FIELD, CONDITION_FIELD, STATUS_FIELD) + ")/",
+            + String.join("|", ID_FIELD, NAME_FIELD, TYPE_FIELD, CONDITION_FIELD, LOCATION_FIELD, STATUS_FIELD) + ")/",
             Pattern.UNICODE_CHARACTER_CLASS);
     private static final Pattern EDGE_WHITESPACE = Pattern.compile("^\\s+|\\s+$",
             Pattern.UNICODE_CHARACTER_CLASS);
