@@ -28,7 +28,7 @@ import seedu.snap.equipment.Tripod;
 class HelpTest {
     private static final List<String> TOPICS = List.of("add", "list", "delete item", "loan", "return", "delete loan",
             "list loans", "view loan", "list overdue", "history", "filter", "update", "maintain",
-            "history maintenance", "add-bundle",
+            "list maintenance-due", "inspect", "history maintenance", "add-bundle",
             "add-to-bundle",
             "remove-from-bundle", "list bundles", "history bundle", "help", "bye");
 
@@ -56,6 +56,9 @@ class HelpTest {
                         "update id/001 i/Studio camera cond/5"),
                 Arguments.of("maintain", "maintain id/<ITEM ID> date/<DD-MM-YY> work/<DESCRIPTION> outcome/<OUTCOME>",
                         "maintain id/001 date/27-10-26 work/Replaced battery outcome/Completed"),
+                Arguments.of("list maintenance-due", "list maintenance-due", "list maintenance-due"),
+                Arguments.of("inspect", "inspect id/<ITEM ID> date/<DD-MM-YY> outcome/<PASS|FAIL>",
+                        "inspect id/001 date/27-10-26 outcome/PASS"),
                 Arguments.of("history maintenance", "history maintenance/id/<ITEM ID>", "history maintenance/id/001"),
                 Arguments.of("add-bundle", "add-bundle name/<NAME>", "add-bundle name/Studio kit"),
                 Arguments.of("add-to-bundle", "add-to-bundle id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]",
@@ -112,7 +115,7 @@ class HelpTest {
                 .map(line -> line.substring(2, line.length() - 2).stripTrailing())
                 .filter(line -> line.matches("(?:Equipment|Loans|Bundles|General): .*"))
                 .toList();
-        assertEquals(4, groupLines.size());
+        assertEquals(4, groupLines.stream().map(line -> line.substring(0, line.indexOf(':'))).distinct().count());
         List<String> menuTopics = groupLines.stream()
                 .flatMap(line -> Arrays.stream(line.substring(line.indexOf(':') + 1).strip().split("\\s*\\|\\s*")))
                 .sorted().toList();
@@ -181,7 +184,7 @@ class HelpTest {
         List<String> headings = List.of("ADD EQUIPMENT", "LIST EQUIPMENT", "DELETE EQUIPMENT", "ADD LOAN",
                 "RETURN EQUIPMENT", "DELETE LOAN", "LIST LOANS", "VIEW LOAN ISSUE CONDITION", "LIST OVERDUE LOANS",
                 "ITEM LOAN HISTORY", "FILTER EQUIPMENT", "UPDATE EQUIPMENT", "RECORD MAINTENANCE",
-                "VIEW MAINTENANCE HISTORY", "CREATE BUNDLE",
+                "LIST MAINTENANCE DUE", "COMPLETE INSPECTION", "VIEW MAINTENANCE HISTORY", "CREATE BUNDLE",
                 "ADD EQUIPMENT TO BUNDLE",
                 "REMOVE EQUIPMENT FROM BUNDLE", "LIST BUNDLES", "BUNDLE LOAN HISTORY", "HELP", "EXIT");
         String divider = "=".repeat(100);
@@ -380,6 +383,15 @@ class HelpTest {
         assertTrue(text.contains("Requires an existing Item ID, a valid maintenance date"));
         assertTrue(text.contains("Maintenance records are saved to maintenance.txt"));
         assertTrue(text.contains("Maintenance work: 1-200 characters; outcomes: 1-100 characters."));
+    }
+
+    @Test
+    void getText_inspection_explainsDueItemsAndOutcomes() {
+        String text = normaliseWhitespace(Help.getText());
+
+        assertTrue(text.contains("Lists equipment marked unserviceable and therefore due for maintenance or inspection."));
+        assertTrue(text.contains("PASS makes equipment serviceable and available"));
+        assertTrue(text.contains("Both outcomes are recorded in maintenance history."));
     }
 
     @Test

@@ -237,6 +237,21 @@ public final class Help {
                         Maintenance records are saved to maintenance.txt and remain associated with the physical item.
                         Maintenance work: 1-%d characters; outcomes: 1-%d characters.
                         """, MaintenanceRecord.MAX_WORK_LENGTH, MaintenanceRecord.MAX_OUTCOME_LENGTH))),
+                new CommandHelp("list maintenance-due", "Equipment", lineEndings("""
+                        LIST MAINTENANCE DUE
+                        Format: list maintenance-due
+                        Example: list maintenance-due
+                        Lists equipment marked unserviceable and therefore due for maintenance or inspection.
+                        Active loan relationships remain protected and are shown as Loaned when applicable.
+                        """)),
+                new CommandHelp("inspect", "Equipment", lineEndings("""
+                        COMPLETE INSPECTION
+                        Format: inspect id/<ITEM ID> date/<DD-MM-YY> outcome/<PASS|FAIL>
+                        Example: inspect id/001 date/27-10-26 outcome/PASS
+                        Only equipment due for inspection can be inspected; active loans are rejected.
+                        PASS makes equipment serviceable and available when no other availability rule blocks it.
+                        FAIL keeps equipment unavailable. Both outcomes are recorded in maintenance history.
+                        """)),
                 new CommandHelp("history maintenance", "Equipment", lineEndings("""
                         VIEW MAINTENANCE HISTORY
                         Format: history maintenance/id/<ITEM ID>
@@ -326,14 +341,33 @@ public final class Help {
         appendMenuRow(menu, "snAp command menu");
         menu.append(border);
         for (String group : List.of("Equipment", "Loans", "Bundles", "General")) {
-            String commands = COMMANDS.stream().filter(command -> command.group().equals(group))
-                    .map(CommandHelp::command).collect(Collectors.joining(" | "));
-            appendMenuRow(menu, group + ": " + commands);
+            appendGroupRows(menu, group);
         }
         appendMenuRow(menu, "");
         appendMenuRow(menu, "Type help <COMMAND> for details (for example, help loan or help list overdue).");
         appendMenuRow(menu, "Type help all for the complete reference.");
         return menu.append(border).toString();
+    }
+
+    /** Splits long command groups into aligned rows while keeping every command visible. */
+    private static void appendGroupRows(StringBuilder menu, String group) {
+        List<String> groupCommands = COMMANDS.stream().filter(command -> command.group().equals(group))
+                .map(CommandHelp::command).toList();
+        String prefix = group + ": ";
+        StringBuilder row = new StringBuilder(prefix);
+        for (String command : groupCommands) {
+            boolean hasCommand = row.length() > prefix.length();
+            if (hasCommand && row.length() + 1 + command.length() > TEXT_WIDTH - 4) {
+                appendMenuRow(menu, row.toString());
+                row = new StringBuilder(prefix);
+                hasCommand = false;
+            }
+            if (hasCommand) {
+                row.append('|');
+            }
+            row.append(command);
+        }
+        appendMenuRow(menu, row.toString());
     }
 
     /** Pads each menu row to the same width, including its ASCII borders. */
