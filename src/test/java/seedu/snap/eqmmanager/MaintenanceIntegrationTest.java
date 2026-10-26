@@ -144,4 +144,79 @@ class MaintenanceIntegrationTest {
         assertTrue(printed.contains("Replaced battery"));
         assertTrue(printed.contains("Completed"));
     }
+
+    @Test
+    void maintenanceDue_afterUnserviceableReturn_listsEquipment() throws Exception {
+        EqmManager manager = new EqmManager(temporaryDirectory);
+        manager.executeInput("add i/Camera id/001 type/camera cond/5");
+        manager.executeInput("loan id/001 b/002 issued/24-10-26 due/27-10-26");
+        manager.executeInput("return loan/001 serviceable/no damage/SHUTTER_FAULT");
+        output.reset();
+
+        manager.executeInput("list maintenance-due");
+
+        String printed = output.toString(StandardCharsets.UTF_8);
+        assertTrue(printed.contains("Equipment due for maintenance or inspection:"));
+        assertTrue(printed.contains("001"));
+        assertTrue(printed.contains("Needs inspection"));
+    }
+
+    @Test
+    void inspect_pass_updatesAvailabilityAndPersistsOutcomeAfterRestart() throws Exception {
+        EqmManager manager = new EqmManager(temporaryDirectory);
+        manager.executeInput("add i/Camera id/001 type/camera cond/5");
+        manager.executeInput("loan id/001 b/002 issued/24-10-26 due/27-10-26");
+        manager.executeInput("return loan/001 serviceable/no damage/SHUTTER_FAULT");
+        output.reset();
+
+        manager.executeInput("inspect id/001 date/27-10-26 outcome/PASS");
+
+        assertEquals("Inspection recorded successfully." + System.lineSeparator(),
+                output.toString(StandardCharsets.UTF_8));
+        assertTrue(Files.readString(temporaryDirectory.resolve("equipment.txt")).contains("serviceable/yes"));
+        assertTrue(Files.readString(temporaryDirectory.resolve("maintenance.txt"))
+                .contains("work/Inspection\toutcome/PASSED"));
+
+        output.reset();
+        EqmManager restarted = new EqmManager(temporaryDirectory);
+        restarted.executeInput("list maintenance-due");
+        restarted.executeInput("history maintenance/id/001");
+        String printed = output.toString(StandardCharsets.UTF_8);
+        assertTrue(printed.contains("No equipment is due for maintenance or inspection."));
+        assertTrue(printed.contains("PASSED"));
+    }
+
+    @Test
+    void inspect_fail_keepsEquipmentDueAndPersistsFailedOutcome() throws Exception {
+        EqmManager manager = new EqmManager(temporaryDirectory);
+        manager.executeInput("add i/Camera id/001 type/camera cond/5");
+        manager.executeInput("loan id/001 b/002 issued/24-10-26 due/27-10-26");
+        manager.executeInput("return loan/001 serviceable/no damage/SHUTTER_FAULT");
+        output.reset();
+
+        manager.executeInput("inspect id/001 date/27-10-26 outcome/FAIL");
+        manager.executeInput("list maintenance-due");
+
+        String printed = output.toString(StandardCharsets.UTF_8);
+        assertTrue(printed.contains("Inspection recorded successfully."));
+        assertTrue(printed.contains("Needs inspection"));
+        assertTrue(Files.readString(temporaryDirectory.resolve("maintenance.txt"))
+                .contains("work/Inspection\toutcome/FAILED"));
+        assertTrue(Files.readString(temporaryDirectory.resolve("equipment.txt")).contains("serviceable/no"));
+    }
+
+    @Test
+    void inspect_activeLoan_isRejectedWithoutChangingLoan() throws Exception {
+        EqmManager manager = new EqmManager(temporaryDirectory);
+        manager.executeInput("add i/Camera id/001 type/camera cond/5");
+        manager.executeInput("loan id/001 b/002 issued/24-10-26 due/27-10-26");
+        output.reset();
+
+        manager.executeInput("inspect id/001 date/27-10-26 outcome/PASS");
+
+        assertEquals("Cannot inspect item ID 001 while it has an active loan." + System.lineSeparator(),
+                output.toString(StandardCharsets.UTF_8));
+        assertTrue(Files.notExists(temporaryDirectory.resolve("maintenance.txt")));
+        assertTrue(Files.readString(temporaryDirectory.resolve("loans.txt")).contains("returned/false"));
+    }
 }
