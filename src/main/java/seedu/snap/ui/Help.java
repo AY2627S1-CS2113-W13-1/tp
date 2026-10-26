@@ -210,9 +210,10 @@ public final class Help {
                         MARK EQUIPMENT STATUS
                         Format: mark id/<ITEM ID> status/<missing|lost>
                         Example: mark id/001 status/missing
-                        Records a missing or lost state for one existing physical item. Items with active loans cannot be marked.
-                        The equipment record, loan history, permanent identity and maintenance information are retained.
-                        A marked item is not available for loan or bundle membership. Reusing its Item ID starts a new history.
+                        Records a missing or lost state for one existing physical item. Items with active loans cannot
+                        be marked. The equipment record, loan history, permanent identity and maintenance information
+                        are retained. A marked item is not available for loan or bundle membership. Reusing its Item ID
+                        starts a new history.
                         """)),
                 new CommandHelp("status-history", "Equipment", lineEndings("""
                         EQUIPMENT STATUS HISTORY

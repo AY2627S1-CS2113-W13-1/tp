@@ -166,7 +166,8 @@ public abstract class Equipment {
 
     /** Replaces persistent status metadata on a detached object after storage validation. */
     final void restoreStatusState(EquipmentStatus restoredStatus, List<EquipmentStatusChange> restoredHistory) {
-        if (restoredStatus == null || restoredHistory == null || !isValidStatusHistory(restoredStatus, restoredHistory)) {
+        if (restoredStatus == null || restoredHistory == null
+                || !isValidStatusHistory(restoredStatus, restoredHistory)) {
             throw new IllegalArgumentException("Equipment status history is invalid.");
         }
         status = restoredStatus;

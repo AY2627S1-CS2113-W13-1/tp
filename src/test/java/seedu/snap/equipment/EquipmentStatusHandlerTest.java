@@ -59,6 +59,36 @@ class EquipmentStatusHandlerTest {
     }
 
     @Test
+    void statusHistory_invalidQueryAndReadOnlyQuery_preserveSavedFile() throws Exception {
+        Path file = temporaryDirectory.resolve("equipment.txt");
+        EquipmentHandler handler = new EquipmentHandler(file, FIXED_CLOCK);
+        handler.addEquipment("add i/Camera id/001 type/camera cond/5");
+        handler.markStatus("mark id/001 status/missing");
+        String saved = Files.readString(file);
+
+        assertThrows(EquipmentStatusUnsuccessful.class,
+                () -> handler.getStatusHistory("status-history id/999"));
+        assertThrows(EquipmentStatusUnsuccessful.class,
+                () -> handler.getStatusHistory("status-history id/01"));
+        assertEquals(saved, Files.readString(file));
+    }
+
+    @Test
+    void normalUpdate_preservesStatusAndHistory() throws Exception {
+        EquipmentHandler handler = new EquipmentHandler(temporaryDirectory.resolve("equipment.txt"), FIXED_CLOCK);
+        handler.addEquipment("add i/Camera id/001 type/camera cond/5");
+        handler.markStatus("mark id/001 status/missing");
+
+        handler.updateEquipment("update id/001 i/Workshop camera cond/6");
+
+        Equipment updated = handler.getEquipmentList().getFirst();
+        assertEquals("Workshop camera", updated.getItemName());
+        assertEquals(6, updated.getCondition());
+        assertEquals(EquipmentStatus.MISSING, updated.getStatus());
+        assertEquals(1, updated.getStatusHistory().size());
+    }
+
+    @Test
     void markStatus_activeLoan_isRejectedWithoutChangingStatus() throws Exception {
         EquipmentHandler handler = new EquipmentHandler(null, FIXED_CLOCK);
         Equipment equipment = handler.addEquipment("add i/Camera id/001 type/camera cond/5");

@@ -18,7 +18,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.equipment.EquipmentStatus;
 
@@ -82,6 +81,19 @@ class EquipmentStatusIntegrationTest {
         assertTrue(printed().contains("active loan"));
         assertEquals(equipmentBefore, Files.readString(temporaryDirectory.resolve("equipment.txt")));
         assertFalse(Files.readString(temporaryDirectory.resolve("equipment.txt")).contains("status/lost"));
+    }
+
+    @Test
+    void statusCommands_markedItem_cannotBeAddedToBundle() throws Exception {
+        EqmManager manager = new EqmManager(temporaryDirectory, FIXED_CLOCK);
+        manager.executeInput("add i/Camera id/001 type/camera cond/5");
+        manager.executeInput("mark id/001 status/missing");
+        manager.executeInput("add-bundle name/Studio kit");
+        output.reset();
+
+        manager.executeInput("add-to-bundle id/001 001");
+
+        assertTrue(printed().contains("marked missing"));
     }
 
     @Test
