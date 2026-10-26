@@ -215,6 +215,16 @@ public class EquipmentHandler {
      * @throws IllegalArgumentException if the equipment is missing or the proposal belongs to another item
      */
     public void saveReturnAssessment(Equipment current, Equipment assessed) throws IOException {
+        saveProposedEquipment(current, assessed);
+    }
+
+    /** Saves a detached inspection result without changing the live equipment object. */
+    public void saveInspectionAssessment(Equipment current, Equipment assessed) throws IOException {
+        saveProposedEquipment(current, assessed);
+    }
+
+    /** Saves a validated detached equipment proposal before the caller commits it in memory. */
+    private void saveProposedEquipment(Equipment current, Equipment assessed) throws IOException {
         int index = inventory.indexOf(current);
         if (index < 0 || assessed == null || current.getClass() != assessed.getClass()
                 || !current.getItemId().equals(assessed.getItemId())
@@ -224,6 +234,44 @@ public class EquipmentHandler {
         ArrayList<Equipment> proposedInventory = new ArrayList<>(inventory);
         proposedInventory.set(index, assessed);
         save(proposedInventory);
+    }
+
+    /**
+     * Creates a detached inspection proposal while preserving all equipment details and identity.
+     *
+     * @param current equipment being inspected
+     * @param passed whether the inspection passed
+     * @return a detached equipment proposal with the requested serviceability
+     * @throws IllegalArgumentException if the equipment is null or currently loaned
+     */
+    public Equipment prepareInspectionAssessment(Equipment current, boolean passed) {
+        if (current == null) {
+            throw new IllegalArgumentException("Equipment to inspect must not be null.");
+        }
+        if (current.isLoaned()) {
+            throw new IllegalArgumentException("Equipment with an active loan cannot be inspected.");
+        }
+        Equipment proposed = switch (current) {
+        case Camera camera -> new Camera(
+                camera.getItemName(), camera.getItemId(), camera.getCondition(), camera.getSensorFormat(),
+                camera.getDamage(), camera.getRemarks(), camera.getLensMount(), camera.getTripodThread(),
+                camera.getBatteryType());
+        case Lens lens -> new Lens(
+                lens.getItemName(), lens.getItemId(), lens.getCondition(), lens.getZoomRange(), lens.getDamage(),
+                lens.getRemarks(), lens.getLensMount(), lens.getSensorFormat());
+        case Battery battery -> new Battery(
+                battery.getItemName(), battery.getItemId(), battery.getCondition(), battery.getCapacity(),
+                battery.getDamage(), battery.getRemarks(), battery.getBatteryType());
+        case Tripod tripod -> new Tripod(
+                tripod.getItemName(), tripod.getItemId(), tripod.getCondition(), tripod.getThread(),
+                tripod.getDamage(), tripod.getRemarks());
+        default -> throw new IllegalArgumentException("Unsupported equipment type for inspection.");
+        };
+        proposed.restoreRecordId(current.getRecordId());
+        proposed.setServiceable(passed);
+        assert proposed.getRecordId().equals(current.getRecordId()) : "Inspection must preserve equipment identity";
+        assert proposed.isServiceable() == passed : "Inspection proposal must contain its result";
+        return proposed;
     }
 
     /** Persists the current inventory when this handler has a backing file. */
