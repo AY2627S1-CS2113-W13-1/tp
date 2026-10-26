@@ -9,6 +9,11 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -118,13 +123,46 @@ class LoanIssueConditionViewTest {
                 new LoanHandler(equipment, loanFile);
         handler.loadFromStorage();
         output.reset();
+        Logger loanLogger =
+                Logger.getLogger(LoanHandler.class.getName());
+        Level previousLevel = loanLogger.getLevel();
+        ArrayList<LogRecord> records = new ArrayList<>();
+        Handler recordingHandler = new Handler() {
+            @Override
+            public void publish(LogRecord record) {
+                records.add(record);
+            }
 
-        handler.viewLoanIssueCondition("view loan/001");
+            @Override
+            public void flush() {
+            }
+
+            @Override
+            public void close() {
+            }
+        };
+        loanLogger.setLevel(Level.INFO);
+        loanLogger.addHandler(recordingHandler);
+
+        try {
+            handler.viewLoanIssueCondition("view loan/001");
+        } finally {
+            loanLogger.removeHandler(recordingHandler);
+            loanLogger.setLevel(previousLevel);
+        }
 
         assertEquals(
                 "Loan 001 issue-time condition: Not recorded"
                         + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
+        assertTrue(
+                records.stream().anyMatch(
+                        record ->
+                                record.getLevel() == Level.INFO
+                                        && record.getMessage()
+                                                .contains("not recorded")
+                                        && "001".equals(
+                                                record.getParameters()[0])));
     }
 
     @Test

@@ -591,6 +591,10 @@ public class LoanHandler {
                 loan.getIssueConditionSnapshot();
 
         if (snapshot == null) {
+            logger.log(
+                    Level.INFO,
+                    "Viewed loan {0}; issue-time condition was not recorded.",
+                    loanId);
             System.out.println(
                     "Loan "
                             + loanId
@@ -658,9 +662,13 @@ public class LoanHandler {
     /** Finds the unique loan matching an ID without modifying it. */
     private Loan findLoanForViewing(String loanId)
             throws LoanViewingUnsuccessful {
+        assert numLoans == loans.size()
+                : "numLoans should match the size of the loans list";
         Loan matchingLoan = null;
 
         for (Loan loan : loans) {
+            assert loan != null
+                    : "Loan list must not contain null items";
             if (!loanId.equals(loan.getLoanId())) {
                 continue;
             }
