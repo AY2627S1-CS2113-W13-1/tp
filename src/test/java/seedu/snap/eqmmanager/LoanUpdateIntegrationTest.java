@@ -70,6 +70,23 @@ class LoanUpdateIntegrationTest {
     }
 
     @Test
+    void updateLoanCommand_acceptsRepeatedSpacesAndTabsBetweenCommandWords() throws Exception {
+        EqmManager manager = new EqmManager(temporaryDirectory);
+        manager.executeInput("add i/Camera id/001 type/camera cond/4");
+        manager.executeInput("loan id/001 b/002 issued/01-10-26 due/10-10-26");
+        output.reset();
+
+        manager.executeInput("update  loan/001 b/007");
+        manager.executeInput("update\tloan/001 b/008");
+
+        String actual = output.toString(StandardCharsets.UTF_8);
+        assertEquals("Loan 001 updated successfully." + System.lineSeparator()
+                + "Loan 001 updated successfully." + System.lineSeparator(), actual);
+        assertTrue(Files.readString(temporaryDirectory.resolve("loans.txt"))
+                .contains("loanId/001 id/001 b/008 issued/01-10-26 due/10-10-26"));
+    }
+
+    @Test
     void updateLoanCommand_restartedManagerLoadsEditedLoan() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory);
         manager.executeInput("add i/Camera id/001 type/camera cond/4");

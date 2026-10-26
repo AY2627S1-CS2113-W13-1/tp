@@ -178,7 +178,8 @@ class HelpTest {
     void getText_all_separatesEveryCommandWithSpacedFullWidthHeadingBands() {
         List<String> lines = Help.getText("all").lines().toList();
         List<String> headings = List.of("ADD EQUIPMENT", "LIST EQUIPMENT", "DELETE EQUIPMENT", "ADD LOAN",
-                "RETURN EQUIPMENT", "DELETE LOAN", "LIST LOANS", "VIEW LOAN ISSUE CONDITION", "LIST OVERDUE LOANS",
+                "RETURN EQUIPMENT", "DELETE LOAN", "UPDATE LOAN", "LIST LOANS", "VIEW LOAN ISSUE CONDITION",
+                "LIST OVERDUE LOANS",
                 "ITEM LOAN HISTORY", "FILTER EQUIPMENT", "UPDATE EQUIPMENT", "CREATE BUNDLE", "ADD EQUIPMENT TO BUNDLE",
                 "REMOVE EQUIPMENT FROM BUNDLE", "LIST BUNDLES", "BUNDLE LOAN HISTORY", "HELP", "EXIT");
         String divider = "=".repeat(100);

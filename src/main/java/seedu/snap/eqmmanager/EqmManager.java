@@ -123,9 +123,7 @@ public class EqmManager {
             viewLoanHistory(normalizedInput);
         } else if (normalizedInput.matches("(?U)view(?:\\s.*)?")) {
             viewLoanIssueCondition(normalizedInput);
-        } else if (normalizedInput.equals("update loan")
-                || normalizedInput.startsWith("update loan/")
-                || normalizedInput.startsWith("update loan ")) {
+        } else if (normalizedInput.matches("(?U)update\\s+loan(?:\\s.*|/.*)?")) {
             updateLoan(normalizedInput);
         } else if (normalizedInput.matches("(?U)filter(?:\\s.*)?")) {
             filterEquipment(normalizedInput);
