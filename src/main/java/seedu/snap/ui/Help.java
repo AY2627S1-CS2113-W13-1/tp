@@ -82,7 +82,8 @@ public final class Help {
                 Wrapped formats and examples must be entered as a single line.
                 """,
                 Equipment.MAX_NAME_LENGTH, Equipment.MIN_CONDITION, Equipment.MAX_CONDITION,
-                Equipment.MAX_REMARKS_LENGTH)), false);
+                Equipment.MAX_REMARKS_LENGTH, MaintenanceRecord.MAX_WORK_LENGTH,
+                MaintenanceRecord.MAX_OUTCOME_LENGTH)), false);
     }
 
     /** Keeps each command's description in one immutable entry for every help view. */
@@ -254,8 +255,9 @@ public final class Help {
                         RECORD MAINTENANCE
                         Format: maintain id/<ITEM ID> date/<DD-MM-YY> work/<DESCRIPTION> outcome/<OUTCOME>
                         Example: maintain id/001 date/27-10-26 work/Replaced battery outcome/Completed
-                        Requires an existing Item ID, a valid maintenance date, a non-empty work description and outcome.
-                        Work descriptions and outcomes are trimmed, remain on one line and have documented length limits.
+                        Requires an existing Item ID, a valid maintenance date, a non-empty work description and
+                        outcome. Work descriptions and outcomes are trimmed, remain on one line and have documented
+                        length limits.
                         Maintenance records are saved to maintenance.txt and remain associated with the physical item.
                         Maintenance work: 1-%d characters; outcomes: 1-%d characters.
                         """, MaintenanceRecord.MAX_WORK_LENGTH, MaintenanceRecord.MAX_OUTCOME_LENGTH))),
@@ -337,8 +339,8 @@ public final class Help {
                         EXIT
                         Format: bye
                         Example: bye
-                        Saves equipment, loans, maintenance records and bundles before exiting. A save failure keeps the application running;
-                        fix the reported file problem and retry bye.
+                        Saves equipment, loans, maintenance records and bundles before exiting. A save failure keeps
+                        the application running; fix the reported file problem and retry bye.
                         """)));
     }
 
