@@ -190,6 +190,69 @@ class MaintenanceHandlerTest {
     }
 
     @Test
+    void getMaintenanceSummary_noRecordsForServiceableEquipment_returnsEmptySummary() throws Exception {
+        EquipmentHandler equipment = new EquipmentHandler();
+        equipment.addEquipment(ADD_CAMERA);
+        MaintenanceHandler handler = new MaintenanceHandler(equipment);
+
+        List<MaintenanceSummaryEntry> summary = handler.getMaintenanceSummary();
+
+        assertTrue(summary.isEmpty());
+    }
+
+    @Test
+    void getMaintenanceSummary_includesOverdueAndFrequentRepairsInIdOrder() throws Exception {
+        EquipmentHandler equipment = new EquipmentHandler();
+        Equipment frequentLater = equipment.addEquipment("add i/Frequent later id/002 type/camera cond/5");
+        Equipment frequentEarlier = equipment.addEquipment("add i/Frequent earlier id/001 type/lens cond/5");
+        Equipment oneRepair = equipment.addEquipment("add i/One repair id/003 type/battery cond/5");
+        frequentLater.applyReturnAssessment(equipment.prepareReturnAssessment(frequentLater, false, "NONE", ""));
+        MaintenanceHandler handler = new MaintenanceHandler(equipment);
+
+        handler.addMaintenanceRecord("maintain id/002 date/27-10-26 work/Repair A outcome/Completed");
+        handler.addMaintenanceRecord("maintain id/002 date/28-10-26 work/Inspection outcome/PASSED");
+        handler.addMaintenanceRecord("maintain id/002 date/29-10-26 work/Repair B outcome/Completed");
+        handler.addMaintenanceRecord("maintain id/001 date/25-10-26 work/Repair A outcome/Completed");
+        handler.addMaintenanceRecord("maintain id/001 date/26-10-26 work/Repair B outcome/Completed");
+        handler.addMaintenanceRecord("maintain id/003 date/24-10-26 work/Repair outcome/Completed");
+
+        List<MaintenanceSummaryEntry> summary = handler.getMaintenanceSummary();
+
+        assertEquals(List.of("001", "002"), summary.stream()
+                .map(MaintenanceSummaryEntry::itemId).toList());
+        MaintenanceSummaryEntry earlier = summary.getFirst();
+        assertEquals("Frequent earlier", earlier.itemName());
+        assertFalse(earlier.overdue());
+        assertEquals(2, earlier.repairCount());
+        assertEquals(LocalDate.of(2026, 10, 26), earlier.latestMaintenanceDate());
+        assertTrue(earlier.hasFrequentRepairs());
+
+        MaintenanceSummaryEntry later = summary.getLast();
+        assertTrue(later.overdue());
+        assertEquals(2, later.repairCount());
+        assertEquals(LocalDate.of(2026, 10, 29), later.latestMaintenanceDate());
+        assertTrue(later.hasFrequentRepairs());
+        assertTrue(summary.stream().noneMatch(entry -> entry.itemId().equals(oneRepair.getItemId())));
+    }
+
+    @Test
+    void getMaintenanceSummary_doesNotMutateRecordsAndReturnsReadOnlyList() throws Exception {
+        EquipmentHandler equipment = new EquipmentHandler();
+        Equipment camera = equipment.addEquipment(ADD_CAMERA);
+        camera.applyReturnAssessment(equipment.prepareReturnAssessment(camera, false, "NONE", ""));
+        MaintenanceHandler handler = new MaintenanceHandler(equipment);
+        handler.addMaintenanceRecord("maintain id/001 date/27-10-26 work/Repair outcome/Completed");
+        List<MaintenanceRecord> recordsBefore = handler.getMaintenanceRecords();
+
+        List<MaintenanceSummaryEntry> summary = handler.getMaintenanceSummary();
+
+        assertEquals(recordsBefore, handler.getMaintenanceRecords());
+        assertFalse(camera.isServiceable());
+        assertEquals(1, summary.getFirst().repairCount());
+        assertThrows(UnsupportedOperationException.class, () -> summary.clear());
+    }
+
+    @Test
     void getMaintenanceDueEquipment_returnsUnserviceableItemsInIdOrder() throws Exception {
         EquipmentHandler equipment = new EquipmentHandler();
         Equipment first = equipment.addEquipment("add i/First id/002 type/camera cond/5");

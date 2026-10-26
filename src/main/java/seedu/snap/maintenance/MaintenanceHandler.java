@@ -11,8 +11,10 @@ import java.time.format.ResolverStyle;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -85,6 +87,49 @@ public class MaintenanceHandler {
     /** Returns an unmodifiable view of all maintenance records in insertion order. */
     public List<MaintenanceRecord> getMaintenanceRecords() {
         return Collections.unmodifiableList(records);
+    }
+
+    /**
+     * Builds a read-only summary of overdue and frequently repaired equipment.
+     *
+     * <p>Overdue equipment is identified using the existing serviceability rule:
+     * an unserviceable item requires maintenance. A repair is any maintenance
+     * record whose work is not an inspection. Only records belonging to the
+     * currently registered physical item are considered.</p>
+     *
+     * @return relevant summary rows in visible Item ID order
+     */
+    public List<MaintenanceSummaryEntry> getMaintenanceSummary() {
+        Map<String, List<MaintenanceRecord>> recordsByEquipment = groupRecordsByEquipment();
+        ArrayList<MaintenanceSummaryEntry> summary = new ArrayList<>();
+        for (Equipment item : equipment.getEquipmentList()) {
+            assert item != null : "Equipment summary rows must not contain null items";
+            List<MaintenanceRecord> itemRecords = recordsByEquipment.getOrDefault(item.getRecordId(), List.of());
+            int repairCount = 0;
+            LocalDate latestMaintenanceDate = null;
+            for (MaintenanceRecord record : itemRecords) {
+                assert record != null : "Grouped maintenance records must not contain null records";
+                if (latestMaintenanceDate == null
+                        || record.getMaintenanceDate().isAfter(latestMaintenanceDate)) {
+                    latestMaintenanceDate = record.getMaintenanceDate();
+                }
+                if (!isInspectionRecord(record)) {
+                    repairCount++;
+                }
+            }
+
+            MaintenanceSummaryEntry entry = new MaintenanceSummaryEntry(item.getItemId(), item.getItemName(),
+                    !item.isServiceable(), repairCount, latestMaintenanceDate);
+            if (entry.isRelevant()) {
+                summary.add(entry);
+            }
+        }
+        summary.sort(Comparator.comparing(MaintenanceSummaryEntry::itemId));
+        logger.log(Level.FINE, "Generated maintenance summary with {0} relevant equipment item(s).",
+                summary.size());
+        assert summary.stream().allMatch(MaintenanceSummaryEntry::isRelevant)
+                : "Maintenance summary must contain only relevant entries";
+        return List.copyOf(summary);
     }
 
     /**
@@ -313,6 +358,21 @@ public class MaintenanceHandler {
     /** Checks the visible three-digit item ID accepted by the existing equipment commands. */
     private static boolean isValidItemId(String itemId) {
         return itemId != null && itemId.matches("[0-9]{3}") && !itemId.equals("000");
+    }
+
+    /** Groups records by permanent physical equipment identity without changing insertion order. */
+    private Map<String, List<MaintenanceRecord>> groupRecordsByEquipment() {
+        Map<String, List<MaintenanceRecord>> grouped = new HashMap<>();
+        for (MaintenanceRecord record : records) {
+            assert record != null : "Maintenance records must not contain null values";
+            grouped.computeIfAbsent(record.getEquipmentRecordId(), ignored -> new ArrayList<>()).add(record);
+        }
+        return grouped;
+    }
+
+    /** Returns whether a record describes an inspection rather than repair work. */
+    private static boolean isInspectionRecord(MaintenanceRecord record) {
+        return INSPECTION_WORK.equalsIgnoreCase(record.getWork());
     }
 
     /** Validates the read-only maintenance-history command and returns its item ID. */
