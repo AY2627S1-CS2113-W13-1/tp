@@ -1,0 +1,63 @@
+@startuml EquipmentClasses
+!include style.puml
+!pragma layout smetana
+skinparam linetype ortho
+skinparam nodesep 35
+skinparam ranksep 45
+
+class EquipmentHandler {
+    + addEquipment(...): Equipment
+    + getEquipmentList(): List<Equipment>
+    + updateEquipment(...): Equipment
+    - ensureUniqueItemId(...): void
+}
+
+class EquipmentFilter {
+    - fields: Map<String, String>
+    - minimumCondition: int
+    - maximumCondition: int
+    {static} + parse(...): EquipmentFilter
+    + apply(...): List<Equipment>
+}
+
+class EquipmentFields <<utility>> {
+    {static} ~ parse(...): Map<String, String>
+}
+
+class EquipmentStorage <<utility>> {
+    {static} ~ save(...): void
+}
+
+abstract class Equipment {
+    - itemName: String
+    - itemId: String
+    - recordId: String
+    - condition: int
+    - isLoaned: boolean
+    - isServiceable: boolean
+    - loanId: String
+    + isLoaned(): boolean
+    + isServiceable(): boolean
+    + setLoanId(...): void
+    + updateDetails(...): void
+    {abstract} + getType(): String
+    {abstract} + getDetails(): String
+}
+
+class Camera {
+    - sensorFormat: String
+    + getDetails(): String
+}
+
+EquipmentHandler --> "0..*" Equipment : -inventory
+EquipmentHandler ..> EquipmentFields : parses updates
+EquipmentHandler ..> EquipmentStorage : saves proposals
+EquipmentFilter ..> EquipmentFields : parses criteria
+EquipmentFilter ..> Equipment : matches items
+Equipment <|-- Camera
+
+legend bottom left
+Selected members; Camera represents the equipment subclasses.
+... omits parameters; static methods are underlined.
+endlegend
+@enduml
