@@ -1,5 +1,6 @@
 package seedu.snap.maintenance;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -214,5 +215,81 @@ class MaintenanceHandlerTest {
         assertThrows(MaintenanceInspectionUnsuccessful.class,
                 () -> handler.viewMaintenanceDue("list maintenance-due extra"));
         handler.viewMaintenanceDue("list maintenance-due");
+    }
+
+    @Test
+    void completeInspection_pass_updatesAvailabilityAndRecordsOutcome() throws Exception {
+        EquipmentHandler equipment = new EquipmentHandler();
+        Equipment camera = equipment.addEquipment(ADD_CAMERA);
+        camera.applyReturnAssessment(equipment.prepareReturnAssessment(camera, false, "NONE", ""));
+        MaintenanceHandler handler = new MaintenanceHandler(equipment);
+
+        MaintenanceRecord record = handler.completeInspection(
+                "inspect id/001 date/27-10-26 outcome/PASS");
+
+        assertTrue(camera.isServiceable());
+        assertEquals("Inspection", record.getWork());
+        assertEquals("PASSED", record.getOutcome());
+        assertEquals(List.of(record), handler.getMaintenanceRecords());
+        assertTrue(handler.getMaintenanceDueEquipment().isEmpty());
+    }
+
+    @Test
+    void completeInspection_fail_keepsEquipmentUnavailableAndRecordsOutcome() throws Exception {
+        EquipmentHandler equipment = new EquipmentHandler();
+        Equipment camera = equipment.addEquipment(ADD_CAMERA);
+        camera.applyReturnAssessment(equipment.prepareReturnAssessment(camera, false, "NONE", ""));
+        MaintenanceHandler handler = new MaintenanceHandler(equipment);
+
+        MaintenanceRecord record = handler.completeInspection(
+                "inspect id/001 date/27-10-26 outcome/FAIL");
+
+        assertFalse(camera.isServiceable());
+        assertEquals("FAILED", record.getOutcome());
+        assertEquals(List.of(camera), handler.getMaintenanceDueEquipment());
+    }
+
+    @Test
+    void completeInspection_invalidOrNotDueCommands_preserveState() throws Exception {
+        EquipmentHandler equipment = new EquipmentHandler();
+        Equipment camera = equipment.addEquipment(ADD_CAMERA);
+        MaintenanceHandler handler = new MaintenanceHandler(equipment);
+
+        for (String command : new String[]{
+            "inspect id/001 date/31-02-26 outcome/PASS",
+            "inspect id/001 date/27-10-26 outcome/MAYBE",
+            "inspect id/999 date/27-10-26 outcome/PASS"}) {
+            assertThrows(MaintenanceInspectionUnsuccessful.class,
+                    () -> handler.completeInspection(command), command);
+        }
+        MaintenanceInspectionUnsuccessful notDue = assertThrows(MaintenanceInspectionUnsuccessful.class,
+                () -> handler.completeInspection("inspect id/001 date/27-10-26 outcome/PASS"));
+
+        assertEquals("Item ID 001 is not due for maintenance or inspection.", notDue.getMessage());
+        assertTrue(camera.isServiceable());
+        assertTrue(handler.getMaintenanceRecords().isEmpty());
+    }
+
+    @Test
+    void completeInspection_failedEquipmentSave_rollsBackMaintenanceFileAndMemory() throws Exception {
+        Path equipmentFile = temporaryDirectory.resolve("equipment.txt");
+        Path maintenanceFile = temporaryDirectory.resolve("maintenance.txt");
+        EquipmentHandler equipment = new EquipmentHandler(equipmentFile);
+        Equipment camera = equipment.addEquipment(ADD_CAMERA);
+        camera.applyReturnAssessment(equipment.prepareReturnAssessment(camera, false, "NONE", ""));
+        MaintenanceHandler handler = new MaintenanceHandler(equipment, maintenanceFile);
+        handler.addMaintenanceRecord("maintain id/001 date/24-10-26 work/Previous outcome/Completed");
+        byte[] maintenanceBefore = Files.readAllBytes(maintenanceFile);
+        Files.delete(equipmentFile);
+        Files.createDirectory(equipmentFile);
+        Files.writeString(equipmentFile.resolve("keep.txt"), "keep equipment");
+
+        assertThrows(MaintenanceInspectionUnsuccessful.class,
+                () -> handler.completeInspection("inspect id/001 date/27-10-26 outcome/PASS"));
+
+        assertFalse(camera.isServiceable());
+        assertEquals(1, handler.getMaintenanceRecords().size());
+        assertArrayEquals(maintenanceBefore, Files.readAllBytes(maintenanceFile));
+        assertEquals("keep equipment", Files.readString(equipmentFile.resolve("keep.txt")));
     }
 }
