@@ -27,7 +27,8 @@ import seedu.snap.equipment.Tripod;
 /** Checks the command guide covers executable syntax, meaningful defaults and important restrictions. */
 class HelpTest {
     private static final List<String> TOPICS = List.of("add", "list", "delete item", "loan", "return", "delete loan",
-            "list loans", "view loan", "list overdue", "history", "filter", "update", "maintain", "add-bundle",
+            "list loans", "view loan", "list overdue", "history", "filter", "update", "maintain",
+            "history maintenance", "add-bundle",
             "add-to-bundle",
             "remove-from-bundle", "list bundles", "history bundle", "help", "bye");
 
@@ -53,6 +54,7 @@ class HelpTest {
                         "filter type/camera cond/1-3 status/available"),
                 Arguments.of("maintain", "maintain id/<ITEM ID> date/<DD-MM-YY> work/<DESCRIPTION> outcome/<OUTCOME>",
                         "maintain id/001 date/27-10-26 work/Replaced battery outcome/Completed"),
+                Arguments.of("history maintenance", "history maintenance/id/<ITEM ID>", "history maintenance/id/001"),
                 Arguments.of("update", "update id/<ID> [i/<NAME>] [type/<TYPE>] [cond/<N>]",
                         "update id/001 i/Studio camera cond/5"),
                 Arguments.of("add-bundle", "add-bundle name/<NAME>", "add-bundle name/Studio kit"),
@@ -178,7 +180,8 @@ class HelpTest {
         List<String> lines = Help.getText("all").lines().toList();
         List<String> headings = List.of("ADD EQUIPMENT", "LIST EQUIPMENT", "DELETE EQUIPMENT", "ADD LOAN",
                 "RETURN EQUIPMENT", "DELETE LOAN", "LIST LOANS", "VIEW LOAN ISSUE CONDITION", "LIST OVERDUE LOANS",
-                "ITEM LOAN HISTORY", "FILTER EQUIPMENT", "UPDATE EQUIPMENT", "RECORD MAINTENANCE", "CREATE BUNDLE",
+                "ITEM LOAN HISTORY", "FILTER EQUIPMENT", "UPDATE EQUIPMENT", "RECORD MAINTENANCE",
+                "VIEW MAINTENANCE HISTORY", "CREATE BUNDLE",
                 "ADD EQUIPMENT TO BUNDLE",
                 "REMOVE EQUIPMENT FROM BUNDLE", "LIST BUNDLES", "BUNDLE LOAN HISTORY", "HELP", "EXIT");
         String divider = "=".repeat(100);
@@ -348,6 +351,9 @@ class HelpTest {
         assertTrue(text.contains("Requires an existing Item ID, a valid maintenance date"));
         assertTrue(text.contains("Maintenance records are saved to maintenance.txt"));
         assertTrue(text.contains("Maintenance work: 1-200 characters; outcomes: 1-100 characters."));
+        assertTrue(text.contains("Displays maintenance dates, work performed and outcomes for that item."));
+        assertTrue(text.contains("Records are sorted by maintenance date, earliest first."));
+        assertTrue(text.contains("Viewing history does not change equipment, loans, maintenance records"));
     }
 
     @Test
