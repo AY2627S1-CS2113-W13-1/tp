@@ -19,6 +19,7 @@ import java.util.regex.Pattern;
 import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.MaintenanceHistoryUnsuccessful;
+import seedu.snap.exceptions.MaintenanceInspectionUnsuccessful;
 import seedu.snap.exceptions.MaintenanceRecordUnsuccessful;
 
 /** Handles validated maintenance-record commands and their persistent records. */
@@ -77,6 +78,51 @@ public class MaintenanceHandler {
     /** Returns an unmodifiable view of all maintenance records in insertion order. */
     public List<MaintenanceRecord> getMaintenanceRecords() {
         return Collections.unmodifiableList(records);
+    }
+
+    /**
+     * Selects equipment that is currently unserviceable and therefore due for maintenance or inspection.
+     * Equipment is returned in visible Item ID order without changing the inventory.
+     *
+     * @return an unmodifiable list of equipment due for maintenance or inspection
+     */
+    public List<Equipment> getMaintenanceDueEquipment() {
+        ArrayList<Equipment> due = new ArrayList<>();
+        for (Equipment item : equipment.getEquipmentList()) {
+            if (!item.isServiceable()) {
+                due.add(item);
+            }
+        }
+        due.sort(Comparator.comparing(Equipment::getItemId));
+        logger.log(Level.FINE, "Selected {0} equipment item(s) due for maintenance or inspection.", due.size());
+        assert due.stream().allMatch(item -> item != null && !item.isServiceable())
+                : "Due equipment must be unserviceable";
+        return List.copyOf(due);
+    }
+
+    /** Displays equipment that is due for maintenance or inspection. */
+    public void viewMaintenanceDue(String input) throws MaintenanceInspectionUnsuccessful {
+        if (input == null || !input.strip().equals("list maintenance-due")) {
+            throw new MaintenanceInspectionUnsuccessful(
+                    "Invalid format. Use: list maintenance-due.");
+        }
+
+        List<Equipment> due = getMaintenanceDueEquipment();
+        if (due.isEmpty()) {
+            System.out.println("No equipment is due for maintenance or inspection.");
+            return;
+        }
+
+        System.out.println("Equipment due for maintenance or inspection:");
+        System.out.printf("%-4s %-10s | %-24s | %-20s | %-10s%n",
+                "No.", "ITEM ID", "NAME", "STATUS", "CONDITION");
+        for (int index = 0; index < due.size(); index++) {
+            Equipment item = due.get(index);
+            assert item != null : "Due equipment rows must not contain null items";
+            String status = item.isLoaned() ? "Loaned" : "Needs inspection";
+            System.out.printf("%-4s %-10s | %-24s | %-20s | %-10d%n", (index + 1) + ")",
+                    item.getItemId(), item.getItemName(), status, item.getCondition());
+        }
     }
 
     /** Returns the backing file, or null when this handler is in-memory only. */
