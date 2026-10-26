@@ -7,8 +7,8 @@ title: User Guide
 
 ## Introduction
 
-snAp tracks individual pieces of equipment, their loans and equipment bundles. Equipment, loan and bundle
-records are retained between application sessions.
+snAp tracks individual pieces of equipment, their maintenance records, loans and equipment bundles. Equipment,
+maintenance, loan and bundle records are retained between application sessions.
 
 ## Quick Start
 
@@ -98,6 +98,23 @@ absent. Supplying an empty or invalid value produces an error, except that empty
 Equipment name, Item ID, type and numeric condition remain required when adding equipment.
 Loans require Item ID, borrower ID and due date. Returns require loan ID, serviceability and damage.
 There is no default due date or serviceability decision.
+
+## Recording maintenance: `maintain`
+
+Format: `maintain id/[ITEM ID] date/[DD-MM-YY] work/[DESCRIPTION] outcome/[OUTCOME]`
+
+Example: `maintain id/001 date/27-10-26 work/Replaced battery outcome/Completed`
+
+This records completed maintenance work for an existing equipment item. The `ITEM ID` must identify an item in the
+current inventory. The date must use `DD-MM-YY`, and both `DESCRIPTION` and `OUTCOME` must be non-empty single-line
+values. Work descriptions may contain up to 200 characters and outcomes may contain up to 100 characters after
+trimming.
+
+The record is associated with the physical equipment identity rather than only the visible Item ID. This prevents
+maintenance records from being attached to a replacement item if an Item ID is reused later. Records are saved in
+`data/maintenance.txt` and are loaded when the application starts again.
+
+Invalid commands, unknown Item IDs, invalid dates and failed saves leave existing maintenance records unchanged.
 
 ## Adding equipment: `add`
 
@@ -527,6 +544,7 @@ duplicate records, the application reports the problem and stops.
 | View issue-time equipment condition | `view loan/[LOAN ID]` |
 | View item loan history | `history id/[ITEM ID]` |
 | View bundle loan history | `history bundle/id/[BUNDLE ID]` or `history bundle/name/[NAME]` |
+| Record maintenance work | `maintain id/[ITEM ID] date/[DD-MM-YY] work/[DESCRIPTION] outcome/[OUTCOME]` |
 | List overdue loans | `list overdue` |
 | Filter equipment | `filter [id/ID] [i/NAME] [type/TYPE] [cond/1-3] [status/available]` |
 | Update equipment | `update id/ID [i/NAME] [type/TYPE] [cond/CONDITION]` |

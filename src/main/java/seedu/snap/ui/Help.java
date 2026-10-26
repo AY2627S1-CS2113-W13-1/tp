@@ -10,6 +10,7 @@ import seedu.snap.equipment.Camera;
 import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.Lens;
 import seedu.snap.equipment.Tripod;
+import seedu.snap.maintenance.MaintenanceRecord;
 
 /** Provides command help without reading or changing application records. */
 public final class Help {
@@ -226,6 +227,16 @@ public final class Help {
                         Omitted fields retain their current values. Type is fixed; type/ must match the current type.
                         Updates retain subtype details, damage, remarks, serviceability, loans and bundle membership.
                         """)),
+                new CommandHelp("maintain", "Equipment", lineEndings(String.format(Locale.ROOT, """
+                        RECORD MAINTENANCE
+                        Format: maintain id/<ITEM ID> date/<DD-MM-YY> work/<DESCRIPTION> outcome/<OUTCOME>
+                        Example: maintain id/001 date/27-10-26 work/Replaced battery outcome/Completed
+                        Requires an existing Item ID, a valid maintenance date, a non-empty work description and
+                        outcome. Work descriptions and outcomes are trimmed, remain on one line and have documented
+                        length limits.
+                        Maintenance records are saved to maintenance.txt and remain associated with the physical item.
+                        Maintenance work: 1-%d characters; outcomes: 1-%d characters.
+                        """, MaintenanceRecord.MAX_WORK_LENGTH, MaintenanceRecord.MAX_OUTCOME_LENGTH))),
                 new CommandHelp("add-bundle", "Bundles", lineEndings("""
                         CREATE BUNDLE
                         Format: add-bundle name/<NAME>
