@@ -501,6 +501,29 @@ To transfer your records, copy `data/equipment.txt`, `data/loans.txt`, `data/loa
 `data/bundles.txt` to the same location on the other computer. If a file cannot be read or contains invalid or
 duplicate records, the application reports the problem and stops.
 
+## Backing up and restoring records
+
+Format: `backup path/[DIRECTORY]`
+
+Example: `backup path/backups/session-1`
+
+The `backup` command creates a new directory containing `equipment.txt`, `loans.txt`, `loan-sequence.txt` and a
+checksum manifest. The three records are captured as one logical snapshot. The destination must be outside the live
+data directory and must not already exist, so an existing backup cannot be silently overwritten. Empty equipment and
+loan records are represented by valid empty files, while the sequence file records the next available loan ID.
+Backup creation is read-only with respect to the live records.
+
+Format: `restore path/[DIRECTORY]`
+
+Example: `restore path/backups/session-1`
+
+The `restore` command verifies the manifest and loads all three records in an isolated temporary location before
+replacing the live files. Equipment, loans and the loan sequence are restored together; active loans mark their
+equipment as `Loaned`, returned loans remain in history, and the next loan ID is preserved. If the backup is missing,
+tampered with, malformed, incomplete, duplicated or inconsistent, the restore is rejected and the current live files
+and in-memory state remain unchanged. Successful restores clear session-only bundles because bundles are not included
+in the persistent backup.
+
 ## Errors
 
 * Empty or unknown commands show an error and direct you to `help`. You can then enter another command.
@@ -525,6 +548,8 @@ duplicate records, the application reports the problem and stops.
 | List equipment | `list` |
 | List loans | `list loans` |
 | View issue-time equipment condition | `view loan/[LOAN ID]` |
+| Back up equipment and loan records | `backup path/[DIRECTORY]` |
+| Restore equipment and loan records | `restore path/[DIRECTORY]` |
 | View item loan history | `history id/[ITEM ID]` |
 | View bundle loan history | `history bundle/id/[BUNDLE ID]` or `history bundle/name/[NAME]` |
 | List overdue loans | `list overdue` |
