@@ -206,6 +206,16 @@ public final class Help {
 
                         Older returned records without a proven item association remain available in list loans.
                         """)),
+                new CommandHelp("summary", "Equipment", lineEndings("""
+                        EQUIPMENT SUMMARY
+                        Format: summary id/<ITEM ID>
+                        Example: summary id/001
+                        Displays one item's identity, current details, status, remarks, subtype details and
+                        loan history.
+                        Maintenance, status-history and storage-location sections are shown when recorded;
+                        otherwise a clear empty-section message is displayed. The command is read-only and
+                        does not change saved records.
+                        """)),
                 new CommandHelp("filter", "Equipment", lineEndings("""
                         FILTER EQUIPMENT
                         Format: filter [id/<ID>] [i/<NAME>] [type/<TYPE>] [cond/<N|MIN-MAX>] [status/<STATUS>]
