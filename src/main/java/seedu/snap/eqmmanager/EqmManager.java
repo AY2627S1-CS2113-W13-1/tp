@@ -72,7 +72,7 @@ public class EqmManager {
         this.loans = new LoanHandler(equipment, this.dataDirectory.resolve("loans.txt"),
                 this.dataDirectory.resolve("loan-sequence.txt"), clock);
         this.bundles = new BundleHandler(equipment, this.dataDirectory.resolve("bundles.txt"));
-        this.backups = new BackupHandler(this.dataDirectory, equipment, loans);
+        this.backups = new BackupHandler(this.dataDirectory, equipment, loans, bundles);
         List<String> loadErrors = new ArrayList<>();
         try {
             equipment.loadFromStorage();
@@ -111,6 +111,8 @@ public class EqmManager {
             isRunning = !saveBeforeExit();
         } else if (normalizedInput.equals("backup") || normalizedInput.startsWith("backup ")) {
             createBackup(normalizedInput);
+        } else if (normalizedInput.equals("restore") || normalizedInput.startsWith("restore ")) {
+            restoreBackup(normalizedInput);
         } else if (normalizedInput.equals("delete loan")
                 || normalizedInput.startsWith("delete loan/")
                 || normalizedInput.startsWith("delete loan ")) {
@@ -231,6 +233,16 @@ public class EqmManager {
         try {
             Path destination = backups.createBackup(input);
             System.out.println("Backup created successfully at " + destination + ".");
+        } catch (BackupUnsuccessful exception) {
+            System.out.println(exception.getMessage());
+        }
+    }
+
+    /** Restores a validated backup and reports either the restored source or the safe failure message. */
+    private void restoreBackup(String input) {
+        try {
+            Path source = backups.restoreBackup(input);
+            System.out.println("Backup restored successfully from " + source + ".");
         } catch (BackupUnsuccessful exception) {
             System.out.println(exception.getMessage());
         }
