@@ -28,7 +28,7 @@ import seedu.snap.equipment.Tripod;
 class HelpTest {
     private static final List<String> TOPICS = List.of("add", "list", "delete item", "loan", "return", "delete loan",
             "list loans", "view loan", "list overdue", "history", "filter", "update", "maintain",
-            "list maintenance-due", "inspect", "history maintenance", "add-bundle",
+            "list maintenance-due", "inspect", "history maintenance", "summary maintenance", "add-bundle",
             "add-to-bundle",
             "remove-from-bundle", "list bundles", "history bundle", "help", "bye");
 
@@ -60,6 +60,7 @@ class HelpTest {
                 Arguments.of("inspect", "inspect id/<ITEM ID> date/<DD-MM-YY> outcome/<PASS|FAIL>",
                         "inspect id/001 date/27-10-26 outcome/PASS"),
                 Arguments.of("history maintenance", "history maintenance/id/<ITEM ID>", "history maintenance/id/001"),
+                Arguments.of("summary maintenance", "summary maintenance", "summary maintenance"),
                 Arguments.of("add-bundle", "add-bundle name/<NAME>", "add-bundle name/Studio kit"),
                 Arguments.of("add-to-bundle", "add-to-bundle id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]",
                         "add-to-bundle id/001 001 002 003"),
@@ -184,7 +185,8 @@ class HelpTest {
         List<String> headings = List.of("ADD EQUIPMENT", "LIST EQUIPMENT", "DELETE EQUIPMENT", "ADD LOAN",
                 "RETURN EQUIPMENT", "DELETE LOAN", "LIST LOANS", "VIEW LOAN ISSUE CONDITION", "LIST OVERDUE LOANS",
                 "ITEM LOAN HISTORY", "FILTER EQUIPMENT", "UPDATE EQUIPMENT", "RECORD MAINTENANCE",
-                "LIST MAINTENANCE DUE", "COMPLETE INSPECTION", "VIEW MAINTENANCE HISTORY", "CREATE BUNDLE",
+                "LIST MAINTENANCE DUE", "COMPLETE INSPECTION", "VIEW MAINTENANCE HISTORY", "MAINTENANCE SUMMARY",
+                "CREATE BUNDLE",
                 "ADD EQUIPMENT TO BUNDLE",
                 "REMOVE EQUIPMENT FROM BUNDLE", "LIST BUNDLES", "BUNDLE LOAN HISTORY", "HELP", "EXIT");
         String divider = "=".repeat(100);
@@ -389,9 +391,20 @@ class HelpTest {
     void getText_inspection_explainsDueItemsAndOutcomes() {
         String text = normaliseWhitespace(Help.getText());
 
-        assertTrue(text.contains("Lists equipment marked unserviceable and therefore due for maintenance or inspection."));
+        assertTrue(text.contains(
+                "Lists equipment marked unserviceable and therefore due for maintenance or inspection."));
         assertTrue(text.contains("PASS makes equipment serviceable and available"));
         assertTrue(text.contains("Both outcomes are recorded in maintenance history."));
+    }
+
+    @Test
+    void getText_summary_explainsSelectionAndReadOnlyBehaviour() {
+        String text = normaliseWhitespace(Help.getText());
+
+        assertTrue(text.contains("Summarises currently unserviceable equipment"));
+        assertTrue(text.contains("at least two non-inspection repairs."));
+        assertTrue(text.contains("Results include Item ID, name, overdue status, repair count"));
+        assertTrue(text.contains("If no equipment is overdue or frequently repaired, a clear message is displayed."));
     }
 
     @Test

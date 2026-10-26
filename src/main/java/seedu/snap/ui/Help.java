@@ -256,9 +256,21 @@ public final class Help {
                         VIEW MAINTENANCE HISTORY
                         Format: history maintenance/id/<ITEM ID>
                         Example: history maintenance/id/001
-                        Requires an existing Item ID. Displays maintenance dates, work performed and outcomes for that item.
-                        Records are sorted by maintenance date, earliest first. An item without records shows a clear message.
+                        Requires an existing Item ID. Displays maintenance dates, work performed and outcomes for that
+                        item. Records are sorted by maintenance date, earliest first. An item without records shows a
+                        clear message.
                         Viewing history does not change equipment, loans, maintenance records or saved files.
+                        """)),
+                new CommandHelp("summary maintenance", "Equipment", lineEndings("""
+                        MAINTENANCE SUMMARY
+                        Format: summary maintenance
+                        Example: summary maintenance
+                        Summarises currently unserviceable equipment and equipment with at least two non-inspection
+                        repairs.
+                        Results include Item ID, name, overdue status, repair count and latest maintenance date.
+                        Results are sorted by Item ID. The command is read-only and does not change any records or saved
+                        files.
+                        If no equipment is overdue or frequently repaired, a clear message is displayed.
                         """)),
                 new CommandHelp("add-bundle", "Bundles", lineEndings("""
                         CREATE BUNDLE

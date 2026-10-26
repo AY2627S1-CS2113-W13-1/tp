@@ -154,6 +154,21 @@ If the item has no maintenance records, the application prints `No maintenance h
 and unknown Item IDs are rejected. Viewing history does not modify equipment, loans, maintenance records or saved
 files, and the history remains available after restarting the application.
 
+## Generating a maintenance summary: `summary maintenance`
+
+Format: `summary maintenance`
+
+Example: `summary maintenance`
+
+The summary identifies currently unserviceable equipment as overdue for maintenance and identifies equipment with at
+least two non-inspection maintenance records as frequently repaired. Each result includes the Item ID, equipment name,
+overdue status, repair count and latest maintenance date. Results are sorted by Item ID, including when repair counts
+are tied.
+
+Inspection records remain part of maintenance history but are not counted as repairs. The command is read-only and does
+not modify equipment, loans, maintenance records or saved files. If there are no overdue or frequently repaired items,
+the application prints `No overdue maintenance or frequent repair records found.`
+
 ## Adding equipment: `add`
 
 Format: `add i/[ITEM] id/[ITEM ID] type/[TYPE] cond/[CONDITION] [TYPE DETAIL] [damage/[DAMAGE]] [remarks/[REMARKS]]`
@@ -586,6 +601,7 @@ duplicate records, the application reports the problem and stops.
 | List equipment due for maintenance | `list maintenance-due` |
 | Complete an equipment inspection | `inspect id/[ITEM ID] date/[DD-MM-YY] outcome/[PASS\|FAIL]` |
 | View maintenance history | `history maintenance/id/[ITEM ID]` |
+| Generate maintenance summary | `summary maintenance` |
 | List overdue loans | `list overdue` |
 | Filter equipment | `filter [id/ID] [i/NAME] [type/TYPE] [cond/1-3] [status/available]` |
 | Update equipment | `update id/ID [i/NAME] [type/TYPE] [cond/CONDITION]` |
