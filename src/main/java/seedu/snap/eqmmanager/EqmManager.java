@@ -14,6 +14,7 @@ import seedu.snap.bundle.Bundle;
 import seedu.snap.bundle.BundleHandler;
 import seedu.snap.exceptions.BundleAdditionUnsuccessful;
 import seedu.snap.exceptions.BundleHistoryUnsuccessful;
+import seedu.snap.exceptions.BackupUnsuccessful;
 import seedu.snap.equipment.EquipmentFilter;
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
@@ -38,6 +39,8 @@ public class EqmManager {
     private final LoanHandler loans;
     private final EquipmentHandler equipment;
     private final BundleHandler bundles;
+    private final BackupHandler backups;
+    private final Path dataDirectory;
     private final Clock clock;
     private final String startupError;
     private boolean isRunning;
@@ -62,12 +65,14 @@ public class EqmManager {
         if (dataDirectory == null) {
             throw new IllegalArgumentException("Data directory must not be null.");
         }
+        this.dataDirectory = dataDirectory.toAbsolutePath().normalize();
         this.parser = new Parser();
         this.clock = clock;
-        this.equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
-        this.loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"),
-                dataDirectory.resolve("loan-sequence.txt"), clock);
-        this.bundles = new BundleHandler(equipment, dataDirectory.resolve("bundles.txt"));
+        this.equipment = new EquipmentHandler(this.dataDirectory.resolve("equipment.txt"));
+        this.loans = new LoanHandler(equipment, this.dataDirectory.resolve("loans.txt"),
+                this.dataDirectory.resolve("loan-sequence.txt"), clock);
+        this.bundles = new BundleHandler(equipment, this.dataDirectory.resolve("bundles.txt"));
+        this.backups = new BackupHandler(this.dataDirectory, equipment, loans);
         List<String> loadErrors = new ArrayList<>();
         try {
             equipment.loadFromStorage();
@@ -104,6 +109,8 @@ public class EqmManager {
             Help.print(normalizedInput.substring("help".length()));
         } else if (normalizedInput.equals("bye")) {
             isRunning = !saveBeforeExit();
+        } else if (normalizedInput.equals("backup") || normalizedInput.startsWith("backup ")) {
+            createBackup(normalizedInput);
         } else if (normalizedInput.equals("delete loan")
                 || normalizedInput.startsWith("delete loan/")
                 || normalizedInput.startsWith("delete loan ")) {
@@ -218,6 +225,16 @@ public class EqmManager {
     }
 
     // @@author
+
+    /** Creates a backup and displays either its destination or the safe failure message. */
+    private void createBackup(String input) {
+        try {
+            Path destination = backups.createBackup(input);
+            System.out.println("Backup created successfully at " + destination + ".");
+        } catch (BackupUnsuccessful exception) {
+            System.out.println(exception.getMessage());
+        }
+    }
 
     /** Displays the outcome of a loan deletion. */
     private void deleteLoan(String input) {
