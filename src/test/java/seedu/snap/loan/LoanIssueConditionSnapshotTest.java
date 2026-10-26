@@ -3,6 +3,7 @@ package seedu.snap.loan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDateTime;
 
@@ -81,6 +82,24 @@ class LoanIssueConditionSnapshotTest {
         assertEquals(6, snapshot.getCondition());
         assertEquals("SENSOR_DAMAGE", snapshot.getDamage());
         assertEquals("Handle carefully", snapshot.getRemarks());
+    }
+
+    @Test
+    void returnedCopy_preservesIssueConditionSnapshot() {
+        Loan loan =
+                new Loan(
+                        "001",
+                        createCamera(),
+                        "101",
+                        ISSUE_DATE,
+                        DUE_DATE);
+
+        Loan returned = loan.returnedCopy();
+
+        assertTrue(returned.isReturned());
+        assertEquals(
+                loan.getIssueConditionSnapshot(),
+                returned.getIssueConditionSnapshot());
     }
 
     @Test

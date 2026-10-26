@@ -38,17 +38,23 @@ public final class EquipmentConditionSnapshot {
             int condition,
             String damage,
             String remarks) {
-        this.equipmentType = normalizeRequired(
-                equipmentType,
-                "Equipment type",
-                MAX_TYPE_LENGTH)
-                .toLowerCase(Locale.ROOT);
+        String normalizedType =
+                normalizeRequired(
+                        equipmentType,
+                        "Equipment type",
+                        MAX_TYPE_LENGTH)
+                        .toLowerCase(Locale.ROOT);
+        String normalizedDamage =
+                normalizeRequired(
+                        damage,
+                        "Damage",
+                        MAX_DAMAGE_LENGTH)
+                        .toUpperCase(Locale.ROOT);
+        validateTypeAndDamage(normalizedType, normalizedDamage);
+
+        this.equipmentType = normalizedType;
         this.condition = validateCondition(condition);
-        this.damage = normalizeRequired(
-                damage,
-                "Damage",
-                MAX_DAMAGE_LENGTH)
-                .toUpperCase(Locale.ROOT);
+        this.damage = normalizedDamage;
         this.remarks = normalizeRemarks(remarks);
     }
 
@@ -113,6 +119,36 @@ public final class EquipmentConditionSnapshot {
                 "Unsupported equipment type: "
                         + equipment.getClass().getSimpleName()
                         + ".");
+    }
+
+    /** Validates the equipment type and its corresponding damage enum. */
+    private static void validateTypeAndDamage(
+            String equipmentType, String damage) {
+        switch (equipmentType) {
+        case "camera" -> validateDamage(
+                Camera.CameraDamage.class, damage, equipmentType);
+        case "lens" -> validateDamage(
+                Lens.LensDamage.class, damage, equipmentType);
+        case "battery" -> validateDamage(
+                Battery.BatteryDamage.class, damage, equipmentType);
+        case "tripod" -> validateDamage(
+                Tripod.TripodDamage.class, damage, equipmentType);
+        default -> throw new IllegalArgumentException(
+                "Unsupported equipment type: " + equipmentType + ".");
+        }
+    }
+
+    /** Rejects damage values that are not defined for the equipment type. */
+    private static <T extends Enum<T>> void validateDamage(
+            Class<T> damageClass, String damage, String equipmentType) {
+        try {
+            Enum.valueOf(damageClass, damage);
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException(
+                    "Invalid damage " + damage
+                            + " for equipment type " + equipmentType + ".",
+                    exception);
+        }
     }
 
     /** Validates the supported equipment condition range. */

@@ -108,6 +108,26 @@ class EquipmentConditionSnapshotTest {
     }
 
     @Test
+    void constructor_unsupportedEquipmentType_throwsException() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new EquipmentConditionSnapshot(
+                        "drone", 5, "NONE", ""));
+    }
+
+    @Test
+    void constructor_damageNotValidForEquipmentType_throwsException() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new EquipmentConditionSnapshot(
+                        "camera", 5, "SWELLING", ""));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new EquipmentConditionSnapshot(
+                        "camera", 5, "UNKNOWN_DAMAGE", ""));
+    }
+
+    @Test
     void constructor_invalidRemarks_throwsException() {
         assertThrows(
                 IllegalArgumentException.class,
