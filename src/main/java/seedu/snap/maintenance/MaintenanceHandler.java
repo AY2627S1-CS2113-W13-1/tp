@@ -1,7 +1,9 @@
 package seedu.snap.maintenance;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -31,10 +33,15 @@ public class MaintenanceHandler {
             "(?sU)\\Amaintain\\s+id/([^\\s]+)\\s+date/([^\\s]+)\\s+work/(.*?)\\s+outcome/(.+)\\z");
     private static final Pattern HISTORY_COMMAND = Pattern.compile(
             "(?U)\\Ahistory\\s+maintenance/id/([0-9]{3})\\z");
+    private static final Pattern INSPECTION_COMMAND = Pattern.compile(
+            "(?U)\\Ainspect\\s+id/([^\\s]+)\\s+date/([^\\s]+)\\s+outcome/([^\\s]+)\\z");
     private static final String COMMAND_FORMAT = "Invalid format. Use: maintain id/[ITEM ID] "
             + "date/[DD-MM-YY] work/[DESCRIPTION] outcome/[OUTCOME].";
     private static final String HISTORY_FORMAT = "Invalid format. Use: history maintenance/id/[ITEM ID], "
             + "from 001 to 999.";
+    private static final String INSPECTION_FORMAT = "Invalid format. Use: inspect id/[ITEM ID] "
+            + "date/[DD-MM-YY] outcome/[PASS|FAIL].";
+    private static final String INSPECTION_WORK = "Inspection";
 
     /** Equipment inventory used to resolve the physical record identity for each command. */
     private final EquipmentHandler equipment;
@@ -123,6 +130,61 @@ public class MaintenanceHandler {
             System.out.printf("%-4s %-10s | %-24s | %-20s | %-10d%n", (index + 1) + ")",
                     item.getItemId(), item.getItemName(), status, item.getCondition());
         }
+    }
+
+    /**
+     * Completes an inspection for equipment due for inspection and records its outcome.
+     * Both the equipment state and maintenance record are saved before either live object changes.
+     *
+     * @param input command in the form {@code inspect id/001 date/27-10-26 outcome/PASS}
+     * @return the persisted inspection record
+     * @throws MaintenanceInspectionUnsuccessful if validation or either save fails
+     */
+    public MaintenanceRecord completeInspection(String input) throws MaintenanceInspectionUnsuccessful {
+        ParsedInspection inspection = parseInspectionCommand(input);
+        Equipment item = equipment.getEquipmentById(inspection.itemId());
+        if (item == null) {
+            throw new MaintenanceInspectionUnsuccessful("Equipment ID " + inspection.itemId()
+                    + " does not exist.");
+        }
+        if (item.isLoaned()) {
+            throw new MaintenanceInspectionUnsuccessful("Cannot inspect item ID " + inspection.itemId()
+                    + " while it has an active loan.");
+        }
+        if (item.isServiceable()) {
+            throw new MaintenanceInspectionUnsuccessful("Item ID " + inspection.itemId()
+                    + " is not due for maintenance or inspection.");
+        }
+
+        MaintenanceRecord record = new MaintenanceRecord(item.getRecordId(), inspection.date(), INSPECTION_WORK,
+                inspection.passed() ? "PASSED" : "FAILED");
+        Equipment proposal;
+        try {
+            proposal = equipment.prepareInspectionAssessment(item, inspection.passed());
+        } catch (IllegalArgumentException exception) {
+            throw new MaintenanceInspectionUnsuccessful(exception.getMessage());
+        }
+
+        ArrayList<MaintenanceRecord> proposedRecords = new ArrayList<>(records);
+        proposedRecords.add(record);
+        FileSnapshot previousMaintenanceFile = null;
+        try {
+            previousMaintenanceFile = FileSnapshot.capture(storageFile);
+            save(proposedRecords);
+            equipment.saveInspectionAssessment(item, proposal);
+        } catch (IOException | IllegalArgumentException exception) {
+            rollbackMaintenanceFile(previousMaintenanceFile);
+            logger.log(Level.WARNING, "Inspection result could not be saved", exception);
+            throw new MaintenanceInspectionUnsuccessful("Could not save inspection: " + exception.getMessage());
+        }
+
+        item.applyReturnAssessment(proposal);
+        records.add(record);
+        assert records.getLast() == record : "A successful inspection must append its maintenance record";
+        assert item.isServiceable() == inspection.passed() : "Inspection result must update serviceability";
+        logger.log(Level.INFO, "Recorded {0} inspection for item ID {1}.",
+                new Object[]{inspection.passed() ? "passing" : "failing", item.getItemId()});
+        return record;
     }
 
     /** Returns the backing file, or null when this handler is in-memory only. */
@@ -264,6 +326,40 @@ public class MaintenanceHandler {
         throw new MaintenanceHistoryUnsuccessful(HISTORY_FORMAT);
     }
 
+    /** Parses and validates the inspection command without changing equipment or saved records. */
+    private static ParsedInspection parseInspectionCommand(String input)
+            throws MaintenanceInspectionUnsuccessful {
+        String command = input == null ? "" : input.strip();
+        Matcher matcher = INSPECTION_COMMAND.matcher(command);
+        if (!matcher.matches() || !isValidItemId(matcher.group(1))) {
+            throw new MaintenanceInspectionUnsuccessful(INSPECTION_FORMAT);
+        }
+        LocalDate date;
+        try {
+            date = LocalDate.parse(matcher.group(2), DATE_FORMATTER);
+        } catch (DateTimeParseException exception) {
+            throw new MaintenanceInspectionUnsuccessful("Inspection date must use DD-MM-YY.");
+        }
+        String result = matcher.group(3).toUpperCase(Locale.ROOT);
+        if (!result.equals("PASS") && !result.equals("FAIL")) {
+            throw new MaintenanceInspectionUnsuccessful("Inspection outcome must be PASS or FAIL.");
+        }
+        return new ParsedInspection(matcher.group(1), date, result.equals("PASS"));
+    }
+
+    /** Restores the maintenance file after an equipment save failure. */
+    private void rollbackMaintenanceFile(FileSnapshot previousFile) {
+        if (previousFile == null) {
+            return;
+        }
+        try {
+            previousFile.restore();
+        } catch (IOException rollbackException) {
+            logger.log(Level.SEVERE, "Could not roll back maintenance data after inspection failure",
+                    rollbackException);
+        }
+    }
+
     /** Prints the selected maintenance records in a stable table format. */
     private static void printMaintenanceRecords(List<MaintenanceRecord> history) {
         System.out.printf("%-4s %-16s | %-30s | %-30s%n", "No.", "DATE", "WORK", "OUTCOME");
@@ -272,6 +368,36 @@ public class MaintenanceHandler {
             assert record != null : "Maintenance history rows must not contain null records";
             System.out.printf("%-4s %-16s | %-30s | %-30s%n", (index + 1) + ")",
                     record.getMaintenanceDate(), record.getWork(), record.getOutcome());
+        }
+    }
+
+    /** Parsed values for a validated inspection command. */
+    private record ParsedInspection(String itemId, LocalDate date, boolean passed) {
+    }
+
+    /** Captures the maintenance file so a later equipment-save failure can be rolled back. */
+    private record FileSnapshot(Path path, boolean existed, byte[] contents) {
+        static FileSnapshot capture(Path path) throws IOException {
+            if (path == null || Files.notExists(path)) {
+                return path == null ? null : new FileSnapshot(path, false, new byte[0]);
+            }
+            return new FileSnapshot(path, true, Files.readAllBytes(path));
+        }
+
+        void restore() throws IOException {
+            if (!existed) {
+                Files.deleteIfExists(path);
+                return;
+            }
+            Path parent = path.toAbsolutePath().getParent();
+            Files.createDirectories(parent);
+            Path temporary = Files.createTempFile(parent, "maintenance-rollback-", ".tmp");
+            try {
+                Files.write(temporary, contents);
+                Files.move(temporary, path, StandardCopyOption.REPLACE_EXISTING);
+            } finally {
+                Files.deleteIfExists(temporary);
+            }
         }
     }
 
