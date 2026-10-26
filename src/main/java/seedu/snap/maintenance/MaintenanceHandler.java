@@ -25,6 +25,7 @@ import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.MaintenanceHistoryUnsuccessful;
 import seedu.snap.exceptions.MaintenanceInspectionUnsuccessful;
 import seedu.snap.exceptions.MaintenanceRecordUnsuccessful;
+import seedu.snap.exceptions.MaintenanceSummaryUnsuccessful;
 
 /** Handles validated maintenance-record commands and their persistent records. */
 public class MaintenanceHandler {
@@ -37,12 +38,14 @@ public class MaintenanceHandler {
             "(?U)\\Ahistory\\s+maintenance/id/([0-9]{3})\\z");
     private static final Pattern INSPECTION_COMMAND = Pattern.compile(
             "(?U)\\Ainspect\\s+id/([^\\s]+)\\s+date/([^\\s]+)\\s+outcome/([^\\s]+)\\z");
+    private static final Pattern SUMMARY_COMMAND = Pattern.compile("(?U)\\Asummary\\s+maintenance\\z");
     private static final String COMMAND_FORMAT = "Invalid format. Use: maintain id/[ITEM ID] "
             + "date/[DD-MM-YY] work/[DESCRIPTION] outcome/[OUTCOME].";
     private static final String HISTORY_FORMAT = "Invalid format. Use: history maintenance/id/[ITEM ID], "
             + "from 001 to 999.";
     private static final String INSPECTION_FORMAT = "Invalid format. Use: inspect id/[ITEM ID] "
             + "date/[DD-MM-YY] outcome/[PASS|FAIL].";
+    private static final String SUMMARY_FORMAT = "Invalid format. Use: summary maintenance.";
     private static final String INSPECTION_WORK = "Inspection";
 
     /** Equipment inventory used to resolve the physical record identity for each command. */
@@ -130,6 +133,31 @@ public class MaintenanceHandler {
         assert summary.stream().allMatch(MaintenanceSummaryEntry::isRelevant)
                 : "Maintenance summary must contain only relevant entries";
         return List.copyOf(summary);
+    }
+
+    /** Displays a read-only maintenance summary for overdue and frequently repaired equipment. */
+    public void viewMaintenanceSummary(String input) throws MaintenanceSummaryUnsuccessful {
+        parseSummaryCommand(input);
+        List<MaintenanceSummaryEntry> summary = getMaintenanceSummary();
+        if (summary.isEmpty()) {
+            System.out.println("No overdue maintenance or frequent repair records found.");
+            return;
+        }
+
+        System.out.println("Maintenance summary:");
+        System.out.println("Frequently repaired threshold: at least "
+                + MaintenanceSummaryEntry.FREQUENT_REPAIR_THRESHOLD + " repairs.");
+        System.out.printf("%-4s %-10s | %-24s | %-8s | %-8s | %-16s%n",
+                "No.", "ITEM ID", "NAME", "OVERDUE", "REPAIRS", "LAST MAINTENANCE");
+        for (int index = 0; index < summary.size(); index++) {
+            MaintenanceSummaryEntry entry = summary.get(index);
+            assert entry != null && entry.isRelevant() : "Summary rows must be relevant";
+            String latestDate = entry.latestMaintenanceDate() == null
+                    ? "-" : entry.latestMaintenanceDate().toString();
+            System.out.printf("%-4s %-10s | %-24s | %-8s | %-8d | %-16s%n", (index + 1) + ")",
+                    entry.itemId(), entry.itemName(), entry.overdue() ? "YES" : "NO",
+                    entry.repairCount(), latestDate);
+        }
     }
 
     /**
@@ -405,6 +433,15 @@ public class MaintenanceHandler {
             throw new MaintenanceInspectionUnsuccessful("Inspection outcome must be PASS or FAIL.");
         }
         return new ParsedInspection(matcher.group(1), date, result.equals("PASS"));
+    }
+
+    /** Validates the strict read-only maintenance summary command. */
+    private static void parseSummaryCommand(String input) throws MaintenanceSummaryUnsuccessful {
+        String command = input == null ? "" : input.strip();
+        if (input == null || input.matches("(?s).*\\R.*") || !SUMMARY_COMMAND.matcher(command).matches()) {
+            logger.log(Level.FINE, "Rejected maintenance summary command: {0}", input);
+            throw new MaintenanceSummaryUnsuccessful(SUMMARY_FORMAT);
+        }
     }
 
     /** Restores the maintenance file after an equipment save failure. */
