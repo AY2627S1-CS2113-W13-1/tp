@@ -19,6 +19,7 @@ import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
 import seedu.snap.exceptions.EquipmentFilteringUnsuccessful;
+import seedu.snap.exceptions.EquipmentStatusUnsuccessful;
 import seedu.snap.exceptions.EquipmentUpdateUnsuccessful;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
@@ -64,7 +65,7 @@ public class EqmManager {
         }
         this.parser = new Parser();
         this.clock = clock;
-        this.equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
+        this.equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"), clock);
         this.loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"),
                 dataDirectory.resolve("loan-sequence.txt"), clock);
         this.bundles = new BundleHandler(equipment, dataDirectory.resolve("bundles.txt"));
@@ -118,6 +119,10 @@ public class EqmManager {
             returnEquipment(normalizedInput);
         } else if (normalizedInput.startsWith("history bundle/")) {
             viewBundleLoanHistory(normalizedInput);
+        } else if (normalizedInput.matches("(?sU)status-history(?:\\s.*)?")) {
+            viewStatusHistory(normalizedInput);
+        } else if (normalizedInput.matches("(?sU)mark(?:\\s.*)?")) {
+            markEquipment(normalizedInput);
         } else if (normalizedInput.matches("(?sU)history(?:\\s.*)?")) {
             viewLoanHistory(normalizedInput);
         } else if (normalizedInput.matches("(?U)view(?:\\s.*)?")) {
@@ -332,6 +337,26 @@ public class EqmManager {
         try {
             bundles.viewBundleLoanHistory(input, loans);
         } catch (BundleHistoryUnsuccessful exception) {
+            System.out.println(exception.getMessage());
+        }
+    }
+
+    /** Displays the outcome of marking one item missing or lost. */
+    private void markEquipment(String input) {
+        try {
+            Equipment marked = equipment.markStatus(input);
+            System.out.println("Equipment with item ID " + marked.getItemId() + " marked "
+                    + marked.getStatus().getStorageValue() + " successfully.");
+        } catch (EquipmentStatusUnsuccessful exception) {
+            System.out.println(exception.getMessage());
+        }
+    }
+
+    /** Displays one physical item's current state and chronological status changes. */
+    private void viewStatusHistory(String input) {
+        try {
+            equipment.viewStatusHistory(input);
+        } catch (EquipmentStatusUnsuccessful exception) {
             System.out.println(exception.getMessage());
         }
     }

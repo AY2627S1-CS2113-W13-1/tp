@@ -260,7 +260,7 @@ public class Loan {
 
     /** Validates candidate equipment without retaining a reference or changing its availability. */
     private static String getAvailableItemId(Equipment equipment) {
-        if (equipment == null || equipment.isLoaned() || !equipment.isServiceable()) {
+        if (equipment == null || !equipment.isAvailableForLoan()) {
             throw new IllegalArgumentException("A loan requires available equipment.");
         }
         return equipment.getItemId();
