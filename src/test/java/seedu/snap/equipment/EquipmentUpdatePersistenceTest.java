@@ -36,6 +36,24 @@ class EquipmentUpdatePersistenceTest {
     }
 
     @Test
+    void updateEquipment_location_restartPreservesLocationAndIdentity() throws Exception {
+        Path file = temporaryDirectory.resolve("equipment.txt");
+        EquipmentHandler handler = new EquipmentHandler(file);
+        Equipment original = handler.addEquipment("add i/Camera id/001 type/camera cond/1");
+        String recordId = original.getRecordId();
+
+        handler.updateEquipment("update id/001 location/Cabinet A-3");
+
+        EquipmentHandler restarted = new EquipmentHandler(file);
+        restarted.loadFromStorage();
+        Equipment restored = restarted.getEquipmentList().getFirst();
+        assertEquals(recordId, restored.getRecordId());
+        assertEquals("Cabinet A-3", restored.getStorageLocation());
+        assertEquals("Camera", restored.getItemName());
+        assertEquals(1, restored.getCondition());
+    }
+
+    @Test
     void updateEquipment_rejectedValues_preserveSavedFileAndAllowRecovery() throws Exception {
         Path file = temporaryDirectory.resolve("equipment.txt");
         EquipmentHandler handler = new EquipmentHandler(file);
@@ -77,5 +95,28 @@ class EquipmentUpdatePersistenceTest {
         Files.delete(file);
         assertSame(original, handler.updateEquipment("update id/001 cond/5"));
         assertTrue(Files.readString(file).contains("cond/5"));
+    }
+
+    @Test
+    void updateEquipment_locationFailedWrite_preservesExistingLocationAndSavedData() throws Exception {
+        Path file = temporaryDirectory.resolve("equipment.txt");
+        EquipmentHandler handler = new EquipmentHandler(file);
+        Equipment original = handler.addEquipment("add i/Camera id/001 type/camera cond/1");
+        handler.updateEquipment("update id/001 location/Original shelf");
+        Files.delete(file);
+        Files.createDirectory(file);
+        Path sentinel = file.resolve("keep.txt");
+        Files.writeString(sentinel, "keep");
+
+        EquipmentUpdateUnsuccessful error = assertThrows(EquipmentUpdateUnsuccessful.class,
+                () -> handler.updateEquipment("update id/001 location/New shelf"));
+
+        assertTrue(error.getMessage().startsWith("Could not save equipment update:"));
+        assertEquals("Original shelf", original.getStorageLocation());
+        assertEquals("keep", Files.readString(sentinel));
+        Files.delete(sentinel);
+        Files.delete(file);
+        handler.updateEquipment("update id/001 location/New shelf");
+        assertEquals("New shelf", original.getStorageLocation());
     }
 }
