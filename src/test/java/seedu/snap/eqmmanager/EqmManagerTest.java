@@ -71,7 +71,6 @@ class EqmManagerTest {
         EqmManager restarted = new EqmManager(temporaryDirectory);
         restarted.executeInput("remove-from-bundle id/001 001");
         restarted.executeInput("delete item/001");
-        restarted.executeInput("bye");
 
         String actual = output.toString(StandardCharsets.UTF_8);
         assertTrue(actual.contains("Equipment ID 001 removed from bundle 001 successfully."));
@@ -79,6 +78,11 @@ class EqmManagerTest {
         assertEquals("", Files.readString(temporaryDirectory.resolve("equipment.txt")));
         assertEquals("bundle id/001 name64/Q2FtZXJhIGtpdA items/" + System.lineSeparator(),
                 Files.readString(temporaryDirectory.resolve("bundles.txt")));
+
+        output.reset();
+        EqmManager afterRestart = new EqmManager(temporaryDirectory);
+        afterRestart.executeInput("list bundles");
+        assertFalse(output.toString(StandardCharsets.UTF_8).contains("missing equipment"));
     }
 
     @Test

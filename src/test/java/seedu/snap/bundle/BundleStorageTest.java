@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import seedu.snap.equipment.EquipmentHandler;
+import seedu.snap.exceptions.BundleAdditionUnsuccessful;
 
 /** Tests bundle storage validation, exact equipment identity matching and save failures. */
 class BundleStorageTest {
@@ -66,5 +67,23 @@ class BundleStorageTest {
         assertThrows(IOException.class, handler::saveToStorage);
 
         assertEquals("keep this data", Files.readString(sentinel));
+    }
+
+    @Test
+    void removeMembership_saveFailure_restoresMembership() throws Exception {
+        EquipmentHandler equipment = new EquipmentHandler();
+        equipment.addEquipment("add i/Camera id/001 type/camera cond/5 sensor/Full frame");
+        Path file = temporaryDirectory.resolve("bundles.txt");
+        Files.createDirectory(file);
+        Files.writeString(file.resolve("keep.txt"), "keep this data");
+        BundleHandler handler = new BundleHandler(equipment, file);
+        handler.addBundle("add-bundle name/Travel Kit");
+        handler.addItemsToBundle("add-to-bundle id/001 001");
+
+        BundleAdditionUnsuccessful exception = assertThrows(BundleAdditionUnsuccessful.class,
+                () -> handler.removeItemsFromBundle("remove-from-bundle id/001 001"));
+
+        assertTrue(exception.getMessage().contains("Could not save bundle removal:"));
+        assertTrue(handler.containsEquipmentId("001"));
     }
 }

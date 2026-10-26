@@ -204,9 +204,23 @@ public class BundleHandler {
             throw new BundleAdditionUnsuccessful("Bundle ID " + bundleId + " does not exist.");
         }
 
+        List<Equipment> previousEquipment = List.copyOf(bundle.getEquipmentList());
         ArrayList<String> messages = new ArrayList<>();
+        boolean membershipChanged = false;
         for (int index = 2; index < arguments.length; index++) {
-            messages.add(removeItemFromBundle(bundle, arguments[index]));
+            String itemId = arguments[index];
+            boolean wasMember = bundle.containsEquipmentId(itemId);
+            messages.add(removeItemFromBundle(bundle, itemId));
+            membershipChanged |= wasMember;
+        }
+        if (membershipChanged) {
+            try {
+                saveToStorage();
+            } catch (IOException exception) {
+                bundle.restoreEquipment(previousEquipment);
+                LOGGER.log(Level.WARNING, "Bundle membership removal could not be saved", exception);
+                throw new BundleAdditionUnsuccessful("Could not save bundle removal: " + exception.getMessage());
+            }
         }
         assert messages.size() == arguments.length - 2 : "Every requested item must produce a result.";
         return Collections.unmodifiableList(messages);

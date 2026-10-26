@@ -133,6 +133,17 @@ public class Bundle {
         return false;
     }
 
+    /** Restores a previous equipment snapshot after a failed persistence operation. */
+    void restoreEquipment(List<Equipment> previousEquipment) {
+        if (previousEquipment == null) {
+            throw new IllegalArgumentException("Previous equipment cannot be null.");
+        }
+        equipment.clear();
+        equipment.addAll(previousEquipment);
+        updateCompletionState();
+        assert equipment.equals(previousEquipment) : "Bundle rollback must restore all equipment";
+    }
+
     /** Recomputes whether the bundle meets all required type counts. */
     private void updateCompletionState() {
         int cameraCount = countType(CAMERA_TYPE);
