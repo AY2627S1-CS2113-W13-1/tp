@@ -9,6 +9,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
+import java.security.MessageDigest;
+import java.util.HexFormat;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -184,6 +186,70 @@ class BackupHandlerTest {
     }
 
     @Test
+    void restoreBackup_malformedRecordWithMatchingManifest_rejectsBeforeReplacingLiveData() throws Exception {
+        Path dataDirectory = temporaryDirectory.resolve("data");
+        EquipmentHandler equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
+        LoanHandler loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"),
+                dataDirectory.resolve("loan-sequence.txt"));
+        BackupHandler handler = new BackupHandler(dataDirectory, equipment, loans);
+        Path backup = temporaryDirectory.resolve("malformed-backup");
+        handler.createBackup("backup path/" + backup);
+        Files.writeString(backup.resolve(BackupHandler.EQUIPMENT_FILE_NAME), "not an equipment record\n");
+        refreshManifest(backup);
+
+        BackupUnsuccessful exception = assertThrows(BackupUnsuccessful.class,
+                () -> handler.restoreBackup("restore path/" + backup));
+
+        assertTrue(exception.getMessage().contains("Invalid equipment record"));
+        assertFalse(Files.exists(dataDirectory));
+    }
+
+    @Test
+    void restoreBackup_duplicateEquipmentWithMatchingManifest_rejectsBeforeReplacingLiveData() throws Exception {
+        Path dataDirectory = temporaryDirectory.resolve("data");
+        EquipmentHandler equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
+        equipment.addEquipment("add i/Camera id/001 type/camera cond/4 sensor/APS-C");
+        LoanHandler loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"),
+                dataDirectory.resolve("loan-sequence.txt"));
+        BackupHandler handler = new BackupHandler(dataDirectory, equipment, loans);
+        Path backup = temporaryDirectory.resolve("duplicate-backup");
+        handler.createBackup("backup path/" + backup);
+        String record = Files.readString(backup.resolve(BackupHandler.EQUIPMENT_FILE_NAME));
+        Files.writeString(backup.resolve(BackupHandler.EQUIPMENT_FILE_NAME),
+                record + System.lineSeparator() + record);
+        refreshManifest(backup);
+
+        BackupUnsuccessful exception = assertThrows(BackupUnsuccessful.class,
+                () -> handler.restoreBackup("restore path/" + backup));
+
+        assertTrue(exception.getMessage().contains("Duplicate equipment ID"));
+        assertEquals(1, equipment.getEquipmentList().size());
+        assertFalse(equipment.getEquipmentById("001").isLoaned());
+    }
+
+    @Test
+    void restoreBackup_inconsistentActiveLoanWithMatchingManifest_rejectsBeforeReplacingLiveData() throws Exception {
+        Path dataDirectory = temporaryDirectory.resolve("data");
+        EquipmentHandler equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
+        equipment.addEquipment("add i/Camera id/001 type/camera cond/4 sensor/APS-C");
+        LoanHandler loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"),
+                dataDirectory.resolve("loan-sequence.txt"));
+        BackupHandler handler = new BackupHandler(dataDirectory, equipment, loans);
+        Path backup = temporaryDirectory.resolve("inconsistent-backup");
+        handler.createBackup("backup path/" + backup);
+        Files.writeString(backup.resolve(BackupHandler.LOAN_FILE_NAME),
+                "loan loanId/001 id/999 b/111 issued/01-10-26 due/02-10-26 returned/false\n");
+        refreshManifest(backup);
+
+        BackupUnsuccessful exception = assertThrows(BackupUnsuccessful.class,
+                () -> handler.restoreBackup("restore path/" + backup));
+
+        assertTrue(exception.getMessage().contains("Invalid active loan"));
+        assertFalse(Files.exists(dataDirectory.resolve(BackupHandler.LOAN_FILE_NAME)));
+        assertFalse(equipment.getEquipmentById("001").isLoaned());
+    }
+
+    @Test
     void restoreBackup_invalidSource_reportsErrorWithoutChangingLiveData() throws Exception {
         Path dataDirectory = temporaryDirectory.resolve("data");
         EquipmentHandler equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
@@ -213,5 +279,19 @@ class BackupHandlerTest {
         } catch (Exception exception) {
             throw new AssertionError(exception);
         }
+    }
+
+    private void refreshManifest(Path backup) throws Exception {
+        String manifest = String.join(System.lineSeparator(),
+                "backupVersion/1",
+                "equipmentSha256/" + checksum(backup.resolve(BackupHandler.EQUIPMENT_FILE_NAME)),
+                "loansSha256/" + checksum(backup.resolve(BackupHandler.LOAN_FILE_NAME)),
+                "loanSequenceSha256/" + checksum(backup.resolve(BackupHandler.SEQUENCE_FILE_NAME)))
+                + System.lineSeparator();
+        Files.writeString(backup.resolve(BackupHandler.MANIFEST_FILE_NAME), manifest);
+    }
+
+    private String checksum(Path path) throws Exception {
+        return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(path)));
     }
 }

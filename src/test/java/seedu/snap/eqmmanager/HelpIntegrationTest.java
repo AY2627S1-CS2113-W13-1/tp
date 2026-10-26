@@ -152,8 +152,8 @@ class HelpIntegrationTest {
 
         List<String> lines = printed().lines().toList();
         assertTrue(lines.stream().allMatch(line -> line.length() <= 100));
-        assertEquals(22, lines.stream().filter("Format:"::equals).count());
-        assertEquals(22, lines.stream().filter("Example:"::equals).count());
+        assertEquals(24, lines.stream().filter("Format:"::equals).count());
+        assertEquals(24, lines.stream().filter("Example:"::equals).count());
         assertTrue(printed().contains(System.lineSeparator() + System.lineSeparator() + "Format:"
                 + System.lineSeparator() + "  "));
         assertTrue(printed().contains(System.lineSeparator() + System.lineSeparator() + "Example:"
@@ -170,6 +170,8 @@ class HelpIntegrationTest {
         "delete loan | Format: delete loan/<LOAN ID>",
         "list loans | Format: list loans",
         "view loan | Format: view loan/<LOAN ID>",
+        "backup | Format: backup path/<DIRECTORY>",
+        "restore | Format: restore path/<DIRECTORY>",
         "list overdue | Format: list overdue",
         "history | Format: history id/<ITEM ID>",
         "filter | Format: filter [id/<ID>]",
