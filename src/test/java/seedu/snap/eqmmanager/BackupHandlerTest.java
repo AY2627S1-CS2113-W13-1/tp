@@ -125,7 +125,7 @@ class BackupHandlerTest {
         BackupHandler handler = new BackupHandler(dataDirectory, equipment, loans);
 
         for (String command : new String[]{null, "", "backup", "backup path/", "backup file/test",
-                "backup path/test\nsecond"}) {
+            "backup path/test\nsecond"}) {
             assertThrows(BackupUnsuccessful.class, () -> handler.createBackup(command), command);
         }
     }
