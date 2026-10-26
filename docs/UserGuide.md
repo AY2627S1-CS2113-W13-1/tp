@@ -116,6 +116,30 @@ maintenance records from being attached to a replacement item if an Item ID is r
 
 Invalid commands, unknown Item IDs, invalid dates and failed saves leave existing maintenance records unchanged.
 
+## Identifying maintenance due: `list maintenance-due`
+
+Format: `list maintenance-due`
+
+This lists equipment currently marked unserviceable and therefore due for maintenance or inspection. Equipment is
+listed in Item ID order. An active loan relationship is never changed by this command; any inconsistent loaned item
+is shown as `Loaned` and cannot be inspected until the loan is resolved.
+
+If no equipment is due, the application prints `No equipment is due for maintenance or inspection.` The command is
+read-only and does not modify equipment, loans, maintenance records or saved files.
+
+## Completing an inspection: `inspect`
+
+Format: `inspect id/[ITEM ID] date/[DD-MM-YY] outcome/[PASS|FAIL]`
+
+Example: `inspect id/001 date/27-10-26 outcome/PASS`
+
+Only equipment due for maintenance or inspection can be inspected, and equipment with an active loan is rejected.
+`PASS` marks the item serviceable, allowing it to become available when no other existing availability rule blocks it.
+`FAIL` leaves the item unavailable. Both outcomes are saved as maintenance records with the inspection date.
+
+The equipment state and maintenance record are saved together. If either save fails, the in-memory state and saved
+records are rolled back and the application reports the failure.
+
 ## Viewing maintenance history: `history maintenance`
 
 Format: `history maintenance/id/[ITEM ID]`
@@ -559,6 +583,8 @@ duplicate records, the application reports the problem and stops.
 | View item loan history | `history id/[ITEM ID]` |
 | View bundle loan history | `history bundle/id/[BUNDLE ID]` or `history bundle/name/[NAME]` |
 | Record maintenance work | `maintain id/[ITEM ID] date/[DD-MM-YY] work/[DESCRIPTION] outcome/[OUTCOME]` |
+| List equipment due for maintenance | `list maintenance-due` |
+| Complete an equipment inspection | `inspect id/[ITEM ID] date/[DD-MM-YY] outcome/[PASS\|FAIL]` |
 | View maintenance history | `history maintenance/id/[ITEM ID]` |
 | List overdue loans | `list overdue` |
 | Filter equipment | `filter [id/ID] [i/NAME] [type/TYPE] [cond/1-3] [status/available]` |

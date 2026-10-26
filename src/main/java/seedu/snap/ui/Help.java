@@ -239,6 +239,21 @@ public final class Help {
                         Maintenance records are saved to maintenance.txt and remain associated with the physical item.
                         Maintenance work: 1-%d characters; outcomes: 1-%d characters.
                         """, MaintenanceRecord.MAX_WORK_LENGTH, MaintenanceRecord.MAX_OUTCOME_LENGTH))),
+                new CommandHelp("list maintenance-due", "Equipment", lineEndings("""
+                        LIST MAINTENANCE DUE
+                        Format: list maintenance-due
+                        Example: list maintenance-due
+                        Lists equipment marked unserviceable and therefore due for maintenance or inspection.
+                        Active loan relationships remain protected and are shown as Loaned when applicable.
+                        """)),
+                new CommandHelp("inspect", "Equipment", lineEndings("""
+                        COMPLETE INSPECTION
+                        Format: inspect id/<ITEM ID> date/<DD-MM-YY> outcome/<PASS|FAIL>
+                        Example: inspect id/001 date/27-10-26 outcome/PASS
+                        Only equipment due for inspection can be inspected; active loans are rejected.
+                        PASS makes equipment serviceable and available when no other availability rule blocks it.
+                        FAIL keeps equipment unavailable. Both outcomes are recorded in maintenance history.
+                        """)),
                 new CommandHelp("history maintenance", "Equipment", lineEndings("""
                         VIEW MAINTENANCE HISTORY
                         Format: history maintenance/id/<ITEM ID>

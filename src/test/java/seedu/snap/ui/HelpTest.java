@@ -28,7 +28,7 @@ import seedu.snap.equipment.Tripod;
 class HelpTest {
     private static final List<String> TOPICS = List.of("add", "list", "delete item", "loan", "return", "delete loan",
             "list loans", "view loan", "list overdue", "history", "filter", "update", "maintain",
-            "history maintenance", "add-bundle",
+            "list maintenance-due", "inspect", "history maintenance", "add-bundle",
             "add-to-bundle",
             "remove-from-bundle", "list bundles", "history bundle", "help", "bye");
 
@@ -54,6 +54,9 @@ class HelpTest {
                         "filter type/camera cond/1-3 status/available"),
                 Arguments.of("maintain", "maintain id/<ITEM ID> date/<DD-MM-YY> work/<DESCRIPTION> outcome/<OUTCOME>",
                         "maintain id/001 date/27-10-26 work/Replaced battery outcome/Completed"),
+                Arguments.of("list maintenance-due", "list maintenance-due", "list maintenance-due"),
+                Arguments.of("inspect", "inspect id/<ITEM ID> date/<DD-MM-YY> outcome/<PASS|FAIL>",
+                        "inspect id/001 date/27-10-26 outcome/PASS"),
                 Arguments.of("history maintenance", "history maintenance/id/<ITEM ID>", "history maintenance/id/001"),
                 Arguments.of("update", "update id/<ID> [i/<NAME>] [type/<TYPE>] [cond/<N>]",
                         "update id/001 i/Studio camera cond/5"),
@@ -181,7 +184,7 @@ class HelpTest {
         List<String> headings = List.of("ADD EQUIPMENT", "LIST EQUIPMENT", "DELETE EQUIPMENT", "ADD LOAN",
                 "RETURN EQUIPMENT", "DELETE LOAN", "LIST LOANS", "VIEW LOAN ISSUE CONDITION", "LIST OVERDUE LOANS",
                 "ITEM LOAN HISTORY", "FILTER EQUIPMENT", "UPDATE EQUIPMENT", "RECORD MAINTENANCE",
-                "VIEW MAINTENANCE HISTORY", "CREATE BUNDLE",
+                "LIST MAINTENANCE DUE", "COMPLETE INSPECTION", "VIEW MAINTENANCE HISTORY", "CREATE BUNDLE",
                 "ADD EQUIPMENT TO BUNDLE",
                 "REMOVE EQUIPMENT FROM BUNDLE", "LIST BUNDLES", "BUNDLE LOAN HISTORY", "HELP", "EXIT");
         String divider = "=".repeat(100);
