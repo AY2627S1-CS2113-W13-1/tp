@@ -100,6 +100,14 @@ public final class Help {
                 Example: list loans
                 Shows active and returned loans with Loan ID, Item ID, borrower, dates and returned status.
 
+                BORROWER'S ACTIVE LOANS
+                Format: list loans b/<BORROWER ID>
+                Example: list loans b/111
+                Shows the equipment currently held by the borrower, with Loan ID, Item ID, borrower, dates
+                and returned status. Only active loans for the specified borrower are shown.
+                borrower/ and member/ may be used in place of b/. An unknown borrower or a borrower with no
+                active loans produces a clear empty-result message. This command does not change any records.
+
                 LIST OVERDUE LOANS
                 Format: list overdue
                 Example: list overdue

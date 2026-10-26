@@ -178,6 +178,20 @@ This displays all recorded loans with their unique loan ID, item ID, borrower ID
 The `LOAN ID` column comes before `ITEM ID`. The final `RETURNED` column is `true` for returned loans
 and `false` for active loans.
 
+## Viewing equipment held by a borrower: `list loans b/`
+
+Format: `list loans b/[BORROWER ID]`
+
+Example: `list loans b/111`
+
+This displays all equipment currently held by the specified borrower. The results include the loan ID, item ID,
+borrower ID, issue date and due date. Returned loans and loans belonging to other borrowers are excluded.
+`borrower/` and `member/` may be used in place of `b/`.
+
+Borrower IDs are three digits from `000` to `999`. An unknown borrower or a borrower with no active loans is
+handled with `No active loans found for borrower ID 111.` (using the requested ID). Invalid commands show the
+required format. This is a read-only command and does not change equipment, loans, availability or saved files.
+
 ## Viewing an item's loan history: `history`
 
 Format: `history id/[ITEM ID]`
@@ -429,6 +443,7 @@ reports the problem and stops.
 | Delete loan | `delete loan/[LOAN ID]` |
 | List equipment | `list` |
 | List loans | `list loans` |
+| View a borrower's active equipment | `list loans b/[BORROWER ID]` |
 | View item loan history | `history id/[ITEM ID]` |
 | List overdue loans | `list overdue` |
 | Filter equipment | `filter [id/ID] [i/NAME] [type/TYPE] [cond/1-3] [status/available]` |
