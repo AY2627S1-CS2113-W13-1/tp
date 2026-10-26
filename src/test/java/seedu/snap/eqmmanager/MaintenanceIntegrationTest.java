@@ -1,5 +1,6 @@
 package seedu.snap.eqmmanager;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -90,5 +91,57 @@ class MaintenanceIntegrationTest {
         assertTrue(printed.contains("Could not load saved data: maintenance.txt:"));
         assertFalse(printed.contains("Maintenance recorded successfully."));
         assertEquals(original, Files.readString(file));
+    }
+
+    @Test
+    void historyMaintenance_validCommand_displaysChronologicalRecordsWithoutWriting() throws Exception {
+        EqmManager manager = new EqmManager(temporaryDirectory);
+        manager.executeInput("add i/Camera id/001 type/camera cond/5");
+        manager.executeInput("maintain id/001 date/27-10-26 work/Later repair outcome/Completed");
+        manager.executeInput("maintain id/001 date/24-10-26 work/Earlier repair outcome/Completed");
+        Path maintenanceFile = temporaryDirectory.resolve("maintenance.txt");
+        byte[] savedBeforeView = Files.readAllBytes(maintenanceFile);
+        output.reset();
+
+        manager.executeInput("history maintenance/id/001");
+
+        String printed = output.toString(StandardCharsets.UTF_8);
+        assertTrue(printed.contains("Maintenance history for item ID 001:"));
+        assertTrue(printed.contains("DATE"));
+        assertTrue(printed.contains("Earlier repair"));
+        assertTrue(printed.contains("Later repair"));
+        assertTrue(printed.indexOf("2026-10-24") < printed.indexOf("2026-10-27"));
+        assertArrayEquals(savedBeforeView, Files.readAllBytes(maintenanceFile));
+    }
+
+    @Test
+    void historyMaintenance_emptyUnknownAndInvalidQueries_areHandled() throws Exception {
+        EqmManager manager = new EqmManager(temporaryDirectory);
+        manager.executeInput("add i/Camera id/001 type/camera cond/5");
+        output.reset();
+
+        manager.executeInput("history maintenance/id/001");
+        manager.executeInput("history maintenance/id/999");
+        manager.executeInput("history maintenance/id/000");
+
+        String printed = output.toString(StandardCharsets.UTF_8);
+        assertTrue(printed.contains("No maintenance history for item ID 001."));
+        assertTrue(printed.contains("Equipment ID 999 does not exist."));
+        assertTrue(printed.contains("Invalid format. Use: history maintenance/id/[ITEM ID], from 001 to 999."));
+    }
+
+    @Test
+    void historyMaintenance_afterRestart_displaysPersistedRecords() throws Exception {
+        EqmManager manager = new EqmManager(temporaryDirectory);
+        manager.executeInput("add i/Camera id/001 type/camera cond/5");
+        manager.executeInput("maintain id/001 date/27-10-26 work/Replaced battery outcome/Completed");
+        output.reset();
+
+        EqmManager restarted = new EqmManager(temporaryDirectory);
+        restarted.executeInput("history maintenance/id/001");
+
+        String printed = output.toString(StandardCharsets.UTF_8);
+        assertTrue(printed.contains("Replaced battery"));
+        assertTrue(printed.contains("Completed"));
     }
 }
