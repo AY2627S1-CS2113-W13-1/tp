@@ -74,13 +74,14 @@ public final class Help {
 
                 Equipment, loan and bundle IDs: exactly three digits, 001-999. Borrower IDs: 000-999.
                 Equipment names: 1-%d characters; condition: %d-%d; remarks: 0-%d characters after trimming.
+                Storage locations: 0-%d characters. Locations must remain on one line and cannot contain tabs.
                 Type details: 1-100 characters. Type details and remarks must remain on one line.
 
                 Empty supplied details, damage, IDs or dates are invalid; defaults apply to omitted fields.
                 Wrapped formats and examples must be entered as a single line.
                 """,
                 Equipment.MAX_NAME_LENGTH, Equipment.MIN_CONDITION, Equipment.MAX_CONDITION,
-                Equipment.MAX_REMARKS_LENGTH)), false);
+                Equipment.MAX_REMARKS_LENGTH, Equipment.MAX_STORAGE_LOCATION_LENGTH)), false);
     }
 
     /** Keeps each command's description in one immutable entry for every help view. */
@@ -117,7 +118,7 @@ public final class Help {
                         LIST EQUIPMENT
                         Format: list
                         Example: list
-                        Shows all equipment, including status, subtype details, damage and remarks.
+                        Shows all equipment, including status, subtype details, storage location, damage and remarks.
                         Status is Available, Loaned or Unserviceable.
                         """)),
                 new CommandHelp("delete item", "Equipment", lineEndings("""
@@ -219,13 +220,14 @@ public final class Help {
                         """)),
                 new CommandHelp("update", "Equipment", lineEndings("""
                         UPDATE EQUIPMENT
-                        Format: update id/<ID> [i/<NAME>] [type/<TYPE>] [cond/<N>]
-                        Example: update id/001 i/Studio camera cond/5
+                        Format: update id/<ID> [i/<NAME>] [type/<TYPE>] [cond/<N>] [location/<LOCATION|none>]
+                        Example: update id/001 location/Cabinet A-3
                         Requires an existing Item ID and at least one update field, in any order, each prefix once.
 
                         Omitted fields retain their current values. Type is fixed; type/ must match the current type.
+                        Storage locations may contain up to %d characters; use location/none to clear one.
                         Updates retain subtype details, damage, remarks, serviceability, loans and bundle membership.
-                        """)),
+                        """, Equipment.MAX_STORAGE_LOCATION_LENGTH)),
                 new CommandHelp("add-bundle", "Bundles", lineEndings("""
                         CREATE BUNDLE
                         Format: add-bundle name/<NAME>

@@ -92,7 +92,7 @@ absent. Supplying an empty or invalid value produces an error, except that empty
 | `add` | `remarks/` | Empty text; rejected if damage is `OTHER` |
 | `loan` | `issued/` | Today's date in the application's local time zone, at midnight |
 | `return` | `remarks/` | Empty text, replacing previous remarks; rejected if damage is `OTHER` |
-| `update` | Name, type or condition | Keep the existing value; supply an ID and at least one field |
+| `update` | Name, type, condition or storage location | Keep the existing value; supply an ID and at least one field |
 | `filter` | Any individual criterion | No restriction for that criterion; supply at least one criterion |
 
 Equipment name, Item ID, type and numeric condition remain required when adding equipment.
@@ -173,7 +173,8 @@ Format: `list`
 
 This displays all equipment with its name, ID, type and condition. The `STATUS` column, before `DETAILS`, shows
 `Available`, `Loaned` or `Unserviceable`. The `DETAILS` column shows the type-specific value and damage, including the defaults
-when optional fields were omitted. The `REMARKS` column follows `DETAILS` and is empty when no remarks were given.
+when optional fields were omitted. The `LOCATION` column follows `DETAILS` and is empty when no storage location was
+assigned. The `REMARKS` column follows `LOCATION` and is empty when no remarks were given.
 
 ## Deleting equipment: `delete`
 
@@ -365,16 +366,21 @@ Matching rows include the equipment's current status, type-specific details, rec
 
 ## Updating equipment: `update`
 
-Format: `update id/ITEM ID [i/NAME] [type/TYPE] [cond/CONDITION]`
+Format: `update id/ITEM ID [i/NAME] [type/TYPE] [cond/CONDITION] [location/LOCATION|none]`
 
 Examples:
 
 * `update id/001 cond/5`
 * `update id/001 i/Film Camera type/camera`
+* `update id/001 location/Cabinet A-3`
 
-Supply an existing ID and at least one of `i/`, `type/`, or `cond/`. Fields may appear in any order, once each.
+Supply an existing ID and at least one of `i/`, `type/`, `cond/`, or `location/`. Fields may appear in any order, once each.
 The ID stays fixed and omitted details keep their current values. Names contain 1-100 characters and
 conditions are whole numbers from 1 to 10. Condition ranges are not accepted for updates.
+
+Storage locations may contain up to 100 characters and must be single-line values without tabs. Use `location/none`
+to clear the current location. Locations are saved in `data/equipment.txt` and an omitted location remains empty for
+backward compatibility with older equipment files.
 
 Equipment types are fixed by their subclasses. If `type/` is supplied, it must match the item's current type,
 ignoring case. Changing a camera to a lens, for example, is rejected before saving or changing any details.
@@ -382,7 +388,7 @@ Updates preserve the same equipment object, its position in the list, its type-s
 and its availability, loan references and bundle membership. Type-specific fields, damage and remarks cannot be
 changed with `update`.
 
-Prefixes `id/`, `i/`, `type/`, `cond/`, and `status/` after whitespace are reserved separators; `status/`
+Prefixes `id/`, `i/`, `type/`, `cond/`, `location/`, and `status/` after whitespace are reserved separators; `status/`
 cannot be updated manually. Text such as `USB id/card reader` within a name is allowed.
 The proposed details are saved before the existing object is changed. Invalid commands or failed saves
 leave the existing equipment details unchanged, and the application displays an error.
@@ -529,7 +535,7 @@ duplicate records, the application reports the problem and stops.
 | View bundle loan history | `history bundle/id/[BUNDLE ID]` or `history bundle/name/[NAME]` |
 | List overdue loans | `list overdue` |
 | Filter equipment | `filter [id/ID] [i/NAME] [type/TYPE] [cond/1-3] [status/available]` |
-| Update equipment | `update id/ID [i/NAME] [type/TYPE] [cond/CONDITION]` |
+| Update equipment | `update id/ID [i/NAME] [type/TYPE] [cond/CONDITION] [location/LOCATION\|none]` |
 | Create bundle | `add-bundle name/[NAME]` |
 | Add equipment to bundle | `add-to-bundle id/[BUNDLE ID] [EQUIPMENT ID]...` |
 | Remove equipment from bundle | `remove-from-bundle id/[BUNDLE ID] [EQUIPMENT ID]...` |
