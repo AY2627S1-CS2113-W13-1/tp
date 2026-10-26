@@ -561,16 +561,16 @@ public class EquipmentHandler {
 
     /** Prints matching items in their existing order using the normal equipment table. */
     public void viewEquipment(List<Equipment> equipmentList) {
-        System.out.printf("%-4s %-24s | %-6s | %-15s | %-9s | %-13s | %-30s | %-30s%n",
-                "No.", "NAME", "ID", "TYPE", "CONDITION", "STATUS", "DETAILS", "REMARKS");
+        System.out.printf("%-4s %-24s | %-6s | %-15s | %-9s | %-13s | %-30s | %-24s | %-30s%n",
+                "No.", "NAME", "ID", "TYPE", "CONDITION", "STATUS", "DETAILS", "LOCATION", "REMARKS");
         logger.log(Level.INFO, "Viewing {0} equipment item(s)", equipmentList.size());
         for (int index = 0; index < equipmentList.size(); index++) {
             Equipment item = equipmentList.get(index);
             assert item != null : "Equipment list must not contain null items";
             String status = item.isLoaned() ? "Loaned" : item.isServiceable() ? "Available" : "Unserviceable";
-            System.out.printf("%-4s %-24s | %-6s | %-15s | %-9d | %-13s | %-30s | %-30s%n",
+            System.out.printf("%-4s %-24s | %-6s | %-15s | %-9d | %-13s | %-30s | %-24s | %-30s%n",
                     (index + 1) + ")", item.getItemName(), item.getItemId(), item.getType(), item.getCondition(),
-                    status, item.getDetails(), item.getRemarks());
+                    status, item.getDetails(), item.getStorageLocation(), item.getRemarks());
         }
     }
 
