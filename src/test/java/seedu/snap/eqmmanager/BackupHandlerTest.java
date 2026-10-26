@@ -16,6 +16,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.BackupUnsuccessful;
+import seedu.snap.loan.Loan;
 import seedu.snap.loan.LoanHandler;
 
 /** Verifies backup format creation, destination validation and non-destructive behavior. */
@@ -127,6 +128,75 @@ class BackupHandlerTest {
                 "backup path/test\nsecond"}) {
             assertThrows(BackupUnsuccessful.class, () -> handler.createBackup(command), command);
         }
+    }
+
+    @Test
+    void restoreBackup_validBackup_replacesLiveRecordsAndReloadsHandlers() throws Exception {
+        Path dataDirectory = temporaryDirectory.resolve("data");
+        EquipmentHandler equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
+        equipment.addEquipment("add i/Camera id/001 type/camera cond/4 sensor/APS-C");
+        LoanHandler loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"),
+                dataDirectory.resolve("loan-sequence.txt"));
+        Loan original = loans.addLoan("loan id/001 b/111 issued/01-10-26 due/02-10-26");
+        BackupHandler handler = new BackupHandler(dataDirectory, equipment, loans);
+        Path backup = temporaryDirectory.resolve("valid-backup");
+        handler.createBackup("backup path/" + backup);
+        loans.returnLoan("return loan/" + original.getLoanId()
+                + " serviceable/yes damage/NONE remarks/");
+        equipment.addEquipment("add i/Lens id/002 type/lens cond/5 zoom/24-70mm");
+
+        Path restored = handler.restoreBackup("restore path/" + backup);
+
+        assertEquals(backup.toAbsolutePath().normalize(), restored);
+        assertEquals(1, equipment.getEquipmentList().size());
+        assertEquals("Camera", equipment.getEquipmentList().getFirst().getItemName());
+        assertTrue(equipment.getEquipmentList().getFirst().isLoaned());
+        assertEquals(1, loans.getLoanCount());
+        assertFalse(loans.getLoanList().getFirst().isReturned());
+        assertEquals("002", loans.getNextLoanId());
+    }
+
+    @Test
+    void restoreBackup_tamperedOrIncompleteBackup_leavesLiveRecordsUnchanged() throws Exception {
+        Path dataDirectory = temporaryDirectory.resolve("data");
+        EquipmentHandler equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
+        equipment.addEquipment("add i/Camera id/001 type/camera cond/4 sensor/APS-C");
+        LoanHandler loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"),
+                dataDirectory.resolve("loan-sequence.txt"));
+        loans.addLoan("loan id/001 b/111 issued/01-10-26 due/02-10-26");
+        BackupHandler handler = new BackupHandler(dataDirectory, equipment, loans);
+        Path backup = temporaryDirectory.resolve("tampered-backup");
+        handler.createBackup("backup path/" + backup);
+        List<Path> liveFiles = List.of(dataDirectory.resolve("equipment.txt"), dataDirectory.resolve("loans.txt"),
+                dataDirectory.resolve("loan-sequence.txt"));
+        List<byte[]> liveContents = liveFiles.stream().map(this::readBytes).toList();
+        Files.writeString(backup.resolve(BackupHandler.LOAN_FILE_NAME), "not a loan record\n");
+
+        BackupUnsuccessful exception = assertThrows(BackupUnsuccessful.class,
+                () -> handler.restoreBackup("restore path/" + backup));
+
+        assertTrue(exception.getMessage().contains("manifest"));
+        for (int i = 0; i < liveFiles.size(); i++) {
+            assertArrayEquals(liveContents.get(i), readBytes(liveFiles.get(i)));
+        }
+        assertEquals(1, loans.getLoanCount());
+        assertTrue(equipment.getEquipmentById("001").isLoaned());
+    }
+
+    @Test
+    void restoreBackup_invalidSource_reportsErrorWithoutChangingLiveData() throws Exception {
+        Path dataDirectory = temporaryDirectory.resolve("data");
+        EquipmentHandler equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
+        LoanHandler loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"),
+                dataDirectory.resolve("loan-sequence.txt"));
+        BackupHandler handler = new BackupHandler(dataDirectory, equipment, loans);
+        Path missing = temporaryDirectory.resolve("missing-backup");
+
+        BackupUnsuccessful exception = assertThrows(BackupUnsuccessful.class,
+                () -> handler.restoreBackup("restore path/" + missing));
+
+        assertTrue(exception.getMessage().contains("not an existing directory"));
+        assertFalse(Files.exists(dataDirectory));
     }
 
     private byte[] readBytes(Path path) {
