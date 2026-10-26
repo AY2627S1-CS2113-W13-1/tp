@@ -1,0 +1,43 @@
+@startuml
+!include style.puml
+hide footbox
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 190
+
+participant ":EqmManager" as Manager
+participant ":LoanHandler" as Handler
+participant ":EquipmentHandler" as Inventory
+
+Manager -> Handler: viewLoanHistory("history id/001")
+activate Handler
+Handler -> Handler: getLoanHistory(input)
+activate Handler
+note right of Handler
+Validate the command and Item ID.
+end note
+Handler -> Inventory: getEquipmentList()
+Inventory --> Handler: current inventory
+note right of Handler
+findEquipment("001") requires one match.
+Use that item's permanent record ID.
+end note
+loop each managed loan
+    Handler -> Handler: select matching Item ID AND record ID
+end
+Handler -> Handler: sort selected copy by issue date, then loan ID
+Handler --> Handler: List.copyOf(history)
+deactivate Handler
+alt selected history is empty
+    Handler -> Handler: print empty-history message
+else selected history contains loans
+    Handler -> Handler: printLoans(history)
+end
+opt returned loans for this Item ID have no permanent identity
+    Handler -> Handler: print omission note directing user to list loans
+end
+Handler --> Manager: display completed
+deactivate Handler
+note over Manager, Inventory
+No records are reordered or changed. No storage calls occur.
+end note
+@enduml

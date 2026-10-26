@@ -257,7 +257,7 @@ class EquipmentHandlerTest {
         Equipment original = handler.addEquipment("add i/Original camera id/001 type/camera cond/1");
         String saved = Files.readString(file);
         String[] invalidTails = {
-            "zoom/24 mm", "capacity/2000 mAh", "thread/Quarter inch", "unknown/value",
+            "zoom/24 mm", "capacity/2000 mAh", "unknown/value",
             "sensor/", "sensor/   ", "damage/", "damage/   ",
             "sensor/Full frame sensor/Crop", "damage/NONE damage/SHUTTER_FAULT",
             "damage/NONE sensor/Full frame", "sensor/Full frame zoom/24 mm",
@@ -660,7 +660,7 @@ class EquipmentHandlerTest {
         handler.viewAllEquipment();
 
         String expected = String.format(
-                "%-4s %-24s | %-6s | %-15s | %-9s | %-10s | %-30s | %-30s%n",
+                "%-4s %-24s | %-6s | %-15s | %-9s | %-13s | %-30s | %-30s%n",
                 "No.", "NAME", "ID", "TYPE", "CONDITION", "STATUS", "DETAILS", "REMARKS");
         assertEquals(expected, output.toString(StandardCharsets.UTF_8));
     }
@@ -675,14 +675,14 @@ class EquipmentHandlerTest {
         handler.viewAllEquipment();
 
         String expected = String.format(
-                "%-4s %-24s | %-6s | %-15s | %-9s | %-10s | %-30s | %-30s%n",
+                "%-4s %-24s | %-6s | %-15s | %-9s | %-13s | %-30s | %-30s%n",
                 "No.", "NAME", "ID", "TYPE", "CONDITION", "STATUS", "DETAILS", "REMARKS");
         expected += String.format(
-                "%-4s %-24s | %-6s | %-15s | %-9d | %-10s | %-30s | %-30s%n",
+                "%-4s %-24s | %-6s | %-15s | %-9d | %-13s | %-30s | %-30s%n",
                 "1)", "Canon EOS R10", "001", "camera", 1, "Available",
                 "sensor/unspecified damage/NONE", "");
         expected += String.format(
-                "%-4s %-24s | %-6s | %-15s | %-9d | %-10s | %-30s | %-30s%n",
+                "%-4s %-24s | %-6s | %-15s | %-9d | %-13s | %-30s | %-30s%n",
                 "2)", "Manfrotto Tripod", "002", "tripod", 8, "Available",
                 "thread/unspecified damage/NONE", "Needs cleaning");
 

@@ -12,6 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.time.LocalDate;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
@@ -105,10 +106,16 @@ public class LoanHandlerTest {
     @Test
     public void persistence_addDeleteAndReload_preservesLoansAcrossHandlers() throws Exception {
         Path file = temporaryDirectory.resolve("data/loans.txt");
-        LoanHandler firstHandler = new LoanHandler(equipment, file);
+        Path equipmentFile = temporaryDirectory.resolve("data/equipment.txt");
+        EquipmentHandler firstInventory = new EquipmentHandler(equipmentFile);
+        firstInventory.addEquipment("add i/Camera id/001 type/camera cond/1");
+        firstInventory.addEquipment("add i/Tripod id/003 type/tripod cond/2");
+        LoanHandler firstHandler = new LoanHandler(firstInventory, file);
         firstHandler.addLoan(FIRST_LOAN);
 
-        EquipmentHandler secondInventory = createInventory();
+        // A restart reloads the same physical items instead of constructing replacements with reused IDs.
+        EquipmentHandler secondInventory = new EquipmentHandler(equipmentFile);
+        secondInventory.loadFromStorage();
         LoanHandler secondHandler = new LoanHandler(secondInventory, file);
         secondHandler.loadFromStorage();
         assertEquals(1, secondHandler.getLoanCount());
@@ -117,9 +124,13 @@ public class LoanHandlerTest {
         assertEquals("001", secondHandler.getLoanList().getFirst().getLoanId());
         assertEquals("001", secondInventory.getEquipmentList().getFirst().getLoanId());
         assertTrue(secondInventory.getEquipmentList().getFirst().isLoaned());
+        assertEquals(firstInventory.getEquipmentList().getFirst().getRecordId(),
+                secondHandler.getLoanList().getFirst().getEquipmentRecordId());
 
         secondHandler.deleteLoan("delete loan/001");
-        LoanHandler thirdHandler = new LoanHandler(createInventory(), file);
+        EquipmentHandler thirdInventory = new EquipmentHandler(equipmentFile);
+        thirdInventory.loadFromStorage();
+        LoanHandler thirdHandler = new LoanHandler(thirdInventory, file);
         thirdHandler.loadFromStorage();
         assertEquals(0, thirdHandler.getLoanCount());
     }
@@ -359,13 +370,103 @@ public class LoanHandlerTest {
         }
     }
 
+    // @@author Rohita-29
+
+    @Test
+    void getOverdueLoans_mixedLoans_returnsOnlyActivePastDueLoans() throws Exception {
+        LoanHandler loanHandler = new LoanHandler(equipment);
+        Loan returnedLoan = loanHandler.addLoan(FIRST_LOAN);
+        returnedLoan.setReturned(true);
+        Loan overdueLoan = loanHandler.addLoan(SECOND_LOAN);
+
+        equipment.addEquipment("add i/Battery id/005 type/battery cond/3");
+        Loan futureLoan = loanHandler.addLoan(
+                "loan id/005 b/006 issued/05-10-26 due/06-10-26");
+
+        List<Loan> originalLoans = List.copyOf(loanHandler.getLoanList());
+        List<Loan> overdueLoans = loanHandler.getOverdueLoans(
+                LocalDate.of(2026, 10, 5));
+
+        assertEquals(List.of(overdueLoan), overdueLoans);
+        assertEquals(originalLoans, loanHandler.getLoanList());
+        assertTrue(returnedLoan.isReturned());
+        assertFalse(futureLoan.isOverdue(LocalDate.of(2026, 10, 5)));
+    }
+
+    @Test
+    void getOverdueLoans_multipleMatches_preservesStoredOrder() throws Exception {
+        LoanHandler loanHandler = new LoanHandler(equipment);
+        Loan firstLoan = loanHandler.addLoan(FIRST_LOAN);
+        Loan secondLoan = loanHandler.addLoan(SECOND_LOAN);
+
+        List<Loan> overdueLoans = loanHandler.getOverdueLoans(
+                LocalDate.of(2026, 10, 5));
+
+        assertEquals(List.of(firstLoan, secondLoan), overdueLoans);
+    }
+
+    @Test
+    void getOverdueLoans_nullReferenceDate_throwsNullPointerException() {
+        LoanHandler loanHandler = new LoanHandler(equipment);
+
+        NullPointerException exception = assertThrows(
+                NullPointerException.class,
+                () -> loanHandler.getOverdueLoans(null));
+
+        assertEquals("Reference date must not be null", exception.getMessage());
+    }
+
+    @Test
+    void getOverdueLoans_returnedList_cannotModifyHandlerLoans() throws Exception {
+        LoanHandler loanHandler = new LoanHandler(equipment);
+        Loan overdueLoan = loanHandler.addLoan(FIRST_LOAN);
+        List<Loan> overdueLoans = loanHandler.getOverdueLoans(
+                LocalDate.of(2026, 10, 3));
+
+        assertThrows(UnsupportedOperationException.class, overdueLoans::clear);
+        assertEquals(List.of(overdueLoan), loanHandler.getLoanList());
+        assertEquals(1, loanHandler.getLoanCount());
+    }
+
+    @Test
+    void viewOverdueLoans_noMatches_printsClearMessage() throws Exception {
+        LoanHandler loanHandler = new LoanHandler(equipment);
+        loanHandler.addLoan(FIRST_LOAN);
+        output.reset();
+
+        loanHandler.viewOverdueLoans(LocalDate.of(2026, 10, 1));
+
+        assertEquals(
+                "No overdue loans found." + System.lineSeparator(),
+                output.toString(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void viewOverdueLoans_matchingLoan_printsRequiredColumns() throws Exception {
+        LoanHandler loanHandler = new LoanHandler(equipment);
+        loanHandler.addLoan(FIRST_LOAN);
+        output.reset();
+
+        loanHandler.viewOverdueLoans(LocalDate.of(2026, 10, 3));
+
+        String expected = String.format(
+                "%-4s %-12s | %-12s | %-16s%n",
+                "No.", "ITEM ID", "BORROWER ID", "DUE DATE");
+        expected += String.format(
+                "%-4s %-12s | %-12s | %-16s%n",
+                "1)", "001", "002", "2026-10-02T00:00");
+        assertEquals(expected, output.toString(StandardCharsets.UTF_8));
+    }
+
+    // @@author
+
     @Test
     void viewAllLoans_noLoans_printsHeaderOnly() {
         new LoanHandler(equipment).viewAllLoans();
 
         String expected = String.format(
-                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s%n",
-                "No.", "LOAN ID", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE");
+                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s | %-8s%n",
+                "No.", "LOAN ID", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE", "RETURNED");
         assertEquals(expected, output.toString(StandardCharsets.UTF_8));
     }
 
@@ -379,14 +480,14 @@ public class LoanHandlerTest {
         loanHandler.viewAllLoans();
 
         String expected = String.format(
-                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s%n",
-                "No.", "LOAN ID", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE");
+                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s | %-8s%n",
+                "No.", "LOAN ID", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE", "RETURNED");
         expected += String.format(
-                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s%n",
-                "1)", "001", "001", "002", "2026-10-01T00:00", "2026-10-02T00:00");
+                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s | %-8s%n",
+                "1)", "001", "001", "002", "2026-10-01T00:00", "2026-10-02T00:00", false);
         expected += String.format(
-                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s%n",
-                "2)", "002", "003", "004", "2026-10-03T00:00", "2026-10-04T00:00");
+                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s | %-8s%n",
+                "2)", "002", "003", "004", "2026-10-03T00:00", "2026-10-04T00:00", false);
 
         assertEquals(expected, output.toString(StandardCharsets.UTF_8));
     }

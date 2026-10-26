@@ -29,13 +29,11 @@ public class EquipmentHandler {
     private static final String ID_MARKER = "id/";
     private static final String TYPE_MARKER = "type/";
     private static final String CONDITION_MARKER = "cond/";
-    private static final String DAMAGE_MARKER = "damage/";
-    private static final String[] DETAIL_MARKERS = {"sensor/", "zoom/", "capacity/", "thread/", DAMAGE_MARKER};
+    private static final String[] DETAIL_MARKERS =
+            Arrays.stream(EquipmentDetailField.values())
+                    .map(EquipmentDetailField::getMarker)
+                    .toArray(String[]::new);
     private static final String REMARKS_MARKER = "remarks/";
-
-    /** Optional command fields after the common equipment fields. */
-    private record EquipmentDetails(String attribute, String damage) {
-    }
 
     /** Equipment stored by this handler during the current application session. */
     private final ArrayList<Equipment> inventory = new ArrayList<>();
@@ -104,6 +102,119 @@ public class EquipmentHandler {
      */
     public List<Equipment> getEquipmentList() {
         return Collections.unmodifiableList(inventory);
+    }
+
+    /** Returns the backing file, or null for an inventory held only in memory. */
+    public Path getStorageFile() {
+        return storageFile;
+    }
+
+    /**
+     * Validates a return assessment and creates a detached proposal of the same equipment subtype.
+     * Existing equipment and its active loan references remain unchanged until the return is saved.
+     *
+     * @param current equipment being returned
+     * @param serviceable whether the equipment can be loaned again
+     * @param damage damage value belonging to this equipment's existing damage enum
+     * @param remarks single-line assessment remarks, up to 200 characters
+     * @return the validated detached equipment proposal
+     * @throws IllegalArgumentException if any assessment field is invalid
+     */
+    public Equipment prepareReturnAssessment(Equipment current, boolean serviceable, String damage, String remarks) {
+        if (current == null || damage == null) {
+            throw new IllegalArgumentException("Equipment and return damage must be specified.");
+        }
+        try {
+            if (remarks == null || remarks.matches("(?s).*\\R.*")) {
+                throw new EquipmentAdditionUnsuccessful(
+                        "Remarks must contain at most 200 characters and no line breaks.");
+            }
+            String normalisedRemarks = EquipmentFields.trimWhitespace(remarks);
+            validateRemarks(normalisedRemarks);
+            String value = EquipmentFields.trimWhitespace(damage);
+            String name = current.getItemName();
+            String id = current.getItemId();
+            int condition = current.getCondition();
+            Equipment proposed = switch (current) {
+            case Camera camera -> new Camera(
+                    name,
+                    id,
+                    condition,
+                    camera.getSensorFormat(),
+                    EquipmentDetailParser.parseEnumValue(
+                            value,
+                            EquipmentDetailField.DAMAGE,
+                            Camera.CameraDamage.class,
+                            current.getType()),
+                    normalisedRemarks,
+                    camera.getLensMount(),
+                    camera.getTripodThread(),
+                    camera.getBatteryType());
+            case Lens lens -> new Lens(
+                    name,
+                    id,
+                    condition,
+                    lens.getZoomRange(),
+                    EquipmentDetailParser.parseEnumValue(
+                            value,
+                            EquipmentDetailField.DAMAGE,
+                            Lens.LensDamage.class,
+                            current.getType()),
+                    normalisedRemarks,
+                    lens.getLensMount(),
+                    lens.getSensorFormat());
+            case Battery battery -> new Battery(
+                    name,
+                    id,
+                    condition,
+                    battery.getCapacity(),
+                    EquipmentDetailParser.parseEnumValue(
+                            value,
+                            EquipmentDetailField.DAMAGE,
+                            Battery.BatteryDamage.class,
+                            current.getType()),
+                    normalisedRemarks,
+                    battery.getBatteryType());
+            case Tripod tripod -> new Tripod(
+                    name,
+                    id,
+                    condition,
+                    tripod.getThread(),
+                    EquipmentDetailParser.parseEnumValue(
+                            value,
+                            EquipmentDetailField.DAMAGE,
+                            Tripod.TripodDamage.class,
+                            current.getType()),
+                    normalisedRemarks);
+            default -> throw new IllegalArgumentException("Unsupported equipment type for return assessment.");
+            };
+            proposed.restoreRecordId(current.getRecordId());
+            proposed.setServiceable(serviceable);
+            return proposed;
+        } catch (EquipmentAdditionUnsuccessful exception) {
+            throw new IllegalArgumentException(exception.getMessage(), exception);
+        }
+    }
+
+    /**
+     * Saves a proposed assessment without changing the inventory or the equipment object.
+     * The caller commits the proposal only after every file involved in the return has been saved.
+     *
+     * @param current original equipment present in this inventory
+     * @param assessed validated detached proposal
+     * @throws IOException if the proposed equipment records cannot be saved
+     * @throws IllegalArgumentException if the equipment is missing or the proposal belongs to another item
+     */
+    public void saveReturnAssessment(Equipment current, Equipment assessed) throws IOException {
+        int index = inventory.indexOf(current);
+        if (index < 0 || assessed == null || current.getClass() != assessed.getClass()
+                || !current.getItemId().equals(assessed.getItemId())
+                || !current.getRecordId().equals(assessed.getRecordId())) {
+            throw new IllegalArgumentException("The return assessment must belong to equipment in the inventory.");
+        }
+        ArrayList<Equipment> proposedInventory = new ArrayList<>(inventory);
+        proposedInventory.set(index, assessed);
+        save(proposedInventory);
     }
 
     /** Persists the current inventory when this handler has a backing file. */
@@ -213,15 +324,17 @@ public class EquipmentHandler {
         int typeIndex = findFieldMarker(addDetails, TYPE_MARKER, 0);
         int conditionIndex = findFieldMarker(addDetails, CONDITION_MARKER, 0);
         int idIndex = findIdFieldMarker(addDetails, typeIndex);
-        validateFieldMarkers(addDetails, itemIndex, idIndex, typeIndex, conditionIndex);
+        int conditionValueStart = conditionIndex + CONDITION_MARKER.length();
+        int remarksIndex = conditionIndex == -1 ? -1 : findFieldMarker(addDetails, REMARKS_MARKER, conditionValueStart);
+        // The final remarks field is free text, including literal strings such as id/001 and type/camera.
+        String structuralDetails = remarksIndex == -1 ? addDetails : addDetails.substring(0, remarksIndex);
+        validateFieldMarkers(structuralDetails, itemIndex, idIndex, typeIndex, conditionIndex);
 
         String itemName = EquipmentFields.trimWhitespace(
                 addDetails.substring(itemIndex + ITEM_MARKER.length(), idIndex));
         String id = EquipmentFields.trimWhitespace(addDetails.substring(idIndex + ID_MARKER.length(), typeIndex));
         String type = EquipmentFields.trimWhitespace(
                 addDetails.substring(typeIndex + TYPE_MARKER.length(), conditionIndex));
-        int conditionValueStart = conditionIndex + CONDITION_MARKER.length();
-        int remarksIndex = findFieldMarker(addDetails, REMARKS_MARKER, conditionValueStart);
         int detailsIndex = findDetailsStart(addDetails, conditionValueStart, remarksIndex);
         if (remarksIndex != -1 && detailsIndex != -1 && remarksIndex < detailsIndex) {
             throw new EquipmentAdditionUnsuccessful(
@@ -299,34 +412,64 @@ public class EquipmentHandler {
         }
     }
 
-    /** Validates extracted values before construction, preserving field-specific error messages. */
-    private static Equipment createValidatedEquipment(String itemName, String id, String type,
-            String conditionString, String detailsString, String remarks) throws EquipmentAdditionUnsuccessful {
-        validateEquipmentDetails(itemName, id, type, conditionString);
+    /** Validates extracted values and creates the correct equipment subclass. */
+    private static Equipment createValidatedEquipment(
+            String itemName,
+            String id,
+            String type,
+            String conditionString,
+            String detailsString,
+            String remarks)
+            throws EquipmentAdditionUnsuccessful {
+        validateEquipmentDetails(
+                itemName,
+                id,
+                type,
+                conditionString);
         validateRemarks(remarks);
-        int condition = Integer.parseInt(conditionString);
 
+        int condition = Integer.parseInt(conditionString);
         String normalisedType = type.toLowerCase(Locale.ROOT);
-        String attributeMarker = switch (normalisedType) {
-        case "camera" -> "sensor/";
-        case "lens" -> "zoom/";
-        case "battery" -> "capacity/";
-        case "tripod" -> "thread/";
-        default -> throw new EquipmentAdditionUnsuccessful(
-                "Unsupported equipment type. Use: camera, lens, battery or tripod.");
-        };
-        EquipmentDetails details = parseDetails(detailsString, attributeMarker);
-        return switch (normalisedType) {
-        case "camera" -> new Camera(itemName, id, condition, details.attribute(),
-                parseDamage(details.damage(), Camera.CameraDamage.class, normalisedType), remarks);
-        case "lens" -> new Lens(itemName, id, condition, details.attribute(),
-                parseDamage(details.damage(), Lens.LensDamage.class, normalisedType), remarks);
-        case "battery" -> new Battery(itemName, id, condition, details.attribute(),
-                parseDamage(details.damage(), Battery.BatteryDamage.class, normalisedType), remarks);
-        case "tripod" -> new Tripod(itemName, id, condition, details.attribute(),
-                parseDamage(details.damage(), Tripod.TripodDamage.class, normalisedType), remarks);
-        default -> throw new AssertionError("Validated equipment type must have a subclass");
-        };
+
+        if (normalisedType.equals("camera")) {
+            return CameraDetailsParser.createCamera(
+                    itemName,
+                    id,
+                    condition,
+                    detailsString,
+                    remarks);
+        }
+
+        if (normalisedType.equals("lens")) {
+            return LensDetailsParser.createLens(
+                    itemName,
+                    id,
+                    condition,
+                    detailsString,
+                    remarks);
+        }
+
+        if (normalisedType.equals("battery")) {
+            return BatteryDetailsParser.createBattery(
+                    itemName,
+                    id,
+                    condition,
+                    detailsString,
+                    remarks);
+        }
+
+        if (normalisedType.equals("tripod")) {
+            return TripodDetailsParser.createTripod(
+                    itemName,
+                    id,
+                    condition,
+                    detailsString,
+                    remarks);
+        }
+
+        throw new EquipmentAdditionUnsuccessful(
+                "Unsupported equipment type. Use: "
+                        + "camera, lens, battery or tripod.");
     }
 
     /** Shares value rules between addition and updates before either changes the inventory. */
@@ -349,54 +492,9 @@ public class EquipmentHandler {
     /** Validates remarks before they are stored in an equipment object or written to disk. */
     private static void validateRemarks(String remarks) throws EquipmentAdditionUnsuccessful {
         if (remarks == null || remarks.length() > Equipment.MAX_REMARKS_LENGTH
-                || remarks.contains("\n") || remarks.contains("\r")) {
+                || remarks.matches("(?s).*\\R.*")) {
             throw new EquipmentAdditionUnsuccessful(
                     "Remarks must contain at most 200 characters and no line breaks.");
-        }
-    }
-
-    /** Rejects repeated, reordered or inapplicable optional fields before extracting their values. */
-    private static EquipmentDetails parseDetails(String details, String attributeMarker)
-            throws EquipmentAdditionUnsuccessful {
-        if (details.isEmpty()) {
-            return new EquipmentDetails("unspecified", "NONE");
-        }
-        int attributeIndex = findFieldMarker(details, attributeMarker, 0);
-        int damageIndex = findFieldMarker(details, DAMAGE_MARKER, 0);
-        boolean attributeFirst = attributeIndex == 0 && (damageIndex == -1 || damageIndex > attributeIndex);
-        boolean damageOnly = attributeIndex == -1 && damageIndex == 0;
-        if (!attributeFirst && !damageOnly) {
-            throw new EquipmentAdditionUnsuccessful("Optional fields must use " + attributeMarker
-                    + "[DETAIL] followed by damage/[DAMAGE], with either field optional.");
-        }
-        for (String marker : DETAIL_MARKERS) {
-            int index = findFieldMarker(details, marker, 0);
-            if (index != -1 && (!marker.equals(attributeMarker) && !marker.equals(DAMAGE_MARKER)
-                    || findFieldMarker(details, marker, index + marker.length()) != -1)) {
-                throw new EquipmentAdditionUnsuccessful("Repeated or inapplicable equipment detail field: " + marker);
-            }
-        }
-        String attribute = "unspecified";
-        if (attributeFirst) {
-            int attributeEnd = damageIndex == -1 ? details.length() : damageIndex;
-            attribute = details.substring(attributeMarker.length(), attributeEnd).trim();
-            if (attribute.isBlank() || attribute.length() > 100 || attribute.matches("(?s).*\\R.*")) {
-                throw new EquipmentAdditionUnsuccessful(
-                        "Equipment detail must contain 1 to 100 characters on one line.");
-            }
-        }
-        String damage = damageIndex == -1 ? "NONE" : details.substring(damageIndex + DAMAGE_MARKER.length()).trim();
-        return new EquipmentDetails(attribute, damage);
-    }
-
-    /** Converts the command value to the damage enum belonging to the selected equipment type. */
-    private static <T extends Enum<T>> T parseDamage(String value, Class<T> damageClass, String type)
-            throws EquipmentAdditionUnsuccessful {
-        try {
-            return Enum.valueOf(damageClass, value.toUpperCase(Locale.ROOT));
-        } catch (IllegalArgumentException exception) {
-            throw new EquipmentAdditionUnsuccessful("Invalid damage for " + type + ". Use: "
-                    + Arrays.toString(damageClass.getEnumConstants()) + ".");
         }
     }
 
@@ -452,15 +550,16 @@ public class EquipmentHandler {
 
     /** Prints matching items in their existing order using the normal equipment table. */
     public void viewEquipment(List<Equipment> equipmentList) {
-        System.out.printf("%-4s %-24s | %-6s | %-15s | %-9s | %-10s | %-30s | %-30s%n",
+        System.out.printf("%-4s %-24s | %-6s | %-15s | %-9s | %-13s | %-30s | %-30s%n",
                 "No.", "NAME", "ID", "TYPE", "CONDITION", "STATUS", "DETAILS", "REMARKS");
         logger.log(Level.INFO, "Viewing {0} equipment item(s)", equipmentList.size());
         for (int index = 0; index < equipmentList.size(); index++) {
             Equipment item = equipmentList.get(index);
             assert item != null : "Equipment list must not contain null items";
-            System.out.printf("%-4s %-24s | %-6s | %-15s | %-9d | %-10s | %-30s | %-30s%n",
+            String status = item.isLoaned() ? "Loaned" : item.isServiceable() ? "Available" : "Unserviceable";
+            System.out.printf("%-4s %-24s | %-6s | %-15s | %-9d | %-13s | %-30s | %-30s%n",
                     (index + 1) + ")", item.getItemName(), item.getItemId(), item.getType(), item.getCondition(),
-                    item.isLoaned() ? "Loaned" : "Available", item.getDetails(), item.getRemarks());
+                    status, item.getDetails(), item.getRemarks());
         }
     }
 
@@ -543,6 +642,8 @@ public class EquipmentHandler {
             throws EquipmentAdditionUnsuccessful, EquipmentUpdateUnsuccessful {
         Equipment proposed = createValidatedEquipment(name, target.getItemId(), target.getType(),
                 Integer.toString(condition), target.getDetails(), target.getRemarks());
+        proposed.restoreRecordId(target.getRecordId());
+        proposed.setServiceable(target.isServiceable());
         ArrayList<Equipment> updatedInventory = new ArrayList<>(inventory);
         updatedInventory.set(inventory.indexOf(target), proposed);
         try {

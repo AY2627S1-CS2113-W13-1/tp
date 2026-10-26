@@ -14,17 +14,23 @@ import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 
 /** Loads and saves equipment records in a readable UTF-8 text file. */
 final class EquipmentStorage {
+    /** Permanent physical-item identity appears before any existing storage metadata. */
+    private static final String RECORD_ID_PREFIX = "recordId/";
+    /** Storage-only metadata appears before the add record so free-form fields remain unambiguous. */
+    private static final String SERVICEABILITY_PREFIX = "serviceable/";
+
     private EquipmentStorage() {
         // Utility class; do not instantiate.
     }
 
     /**
-     * Loads one add command per non-blank line from the supplied file.
+     * Loads one equipment record per non-blank line from the supplied file.
+     * Legacy records receive permanent identities, saved before loaded records are returned.
      * A missing file represents an empty inventory.
      *
      * @param file file containing saved equipment
      * @return parsed equipment records
-     * @throws IOException if the file cannot be read or contains an invalid record
+     * @throws IOException if reading, validation, or saving migrated identities fails
      */
     static List<Equipment> load(Path file) throws IOException {
         List<Equipment> loaded = new ArrayList<>();
@@ -33,6 +39,8 @@ final class EquipmentStorage {
         }
 
         Set<String> ids = new HashSet<>();
+        Set<String> recordIds = new HashSet<>();
+        boolean requiresMigration = false;
         int lineNumber = 0;
         for (String line : Files.readAllLines(file, StandardCharsets.UTF_8)) {
             lineNumber++;
@@ -40,17 +48,68 @@ final class EquipmentStorage {
                 continue;
             }
             try {
-                Equipment equipment = EquipmentHandler.parseEquipment(line);
+                Equipment equipment = parseStorageLine(line);
                 if (!ids.add(equipment.getItemId())) {
                     throw new IllegalArgumentException("Duplicate equipment ID " + equipment.getItemId() + ".");
                 }
+                if (!recordIds.add(equipment.getRecordId())) {
+                    throw new IllegalArgumentException("Duplicate equipment record ID "
+                            + equipment.getRecordId() + ".");
+                }
                 loaded.add(equipment);
+                requiresMigration |= !line.startsWith(RECORD_ID_PREFIX);
             } catch (EquipmentAdditionUnsuccessful | IllegalArgumentException exception) {
                 throw new IOException("Invalid equipment record on line " + lineNumber + ": "
                         + exception.getMessage(), exception);
             }
         }
+        // Publish migrated identities only after they are durable, so a restart cannot assign different identities.
+        if (requiresMigration) {
+            try {
+                save(file, loaded);
+            } catch (IOException exception) {
+                throw new IOException("Could not save migrated equipment identities: " + exception.getMessage(),
+                        exception);
+            }
+        }
         return loaded;
+    }
+
+    /** Reads permanent identity metadata before parsing older serviceability or add record formats. */
+    private static Equipment parseStorageLine(String line) throws EquipmentAdditionUnsuccessful {
+        if (!line.startsWith(RECORD_ID_PREFIX)) {
+            return parseServiceabilityLine(line);
+        }
+        int delimiter = line.indexOf('\t');
+        if (delimiter < 0) {
+            throw new IllegalArgumentException("Equipment record ID must precede a tab and serviceability metadata.");
+        }
+        String recordId = line.substring(RECORD_ID_PREFIX.length(), delimiter);
+        String remaining = line.substring(delimiter + 1);
+        if (!remaining.startsWith(SERVICEABILITY_PREFIX)) {
+            throw new IllegalArgumentException("Equipment record ID must be followed by serviceability metadata.");
+        }
+        Equipment equipment = parseServiceabilityLine(remaining);
+        equipment.restoreRecordId(recordId);
+        return equipment;
+    }
+
+    /** Loads legacy add records as serviceable and reads assessment metadata without parsing free-form field text. */
+    private static Equipment parseServiceabilityLine(String line) throws EquipmentAdditionUnsuccessful {
+        if (!line.startsWith(SERVICEABILITY_PREFIX)) {
+            return EquipmentHandler.parseEquipment(line);
+        }
+        int delimiter = line.indexOf('\t');
+        if (delimiter < 0) {
+            throw new IllegalArgumentException("Serviceability metadata must precede a tab and an add record.");
+        }
+        String serviceability = line.substring(SERVICEABILITY_PREFIX.length(), delimiter);
+        if (!serviceability.equals("yes") && !serviceability.equals("no")) {
+            throw new IllegalArgumentException("Saved serviceability must be yes or no.");
+        }
+        Equipment equipment = EquipmentHandler.parseEquipment(line.substring(delimiter + 1));
+        equipment.setServiceable(serviceability.equals("yes"));
+        return equipment;
     }
 
     /**
@@ -78,9 +137,11 @@ final class EquipmentStorage {
         }
     }
 
-    /** Converts an equipment record to the documented add-command format. */
+    /** Adds permanent identity and serviceability metadata before the add record, preserving free-form field values. */
     private static String toStorageLine(Equipment equipment) {
-        String record = "add i/" + equipment.getItemName()
+        String record = RECORD_ID_PREFIX + equipment.getRecordId() + "\t"
+                + SERVICEABILITY_PREFIX + (equipment.isServiceable() ? "yes" : "no") + "\tadd i/"
+                + equipment.getItemName()
                 + " id/" + equipment.getItemId()
                 + " type/" + equipment.getType()
                 + " cond/" + equipment.getCondition()

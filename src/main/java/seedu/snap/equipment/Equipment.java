@@ -1,5 +1,6 @@
 package seedu.snap.equipment;
 
+import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -27,12 +28,16 @@ public abstract class Equipment {
     private static final Logger logger = Logger.getLogger(Equipment.class.getName());
     private String itemName;
     private final String itemId;
+    /** Permanent identity of this physical item; the visible three-digit Item ID may later be reused. */
+    private String recordId = UUID.randomUUID().toString();
     private int condition;
     private boolean isLoaned = false;
+    /** Whether this item has passed the latest return assessment and can be loaned again. */
+    private boolean isServiceable = true;
     /** Current active loan identifier, rebuilt from saved loan records rather than duplicated in equipment storage. */
     private String loanId;
     /** Optional single-line remarks retained with this equipment record. */
-    private final String remarks;
+    private String remarks;
 
     /**
      * Creates an equipment item.
@@ -78,6 +83,23 @@ public abstract class Equipment {
         return itemId;
     }
 
+    /** Returns this physical item's permanent identity, retained when its visible details change. */
+    public String getRecordId() {
+        return recordId;
+    }
+
+    /** Restores a canonical saved identity or retains it when creating a detached update proposal. */
+    final void restoreRecordId(String savedRecordId) {
+        try {
+            if (savedRecordId == null || !UUID.fromString(savedRecordId).toString().equals(savedRecordId)) {
+                throw new IllegalArgumentException("Equipment record ID must be a canonical UUID.");
+            }
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("Equipment record ID must be a canonical UUID.", exception);
+        }
+        recordId = savedRecordId;
+    }
+
     /**
      * Returns the canonical type represented by this equipment subclass.
      *
@@ -95,6 +117,40 @@ public abstract class Equipment {
     /** Returns whether this item currently has an active loan. */
     public boolean isLoaned() {
         return isLoaned;
+    }
+
+    /** Returns whether this equipment can be loaned after any active loan has ended. */
+    public boolean isServiceable() {
+        return isServiceable;
+    }
+
+    /** Sets serviceability on a detached proposal or equipment freshly read from storage. */
+    final void setServiceable(boolean serviceable) {
+        isServiceable = serviceable;
+    }
+
+    /** Copies subtype damage after the common return-assessment identity checks have passed. */
+    protected abstract void applyDamageAssessment(Equipment assessed);
+
+    /**
+     * Commits a validated return assessment without replacing references held by loans and bundles.
+     * The assessment cannot change equipment identity, subtype attributes, name, or condition.
+     *
+     * @param assessed detached proposal whose persistent values have already been saved
+     * @throws IllegalArgumentException if the proposal belongs to different equipment
+     */
+    public final void applyReturnAssessment(Equipment assessed) {
+        if (assessed == null || assessed.getClass() != getClass()
+                || !itemId.equals(assessed.itemId) || !recordId.equals(assessed.recordId)
+                || !itemName.equals(assessed.itemName)
+                || condition != assessed.condition || assessed.remarks == null
+                || assessed.remarks.length() > MAX_REMARKS_LENGTH
+                || assessed.remarks.matches("(?s).*\\R.*")) {
+            throw new IllegalArgumentException("The return assessment must belong to the same equipment.");
+        }
+        applyDamageAssessment(assessed);
+        remarks = assessed.remarks;
+        isServiceable = assessed.isServiceable;
     }
 
     /** Returns the current active loan identifier, or null when no identified loan owns this item. */

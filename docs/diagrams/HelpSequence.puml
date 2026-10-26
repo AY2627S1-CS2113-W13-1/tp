@@ -1,0 +1,29 @@
+@startuml
+!include style.puml
+hide footbox
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 210
+
+actor User
+participant ":EqmManager" as Manager
+participant "Help" as Help <<utility>>
+participant "System.out" as Output
+
+User -> Manager: executeInput("help")
+activate Manager
+note right of Manager
+Trim surrounding whitespace and check startup status.
+Only the exact help command takes this path.
+end note
+Manager -> Help: print()
+activate Help
+Help -> Output: print(TEXT)
+Output --> User: complete command reference
+deactivate Help
+Manager --> User: ready for the next command
+deactivate Manager
+note over Manager, Help
+No equipment, loan, bundle or storage handler is called.
+No record, next identifier or running flag is changed.
+end note
+@enduml

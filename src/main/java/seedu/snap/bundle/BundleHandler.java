@@ -147,6 +147,9 @@ public class BundleHandler {
         if (item.isLoaned()) {
             return failureMessage(itemId, "equipment is currently loaned");
         }
+        if (!item.isServiceable()) {
+            return failureMessage(itemId, "equipment is unserviceable");
+        }
         if (bundle.containsEquipmentId(itemId)) {
             return failureMessage(itemId, "equipment is already in this bundle");
         }
