@@ -18,6 +18,7 @@ The equipment-management designs also include:
 | Source | Design illustrated |
 | --- | --- |
 | [EquipmentClasses.puml](EquipmentClasses.puml) | Shared inventory, equipment state, filtering and helper dependencies. |
+| [EquipmentWorkflow.puml](EquipmentWorkflow.puml) | User Guide example showing how a condition update changes filter results. |
 | [EquipmentAdditionSequence.puml](EquipmentAdditionSequence.puml) | Duplicate rejection and saving before insertion. |
 | [EquipmentAvailability.puml](EquipmentAvailability.puml) | Availability and loan ownership supporting borrowing and filters. |
 | [EquipmentFilterSequence.puml](EquipmentFilterSequence.puml) | Current-loan checks and read-only filter results. |
