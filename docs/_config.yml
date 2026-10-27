@@ -1,0 +1,22 @@
+title: snAp
+description: Manage your photography club's equipment, loans and returns with snAp.
+url: https://ay2627s1-cs2113-w13-1.github.io
+baseurl: /tp
+lang: en-GB
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
+
+# GitHub Pages supports this plugin and converts source Markdown links to page URLs.
+plugins:
+  - jekyll-relative-links
+relative_links:
+  enabled: true
+
+defaults:
+  - scope:
+      path: ""
+      type: pages
+    values:
+      layout: default

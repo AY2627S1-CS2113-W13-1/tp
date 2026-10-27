@@ -1,3 +1,8 @@
+---
+layout: default
+title: User Guide
+---
+
 # User Guide
 
 ## Introduction
@@ -7,8 +12,23 @@ application sessions. Bundles group equipment during the current session.
 
 ## Quick Start
 
-1. Install Java 25.
-2. From the project directory, run `./gradlew run` on macOS/Linux or `.\gradlew.bat run` on Windows.
+1. Install Java 25 and ensure that `java -version` reports version 25.
+2. From the project directory, run the command for your shell.
+
+   **macOS/Linux:**
+
+   ```sh
+   ./gradlew run --console=plain --quiet
+   ```
+
+   **Windows PowerShell:**
+
+   ```powershell
+   .\gradlew.bat run --console=plain --quiet
+   ```
+
+   These options remove Gradle's progress display and task logs. Application prompts, command results and
+   errors remain visible.
 3. Enter one command per line. Type `bye` to exit.
 
 ## Getting help: `help`
@@ -178,6 +198,18 @@ Format: `list loans`
 This displays all recorded loans with their unique loan ID, item ID, borrower ID, issue date and due date.
 The `LOAN ID` column comes before `ITEM ID`. The final `RETURNED` column is `true` for returned loans
 and `false` for active loans.
+
+## Viewing the issue-time equipment condition: `view loan`
+
+Format: `view loan/[LOAN ID]`
+
+Example: `view loan/001`
+
+Use an existing loan ID from `001` to `999`. This displays the equipment type, numeric condition, damage and remarks captured when that loan was issued. The snapshot describes the equipment at issue time, not its current condition.
+
+Later equipment updates and return assessments do not change the saved snapshot. Returned loans retain their snapshots. Older loan records created before this feature report that the issue condition was not recorded.
+
+This is a read-only command. It does not change equipment, loans, availability or saved records. An invalid command or unknown loan ID produces an error without modifying any data.
 
 ## Viewing an item's loan history: `history`
 
@@ -432,6 +464,7 @@ reports the problem and stops.
 | Delete loan | `delete loan/[LOAN ID]` |
 | List equipment | `list` |
 | List loans | `list loans` |
+| View issue-time equipment condition | `view loan/[LOAN ID]` |
 | View item loan history | `history id/[ITEM ID]` |
 | List overdue loans | `list overdue` |
 | Filter equipment | `filter [id/ID] [i/NAME] [type/TYPE] [cond/1-3] [status/available]` |

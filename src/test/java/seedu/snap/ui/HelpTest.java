@@ -37,6 +37,7 @@ class HelpTest {
                         "return loan/001 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair"),
                 Arguments.of("delete loan/<LOAN ID>", "delete loan/001"),
                 Arguments.of("list loans", "list loans"),
+                Arguments.of("view loan/<LOAN ID>", "view loan/001"),
                 Arguments.of("list overdue", "list overdue"),
                 Arguments.of("history id/<ITEM ID>", "history id/001"),
                 Arguments.of("filter [id/<ID>] [i/<NAME>] [type/<TYPE>] [cond/<N|MIN-MAX>] [status/<STATUS>]",

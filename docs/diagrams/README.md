@@ -1,3 +1,9 @@
+---
+layout: default
+title: Developer Guide diagrams
+permalink: /diagrams/index.html
+---
+
 # Developer Guide diagrams
 
 The Developer Guide embeds SVG files from `docs/images/` and links to their editable PlantUML sources here.
