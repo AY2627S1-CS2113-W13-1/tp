@@ -51,6 +51,32 @@ class BundleTest {
     }
 
     @Test
+    void removeEquipmentById_updatesContentsAndCompletion() {
+        Bundle bundle = new Bundle("Travel Kit", "001");
+        bundle.addEquipment(new Camera("Camera", "001", 8, "Full frame", Camera.CameraDamage.NONE));
+        bundle.addEquipment(new Battery("Battery", "002", 8, "2000 mAh", Battery.BatteryDamage.NONE));
+        bundle.addEquipment(new Lens("Lens", "003", 8, "24 to 70 mm", Lens.LensDamage.NONE));
+        assertTrue(bundle.isComplete());
+
+        assertTrue(bundle.removeEquipmentById("003"));
+
+        assertEquals(2, bundle.getEquipmentList().size());
+        assertFalse(bundle.containsEquipmentId("003"));
+        assertFalse(bundle.isComplete());
+    }
+
+    @Test
+    void removeEquipmentById_unknownItem_leavesBundleUnchanged() {
+        Bundle bundle = new Bundle("Travel Kit", "001");
+        bundle.addEquipment(new Camera("Camera", "001", 8, "Full frame", Camera.CameraDamage.NONE));
+
+        assertFalse(bundle.removeEquipmentById("999"));
+
+        assertEquals(1, bundle.getEquipmentList().size());
+        assertTrue(bundle.containsEquipmentId("001"));
+    }
+
+    @Test
     void addEquipment_optionalTripod_keepsBundleComplete() {
         Bundle bundle = new Bundle("Travel Kit", "001");
         bundle.addEquipment(new Camera("Camera", "001", 8, "Full frame", Camera.CameraDamage.NONE));

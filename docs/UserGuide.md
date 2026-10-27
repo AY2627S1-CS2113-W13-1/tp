@@ -150,8 +150,9 @@ Equipment with an active (unreturned) loan cannot be deleted. This prevents its 
 for a different item while the original loan is still active. Deletion is allowed once there are no active
 loans for that ID; returned loan records do not block deletion.
 
-Equipment that belongs to a bundle cannot be deleted during that session. This keeps each bundle's contents
-and completion status consistent with the inventory. Bundles are cleared when the application restarts.
+Equipment that belongs to a bundle cannot be deleted. Use `remove-from-bundle` to remove the item from every
+bundle that contains it before deleting the equipment. This keeps each persisted bundle's contents and completion
+status consistent with the inventory.
 
 Invalid delete syntax produces an error followed by the delete command format.
 An ID that does not exist produces an error without changing the saved records.
@@ -355,11 +356,11 @@ Format: `add-bundle name/[NAME]`
 Example: `add-bundle name/Travel Kit`
 
 The name must contain 1 to 100 characters. A bundle starts empty and incomplete. The application assigns
-three-digit bundle IDs in creation order, starting at `001`, with at most 999 bundles per session.
+three-digit bundle IDs in creation order, starting at `001`, with at most 999 bundles in the saved collection.
 Bundle IDs are separate from equipment IDs.
 
-Bundles are stored only for the current session. They are not saved when you enter `bye`, and restarting
-the application clears all bundles and starts their IDs at `001` again. Equipment and loans remain saved.
+Bundles and their equipment memberships are saved when you enter `bye` and restored when the application
+restarts. Bundle IDs continue from the highest restored ID. Equipment and loans remain saved separately.
 
 ## Adding equipment to a bundle: `add-to-bundle`
 
@@ -380,6 +381,16 @@ Returning a serviceable item or deleting its active loan makes it available for 
 Unserviceable equipment cannot be added to a bundle. Existing bundle memberships are retained on return.
 Updating a bundled item's name or condition also updates the item shown in the bundle.
 
+## Removing equipment from a bundle: `remove-from-bundle`
+
+Format: `remove-from-bundle id/[BUNDLE ID] [EQUIPMENT ID]...`
+
+Example: `remove-from-bundle id/001 001`
+
+The bundle must exist. Each requested equipment ID is removed independently, and an equipment item can be
+deleted only after it has been removed from every bundle that contains it. Bundle membership changes are saved
+when `bye` is entered.
+
 ## Viewing bundles: `list bundles`
 
 Format: `list bundles`
@@ -387,14 +398,25 @@ Format: `list bundles`
 This displays each bundle's ID, name, completion status and contained equipment. The `COMPLETE` column
 checks the required equipment counts. Borrowing an item later does not remove it from its bundle.
 
-## Saving equipment
+## Viewing a bundle's loan history: `history bundle`
+
+Format: `history bundle/id/[BUNDLE ID]` or `history bundle/name/[NAME]`
+
+Examples: `history bundle/id/001` and `history bundle/name/Travel Kit`
+
+This displays all active and returned loans for every physical equipment item in the selected bundle.
+Results are ordered by issue date from earliest to latest, then by loan ID. An empty history and an unknown
+bundle are reported clearly. Bundle memberships are matched using each equipment record's permanent identity,
+so a reused visible Item ID cannot inherit the wrong historical membership.
+
+## Saving application data
 
 Successful equipment additions, updates, deletions and return assessments are saved automatically in
 `data/equipment.txt`, relative to the directory from which the application is run.
 Successful loan additions, returns and deletions are saved in
-`data/loans.txt`, and the next unused loan ID is saved in `data/loan-sequence.txt`. Records are loaded when the
-application starts again. A final save is also attempted when `bye` is entered; if it fails, the application
-reports the affected file and lets you retry.
+`data/loans.txt`, the next unused loan ID is saved in `data/loan-sequence.txt`, and bundle memberships are saved
+in `data/bundles.txt`. Records are loaded when the application starts again. A final save is also attempted when
+`bye` is entered; if it fails, the application reports the affected file and lets you retry.
 The directory and saved files are created on the first save, including the final save performed by `bye`.
 Each item's availability and associated loan ID are rebuilt from active loans at startup, so loaned items
 remain `Loaned` after restarting the application.
@@ -436,9 +458,9 @@ Existing loan records without loan IDs are assigned IDs in file order on first l
 These IDs remain stable on later restarts. The sequence file preserves the next unused ID even when loan records
 are deleted. Equipment records retain their details and remarks; loan associations are restored from the loan records.
 
-To transfer your records, copy `data/equipment.txt`, `data/loans.txt` and `data/loan-sequence.txt` to the same
-location on the other computer. If a file cannot be read or contains invalid or duplicate records, the application
-reports the problem and stops.
+To transfer your records, copy `data/equipment.txt`, `data/loans.txt`, `data/loan-sequence.txt` and
+`data/bundles.txt` to the same location on the other computer. If a file cannot be read or contains invalid or
+duplicate records, the application reports the problem and stops.
 
 ## Errors
 
@@ -463,10 +485,12 @@ reports the problem and stops.
 | List loans | `list loans` |
 | View issue-time equipment condition | `view loan/[LOAN ID]` |
 | View item loan history | `history id/[ITEM ID]` |
+| View bundle loan history | `history bundle/id/[BUNDLE ID]` or `history bundle/name/[NAME]` |
 | List overdue loans | `list overdue` |
 | Filter equipment | `filter [id/ID] [i/NAME] [type/TYPE] [cond/1-3] [status/available]` |
 | Update equipment | `update id/ID [i/NAME] [type/TYPE] [cond/CONDITION]` |
 | Create bundle | `add-bundle name/[NAME]` |
 | Add equipment to bundle | `add-to-bundle id/[BUNDLE ID] [EQUIPMENT ID]...` |
+| Remove equipment from bundle | `remove-from-bundle id/[BUNDLE ID] [EQUIPMENT ID]...` |
 | List bundles | `list bundles` |
 | Exit | `bye` |

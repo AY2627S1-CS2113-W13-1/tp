@@ -110,6 +110,40 @@ public class Bundle {
                 new Object[] {item.getItemId(), bundleId});
     }
 
+    /**
+     * Removes one equipment item from this bundle and refreshes its completion state.
+     *
+     * @param itemId equipment ID to remove
+     * @return true when an item was removed, or false when the bundle did not contain it
+     */
+    public boolean removeEquipmentById(String itemId) {
+        if (itemId == null) {
+            return false;
+        }
+        for (int index = 0; index < equipment.size(); index++) {
+            if (equipment.get(index).getItemId().equals(itemId)) {
+                equipment.remove(index);
+                updateCompletionState();
+                assert !containsEquipmentId(itemId) : "Removed equipment must not remain in the bundle.";
+                LOGGER.log(Level.INFO, "Removed equipment {0} from bundle {1}.",
+                        new Object[] {itemId, bundleId});
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Restores a previous equipment snapshot after a failed persistence operation. */
+    void restoreEquipment(List<Equipment> previousEquipment) {
+        if (previousEquipment == null) {
+            throw new IllegalArgumentException("Previous equipment cannot be null.");
+        }
+        equipment.clear();
+        equipment.addAll(previousEquipment);
+        updateCompletionState();
+        assert equipment.equals(previousEquipment) : "Bundle rollback must restore all equipment";
+    }
+
     /** Recomputes whether the bundle meets all required type counts. */
     private void updateCompletionState() {
         int cameraCount = countType(CAMERA_TYPE);
