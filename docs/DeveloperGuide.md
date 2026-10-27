@@ -7,9 +7,24 @@ title: Developer Guide
 
 ## Acknowledgements
 
-{list here sources of all reused/adapted ideas, code, documentation, and third-party libraries -- include links to the original source as well}
+- The project started from the [CS2113 team-project template](https://github.com/NUS-CS2113-AY2627-S1/tp).
+- The organisation of this guide was informed by the [AddressBook-Level3 Developer Guide](https://se-education.org/addressbook-level3/DeveloperGuide.html).
+- Diagrams are rendered with [PlantUML](https://plantuml.com/). The shared style uses the
+  [vibrant theme by future-architect](https://github.com/future-architect/puml-themes), distributed with PlantUML.
+- Builds use [Gradle](https://gradle.org/) and [Shadow](https://github.com/GradleUp/shadow);
+  verification uses [JUnit](https://junit.org/junit5/) and [Checkstyle](https://checkstyle.org/).
+- Image and icon sources, including the snAp logo and GitHub mark, are recorded in
+  [asset sources](assets/SOURCES.txt) with the accompanying icon licence.
 
-## Design & implementation
+**Version:** This guide describes the development implementation on `master`.
+The latest published release is [v1.0](https://github.com/AY2627S1-CS2113-W13-1/tp/releases/tag/v1.0),
+whose [versioned source](https://github.com/AY2627S1-CS2113-W13-1/tp/tree/v1.0) contains the original equipment
+and loan commands. The architecture and enhancement sections below describe work for the next release;
+they are not a description of the v1.0 JAR.
+
+<a id="design--implementation"></a>
+
+## Design
 
 The following sections explain the architecture and implementation of equipment management, loans,
 returns, history, optional fields, help and shared logging.
@@ -31,26 +46,31 @@ the feature sequence diagrams illustrate execution order for individual commands
 | Part | Main classes | Responsibility |
 | --- | --- | --- |
 | Startup and logging | `Main`, `AppLogging` | Starts the command loop and shared rotating logs; closes logging when the application ends. |
-| Coordination | `EqmManager` | Creates the handlers, routes commands and reports outcomes. |
+| Coordination | `EqmManager`, `BackupHandler` | Creates handlers, routes commands and coordinates backup and restoration. |
 | Input | `Parser` | Reads one command line from the console. Feature parsers interpret its fields. |
 | Help | `Help` | Prints the command reference. |
 | Equipment | `EquipmentHandler`, `EquipmentFilter`, `Equipment` and its subclasses | Manages the inventory, filtering, updates and subtype details. |
 | Loans | `LoanHandler`, `Loan` | Manages borrowing, returns, history and overdue queries. |
-| Bundles | `BundleHandler`, `Bundle` | Groups equipment for the current session. |
-| File storage | `EquipmentStorage`, `LoanStorage`, `LoanReturnStorage` | Loads and saves records, including coordinated return saves. |
+| Bundles | `BundleHandler`, `Bundle` | Manages reusable equipment groups and restores their memberships between sessions. |
+| File storage | `EquipmentStorage`, `BundleStorage`, `LoanStorage`, `LoanReturnStorage` | Loads and saves records, including coordinated return saves. |
 
 Both `LoanHandler` and `BundleHandler` use the same `EquipmentHandler` created by `EqmManager`.
 They therefore work with the current equipment objects and availability. For example, updating an item's
 name changes the item seen by an existing loan or bundle without replacing its equipment reference.
 
 The file-storage box groups the existing utilities. Default paths are `data/equipment.txt`,
-`data/loans.txt` and `data/loan-sequence.txt`. The [logging section](#shared-logging-and-equipment-assertions)
+`data/bundles.txt`, `data/loans.txt` and `data/loan-sequence.txt`. The [logging section](#shared-logging-and-equipment-assertions)
 explains the shared file handler and cleanup.
 
 Build and run with Java 25. Gradle starts `seedu.snap.Main`; `shadowJar` produces
 `build/libs/snAp.jar`. The `run` and `test` tasks enable assertions. For the packaged JAR,
 `java -ea -jar build/libs/snAp.jar` enables the same development checks; normal command validation
 uses exceptions and remains active without `-ea`.
+
+The [shared equipment model](#shared-equipment-model) gives the class-level view.
+The implementation sections explain the command flows and the reasons for their validation and save ordering.
+
+## Implementation
 
 ### Equipment compatibility attributes
 
@@ -468,6 +488,8 @@ Legacy snapshots are left absent rather than inferred from present equipment. In
 
 Equipment addition, filtering and updates use the same inventory. The shared model also tracks
 availability so borrowing and queries agree about which equipment can be used.
+Start with the shared model, then see [addition](#adding-equipment-and-rejecting-duplicate-item-ids),
+[filtering](#filtering-equipment-without-changing-records) or [updates](#updating-equipment-details).
 
 #### Shared equipment model
 
@@ -504,6 +526,10 @@ loan, serviceability decides between `Available` and `Unserviceable`. The integr
 [return assessment](#returning-equipment-with-an-assessment) sets serviceability separately from numeric
 condition and damage. A name or condition update does not change it.
 
+A saved loan reassignment releases the old item and reserves the replacement through `Loan.applyUpdate(...)`.
+Both effects occur after the proposed loan records are saved. This also explains the reassignment transitions
+in the state diagram.
+
 `Loan.detachEquipment()` clears the item's loan ID only if that loan still owns it, then drops its
 reference. This stops an older loan from releasing an item borrowed under a newer loan. Returns and loan
 deletions save before detaching. Equipment deletion is blocked by the CLI's active-loan check and the
@@ -514,6 +540,10 @@ runtime links and reattaches accepted active loans. Rebuilding links avoids pers
 flag that could disagree with the loan records. `EquipmentAvailabilityTest` covers double borrowing,
 failed reservations, ownership guards, deletion and reborrowing; `MainTest` checks restart and loan-deletion
 behaviour. Return integration tests cover serviceability and save failures.
+
+Visible Item IDs range from `001` to `999` and may be reused after valid deletion. Loan IDs use the same
+range but are never reused within a data set: after 999 assignments, new borrowing requires a new data set.
+This identifier limit is separate from the inventory-capacity NFR.
 
 #### Adding equipment and rejecting duplicate Item IDs
 
@@ -606,7 +636,8 @@ save files or consume identifiers.
 [PlantUML source](diagrams/EquipmentFilterSequence.puml)
 
 The class lifeline receives the static `parse(...)` call; `filter:EquipmentFilter` is its returned query.
-`apply(...)` checks each item's criteria using current active-loan information.
+`apply(...)` checks each item's criteria using current active-loan information. Reading the inventory and
+printing matches are summarised as manager self-messages; their helper calls are omitted.
 
 ##### Design choices
 
@@ -793,30 +824,187 @@ matches, but these tests do not explicitly assert its diagnostic log records or 
 
 `EqmManagerTest` verifies command routing using a fixed `Clock`. It also confirms that `list overdue` does not modify equipment availability, loan records, or persisted files.
 
-## Product scope
+<a id="product-scope"></a>
+
+## Appendix A: Product Scope
+
 ### Target user profile
 
-{Describe the target user profile}
+snAp serves photography-club equipment officers who manage shared cameras, lenses, batteries and tripods.
+They use typed commands to maintain a local inventory, prepare kits and track borrowing.
+One officer uses a local data folder at a time; normal operation does not need an internet connection.
 
 ### Value proposition
 
-{Describe the value proposition: what problem does it solve?}
+snAp brings equipment details, availability and borrowing records together. Officers can find suitable
+available gear, prevent double borrowing, identify overdue loans and retain borrowing history without
+maintaining separate equipment and loan lists by hand.
 
-## User Stories
+<a id="user-stories"></a>
 
-|Version| As a ... | I want to ... | So that I can ...|
-|--------|----------|---------------|------------------|
-|v1.0|new user|see usage instructions|refer to them when I forget how to use the application|
-|v2.0|user|find a to-do item by name|locate a to-do without having to go through the entire list|
+## Appendix B: User Stories
 
-## Non-Functional Requirements
+| ID | As a ... | I want to ... | So that I can ... |
+| --- | --- | --- | --- |
+| US-01 | equipment officer | register equipment with unique Item IDs | distinguish individual pieces of gear |
+| US-02 | equipment officer | view equipment details and availability | choose items that can be borrowed |
+| US-03 | equipment officer | combine equipment filters | find suitable gear without scanning the whole inventory |
+| US-04 | equipment officer | correct equipment names and conditions | keep details accurate without breaking existing references |
+| US-05 | equipment officer | record borrowers and loan dates | track who holds each item and when it is due |
+| US-06 | equipment officer | assess an item when recording its return | prevent unserviceable items from being borrowed again |
+| US-07 | equipment officer | view a physical item's borrowing history | trace its loans without mixing in replacement equipment |
+| US-08 | equipment officer | identify overdue active loans | follow up on late returns |
+| US-09 | equipment officer | save equipment bundles | prepare reusable kits |
+| US-10 | equipment officer | view a bundle's loan history | review borrowing involving its current equipment |
+| US-11 | equipment officer | correct an active loan's details | fix mistakes while preserving the Loan ID |
+| US-12 | equipment officer | find equipment currently held by a borrower | follow up with the correct member |
+| US-13 | equipment officer | back up and restore equipment and loan records | recover a consistent earlier set of those records |
+| US-14 | equipment officer | remove retired equipment or erroneous loan records | keep the inventory and loan list accurate |
+| US-15 | new user | find formats and examples through help | use commands without reading the source code |
 
-{Give non-functional requirements}
+<a id="non-functional-requirements"></a>
 
-## Glossary
+## Appendix C: Non-Functional Requirements
 
-* *glossary item* - Definition
+These requirements apply to a single user running one local instance of snAp.
 
-## Instructions for manual testing
+| ID | Area | Requirement |
+| --- | --- | --- |
+| NFR-1 | Portability | The same executable JAR must run on Windows, macOS and Linux with Java 25 without recompilation. |
+| NFR-2 | Offline use | After installation, equipment, loan and bundle commands must work without an internet connection, external server or database service. |
+| NFR-3 | Usability | A user must be able to find a supported command's syntax and an example with at most two help requests: the menu followed by its command topic. |
+| NFR-4 | Data integrity | A failure while writing replacement equipment or loan records, before file replacement, must preserve the previously saved records. The application must report the failed save. |
+| NFR-5 | Text compatibility | Equipment and loan files must use UTF-8. Supported names, remarks and other text fields must retain their validated values after saving and reloading. |
+| NFR-6 | Capacity | The application must support 999 current equipment records and up to 999 stored loan records without truncating records or introducing duplicate identifiers. |
+| NFR-7 | Log storage | When file logging is available, one instance must use at most two rotating log generations with an approximate 1,000,000-byte limit per generation. |
 
-{Give instructions on how to do a manual product testing e.g., how to load sample data to be used for testing}
+<a id="glossary"></a>
+
+## Appendix D: Glossary
+
+| Term | Meaning in snAp |
+| --- | --- |
+| Item ID | The visible equipment identifier from `001` to `999`; it may be reused after equipment deletion. |
+| Permanent record identity | A UUID identifying one physical equipment record, even when its visible Item ID is later reused. |
+| Loan ID | The identifier of one borrowing record, from `001` to `999`; it is not reused within that data set. |
+| Borrower ID | A three-digit member identifier from `000` to `999`; snAp does not maintain member profiles. |
+| Active loan | A loan that has not been returned and currently reserves equipment. |
+| Condition | The descriptive numeric rating from `1` to `10`; it does not itself determine availability. |
+| Serviceability | The return assessment deciding whether an item may be borrowed when it has no active loan. |
+| Issue-time snapshot | The equipment type, condition, damage and remarks recorded for a loan when issued. |
+| Bundle | A named, saved group that refers to existing equipment items rather than copying their details. |
+
+<a id="instructions-for-manual-testing"></a>
+
+## Appendix E: Instructions for Manual Testing
+
+### Setup
+
+Use Java 25 and a build matching this development guide. Copy the JAR to a separate test folder with no
+`data/` directory, then start it there with `java -jar snAp.jar`. Each command below is one line.
+The examples form one test path; IDs assume this fresh data set. Keep real club records in a different folder.
+
+The [User Guide](UserGuide.md) supplies field rules and further input examples. This path focuses on state
+changes, interactions and restart behaviour rather than repeating the command reference.
+
+### Help and sample equipment
+
+```text
+help
+help add
+help all
+add i/Test camera id/001 type/camera cond/1
+add i/Test lens id/002 type/lens cond/2
+add i/Test battery id/003 type/battery cond/3
+add i/Backup camera id/004 type/camera cond/4
+```
+
+Expect the compact menu, command-specific help and full reference respectively. The four additions succeed.
+`list` must show four available items. Help requests must not change those records.
+
+### Addition, filters and updates
+
+```text
+add i/Duplicate id/001 type/lens cond/1
+update id/001 cond/11
+filter type/camera cond/1-3 status/available
+update id/001 i/Studio camera cond/5
+filter type/camera cond/1-3 status/available
+update id/001 cond/2
+```
+
+The first two commands fail without changing the four items. The first filter shows only `001`;
+after its condition becomes `5`, the same filter has no matches. The final update leaves `001` named
+`Studio camera` with condition `2`. Inspect `list` to check that other details and rows remain unchanged.
+
+### Bundles, borrowing and returns
+
+```text
+add-bundle name/Test kit
+add-to-bundle id/001 001 002 003
+list bundles
+loan id/001 b/002 issued/01-01-20 due/02-01-20
+list loans
+list borrower/002
+list overdue
+view loan/001
+update loan/001 b/003 due/03-01-20
+update id/001 cond/6
+view loan/001
+delete item/001
+return loan/001 serviceable/yes damage/NONE remarks/Checked
+history id/001
+history bundle/id/001
+```
+
+The bundle is complete and contains the original three items. Loan `001` reserves equipment `001`.
+The borrower query shows it; on a test date after 3 January 2020 it is overdue. Both snapshot views show the
+issue-time condition `2`, even after the live item becomes condition `6`. Deletion while loaned is rejected.
+Returning keeps the loan record and makes the item available. Both history queries must include loan `001` marked returned.
+
+```text
+loan id/004 b/003 issued/01-01-20 due/02-01-20
+return loan/002 serviceable/no damage/OTHER remarks/Loose control
+loan id/004 b/003 issued/01-01-20 due/02-01-20
+loan id/002 b/002 issued/01-01-20 due/02-01-20
+delete loan/003
+remove-from-bundle id/001 001
+delete item/001
+bye
+```
+
+The second loan is returned as unserviceable, so borrowing `004` again fails. Loan `003` reserves `002`;
+deleting it releases that item. Removing `001` from the bundle then permits equipment deletion.
+After `bye`, restart in the same folder: expect three equipment items, returned loans `001` and `002`,
+and the bundle containing `002` and `003`. Item `004` must still be unserviceable.
+
+### Backup and restore
+
+Continue after restarting the previous test data:
+
+```text
+backup path/backups/manual-1
+update id/003 cond/8
+restore path/backups/manual-1
+backup path/backups/manual-1
+restore path/backups/does-not-exist
+list
+list loans
+bye
+```
+
+The first backup succeeds. Restoration resets item `003` to condition `3` and retains both returned loans.
+It clears current bundles because they are outside this backup format. The repeated backup and missing
+restore path are rejected without changing the restored data. Restart once more and use `list bundles`
+to confirm that the cleared bundle state was saved.
+
+### Logging and input recovery
+
+Check that the test folder contains rotating `logs/snap.log.*` files. To test unavailable logging, close snAp,
+rename its `logs` folder and create an ordinary file named `logs` in its place. Startup must warn, while
+normal equipment commands still work. Close snAp, remove that test file, restore the folder and restart;
+logging must resume. Do this only in the disposable test folder.
+
+Repeat a valid and an invalid add with assertions enabled using `java -ea -jar snAp.jar`, and without
+`-ea`; use an unused Item ID for the valid add. Input validation must still work in both modes. Read-only queries must leave equipment, loans,
+bundles and saved record contents unchanged.
