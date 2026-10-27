@@ -1,3 +1,8 @@
+---
+layout: default
+title: Amos Loh
+---
+
 # Amos Loh - Project Portfolio Page
 
 ## Overview

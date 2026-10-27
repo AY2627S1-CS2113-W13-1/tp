@@ -36,6 +36,7 @@ import seedu.snap.bundle.Bundle;
 import seedu.snap.bundle.BundleHandler;
 import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.EquipmentHandler;
+import seedu.snap.loan.EquipmentConditionSnapshot;
 import seedu.snap.loan.Loan;
 import seedu.snap.loan.LoanHandler;
 
@@ -43,7 +44,7 @@ import seedu.snap.loan.LoanHandler;
 class HelpIntegrationTest {
     private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-10-24T12:00:00Z"), ZoneOffset.UTC);
     private static final List<String> HELP_COMMANDS = List.of("help", "help all", "help add", "help list",
-            "help delete item", "help loan", "help return", "help delete loan", "help list loans",
+            "help delete item", "help loan", "help return", "help delete loan", "help list loans", "help view loan",
             "help list overdue", "help history", "help filter", "help update", "help add-bundle",
             "help add-to-bundle", "help list bundles", "help help", "help bye", "help unknown",
             "help list overdue extra", "help add i/Camera", "help Loan", "help all extra");
@@ -149,8 +150,8 @@ class HelpIntegrationTest {
 
         List<String> lines = printed().lines().toList();
         assertTrue(lines.stream().allMatch(line -> line.length() <= 100));
-        assertEquals(18, lines.stream().filter("Format:"::equals).count());
-        assertEquals(18, lines.stream().filter("Example:"::equals).count());
+        assertEquals(19, lines.stream().filter("Format:"::equals).count());
+        assertEquals(19, lines.stream().filter("Example:"::equals).count());
         assertTrue(printed().contains(System.lineSeparator() + System.lineSeparator() + "Format:"
                 + System.lineSeparator() + "  "));
         assertTrue(printed().contains(System.lineSeparator() + System.lineSeparator() + "Example:"
@@ -166,6 +167,7 @@ class HelpIntegrationTest {
         "return | Format: return loan/<LOAN ID>",
         "delete loan | Format: delete loan/<LOAN ID>",
         "list loans | Format: list loans",
+        "view loan | Format: view loan/<LOAN ID>",
         "list overdue | Format: list overdue",
         "history | Format: history id/<ITEM ID>",
         "filter | Format: filter [id/<ID>]",
@@ -210,6 +212,24 @@ class HelpIntegrationTest {
     }
 
     @ParameterizedTest
+    @ValueSource(strings = {"help view loan", "\u2003help\tview\u00a0loan\u2003",
+        "help\u2003view\u2003loan", "help\nview\r\nloan", "help  view   loan"})
+    void help_viewLoanTopicWhitespace_showsGuideWithoutViewingALoan(String command) throws Exception {
+        ApplicationState before = snapshot(manager);
+        Map<Path, SavedFile> filesBefore = savedFiles(dataDirectory);
+
+        manager.executeInput(command);
+
+        assertTrue(printedContent().contains("Format: view loan/<LOAN ID>"));
+        assertTrue(printedContent().contains("Example: view loan/001"));
+        assertTrue(printedContent().contains("Legacy loans without a saved snapshot"));
+        assertFalse(printedContent().contains("Unknown help topic"));
+        assertFalse(printedContent().contains("Format: loan id/"));
+        assertEquals(before, snapshot(manager));
+        assertSavedFilesUnchanged(filesBefore);
+    }
+
+    @ParameterizedTest
     @ValueSource(strings = {"help all", "\u2003help\tall\u00a0", "help\u2003all"})
     void help_all_showsCompleteReference(String command) {
         manager.executeInput(command);
@@ -217,6 +237,7 @@ class HelpIntegrationTest {
         assertTrue(printedContent().contains("Format: add i/<NAME>"));
         assertTrue(printedContent().contains("Format: loan id/<ITEM ID>"));
         assertTrue(printedContent().contains("Format: return loan/<LOAN ID>"));
+        assertTrue(printedContent().contains("Format: view loan/<LOAN ID>"));
         assertTrue(printedContent().contains("Format: add-to-bundle id/<BUNDLE ID>"));
         assertTrue(printedContent().contains("Format: bye"));
         assertTrue(printedContent().contains("Omitted issued/ defaults to today's date"));
@@ -393,7 +414,8 @@ class HelpIntegrationTest {
                         item.isLoaned(), item.isServiceable(), item.getLoanId())).toList();
         List<LoanState> loanRecords = loanHandler.getLoanList().stream()
                 .map(loan -> new LoanState(loan, loan.getLoanId(), loan.getItemId(), loan.getEquipmentRecordId(),
-                        loan.getBorrowerId(), loan.getIssuedDate(), loan.getDueDate(), loan.isReturned())).toList();
+                        loan.getBorrowerId(), loan.getIssuedDate(), loan.getDueDate(), loan.isReturned(),
+                        loan.getIssueConditionSnapshot())).toList();
         List<BundleState> bundleRecords = bundleHandler.getBundleList().stream()
                 .map(bundle -> new BundleState(bundle, bundle.getBundleId(), bundle.getBundleName(),
                         bundle.isComplete(), List.copyOf(bundle.getEquipmentList()))).toList();
@@ -465,6 +487,7 @@ class HelpIntegrationTest {
         assertTrue(printedContent().contains("help <COMMAND>"));
         assertTrue(printedContent().contains("help list overdue"));
         assertTrue(printedContent().contains("list overdue"));
+        assertTrue(printedContent().contains("view loan"));
         assertTrue(printedContent().contains("delete item"));
         assertTrue(printedContent().contains("add-to-bundle"));
         assertTrue(printedContent().contains("list bundles"));
@@ -489,7 +512,8 @@ class HelpIntegrationTest {
 
     /** Includes both active and returned records so displaying help cannot alter loan history. */
     private record LoanState(Loan reference, String loanId, String itemId, String equipmentRecordId,
-            String borrowerId, LocalDateTime issuedDate, LocalDateTime dueDate, boolean returned) {
+            String borrowerId, LocalDateTime issuedDate, LocalDateTime dueDate, boolean returned,
+            EquipmentConditionSnapshot issueConditionSnapshot) {
     }
 
     /** Retains bundle item references and the derived composition state. */

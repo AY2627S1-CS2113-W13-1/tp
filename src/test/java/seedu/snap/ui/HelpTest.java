@@ -27,7 +27,7 @@ import seedu.snap.equipment.Tripod;
 /** Checks the command guide covers executable syntax, meaningful defaults and important restrictions. */
 class HelpTest {
     private static final List<String> TOPICS = List.of("add", "list", "delete item", "loan", "return", "delete loan",
-            "list loans", "list overdue", "history", "filter", "update", "add-bundle", "add-to-bundle",
+            "list loans", "view loan", "list overdue", "history", "filter", "update", "add-bundle", "add-to-bundle",
             "list bundles", "help", "bye");
 
     /** Supplies the user-facing syntax and example for each supported command. */
@@ -45,6 +45,7 @@ class HelpTest {
                         "return loan/001 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair"),
                 Arguments.of("delete loan", "delete loan/<LOAN ID>", "delete loan/001"),
                 Arguments.of("list loans", "list loans", "list loans"),
+                Arguments.of("view loan", "view loan/<LOAN ID>", "view loan/001"),
                 Arguments.of("list overdue", "list overdue", "list overdue"),
                 Arguments.of("history", "history id/<ITEM ID>", "history id/001"),
                 Arguments.of("filter", "filter [id/<ID>] [i/<NAME>] [type/<TYPE>] [cond/<N|MIN-MAX>] [status/<STATUS>]",
@@ -169,8 +170,8 @@ class HelpTest {
     void getText_all_separatesEveryCommandWithSpacedFullWidthHeadingBands() {
         List<String> lines = Help.getText("all").lines().toList();
         List<String> headings = List.of("ADD EQUIPMENT", "LIST EQUIPMENT", "DELETE EQUIPMENT", "ADD LOAN",
-                "RETURN EQUIPMENT", "DELETE LOAN", "LIST LOANS", "LIST OVERDUE LOANS", "ITEM LOAN HISTORY",
-                "FILTER EQUIPMENT", "UPDATE EQUIPMENT", "CREATE BUNDLE", "ADD EQUIPMENT TO BUNDLE",
+                "RETURN EQUIPMENT", "DELETE LOAN", "LIST LOANS", "VIEW LOAN ISSUE CONDITION", "LIST OVERDUE LOANS",
+                "ITEM LOAN HISTORY", "FILTER EQUIPMENT", "UPDATE EQUIPMENT", "CREATE BUNDLE", "ADD EQUIPMENT TO BUNDLE",
                 "LIST BUNDLES", "HELP", "EXIT");
         String divider = "=".repeat(100);
 
@@ -201,6 +202,7 @@ class HelpTest {
         assertEquals(Help.getText("delete item"), Help.getText(" \tdelete\u2003item\u00a0 "));
         assertEquals(Help.getText("delete loan"), Help.getText("delete  \tloan"));
         assertEquals(Help.getText("list loans"), Help.getText("list\nloans"));
+        assertEquals(Help.getText("view loan"), Help.getText(" \tview\u2003loan\u00a0 "));
         assertEquals(Help.getText("list overdue"), Help.getText("list\u00a0overdue"));
         assertEquals(Help.getText("list bundles"), Help.getText("list\u2009\u202fbundles"));
         assertFalse(labelledValues(Help.getText("list"), "Format:").contains("list loans"));
@@ -210,7 +212,8 @@ class HelpTest {
     /** Supplies misspellings, partial topics and aliases that must not select a command guide. */
     private static Stream<String> unknownTopics() {
         return Stream.of("unknown", "HELP", "ADD", "helpall", "helpful", "equipment", "loans", "bundles",
-                "delete", "list loan", "list items", "list loans extra", "help add", "all extra");
+                "delete", "list loan", "list items", "list loans extra", "view", "view loan/001", "view loan extra",
+                "help add", "all extra");
     }
 
     @ParameterizedTest
@@ -311,6 +314,17 @@ class HelpTest {
         assertTrue(text.contains("Return permanently marks the retained loan returned"));
         assertTrue(text.contains("cannot be returned twice or reactivated."));
         assertTrue(text.contains("Changing its numeric condition does not repair it."));
+    }
+
+    @Test
+    void getText_viewLoan_explainsCapturedConditionLegacyRecordsAndReadOnlyBehaviour() {
+        String text = proseFor("view loan");
+
+        assertTrue(text.contains(
+                "Shows the equipment type, condition, damage and remarks recorded when the loan was issued."));
+        assertTrue(text.contains(
+                "Legacy loans without a saved snapshot report that the issue condition was not recorded."));
+        assertTrue(text.contains("This read-only command does not change equipment, loans or saved records."));
     }
 
     @Test

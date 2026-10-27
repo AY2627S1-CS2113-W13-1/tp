@@ -179,6 +179,14 @@ public final class Help {
                         Example: list loans
                         Shows active and returned loans with Loan ID, Item ID, borrower, dates and returned status.
                         """)),
+                new CommandHelp("view loan", "Loans", lineEndings("""
+                        VIEW LOAN ISSUE CONDITION
+                        Format: view loan/<LOAN ID>
+                        Example: view loan/001
+                        Shows the equipment type, condition, damage and remarks recorded when the loan was issued.
+                        Legacy loans without a saved snapshot report that the issue condition was not recorded.
+                        This read-only command does not change equipment, loans or saved records.
+                        """)),
                 new CommandHelp("list overdue", "Loans", lineEndings("""
                         LIST OVERDUE LOANS
                         Format: list overdue

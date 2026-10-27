@@ -1,0 +1,16 @@
+{%- comment -%}
+Read the IDs created by the Markdown renderer so contents links work without JavaScript.
+Splitting rendered headings also preserves their document order and inline formatting.
+{%- endcomment -%}
+{%- assign heading_fragments = include.html | split: '<h' -%}
+{%- for heading_fragment in heading_fragments -%}
+  {%- assign heading_level = heading_fragment | slice: 0, 1 -%}
+  {%- if heading_level == '2' or heading_level == '3' -%}
+    {%- assign opening_tag = heading_fragment | split: '>' | first -%}
+    {%- if opening_tag contains 'id="' -%}
+      {%- assign heading_id = opening_tag | split: 'id="' | last | split: '"' | first -%}
+      {%- assign heading_title = heading_fragment | split: '</h' | first | remove_first: opening_tag | remove_first: '>' | strip_html | strip -%}
+      <li class="contents-depth-{{ heading_level }}"><a href="#{{ heading_id | escape }}">{{ heading_title }}</a></li>
+    {%- endif -%}
+  {%- endif -%}
+{%- endfor -%}
