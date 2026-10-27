@@ -280,6 +280,22 @@ public final class Help {
                         Results are sorted by issue date, earliest first, then Loan ID.
                         An empty bundle history and unknown bundle are reported clearly.
                         """)),
+                new CommandHelp("backup", "General", lineEndings("""
+                        BACK UP DATA
+                        Format: backup path/<DIRECTORY>
+                        Example: backup path/backups/session-1
+                        Creates a complete backup containing equipment.txt, loans.txt, loan-sequence.txt and a manifest.
+                        The destination must be outside the live data directory and must not already exist.
+                        Backup creation does not change live records. Paths may contain spaces after path/.
+                        """)),
+                new CommandHelp("restore", "General", lineEndings("""
+                        RESTORE DATA
+                        Format: restore path/<DIRECTORY>
+                        Example: restore path/backups/session-1
+                        Validates the manifest and every equipment, loan and sequence record before replacing live data.
+                        A failed restore leaves the current records unchanged. Successful restores clear session-only
+                        bundles because bundles are not part of the persistent backup.
+                        """)),
                 new CommandHelp("help", "General", lineEndings("""
                         HELP
                         Format: help

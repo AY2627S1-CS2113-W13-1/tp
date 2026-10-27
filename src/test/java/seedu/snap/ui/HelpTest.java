@@ -27,8 +27,8 @@ import seedu.snap.equipment.Tripod;
 /** Checks the command guide covers executable syntax, meaningful defaults and important restrictions. */
 class HelpTest {
     private static final List<String> TOPICS = List.of("add", "list", "delete item", "loan", "return", "delete loan",
-            "update loan",
-            "list loans", "view loan", "list overdue", "history", "filter", "update", "add-bundle", "add-to-bundle",
+            "update loan", "list loans", "view loan", "backup", "restore", "list overdue", "history",
+            "filter", "update", "add-bundle", "add-to-bundle",
             "remove-from-bundle", "list bundles", "history bundle", "help", "bye");
 
     /** Supplies the user-facing syntax and example for each supported command. */
@@ -50,6 +50,8 @@ class HelpTest {
                         "update loan/001 id/002 b/007 due/15-10-26"),
                 Arguments.of("list loans", "list loans", "list loans"),
                 Arguments.of("view loan", "view loan/<LOAN ID>", "view loan/001"),
+                Arguments.of("backup", "backup path/<DIRECTORY>", "backup path/backups/session-1"),
+                Arguments.of("restore", "restore path/<DIRECTORY>", "restore path/backups/session-1"),
                 Arguments.of("list overdue", "list overdue", "list overdue"),
                 Arguments.of("history", "history id/<ITEM ID>", "history id/001"),
                 Arguments.of("filter", "filter [id/<ID>] [i/<NAME>] [type/<TYPE>] [cond/<N|MIN-MAX>] [status/<STATUS>]",
@@ -181,7 +183,8 @@ class HelpTest {
                 "RETURN EQUIPMENT", "DELETE LOAN", "UPDATE LOAN", "LIST LOANS", "VIEW LOAN ISSUE CONDITION",
                 "LIST OVERDUE LOANS",
                 "ITEM LOAN HISTORY", "FILTER EQUIPMENT", "UPDATE EQUIPMENT", "CREATE BUNDLE", "ADD EQUIPMENT TO BUNDLE",
-                "REMOVE EQUIPMENT FROM BUNDLE", "LIST BUNDLES", "BUNDLE LOAN HISTORY", "HELP", "EXIT");
+                "REMOVE EQUIPMENT FROM BUNDLE", "LIST BUNDLES", "BUNDLE LOAN HISTORY", "BACK UP DATA", "RESTORE DATA",
+                "HELP", "EXIT");
         String divider = "=".repeat(100);
 
         assertEquals(headings.size() * 2L, lines.stream().filter(divider::equals).count());
@@ -414,6 +417,18 @@ class HelpTest {
                 "Returned loans and loans due today or later are excluded."));
         assertTrue(text.contains(
                 "Displays Item ID, borrower ID and due date without changing any records."));
+    }
+
+    @Test
+    void getText_backupAndRestore_explainConsistencyValidationAndNonDestructiveFailure() {
+        String text = normaliseWhitespace(Help.getText());
+
+        assertTrue(text.contains("Creates a complete backup containing equipment.txt, loans.txt,"
+                + " loan-sequence.txt and a manifest."));
+        assertTrue(text.contains("The destination must be outside the live data directory"));
+        assertTrue(text.contains("Validates the manifest and every equipment, loan and sequence record"));
+        assertTrue(text.contains("A failed restore leaves the current records unchanged."));
+        assertTrue(text.contains("clear session-only"));
     }
 
     @Test
