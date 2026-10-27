@@ -27,8 +27,8 @@ import seedu.snap.equipment.Tripod;
 /** Checks the command guide covers executable syntax, meaningful defaults and important restrictions. */
 class HelpTest {
     private static final List<String> TOPICS = List.of("add", "list", "delete item", "loan", "return", "delete loan",
-            "update loan", "list loans", "view loan", "backup", "restore", "list overdue", "history",
-            "filter", "update", "add-bundle", "add-to-bundle",
+            "update loan", "list loans", "view loan", "backup", "restore", "list borrower", "list overdue",
+            "history", "filter", "update", "add-bundle", "add-to-bundle",
             "remove-from-bundle", "list bundles", "history bundle", "help", "bye");
 
     /** Supplies the user-facing syntax and example for each supported command. */
@@ -52,6 +52,7 @@ class HelpTest {
                 Arguments.of("view loan", "view loan/<LOAN ID>", "view loan/001"),
                 Arguments.of("backup", "backup path/<DIRECTORY>", "backup path/backups/session-1"),
                 Arguments.of("restore", "restore path/<DIRECTORY>", "restore path/backups/session-1"),
+                Arguments.of("list borrower", "list borrower/<BORROWER ID>", "list borrower/002"),
                 Arguments.of("list overdue", "list overdue", "list overdue"),
                 Arguments.of("history", "history id/<ITEM ID>", "history id/001"),
                 Arguments.of("filter", "filter [id/<ID>] [i/<NAME>] [type/<TYPE>] [cond/<N|MIN-MAX>] [status/<STATUS>]",
@@ -109,13 +110,19 @@ class HelpTest {
         for (String group : List.of("equipment", "loan", "bundle")) {
             assertTrue(lowerCaseText.contains(group), "The menu should group " + group + " commands.");
         }
-        List<String> groupLines = text.lines().filter(line -> line.startsWith("| ") && line.endsWith(" |"))
+        List<String> menuRows = text.lines().filter(line -> line.startsWith("| ") && line.endsWith(" |"))
                 .map(line -> line.substring(2, line.length() - 2).stripTrailing())
-                .filter(line -> line.matches("(?:Equipment|Loans|Bundles|General): .*"))
+                .dropWhile(line -> !line.equals("snAp command menu"))
+                .skip(1)
+                .takeWhile(line -> !line.startsWith("Type help"))
+                .filter(line -> !line.isBlank())
                 .toList();
-        assertEquals(4, groupLines.size());
-        List<String> menuTopics = groupLines.stream()
+        assertEquals(4, menuRows.stream().filter(line -> line.matches("(?:Equipment|Loans|Bundles|General): .*"))
+                .count());
+        List<String> menuTopics = menuRows.stream()
                 .flatMap(line -> Arrays.stream(line.substring(line.indexOf(':') + 1).strip().split("\\s*\\|\\s*")))
+                .map(String::strip)
+                .filter(topic -> !topic.isEmpty())
                 .sorted().toList();
         assertEquals(TOPICS.stream().sorted().toList(), menuTopics,
                 "Each supported command must appear exactly once in the grouped menu.");
@@ -181,7 +188,7 @@ class HelpTest {
         List<String> lines = Help.getText("all").lines().toList();
         List<String> headings = List.of("ADD EQUIPMENT", "LIST EQUIPMENT", "DELETE EQUIPMENT", "ADD LOAN",
                 "RETURN EQUIPMENT", "DELETE LOAN", "UPDATE LOAN", "LIST LOANS", "VIEW LOAN ISSUE CONDITION",
-                "LIST OVERDUE LOANS",
+                "EQUIPMENT HELD BY MEMBER", "LIST OVERDUE LOANS",
                 "ITEM LOAN HISTORY", "FILTER EQUIPMENT", "UPDATE EQUIPMENT", "CREATE BUNDLE", "ADD EQUIPMENT TO BUNDLE",
                 "REMOVE EQUIPMENT FROM BUNDLE", "LIST BUNDLES", "BUNDLE LOAN HISTORY", "BACK UP DATA", "RESTORE DATA",
                 "HELP", "EXIT");
@@ -429,6 +436,18 @@ class HelpTest {
         assertTrue(text.contains("Validates the manifest and every equipment, loan and sequence record"));
         assertTrue(text.contains("A failed restore leaves the current records unchanged."));
         assertTrue(text.contains("clear session-only"));
+    }
+
+    @Test
+    void getText_borrowerLoans_explainsFilteringAliasesAndReadOnlyBehaviour() {
+        String text = normaliseWhitespace(Help.getText());
+
+        assertTrue(text.contains("EQUIPMENT HELD BY MEMBER"));
+        assertTrue(text.contains("The equivalent alias list member/<MEMBER ID> is also accepted."));
+        assertTrue(text.contains("Shows only active equipment held by the selected borrower"));
+        assertTrue(text.contains("Returned loans and loans held by other borrowers are excluded."));
+        assertTrue(text.contains("An unknown borrower ID and a known borrower with no active loans"));
+        assertTrue(text.contains("This read-only query does not change equipment, loans or saved files."));
     }
 
     @Test
