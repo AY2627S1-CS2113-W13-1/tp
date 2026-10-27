@@ -110,7 +110,7 @@ except that empty remarks are valid unless damage is `OTHER`.
 | `add` | `remarks/` | Empty text; rejected if damage is `OTHER` |
 | `loan` | `issued/` | Today's date in the application's local time zone, at midnight |
 | `return` | `remarks/` | Empty text, replacing previous remarks; rejected if damage is `OTHER` |
-| `update` | Name, type or condition | Keep the existing value; supply an ID and at least one field |
+| `update` | Name, type, condition or storage location | Keep the existing value; supply an ID and at least one field |
 | `filter` | Any individual criterion | No restriction for that criterion; supply at least one criterion |
 
 Equipment name, Item ID, type and numeric condition remain required when adding equipment.
@@ -251,7 +251,8 @@ and `STATUS`. Status is `Available`, `Loaned` or `Unserviceable`, using the exis
 rules. The result count appears below the table.
 
 Names that do not fit end in `...`. Type-specific fields, damage and remarks are available through `show`,
-so long values do not expand the table. An empty inventory shows a count of zero and a valid `add` example.
+so long values do not expand the table. When locations are assigned, a separate `LOCATION` section lists them by Item ID.
+An empty inventory shows a count of zero and a valid `add` example.
 Vertical bars in table values appear as `\u007c` to keep the columns separate. Use `show` to see the original text.
 
 ## Viewing full equipment details: `show`
@@ -269,8 +270,9 @@ Tabs and control characters appear as visible escapes, such as `\t`, so that sto
 layout. The stored values are preserved. Extra fields, repeated IDs, invalid IDs and unknown items produce a
 clear error. Equipment listings, filters and detail requests leave records, identifiers and saved data unchanged.
 
-`show` describes the equipment's current state. Use `view loan/[LOAN ID]` for its condition when a particular
-loan was issued, and `list loans` to see borrower IDs and loan dates.
+`show` describes the equipment's current state. It includes the storage location when one is assigned. Use
+`view loan/[LOAN ID]` for its condition when a particular loan was issued, and `list loans` to see borrower IDs
+and loan dates.
 
 ## Deleting equipment: `delete`
 
@@ -518,34 +520,38 @@ See the [worked example](#equipment-worked-example) for a query with known resul
 
 ## Updating equipment: `update`
 
-Format: `update id/<ITEM ID> [i/<NAME>] [type/<TYPE>] [cond/<CONDITION>]`
+Format: `update id/ITEM ID [i/NAME] [type/TYPE] [cond/CONDITION] [location/LOCATION|none]`
 
 Examples:
 
 * `update id/001 cond/5`
-* `update id/001 i/Film Camera cond/5`
+* `update id/001 i/Film Camera type/camera`
+* `update id/001 location/Cabinet A-3`
 
-Supply an existing ID and at least one of `i/`, `type/`, or `cond/`. Fields may appear in any order, once each.
+Supply an existing ID and at least one of `i/`, `type/`, `cond/`, or `location/`. Fields may appear in any order, once each.
 The ID stays fixed and omitted details keep their current values. Names contain 1-100 characters after trimming;
-whitespace-only names are rejected. Conditions are whole numbers from `1` to `10`, without leading zeros,
-signs or decimals. Condition ranges are accepted by `filter` only.
+whitespace-only names are rejected. Conditions are whole numbers from 1 to 10 without leading zeros, signs or decimals.
+Condition ranges are not accepted for updates.
 
-Equipment types cannot be changed. If supplied, `type/` checks the existing type and must match it,
-ignoring case. A matching `type/` on its own is accepted without changing any details.
-Updates keep the item in its current list position and retain its subtype details, damage, remarks,
-availability, loan history and bundle memberships. These other details cannot be edited with `update`.
+Storage locations may contain up to 100 characters and must be single-line values without tabs. Use `location/none`
+to clear the current location. Locations are saved in `data/equipment.txt` and an omitted location remains empty for
+backward compatibility with older equipment files.
+
+Equipment types are fixed by their subclasses. If `type/` is supplied, it must match the item's current type,
+ignoring case. Changing a camera to a lens, for example, is rejected before saving or changing any details.
+Updates preserve the same equipment object, its position in the list, its type-specific fields, damage and remarks,
+and its availability, loan references and bundle membership. Type-specific fields, damage and remarks cannot be
+changed with `update`.
+
+Prefixes `id/`, `i/`, `type/`, `cond/`, `location/`, and `status/` after whitespace are reserved separators; `status/`
+cannot be updated manually. Text such as `USB id/card reader` within a name is allowed.
+The proposed details are saved before the existing object is changed. Invalid commands or failed saves leave all
+existing details unchanged, and the application displays an error. Equipment types are fixed by their subclasses;
+if `type/` is supplied, it must match the existing type, ignoring case. Type-specific fields, damage and remarks
+cannot be changed with `update`.
 
 Success prints `Equipment with item ID 001 updated successfully.` for Item ID `001` and saves the changes.
-With `001` registered as a camera, these commands are rejected:
-
-| Command | Error |
-| --- | --- |
-| `update id/001 i/Film Camera cond/11` | `Condition must be a whole number from 1 to 10.` |
-| `update id/001 type/lens` | `Equipment type cannot be changed. Item ID 001 must remain camera.` |
-
-The [name and field-marker rules](#names-and-field-markers) apply. `status/` cannot be updated manually.
-Invalid commands or failed saves leave all existing details unchanged. In the first rejected example,
-neither the name nor condition changes. An ID that does not exist is rejected rather than creating equipment.
+The [name and field-marker rules](#names-and-field-markers) apply; `status/` cannot be updated manually.
 Correct the command or storage problem and try again.
 
 ## Creating a bundle: `add-bundle`
@@ -742,7 +748,7 @@ permission problem, then restart snAp. File logging is configured only at startu
 | Record maintenance work | `maintain id/<ITEM ID> date/<DD-MM-YY> work/<DESCRIPTION> outcome/<OUTCOME>` |
 | List overdue loans | `list overdue` |
 | Filter equipment | `filter [id/<ITEM ID>] [i/<NAME>] [type/<TYPE>] [cond/<CONDITION>] [status/<STATUS>]` |
-| Update equipment | `update id/<ITEM ID> [i/<NAME>] [type/<TYPE>] [cond/<CONDITION>]` |
+| Update equipment | `update id/<ITEM ID> [i/<NAME>] [type/<TYPE>] [cond/<CONDITION>] [location/LOCATION\|none]` |
 | Create bundle | `add-bundle name/<NAME>` |
 | Add equipment to bundle | `add-to-bundle id/<BUNDLE ID> <EQUIPMENT ID> [<EQUIPMENT ID> ...]` |
 | Remove equipment from bundle | `remove-from-bundle id/<BUNDLE ID> <EQUIPMENT ID> [<EQUIPMENT ID> ...]` |

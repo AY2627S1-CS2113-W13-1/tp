@@ -32,6 +32,7 @@ public class EquipmentHandler {
     private static final String ID_MARKER = "id/";
     private static final String TYPE_MARKER = "type/";
     private static final String CONDITION_MARKER = "cond/";
+    private static final String CLEAR_LOCATION_VALUE = "none";
     private static final String[] DETAIL_MARKERS =
             Arrays.stream(EquipmentDetailField.values())
                     .map(EquipmentDetailField::getMarker)
@@ -202,6 +203,7 @@ public class EquipmentHandler {
                     assessedDamage, normalisedRemarks, current.getType());
             proposed.restoreRecordId(current.getRecordId());
             proposed.setServiceable(serviceable);
+            proposed.setStorageLocation(current.getStorageLocation());
             return proposed;
         } catch (EquipmentAdditionUnsuccessful exception) {
             throw new IllegalArgumentException(exception.getMessage(), exception);
@@ -621,13 +623,14 @@ public class EquipmentHandler {
         try {
             Map<String, String> fields = EquipmentFields.parse(input, "update", EquipmentFields.ID_FIELD,
                     EquipmentFields.NAME_FIELD, EquipmentFields.TYPE_FIELD,
-                    EquipmentFields.CONDITION_FIELD);
+                    EquipmentFields.CONDITION_FIELD, EquipmentFields.LOCATION_FIELD);
             String id = fields.get(EquipmentFields.ID_FIELD);
             if (!Equipment.isValidItemId(id)) {
                 throw new EquipmentUpdateUnsuccessful("Item ID must be from 001 to 999.");
             }
             if (fields.size() == 1) {
-                throw new EquipmentUpdateUnsuccessful("Supply a name, type, or condition to update.");
+                throw new EquipmentUpdateUnsuccessful(
+                        "Supply a name, type, condition, or storage location to update.");
             }
             Equipment target = findEquipmentForUpdate(id);
             return applyValidatedUpdate(target, fields);
@@ -655,12 +658,13 @@ public class EquipmentHandler {
     }
 
     /** Saves a copy of the same subclass and its details before changing the existing object. */
-    private void saveUpdate(Equipment target, String name, int condition)
+    private void saveUpdate(Equipment target, String name, int condition, String storageLocation)
             throws EquipmentAdditionUnsuccessful, EquipmentUpdateUnsuccessful {
         Equipment proposed = createValidatedEquipment(name, target.getItemId(), target.getType(),
                 Integer.toString(condition), target.getDetails(), target.getRemarks());
         proposed.restoreRecordId(target.getRecordId());
         proposed.setServiceable(target.isServiceable());
+        proposed.setStorageLocation(storageLocation);
         ArrayList<Equipment> updatedInventory = new ArrayList<>(inventory);
         updatedInventory.set(inventory.indexOf(target), proposed);
         try {
@@ -678,6 +682,9 @@ public class EquipmentHandler {
         String type = fields.getOrDefault(EquipmentFields.TYPE_FIELD, target.getType());
         String condition = fields.getOrDefault(EquipmentFields.CONDITION_FIELD,
                 Integer.toString(target.getCondition()));
+        String storageLocation = fields.containsKey(EquipmentFields.LOCATION_FIELD)
+                ? parseStorageLocation(fields.get(EquipmentFields.LOCATION_FIELD))
+                : target.getStorageLocation();
         validateEquipmentDetails(name, target.getItemId(), type, condition);
         if (!type.equalsIgnoreCase(target.getType())) {
             throw new EquipmentUpdateUnsuccessful("Equipment type cannot be changed. Item ID "
@@ -685,12 +692,27 @@ public class EquipmentHandler {
         }
         int previousSize = inventory.size();
         int parsedCondition = Integer.parseInt(condition);
-        saveUpdate(target, name, parsedCondition);
+        saveUpdate(target, name, parsedCondition, storageLocation);
         target.updateDetails(name, parsedCondition);
+        target.setStorageLocation(storageLocation);
         assert inventory.size() == previousSize : "Updates must not add or remove equipment";
         assert target.getItemId().equals(fields.get(EquipmentFields.ID_FIELD))
                 : "Updates must preserve Item ID";
+        assert target.getStorageLocation().equals(storageLocation)
+                : "Updates must apply the requested storage location";
         logger.log(Level.FINE, "Updated equipment with item ID {0}", target.getItemId());
         return target;
+    }
+
+    /** Converts the documented clear token or validates an ordinary location value. */
+    private static String parseStorageLocation(String value) throws EquipmentUpdateUnsuccessful {
+        if (value.equalsIgnoreCase(CLEAR_LOCATION_VALUE)) {
+            return "";
+        }
+        try {
+            return Equipment.normaliseStorageLocation(value);
+        } catch (IllegalArgumentException exception) {
+            throw new EquipmentUpdateUnsuccessful(exception.getMessage());
+        }
     }
 }

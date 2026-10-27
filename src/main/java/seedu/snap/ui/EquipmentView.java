@@ -50,8 +50,23 @@ public final class EquipmentView {
             }
             System.out.println(TABLE_BORDER);
             System.out.println("Names ending in ... are shortened. Use show id/<ID> for full details.");
+            printLocations(items);
         }
         System.out.println(items.size() + " equipment " + (items.size() == 1 ? "item." : "items."));
+    }
+
+    /** Prints assigned locations separately so the compact summary remains within the terminal width. */
+    private static void printLocations(List<Equipment> items) {
+        List<Equipment> locatedItems = items.stream()
+                .filter(item -> !item.getStorageLocation().isEmpty())
+                .toList();
+        if (locatedItems.isEmpty()) {
+            return;
+        }
+        System.out.println("LOCATION");
+        for (Equipment item : locatedItems) {
+            printField(item.getItemId(), item.getStorageLocation());
+        }
     }
 
     /** Prints all current subtype and compatibility values, including unspecified and empty values. */
@@ -85,6 +100,8 @@ public final class EquipmentView {
         } else {
             printField("Details", item.getDetails());
         }
+        printField("Storage location", item.getStorageLocation().isEmpty()
+                ? "(unspecified)" : item.getStorageLocation());
         printField("Remarks", item.getRemarks().isEmpty() ? "(none)" : item.getRemarks());
     }
 

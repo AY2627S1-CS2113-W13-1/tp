@@ -21,6 +21,8 @@ public abstract class Equipment {
     public static final int MAX_CONDITION = 10;
     /** Maximum number of characters allowed in a single-line equipment remark. */
     public static final int MAX_REMARKS_LENGTH = 200;
+    /** Maximum number of characters allowed in a single-line storage location. */
+    public static final int MAX_STORAGE_LOCATION_LENGTH = 100;
     private static final String ITEM_ID_PATTERN = "[0-9]{3}";
     private static final String RESERVED_ITEM_ID = "000";
     private static final Pattern BLANK_TEXT = Pattern.compile("\\s*", Pattern.UNICODE_CHARACTER_CLASS);
@@ -38,6 +40,8 @@ public abstract class Equipment {
     private String loanId;
     /** Optional single-line remarks retained with this equipment record. */
     private String remarks;
+    /** Optional single-line storage location retained with this equipment record. */
+    private String storageLocation = "";
 
     /**
      * Creates an equipment item.
@@ -145,12 +149,14 @@ public abstract class Equipment {
                 || !itemName.equals(assessed.itemName)
                 || condition != assessed.condition || assessed.remarks == null
                 || assessed.remarks.length() > MAX_REMARKS_LENGTH
-                || assessed.remarks.matches("(?s).*\\R.*")) {
+                || assessed.remarks.matches("(?s).*\\R.*")
+                || !storageLocation.equals(assessed.storageLocation)) {
             throw new IllegalArgumentException("The return assessment must belong to the same equipment.");
         }
         applyDamageAssessment(assessed);
         remarks = assessed.remarks;
         isServiceable = assessed.isServiceable;
+        storageLocation = assessed.storageLocation;
     }
 
     /** Returns the current active loan identifier, or null when no identified loan owns this item. */
@@ -217,7 +223,9 @@ public abstract class Equipment {
                 && isValidItemId(itemId)
                 && condition >= MIN_CONDITION && condition <= MAX_CONDITION
                 && remarks != null && remarks.length() <= MAX_REMARKS_LENGTH
-                && !remarks.contains("\n") && !remarks.contains("\r");
+                && !remarks.contains("\n") && !remarks.contains("\r")
+                && storageLocation != null && storageLocation.length() <= MAX_STORAGE_LOCATION_LENGTH
+                && !storageLocation.matches("(?s).*\\R.*") && !storageLocation.contains("\t");
     }
 
     /**
@@ -227,5 +235,39 @@ public abstract class Equipment {
      */
     public String getRemarks() {
         return remarks;
+    }
+
+    /** Returns the current storage location, or an empty string when none is assigned. */
+    public String getStorageLocation() {
+        return storageLocation;
+    }
+
+    /**
+     * Applies a validated storage location to this equipment record.
+     *
+     * @param location location text, or an empty string to clear the location
+     */
+    final void setStorageLocation(String location) {
+        String normalised = normaliseStorageLocation(location);
+        String previousLocation = storageLocation;
+        storageLocation = normalised;
+        logger.log(Level.INFO, "Equipment with item ID {0} changed storage location from {1} to {2}.",
+                new Object[]{itemId, previousLocation.isEmpty() ? "unspecified" : previousLocation,
+                    normalised.isEmpty() ? "unspecified" : normalised});
+        assert hasValidState() : "Equipment storage location must remain valid";
+    }
+
+    /** Validates and trims a storage location without changing any equipment state. */
+    static String normaliseStorageLocation(String location) {
+        if (location == null) {
+            throw new IllegalArgumentException("Storage location must not be null.");
+        }
+        String normalised = location.strip();
+        if (normalised.length() > MAX_STORAGE_LOCATION_LENGTH
+                || normalised.matches("(?s).*\\R.*") || normalised.contains("\t")) {
+            throw new IllegalArgumentException("Storage location must contain at most "
+                    + MAX_STORAGE_LOCATION_LENGTH + " characters and no line breaks or tabs.");
+        }
+        return normalised;
     }
 }

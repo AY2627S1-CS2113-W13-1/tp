@@ -60,8 +60,8 @@ class HelpTest {
                         "filter type/camera cond/1-3 status/available"),
                 Arguments.of("maintain", "maintain id/<ITEM ID> date/<DD-MM-YY> work/<DESCRIPTION> outcome/<OUTCOME>",
                         "maintain id/001 date/27-10-26 work/Replaced battery outcome/Completed"),
-                Arguments.of("update", "update id/<ID> [i/<NAME>] [type/<TYPE>] [cond/<N>]",
-                        "update id/001 i/Studio camera cond/5"),
+                Arguments.of("update", "update id/<ID> [i/<NAME>] [type/<TYPE>] [cond/<N>] [location/<LOCATION|none>]",
+                        "update id/001 location/Cabinet A-3"),
                 Arguments.of("add-bundle", "add-bundle name/<NAME>", "add-bundle name/Studio kit"),
                 Arguments.of("add-to-bundle", "add-to-bundle id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]",
                         "add-to-bundle id/001 001 002 003"),
@@ -266,6 +266,8 @@ class HelpTest {
         assertTrue(proseFor("history").contains("Reused Item IDs keep separate histories."));
         assertTrue(proseFor("filter").contains("All filters must match (AND)."));
         assertTrue(proseFor("update").contains("Omitted fields retain their current values."));
+        assertTrue(proseFor("list").contains("storage location"));
+        assertTrue(proseFor("update").contains("location/none to clear one."));
         assertTrue(proseFor("add-bundle").contains(
                 "Bundles and their equipment memberships are restored between application runs"));
         assertTrue(proseFor("add-to-bundle").contains(
@@ -391,6 +393,7 @@ class HelpTest {
         assertTrue(text.contains("Available excludes active loans and unserviceable items."));
         assertTrue(text.contains("Requires an existing Item ID and at least one update field, in any order"));
         assertTrue(text.contains("Omitted fields retain their current values."));
+        assertTrue(text.contains("Storage locations may contain up to 100 characters"));
         assertTrue(text.contains("Type is fixed; type/ must match the current type."));
         assertTrue(text.contains("damage, remarks, serviceability, loans and bundle membership."));
     }
