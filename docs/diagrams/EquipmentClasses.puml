@@ -4,18 +4,16 @@
 skinparam linetype ortho
 skinparam nodesep 35
 skinparam ranksep 45
+hide empty members
 
 class EquipmentHandler {
     + addEquipment(...): Equipment
     + getEquipmentList(): List<Equipment>
     + updateEquipment(...): Equipment
-    - ensureUniqueItemId(...): void
 }
 
 class EquipmentFilter {
     - fields: Map<String, String>
-    - minimumCondition: int
-    - maximumCondition: int
     {static} + parse(...): EquipmentFilter
     + apply(...): List<Equipment>
 }
@@ -31,14 +29,9 @@ class EquipmentStorage <<utility>> {
 abstract class Equipment {
     - itemName: String
     - itemId: String
-    - recordId: String
     - condition: int
     - isLoaned: boolean
     - isServiceable: boolean
-    - loanId: String
-    + isLoaned(): boolean
-    + isServiceable(): boolean
-    + setLoanId(...): void
     + updateDetails(...): void
     {abstract} + getType(): String
     {abstract} + getDetails(): String
@@ -46,18 +39,13 @@ abstract class Equipment {
 
 class Camera {
     - sensorFormat: String
-    + getDetails(): String
 }
 
 EquipmentHandler --> "0..*" Equipment : -inventory
-EquipmentHandler ..> EquipmentFields : parses updates
-EquipmentHandler ..> EquipmentStorage : saves proposals
-EquipmentFilter ..> EquipmentFields : parses criteria
-EquipmentFilter ..> Equipment : matches items
+EquipmentHandler ..> EquipmentFields : parses
+EquipmentHandler ..> EquipmentStorage : saves
+EquipmentFilter ..> EquipmentFields : parses
+EquipmentFilter ..> Equipment : matches
 Equipment <|-- Camera
 
-legend bottom left
-Selected members; Camera represents the equipment subclasses.
-... omits parameters; static methods are underlined.
-endlegend
 @enduml
