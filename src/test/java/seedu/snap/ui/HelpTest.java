@@ -28,7 +28,7 @@ import seedu.snap.equipment.Tripod;
 class HelpTest {
     private static final List<String> TOPICS = List.of("add", "list", "delete item", "loan", "return", "delete loan",
             "update loan", "list loans", "view loan", "list borrower", "list overdue", "history", "filter",
-            "update", "maintain", "add-bundle", "add-to-bundle",
+            "update", "maintain", "add-bundle", "add-to-bundle", "backup", "restore",
             "remove-from-bundle", "list bundles", "history bundle", "help", "bye");
 
     /** Supplies the user-facing syntax and example for each supported command. */
