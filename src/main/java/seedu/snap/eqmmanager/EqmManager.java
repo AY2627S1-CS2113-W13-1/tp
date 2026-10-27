@@ -26,6 +26,7 @@ import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 import seedu.snap.exceptions.LoanReturnUnsuccessful;
 import seedu.snap.exceptions.LoanHistoryUnsuccessful;
 import seedu.snap.exceptions.LoanViewingUnsuccessful;
+import seedu.snap.exceptions.LoanUpdateUnsuccessful;
 import seedu.snap.loan.Loan;
 import seedu.snap.loan.LoanHandler;
 import seedu.snap.parser.Parser;
@@ -131,6 +132,8 @@ public class EqmManager {
             viewLoanHistory(normalizedInput);
         } else if (normalizedInput.matches("(?U)view(?:\\s.*)?")) {
             viewLoanIssueCondition(normalizedInput);
+        } else if (normalizedInput.matches("(?U)update\\s+loan(?:\\s.*|/.*)?")) {
+            updateLoan(normalizedInput);
         } else if (normalizedInput.matches("(?U)filter(?:\\s.*)?")) {
             filterEquipment(normalizedInput);
         } else if (normalizedInput.matches("(?U)update(?:\\s.*)?")) {
@@ -387,6 +390,16 @@ public class EqmManager {
             System.out.println("Equipment with item ID " + updated.getItemId() + " updated successfully.");
         } catch (EquipmentUpdateUnsuccessful e) {
             System.out.println(e.getMessage());
+        }
+    }
+
+    /** Displays the outcome of a loan-detail update. */
+    private void updateLoan(String input) {
+        try {
+            Loan updated = loans.updateLoan(input);
+            System.out.println("Loan " + updated.getLoanId() + " updated successfully.");
+        } catch (LoanUpdateUnsuccessful exception) {
+            System.out.println(exception.getMessage());
         }
     }
 
