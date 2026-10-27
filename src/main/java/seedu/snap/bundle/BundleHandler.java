@@ -89,6 +89,15 @@ public class BundleHandler {
         return Collections.unmodifiableList(bundles);
     }
 
+    /** Clears session-only bundles after a restore replaces the equipment objects they reference. */
+    public void clearBundles() {
+        int previousSize = bundles.size();
+        bundles.clear();
+        nextBundleNumber = 1;
+        assert bundles.isEmpty() : "Clearing bundles must remove every session-only bundle";
+        LOGGER.log(Level.INFO, "Cleared {0} session-only bundle(s) after data restore.", previousSize);
+    }
+
     /**
      * Loads saved bundles after equipment and loan associations have been restored.
      *

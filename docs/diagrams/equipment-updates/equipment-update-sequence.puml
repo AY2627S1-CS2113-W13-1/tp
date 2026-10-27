@@ -2,36 +2,24 @@
 !include ../style.puml
 hide footbox
 skinparam sequenceMessageAlign center
-skinparam maxMessageSize 210
+skinparam maxMessageSize 150
+skinparam defaultFontSize 16
 
 participant ":EqmManager" as Manager
 participant ":EquipmentHandler" as Handler
-participant "EquipmentFields" as Fields <<utility>>
 participant "EquipmentStorage" as Storage <<utility>>
 participant "target:Camera" as Target
 
 title update id/001 i/Film Camera cond/5
 
-[-> Manager : executeInput(input)
-activate Manager
 Manager -> Handler : updateEquipment(input)
 activate Handler
-Handler -> Fields : parse(input, "update", ...)
-activate Fields
-Fields --> Handler : fields
-deactivate Fields
-Handler -> Handler : findEquipmentForUpdate("001")
-activate Handler
-Handler --> Handler : target
-deactivate Handler
-
-Handler -> Handler : applyValidatedUpdate(target, fields)
-activate Handler
-note over Handler : Fill omitted values; validate all proposed details.
+Handler -> Handler : parse fields and find target
+note over Handler : Fill omitted values;\nvalidate the complete proposal.
 
 Handler -> Handler : saveUpdate(target, ...)
 activate Handler
-note over Handler, Storage : Prepare a same-subtype proposal in a copied inventory.
+note over Handler, Storage : Prepare a same-subtype proposal\nin a copied inventory.
 Handler -> Storage : save(file, proposedInventory)
 activate Storage
 Storage --> Handler
@@ -43,12 +31,8 @@ Handler -> Target : updateDetails("Film Camera", 5)
 activate Target
 Target --> Handler
 deactivate Target
-Handler --> Handler : target
-deactivate Handler
 Handler --> Manager : target
 deactivate Handler
 Manager -> Manager : display success
-[<-- Manager
-deactivate Manager
 
 @enduml

@@ -24,6 +24,7 @@ import java.util.Objects;
 import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
+import seedu.snap.exceptions.LoanBorrowerUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 import seedu.snap.exceptions.LoanReturnUnsuccessful;
 import seedu.snap.exceptions.LoanHistoryUnsuccessful;
@@ -836,6 +837,63 @@ public class LoanHandler {
             System.out.println("Earlier returned loans for this Item ID cannot be attributed to the current item. "
                     + "Use list loans to view them.");
         }
+    }
+
+    /**
+     * Returns active loans held by the borrower in a borrower query.
+     * A borrower is known when at least one current or returned loan uses the ID.
+     *
+     * @param input command in the form {@code list borrower/002}
+     * @return an unmodifiable snapshot containing only the borrower's active loans
+     * @throws LoanBorrowerUnsuccessful if syntax is invalid or the borrower is unknown
+     */
+    public List<Loan> getActiveLoansForBorrower(String input) throws LoanBorrowerUnsuccessful {
+        LoanBorrowerQuery query = parseBorrowerQuery(input);
+        return findActiveLoansForBorrower(query);
+    }
+
+    /** Displays the active equipment held by a borrower without changing application state. */
+    public void viewActiveLoansForBorrower(String input) throws LoanBorrowerUnsuccessful {
+        LoanBorrowerQuery query = parseBorrowerQuery(input);
+        List<Loan> activeLoans = findActiveLoansForBorrower(query);
+        printLoans(activeLoans, "Equipment currently held by borrower ID " + query.borrowerId() + ":",
+                "No active loans found for borrower ID " + query.borrowerId() + ".");
+    }
+
+    /** Parses and logs malformed borrower queries before they reach the loan collection. */
+    private LoanBorrowerQuery parseBorrowerQuery(String input) throws LoanBorrowerUnsuccessful {
+        try {
+            return LoanBorrowerQuery.parse(input);
+        } catch (LoanBorrowerUnsuccessful exception) {
+            logger.log(Level.WARNING, "Borrower loan query rejected: {0}", exception.getMessage());
+            throw exception;
+        }
+    }
+
+    /** Selects a borrower's active loans while preserving the stored loan order and all state. */
+    private List<Loan> findActiveLoansForBorrower(LoanBorrowerQuery query)
+            throws LoanBorrowerUnsuccessful {
+        assert numLoans == loans.size() : "numLoans should match the size of the loans list";
+        ArrayList<Loan> activeLoans = new ArrayList<>();
+        boolean borrowerKnown = false;
+        for (Loan loan : loans) {
+            assert loan != null : "Loan list must not contain null items";
+            if (query.borrowerId().equals(loan.getBorrowerId())) {
+                borrowerKnown = true;
+                if (!loan.isReturned()) {
+                    activeLoans.add(loan);
+                }
+            }
+        }
+        if (!borrowerKnown) {
+            logger.log(Level.WARNING, "Borrower loan query found no borrower with ID {0}.", query.borrowerId());
+            throw new LoanBorrowerUnsuccessful("No member found for borrower ID " + query.borrowerId() + ".");
+        }
+        assert activeLoans.stream().allMatch(loan -> query.borrowerId().equals(loan.getBorrowerId())
+                && !loan.isReturned()) : "Borrower query must return only active matching loans";
+        logger.log(Level.INFO, "Viewed {0} active loan(s) for borrower ID {1}.",
+                new Object[]{activeLoans.size(), query.borrowerId()});
+        return List.copyOf(activeLoans);
     }
 
     /** Checks history syntax without reading or writing any record. */
