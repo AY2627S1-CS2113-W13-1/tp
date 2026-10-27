@@ -10,6 +10,9 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,6 +21,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 /** Tests maintenance commands through the application manager and persistent data directory. */
 class MaintenanceIntegrationTest {
+    private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-10-27T12:00:00Z"), ZoneOffset.UTC);
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
     private PrintStream originalOutput;
 
@@ -273,5 +277,34 @@ class MaintenanceIntegrationTest {
         assertEquals("Invalid format. Use: summary maintenance." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
         assertArrayEquals(maintenanceBefore, Files.readAllBytes(temporaryDirectory.resolve("maintenance.txt")));
+    }
+
+    @Test
+    void maintain_futureDate_isRejectedWithoutCreatingARecord() throws Exception {
+        EqmManager manager = new EqmManager(temporaryDirectory, FIXED_CLOCK);
+        manager.executeInput("add i/Camera id/001 type/camera cond/5");
+        output.reset();
+
+        manager.executeInput("maintain id/001 date/28-10-26 work/Planned outcome/Not completed");
+
+        assertEquals("Maintenance date cannot be in the future." + System.lineSeparator(),
+                output.toString(StandardCharsets.UTF_8));
+        assertFalse(Files.exists(temporaryDirectory.resolve("maintenance.txt")));
+    }
+
+    @Test
+    void inspect_futureDate_isRejectedBeforeChangingEquipmentOrMaintenance() throws Exception {
+        EqmManager manager = new EqmManager(temporaryDirectory, FIXED_CLOCK);
+        manager.executeInput("add i/Camera id/001 type/camera cond/5");
+        manager.executeInput("loan id/001 b/002 issued/24-10-26 due/27-10-26");
+        manager.executeInput("return loan/001 serviceable/no damage/SHUTTER_FAULT");
+        output.reset();
+
+        manager.executeInput("inspect id/001 date/28-10-26 outcome/PASS");
+
+        assertEquals("Inspection date cannot be in the future." + System.lineSeparator(),
+                output.toString(StandardCharsets.UTF_8));
+        assertFalse(Files.exists(temporaryDirectory.resolve("maintenance.txt")));
+        assertTrue(Files.readString(temporaryDirectory.resolve("equipment.txt")).contains("serviceable/no"));
     }
 }

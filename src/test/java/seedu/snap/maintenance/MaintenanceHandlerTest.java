@@ -8,7 +8,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -23,6 +26,7 @@ import seedu.snap.exceptions.MaintenanceRecordUnsuccessful;
 /** Tests maintenance command validation, equipment identity binding, and persistence boundaries. */
 class MaintenanceHandlerTest {
     private static final String ADD_CAMERA = "add i/Camera id/001 type/camera cond/5";
+    private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-10-27T12:00:00Z"), ZoneOffset.UTC);
 
     @TempDir
     private Path temporaryDirectory;
@@ -207,7 +211,8 @@ class MaintenanceHandlerTest {
         Equipment frequentEarlier = equipment.addEquipment("add i/Frequent earlier id/001 type/lens cond/5");
         Equipment oneRepair = equipment.addEquipment("add i/One repair id/003 type/battery cond/5");
         frequentLater.applyReturnAssessment(equipment.prepareReturnAssessment(frequentLater, false, "NONE", ""));
-        MaintenanceHandler handler = new MaintenanceHandler(equipment);
+        MaintenanceHandler handler = new MaintenanceHandler(equipment, null,
+                Clock.fixed(Instant.parse("2026-10-30T12:00:00Z"), ZoneOffset.UTC));
 
         handler.addMaintenanceRecord("maintain id/002 date/27-10-26 work/Repair A outcome/Completed");
         handler.addMaintenanceRecord("maintain id/002 date/28-10-26 work/Inspection outcome/PASSED");
@@ -354,5 +359,34 @@ class MaintenanceHandlerTest {
         assertEquals(1, handler.getMaintenanceRecords().size());
         assertArrayEquals(maintenanceBefore, Files.readAllBytes(maintenanceFile));
         assertEquals("keep equipment", Files.readString(equipmentFile.resolve("keep.txt")));
+    }
+
+    @Test
+    void addMaintenanceRecord_futureDate_isRejected() throws Exception {
+        EquipmentHandler equipment = new EquipmentHandler();
+        equipment.addEquipment(ADD_CAMERA);
+        MaintenanceHandler handler = new MaintenanceHandler(equipment, null, FIXED_CLOCK);
+
+        MaintenanceRecordUnsuccessful exception = assertThrows(MaintenanceRecordUnsuccessful.class,
+                () -> handler.addMaintenanceRecord(
+                        "maintain id/001 date/28-10-26 work/Repair outcome/Planned"));
+
+        assertEquals("Maintenance date cannot be in the future.", exception.getMessage());
+        assertTrue(handler.getMaintenanceRecords().isEmpty());
+    }
+
+    @Test
+    void completeInspection_futureDate_isRejectedBeforeStateChanges() throws Exception {
+        EquipmentHandler equipment = new EquipmentHandler();
+        Equipment camera = equipment.addEquipment(ADD_CAMERA);
+        camera.applyReturnAssessment(equipment.prepareReturnAssessment(camera, false, "NONE", ""));
+        MaintenanceHandler handler = new MaintenanceHandler(equipment, null, FIXED_CLOCK);
+
+        MaintenanceInspectionUnsuccessful exception = assertThrows(MaintenanceInspectionUnsuccessful.class,
+                () -> handler.completeInspection("inspect id/001 date/28-10-26 outcome/PASS"));
+
+        assertEquals("Inspection date cannot be in the future.", exception.getMessage());
+        assertFalse(camera.isServiceable());
+        assertTrue(handler.getMaintenanceRecords().isEmpty());
     }
 }

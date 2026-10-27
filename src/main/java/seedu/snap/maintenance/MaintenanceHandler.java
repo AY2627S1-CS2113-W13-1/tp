@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -54,19 +55,30 @@ public class MaintenanceHandler {
     private final ArrayList<MaintenanceRecord> records = new ArrayList<>();
     /** File used for persistence, or null for an in-memory handler. */
     private final Path storageFile;
+    /** Clock used to reject maintenance and inspection dates later than the application date. */
+    private final Clock clock;
 
     /** Creates an in-memory maintenance handler for isolated tests or callers without persistence. */
     public MaintenanceHandler(EquipmentHandler equipment) {
-        this(equipment, null);
+        this(equipment, null, Clock.systemDefaultZone());
     }
 
     /** Creates a maintenance handler backed by the supplied text file. */
     public MaintenanceHandler(EquipmentHandler equipment, Path storageFile) {
+        this(equipment, storageFile, Clock.systemDefaultZone());
+    }
+
+    /** Creates a maintenance handler with an explicit clock for deterministic date validation. */
+    public MaintenanceHandler(EquipmentHandler equipment, Path storageFile, Clock clock) {
         if (equipment == null) {
             throw new IllegalArgumentException("Equipment handler must not be null.");
         }
+        if (clock == null) {
+            throw new IllegalArgumentException("Clock must not be null.");
+        }
         this.equipment = equipment;
         this.storageFile = storageFile;
+        this.clock = clock;
     }
 
     /**
@@ -80,6 +92,11 @@ public class MaintenanceHandler {
             return;
         }
         List<MaintenanceRecord> loaded = MaintenanceStorage.load(storageFile);
+        for (MaintenanceRecord record : loaded) {
+            if (isFutureDate(record.getMaintenanceDate())) {
+                throw new IOException("Maintenance date cannot be in the future.");
+            }
+        }
         records.clear();
         records.addAll(loaded);
         assert records.size() == loaded.size() : "Loaded maintenance record count must be preserved";
@@ -276,6 +293,9 @@ public class MaintenanceHandler {
         int previousSize = records.size();
         try {
             ParsedCommand parsed = parseCommand(input);
+            if (isFutureDate(parsed.date())) {
+                throw new MaintenanceRecordUnsuccessful("Maintenance date cannot be in the future.");
+            }
             Equipment item = equipment.getEquipmentById(parsed.itemId());
             if (item == null) {
                 throw new MaintenanceRecordUnsuccessful("Equipment ID " + parsed.itemId() + " does not exist.");
@@ -295,7 +315,11 @@ public class MaintenanceHandler {
             assert records.size() == previousSize : "Rejected maintenance must not change the record count";
             logger.log(Level.FINE, "Maintenance record rejected: {0}", exception.getMessage());
             throw exception;
-        } catch (IOException | IllegalArgumentException exception) {
+        } catch (IllegalArgumentException exception) {
+            assert records.size() == previousSize : "Invalid maintenance must not change records";
+            logger.log(Level.FINE, "Maintenance record failed validation: {0}", exception.getMessage());
+            throw new MaintenanceRecordUnsuccessful(exception.getMessage());
+        } catch (IOException exception) {
             assert records.size() == previousSize : "Failed maintenance saves must not change records";
             logger.log(Level.WARNING, "Maintenance record could not be saved", exception);
             throw new MaintenanceRecordUnsuccessful("Could not save maintenance record: "
@@ -388,6 +412,11 @@ public class MaintenanceHandler {
         return itemId != null && itemId.matches("[0-9]{3}") && !itemId.equals("000");
     }
 
+    /** Returns whether a date is later than today in the configured application time zone. */
+    private boolean isFutureDate(LocalDate date) {
+        return date.isAfter(LocalDate.now(clock));
+    }
+
     /** Groups records by permanent physical equipment identity without changing insertion order. */
     private Map<String, List<MaintenanceRecord>> groupRecordsByEquipment() {
         Map<String, List<MaintenanceRecord>> grouped = new HashMap<>();
@@ -415,7 +444,7 @@ public class MaintenanceHandler {
     }
 
     /** Parses and validates the inspection command without changing equipment or saved records. */
-    private static ParsedInspection parseInspectionCommand(String input)
+    private ParsedInspection parseInspectionCommand(String input)
             throws MaintenanceInspectionUnsuccessful {
         String command = input == null ? "" : input.strip();
         Matcher matcher = INSPECTION_COMMAND.matcher(command);
@@ -427,6 +456,9 @@ public class MaintenanceHandler {
             date = LocalDate.parse(matcher.group(2), DATE_FORMATTER);
         } catch (DateTimeParseException exception) {
             throw new MaintenanceInspectionUnsuccessful("Inspection date must use DD-MM-YY.");
+        }
+        if (isFutureDate(date)) {
+            throw new MaintenanceInspectionUnsuccessful("Inspection date cannot be in the future.");
         }
         String result = matcher.group(3).toUpperCase(Locale.ROOT);
         if (!result.equals("PASS") && !result.equals("FAIL")) {

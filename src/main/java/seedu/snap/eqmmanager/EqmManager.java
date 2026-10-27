@@ -14,13 +14,16 @@ import seedu.snap.bundle.Bundle;
 import seedu.snap.bundle.BundleHandler;
 import seedu.snap.exceptions.BundleAdditionUnsuccessful;
 import seedu.snap.exceptions.BundleHistoryUnsuccessful;
+import seedu.snap.exceptions.BackupUnsuccessful;
 import seedu.snap.equipment.EquipmentFilter;
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
 import seedu.snap.exceptions.EquipmentFilteringUnsuccessful;
 import seedu.snap.exceptions.EquipmentUpdateUnsuccessful;
+import seedu.snap.exceptions.EquipmentViewingUnsuccessful;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
+import seedu.snap.exceptions.LoanBorrowerUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 import seedu.snap.exceptions.LoanReturnUnsuccessful;
 import seedu.snap.exceptions.LoanHistoryUnsuccessful;
@@ -28,10 +31,10 @@ import seedu.snap.exceptions.LoanViewingUnsuccessful;
 import seedu.snap.exceptions.LoanUpdateUnsuccessful;
 import seedu.snap.exceptions.MaintenanceHistoryUnsuccessful;
 import seedu.snap.exceptions.MaintenanceInspectionUnsuccessful;
+import seedu.snap.exceptions.MaintenanceSummaryUnsuccessful;
 import seedu.snap.loan.Loan;
 import seedu.snap.loan.LoanHandler;
 import seedu.snap.exceptions.MaintenanceRecordUnsuccessful;
-import seedu.snap.exceptions.MaintenanceSummaryUnsuccessful;
 import seedu.snap.maintenance.MaintenanceHandler;
 import seedu.snap.maintenance.MaintenanceRecord;
 import seedu.snap.parser.Parser;
@@ -46,8 +49,10 @@ public class EqmManager {
     private final EquipmentHandler equipment;
     private final MaintenanceHandler maintenance;
     private final BundleHandler bundles;
+    private final BackupHandler backups;
+    private final Path dataDirectory;
     private final Clock clock;
-    private final String startupError;
+    private String startupError;
     private boolean isRunning;
 
     /** Creates an equipment manager ready to accept commands. */
@@ -70,13 +75,15 @@ public class EqmManager {
         if (dataDirectory == null) {
             throw new IllegalArgumentException("Data directory must not be null.");
         }
+        this.dataDirectory = dataDirectory.toAbsolutePath().normalize();
         this.parser = new Parser();
         this.clock = clock;
-        this.equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
-        this.loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"),
-                dataDirectory.resolve("loan-sequence.txt"), clock);
-        this.maintenance = new MaintenanceHandler(equipment, dataDirectory.resolve("maintenance.txt"));
-        this.bundles = new BundleHandler(equipment, dataDirectory.resolve("bundles.txt"));
+        this.equipment = new EquipmentHandler(this.dataDirectory.resolve("equipment.txt"));
+        this.loans = new LoanHandler(equipment, this.dataDirectory.resolve("loans.txt"),
+                this.dataDirectory.resolve("loan-sequence.txt"), clock);
+        this.maintenance = new MaintenanceHandler(equipment, this.dataDirectory.resolve("maintenance.txt"), clock);
+        this.bundles = new BundleHandler(equipment, this.dataDirectory.resolve("bundles.txt"));
+        this.backups = new BackupHandler(this.dataDirectory, equipment, loans, bundles);
         List<String> loadErrors = new ArrayList<>();
         try {
             equipment.loadFromStorage();
@@ -91,16 +98,16 @@ public class EqmManager {
             logger.log(Level.SEVERE, "Could not load saved loan data", e);
         }
         try {
-            maintenance.loadFromStorage();
-        } catch (IOException e) {
-            loadErrors.add("maintenance.txt: " + e.getMessage());
-            logger.log(Level.SEVERE, "Could not load saved maintenance data", e);
-        }
-        try {
             bundles.loadFromStorage();
         } catch (IOException e) {
             loadErrors.add("bundles.txt: " + e.getMessage());
             logger.log(Level.SEVERE, "Could not load saved bundle data", e);
+        }
+        try {
+            maintenance.loadFromStorage();
+        } catch (IOException e) {
+            loadErrors.add("maintenance.txt: " + e.getMessage());
+            logger.log(Level.SEVERE, "Could not load saved maintenance data", e);
         }
         this.startupError = loadErrors.isEmpty() ? null : String.join(System.lineSeparator(), loadErrors);
         this.isRunning = true;
@@ -113,12 +120,20 @@ public class EqmManager {
      */
     public void executeInput(String input) {
         String normalizedInput = input == null ? "" : input.replaceAll("(?U)^\\s+|\\s+$", "");
-        if (startupError != null) {
-            System.out.println("Could not load saved data: " + startupError);
+        if (normalizedInput.equals("restore") || normalizedInput.startsWith("restore ")) {
+            restoreBackup(normalizedInput);
+        } else if (startupError != null) {
+            if (normalizedInput.equals("bye")) {
+                isRunning = false;
+            } else {
+                System.out.println("Could not load saved data: " + startupError);
+            }
         } else if (normalizedInput.matches("(?sU)help(?:\\s.*)?")) {
             Help.print(normalizedInput.substring("help".length()));
         } else if (normalizedInput.equals("bye")) {
             isRunning = !saveBeforeExit();
+        } else if (normalizedInput.equals("backup") || normalizedInput.startsWith("backup ")) {
+            createBackup(normalizedInput);
         } else if (normalizedInput.equals("delete loan")
                 || normalizedInput.startsWith("delete loan/")
                 || normalizedInput.startsWith("delete loan ")) {
@@ -133,29 +148,32 @@ public class EqmManager {
             returnEquipment(normalizedInput);
         } else if (normalizedInput.matches("(?sU)maintain(?:\\s.*)?")) {
             recordMaintenance(normalizedInput);
+        } else if (normalizedInput.equals("list maintenance-due")) {
+            viewMaintenanceDue(normalizedInput);
+        } else if (normalizedInput.matches("(?sU)inspect(?:\\s.*)?")) {
+            completeInspection(normalizedInput);
         } else if (normalizedInput.startsWith("history bundle/")) {
             viewBundleLoanHistory(normalizedInput);
-        } else if (normalizedInput.equals("inspect") || normalizedInput.startsWith("inspect ")) {
-            completeInspection(normalizedInput);
-        } else if (normalizedInput.equals("list maintenance-due")
-                || normalizedInput.startsWith("list maintenance-due ")) {
-            viewMaintenanceDue(normalizedInput);
-        } else if (normalizedInput.equals("summary maintenance")
-                || normalizedInput.startsWith("summary maintenance ")) {
-            viewMaintenanceSummary(normalizedInput);
         } else if (normalizedInput.equals("history maintenance")
                 || normalizedInput.startsWith("history maintenance/")) {
             viewMaintenanceHistory(normalizedInput);
+        } else if (normalizedInput.equals("summary maintenance")
+                || normalizedInput.startsWith("summary maintenance ")) {
+            viewMaintenanceSummary(normalizedInput);
         } else if (normalizedInput.matches("(?sU)history(?:\\s.*)?")) {
             viewLoanHistory(normalizedInput);
         } else if (normalizedInput.matches("(?U)view(?:\\s.*)?")) {
             viewLoanIssueCondition(normalizedInput);
         } else if (normalizedInput.matches("(?U)update\\s+loan(?:\\s.*|/.*)?")) {
             updateLoan(normalizedInput);
+        } else if (normalizedInput.matches("(?sU)list\\s+(?:borrower|member)(?:/.*|\\s.*)?")) {
+            viewActiveLoansForBorrower(normalizedInput);
         } else if (normalizedInput.matches("(?U)filter(?:\\s.*)?")) {
             filterEquipment(normalizedInput);
         } else if (normalizedInput.matches("(?U)update(?:\\s.*)?")) {
             updateEquipment(normalizedInput);
+        } else if (normalizedInput.matches("(?sU)show(?:\\s.*)?")) {
+            showEquipment(normalizedInput);
         } else if (normalizedInput.equals("list overdue")) {
             viewOverdueLoans();
         } else if (normalizedInput.equals("list loans")) {
@@ -179,18 +197,26 @@ public class EqmManager {
         }
     }
 
+    /** Displays complete equipment values without changing records or performing a save. */
+    private void showEquipment(String input) {
+        try {
+            equipment.showEquipment(input);
+        } catch (EquipmentViewingUnsuccessful exception) {
+            System.out.println(exception.getMessage());
+        }
+    }
+
     /** Runs the main input and execution loop until the user exits. */
     public void run() {
         if (startupError != null) {
             System.out.println("Could not load saved data: " + startupError);
-            return;
+        } else {
+            Welcome.printLogo();
+            System.out.println("Welcome to snAp. Loaded " + equipment.getEquipmentList().size()
+                    + " equipment record(s) and " + loans.getLoanCount() + " loan(s).");
+            System.out.println();
+            Help.print();
         }
-
-        Welcome.printLogo();
-        System.out.println("Welcome to snAp. Loaded " + equipment.getEquipmentList().size()
-                + " equipment record(s) and " + loans.getLoanCount() + " loan(s).");
-        System.out.println();
-        Help.print();
 
         // main process
         String input;
@@ -222,16 +248,16 @@ public class EqmManager {
             logger.log(Level.SEVERE, "Could not save loan data before exit", e);
         }
         try {
-            maintenance.saveToStorage();
-        } catch (IOException e) {
-            saveErrors.add("maintenance.txt: " + e.getMessage());
-            logger.log(Level.SEVERE, "Could not save maintenance data before exit", e);
-        }
-        try {
             bundles.saveToStorage();
         } catch (IOException e) {
             saveErrors.add("bundles.txt: " + e.getMessage());
             logger.log(Level.SEVERE, "Could not save bundle data before exit", e);
+        }
+        try {
+            maintenance.saveToStorage();
+        } catch (IOException e) {
+            saveErrors.add("maintenance.txt: " + e.getMessage());
+            logger.log(Level.SEVERE, "Could not save maintenance data before exit", e);
         }
 
         if (!saveErrors.isEmpty()) {
@@ -254,6 +280,27 @@ public class EqmManager {
     }
 
     // @@author
+
+    /** Creates a backup and displays either its destination or the safe failure message. */
+    private void createBackup(String input) {
+        try {
+            Path destination = backups.createBackup(input);
+            System.out.println("Backup created successfully at " + destination + ".");
+        } catch (BackupUnsuccessful exception) {
+            System.out.println(exception.getMessage());
+        }
+    }
+
+    /** Restores a validated backup and reports either the restored source or the safe failure message. */
+    private void restoreBackup(String input) {
+        try {
+            Path source = backups.restoreBackup(input);
+            startupError = null;
+            System.out.println("Backup restored successfully from " + source + ".");
+        } catch (BackupUnsuccessful exception) {
+            System.out.println(exception.getMessage());
+        }
+    }
 
     /** Displays the outcome of a loan deletion. */
     private void deleteLoan(String input) {
@@ -383,15 +430,6 @@ public class EqmManager {
         }
     }
 
-    /** Displays overdue and frequently repaired equipment or its validation error. */
-    private void viewMaintenanceSummary(String input) {
-        try {
-            maintenance.viewMaintenanceSummary(input);
-        } catch (MaintenanceSummaryUnsuccessful exception) {
-            System.out.println(exception.getMessage());
-        }
-    }
-
     /** Displays the outcome of completing an equipment inspection. */
     private void completeInspection(String input) {
         try {
@@ -399,6 +437,15 @@ public class EqmManager {
             assert record != null : "A successful inspection must return a maintenance record";
             System.out.println("Inspection recorded successfully.");
         } catch (MaintenanceInspectionUnsuccessful exception) {
+            System.out.println(exception.getMessage());
+        }
+    }
+
+    /** Displays a read-only maintenance summary or its validation error. */
+    private void viewMaintenanceSummary(String input) {
+        try {
+            maintenance.viewMaintenanceSummary(input);
+        } catch (MaintenanceSummaryUnsuccessful exception) {
             System.out.println(exception.getMessage());
         }
     }
@@ -421,16 +468,21 @@ public class EqmManager {
         }
     }
 
+    /** Displays the active equipment currently held by one borrower or its validation error. */
+    private void viewActiveLoansForBorrower(String input) {
+        try {
+            loans.viewActiveLoansForBorrower(input);
+        } catch (LoanBorrowerUnsuccessful exception) {
+            System.out.println(exception.getMessage());
+        }
+    }
+
     /** Displays matching equipment or the filter error. */
     private void filterEquipment(String input) {
         try {
             EquipmentFilter filter = EquipmentFilter.parse(input);
             List<Equipment> matches = filter.apply(equipment.getEquipmentList(), loans);
-            if (matches.isEmpty()) {
-                System.out.println("No equipment matches the filters.");
-            } else {
-                equipment.viewEquipment(matches);
-            }
+            equipment.viewEquipment(matches);
         } catch (EquipmentFilteringUnsuccessful e) {
             System.out.println(e.getMessage());
         }
