@@ -207,6 +207,34 @@ class LoanReturnTest {
         assertEquals(remarks, reloaded.getEquipmentList().getFirst().getRemarks());
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"yes", "no"})
+    void returnLoan_otherDamageWithRemarks_survivesRestart(String serviceability) throws Exception {
+        String remarks = "Damage outside listed categories";
+        String command = "return loan/001 serviceable/" + serviceability
+                + " damage/other remarks/" + remarks;
+        boolean expectedServiceable = "yes".equals(serviceability);
+
+        assertSame(original, loans.returnLoan(command));
+        assertEquals(CameraDamage.OTHER, camera.getDamage());
+        assertEquals(remarks, camera.getRemarks());
+        assertEquals(expectedServiceable, camera.isServiceable());
+        assertFalse(camera.isLoaned());
+        assertTrue(original.isReturned());
+
+        EquipmentHandler restoredEquipment = new EquipmentHandler(equipmentFile);
+        restoredEquipment.loadFromStorage();
+        LoanHandler restoredLoans = new LoanHandler(restoredEquipment, loanFile, sequenceFile);
+        restoredLoans.loadFromStorage();
+        Camera restored = (Camera) restoredEquipment.getEquipmentList().getFirst();
+
+        assertEquals(CameraDamage.OTHER, restored.getDamage());
+        assertEquals(remarks, restored.getRemarks());
+        assertEquals(expectedServiceable, restored.isServiceable());
+        assertFalse(restored.isLoaned());
+        assertTrue(restoredLoans.getLoanList().getFirst().isReturned());
+    }
+
     @Test
     void returnLoan_fieldPrefixesInsideFinalRemarks_areSavedAsLiteralText() throws Exception {
         String remarks = "Checked serviceable/no damage/SENSOR_DAMAGE label on case";
@@ -281,6 +309,9 @@ class LoanReturnTest {
                 "return loan/001 serviceable/yes damage/ remarks/",
                 "return loan/001 serviceable/yes damage/SCRATCHED_GLASS remarks/",
                 "return loan/001 serviceable/yes damage/UNKNOWN remarks/",
+                "return loan/001 serviceable/yes damage/OTHER",
+                "return loan/001 serviceable/yes damage/OTHER remarks/",
+                "return loan/001 serviceable/no damage/other remarks/   ",
                 "return loan/001 damage/NONE serviceable/yes remarks/",
                 "return serviceable/yes loan/001 damage/NONE remarks/",
                 "return loan/001 loan/001 serviceable/yes damage/NONE remarks/",

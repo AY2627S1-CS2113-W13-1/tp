@@ -12,7 +12,15 @@ public class Tripod extends Equipment {
     public enum TripodDamage {
         NONE,
         BENT_LEG,
-        HEAD_FAULT
+        HEAD_FAULT,
+
+        // @@author Rohita-29
+
+        WATER_DAMAGE,
+        MISSING_PART,
+        OTHER
+
+        // @@author
     }
 
     private final String thread;

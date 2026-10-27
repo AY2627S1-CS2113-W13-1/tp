@@ -47,15 +47,15 @@ You can then enter another command normally. Help does not save data or end the 
 ## Optional fields and defaults
 
 Square brackets around a field mean that the whole field can be omitted. Defaults apply only when a field is
-absent. Supplying an empty or invalid value produces an error, except that empty remarks are valid.
+absent. Supplying an empty or invalid value produces an error, except that empty remarks are valid unless damage is `OTHER`.
 
 | Command | Optional field | When omitted |
 | --- | --- | --- |
 | `add` | Type-specific detail (`sensor/`, `zoom/`, `capacity/` or `thread/`) | `unspecified` |
 | `add` | `damage/` | `NONE` |
-| `add` | `remarks/` | Empty text |
+| `add` | `remarks/` | Empty text; rejected if damage is `OTHER` |
 | `loan` | `issued/` | Today's date in the application's local time zone, at midnight |
-| `return` | `remarks/` | Empty text, replacing any previous remarks |
+| `return` | `remarks/` | Empty text, replacing previous remarks; rejected if damage is `OTHER` |
 | `update` | Name, type or condition | Keep the existing value; supply an ID and at least one field |
 | `filter` | Any individual criterion | No restriction for that criterion; supply at least one criterion |
 
@@ -73,8 +73,8 @@ Example: `add i/Canon EOS R10 id/001 type/camera cond/1 remarks/Handle with care
 * `ITEM ID` uses exactly three digits from `001` to `999` and must not already exist.
 * `TYPE` is `camera`, `lens`, `battery` or `tripod`. Type names are case-insensitive and stored in lowercase.
 * `CONDITION` is a whole number from `1` to `10`. We recommend `1` for pristine and `10` for non-functional.
-* `REMARKS` is optional free-form text of up to 200 characters. It must remain on one line and is trimmed at both ends.
-* Put `remarks/` last when remarks are provided. Omit it to add equipment without remarks.
+* `REMARKS` is free-form text of up to 200 characters. It must remain on one line and is trimmed at both ends.
+* Put `remarks/` last. Include non-empty remarks when using `damage/OTHER`.
 * Enter the fields in the order shown above. Names can contain spaces.
 * Equipment with the same name can be added separately using different IDs.
 
@@ -83,19 +83,19 @@ After `cond/`, you can add the fields for the equipment type, followed by
 
 | Type | Optional fields, in command order | Damage values |
 | --- | --- | --- |
-| `camera` | `sensor/[SENSOR FORMAT]`, `mount/[LENS MOUNT]`, `thread/[TRIPOD THREAD]`, `battery/[BATTERY TYPE]` | `NONE`, `SENSOR_DAMAGE`, `SHUTTER_FAULT` |
-| `lens` | `zoom/[ZOOM RANGE]`, `mount/[LENS MOUNT]`, `sensor/[SENSOR FORMAT]` | `NONE`, `SCRATCHED_GLASS`, `AUTOFOCUS_FAULT` |
-| `battery` | `capacity/[CAPACITY]`, `battery/[BATTERY TYPE]` | `NONE`, `SWELLING`, `CONTACT_DAMAGE` |
-| `tripod` | `thread/[TRIPOD THREAD]` | `NONE`, `BENT_LEG`, `HEAD_FAULT` |
+| `camera` | `sensor/[SENSOR FORMAT]`, `mount/[LENS MOUNT]`, `thread/[TRIPOD THREAD]`, `battery/[BATTERY TYPE]` | `NONE`, `SENSOR_DAMAGE`, `SHUTTER_FAULT`, `WATER_DAMAGE`, `BODY_CRACK`, `MISSING_CAP`, `OTHER` |
+| `lens` | `zoom/[ZOOM RANGE]`, `mount/[LENS MOUNT]`, `sensor/[SENSOR FORMAT]` | `NONE`, `SCRATCHED_GLASS`, `AUTOFOCUS_FAULT`, `WATER_DAMAGE`, `CRACKED_GLASS`, `MISSING_CAP`, `OTHER` |
+| `battery` | `capacity/[CAPACITY]`, `battery/[BATTERY TYPE]` | `NONE`, `SWELLING`, `CONTACT_DAMAGE`, `WATER_DAMAGE`, `LEAKING`, `OTHER` |
+| `tripod` | `thread/[TRIPOD THREAD]` | `NONE`, `BENT_LEG`, `HEAD_FAULT`, `WATER_DAMAGE`, `MISSING_PART`, `OTHER` |
 
 * Each type-specific value is free text containing 1 to 100 characters
   on one line.
 * Type-specific fields must appear in the order shown in the table.
   `damage/` follows those fields when supplied.
-* Every optional field may be omitted. Omitted compatibility values
-  default to `unspecified`, and damage defaults to `NONE`.
+* Optional fields may be omitted independently, except `remarks/` with `damage/OTHER`.
+  Omitted compatibility values default to `unspecified`, and damage defaults to `NONE`.
 * Damage values are case-insensitive and stored in uppercase. Use a
-  damage value from the row belonging to the selected equipment type.
+  damage value from the selected type's row. For `OTHER`, remarks must be non-empty after trimming.
 * Fields belonging to another equipment type, invalid damage values,
   repeated fields and fields in the wrong order are rejected.
 * Compatibility comparisons ignore letter case.
@@ -115,6 +115,7 @@ add i/Canon EOS R10 id/001 type/camera cond/1 sensor/APS-C mount/Canon RF thread
 add i/Standard Zoom id/002 type/lens cond/2 zoom/24-70 mm mount/Canon RF sensor/APS-C damage/NONE
 add i/Spare Battery id/003 type/battery cond/3 capacity/2000 mAh battery/Li-ion damage/NONE
 add i/Travel Tripod id/004 type/tripod cond/2 thread/1/4"-20 damage/NONE
+add i/Backup Camera id/005 type/camera cond/5 damage/OTHER remarks/Damaged control dial
 ```
 
 * Names can contain text such as `USB id/card reader` or `fluid/head tripod`.
@@ -256,6 +257,7 @@ Examples:
 return loan/001 serviceable/yes damage/none remarks/Checked on return
 return loan/002 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair
 return loan/003 serviceable/yes damage/none
+return loan/004 serviceable/no damage/OTHER remarks/Mounting plate damaged
 ```
 
 * Use the loan ID from `list loans`, from `001` to `999`. It must identify an active loan.
@@ -265,9 +267,9 @@ return loan/003 serviceable/yes damage/none
   The assessment determines whether the equipment may be borrowed again; damage alone does not decide this.
 * `damage/` must use a value from the equipment type's damage table under **Adding equipment**.
   Values are case-insensitive. Use `none` when no damage is found.
-* `remarks/` is optional and must be last when supplied. Omit it or supply empty text to clear previous remarks.
-  Supplied text may contain up to 200 characters after trimming. All text after this prefix is treated as remarks,
-  including prefix-like text.
+* `remarks/` must be last. For `damage/OTHER`, provide non-empty text after trimming.
+  For other damage values, omit it or supply empty text to clear previous remarks. Remarks may contain up to 200
+  characters after trimming. All text after `remarks/`, including prefix-like text, is treated as remarks.
 * The assessment replaces the item's previous damage and remarks. Its name, numeric condition, type-specific
   attributes and existing bundle memberships are retained. The numeric condition can be changed separately with `update`.
 
@@ -432,6 +434,7 @@ add i/Canon EOS R10 id/004 type/camera cond/1 remarks/Handle with care
 Saved equipment records use the four supported types and retain their type-specific values and damage.
 Existing records of supported types without optional fields are also accepted, using `unspecified` and `NONE`.
 Records created before remarks were supported may omit the `remarks/` field; they load with empty remarks.
+Records with `damage/OTHER` require non-empty remarks; invalid saved records are reported when loaded.
 Remarks are shown in the `list` equipment table and are restored when the application starts again.
 Saved records may start with `serviceable/yes` or `serviceable/no`, followed by a tab and the add record.
 This prefix is storage metadata, not an add-command field. Older records without the prefix are serviceable.

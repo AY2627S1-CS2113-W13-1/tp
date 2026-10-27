@@ -57,6 +57,10 @@ final class BatteryDetailsParser {
                         Battery.BatteryDamage.NONE,
                         Battery.BatteryDamage.class,
                         "battery");
+        EquipmentDetailParser.validateDamageRemarks(
+                damage,
+                remarks,
+                "battery");
 
         return new Battery(
                 name,

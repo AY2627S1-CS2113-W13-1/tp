@@ -21,6 +21,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import seedu.snap.bundle.Bundle;
 import seedu.snap.bundle.BundleHandler;
@@ -37,15 +38,29 @@ class EquipmentReturnAssessmentTest {
                 Arguments.of("camera", "sensor/Full frame", "NONE"),
                 Arguments.of("camera", "sensor/Full frame", "SENSOR_DAMAGE"),
                 Arguments.of("camera", "sensor/Full frame", "SHUTTER_FAULT"),
+                Arguments.of("camera", "sensor/Full frame", "WATER_DAMAGE"),
+                Arguments.of("camera", "sensor/Full frame", "BODY_CRACK"),
+                Arguments.of("camera", "sensor/Full frame", "MISSING_CAP"),
+                Arguments.of("camera", "sensor/Full frame", "OTHER"),
                 Arguments.of("lens", "zoom/24 to 70 mm", "NONE"),
                 Arguments.of("lens", "zoom/24 to 70 mm", "SCRATCHED_GLASS"),
                 Arguments.of("lens", "zoom/24 to 70 mm", "AUTOFOCUS_FAULT"),
+                Arguments.of("lens", "zoom/24 to 70 mm", "WATER_DAMAGE"),
+                Arguments.of("lens", "zoom/24 to 70 mm", "CRACKED_GLASS"),
+                Arguments.of("lens", "zoom/24 to 70 mm", "MISSING_CAP"),
+                Arguments.of("lens", "zoom/24 to 70 mm", "OTHER"),
                 Arguments.of("battery", "capacity/2000 mAh", "NONE"),
                 Arguments.of("battery", "capacity/2000 mAh", "SWELLING"),
                 Arguments.of("battery", "capacity/2000 mAh", "CONTACT_DAMAGE"),
+                Arguments.of("battery", "capacity/2000 mAh", "WATER_DAMAGE"),
+                Arguments.of("battery", "capacity/2000 mAh", "LEAKING"),
+                Arguments.of("battery", "capacity/2000 mAh", "OTHER"),
                 Arguments.of("tripod", "thread/Quarter inch", "NONE"),
                 Arguments.of("tripod", "thread/Quarter inch", "BENT_LEG"),
-                Arguments.of("tripod", "thread/Quarter inch", "HEAD_FAULT"));
+                Arguments.of("tripod", "thread/Quarter inch", "HEAD_FAULT"),
+                Arguments.of("tripod", "thread/Quarter inch", "WATER_DAMAGE"),
+                Arguments.of("tripod", "thread/Quarter inch", "MISSING_PART"),
+                Arguments.of("tripod", "thread/Quarter inch", "OTHER"));
     }
 
     /** Supplies equipment containing every compatibility field affected by a return. */
@@ -159,17 +174,13 @@ class EquipmentReturnAssessmentTest {
         assertEquals(8, restored.getCondition());
     }
 
-    /** Supplies damage belonging to a different subtype; OTHER is not defined by any current enum. */
+    /** Supplies damage values that are invalid for the specified equipment subtype. */
     private static Stream<Arguments> invalidDamageValues() {
         return Stream.of(
                 Arguments.of("camera", "SCRATCHED_GLASS"),
                 Arguments.of("lens", "SWELLING"),
                 Arguments.of("battery", "BENT_LEG"),
-                Arguments.of("tripod", "SENSOR_DAMAGE"),
-                Arguments.of("camera", "OTHER"),
-                Arguments.of("lens", "OTHER"),
-                Arguments.of("battery", "OTHER"),
-                Arguments.of("tripod", "OTHER"));
+                Arguments.of("tripod", "SENSOR_DAMAGE"));
     }
 
     @ParameterizedTest
@@ -186,6 +197,26 @@ class EquipmentReturnAssessmentTest {
         assertEquals(details, original.getDetails());
         assertEquals("", original.getRemarks());
         assertTrue(original.isServiceable());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"camera", "lens", "battery", "tripod"})
+    void assessment_otherWithoutMeaningfulRemarks_rejectsWithoutChangingEquipment(String type) throws Exception {
+        EquipmentHandler handler = new EquipmentHandler();
+        Equipment original = handler.addEquipment(
+                "add i/Original id/001 type/" + type + " cond/7 remarks/Before return");
+        String details = original.getDetails();
+
+        for (String remarks : new String[] {"", " \t ", "\u00A0"}) {
+            IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                    () -> handler.prepareReturnAssessment(original, false, "OTHER", remarks));
+
+            assertEquals("Damage OTHER for " + type + " requires non-empty remarks.", exception.getMessage());
+            assertEquals(details, original.getDetails());
+            assertEquals("Before return", original.getRemarks());
+            assertTrue(original.isServiceable());
+            assertSame(original, handler.getEquipmentList().getFirst());
+        }
     }
 
     @Test

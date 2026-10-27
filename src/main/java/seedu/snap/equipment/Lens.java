@@ -13,7 +13,17 @@ public class Lens extends Equipment {
     public enum LensDamage {
         NONE,
         SCRATCHED_GLASS,
-        AUTOFOCUS_FAULT
+        AUTOFOCUS_FAULT,
+
+        // @@author Rohita-29
+
+        WATER_DAMAGE,
+        CRACKED_GLASS,
+        MISSING_CAP,
+        OTHER
+
+        // @@author
+
     }
 
     private final String zoomRange;

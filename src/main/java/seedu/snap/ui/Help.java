@@ -49,10 +49,11 @@ public final class Help {
                   battery: capacity/<TEXT> battery/<TEXT>; damage: %s
                   tripod: thread/<TEXT>; damage: %s
                 Optional order: subtype fields in the order shown, then damage/, then final remarks/.
-                Each optional field may be omitted independently.
+                Each optional field may be omitted independently, except remarks/ with damage OTHER.
                 Omitted subtype and compatibility details default to unspecified;
                 omitted damage defaults to NONE;
-                omitted remarks default to empty text. Text after final remarks/ is kept as remarks.
+                omitted remarks default to empty text, except OTHER requires non-empty remarks.
+                Text after final remarks/ is kept as remarks.
                 Compatibility comparisons ignore letter case. Missing comparison data produces UNKNOWN;
                 a known mismatch produces INCOMPATIBLE, even when another comparison value is unknown.
 
@@ -83,7 +84,8 @@ public final class Help {
                 Requires an active Loan ID and explicit serviceable/ and damage/ assessment, in that order.
                 Serviceable yes/no and subtype damage values are case-insensitive; use NONE for no damage.
                 Serviceability determines whether the item may be borrowed again; damage alone does not.
-                Optional remarks/ must be last. Omitted or empty remarks clear the item's previous remarks.
+                Remarks/ must be last. For OTHER, provide non-empty text after trimming.
+                For other damage values, omitted or empty remarks clear prior notes.
                 The assessment replaces damage and remarks, preserving subtype details,
                 compatibility attributes and bundle memberships.
                 Return permanently marks the retained loan returned; it cannot be returned twice or reactivated.
