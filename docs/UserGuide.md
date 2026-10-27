@@ -363,6 +363,34 @@ Deleting an active loan releases its equipment without changing its serviceabili
 Deleting returned loan history leaves any
 newer active loan and the equipment's `Loaned` status unchanged.
 
+## Updating loan details: `update loan`
+
+Format: `update loan/[LOAN ID] [id/[ITEM ID]] [b/[BORROWER ID]] [issued/DD-MM-YY] [due/DD-MM-YY]`
+
+Example:
+
+```text
+update loan/001 b/007 due/15-10-26
+update loan/001 id/002 b/007 issued/03-10-26 due/15-10-26
+```
+
+Use the unique loan ID shown by `list loans`. Supply at least one field to update, in any order, once each.
+The loan ID remains unchanged, and omitted fields retain their current values. The supported fields are:
+
+* `id/` changes the equipment assigned to the active loan. The replacement must exist, be serviceable and have
+  no active loan. Its equipment record identity is retained so availability remains correct after a restart.
+* `b/` changes the three-digit borrower ID.
+* `issued/` changes the issue date.
+* `due/` changes the due date.
+
+The effective issue date must not be later than the effective due date. Unknown loan IDs, malformed IDs or dates,
+duplicate fields, unavailable equipment and returned loans are rejected. This project stores borrower IDs rather than
+borrower profiles, so borrower validation is limited to the documented three-digit identifier format.
+
+The complete proposed loan list is saved before the live loan and equipment associations change. If validation or
+saving fails, the original loan, equipment availability and saved file remain unchanged. Successful edits remain after
+restarting the application.
+
 ## Filtering equipment: `filter`
 
 Format: `filter [id/ITEM ID] [i/NAME] [type/TYPE] [cond/CONDITION] [status/STATUS]`
@@ -474,7 +502,7 @@ so a reused visible Item ID cannot inherit the wrong historical membership.
 
 Successful equipment additions, updates, deletions and return assessments are saved automatically in
 `data/equipment.txt`, relative to the directory from which the application is run.
-Successful loan additions, returns and deletions are saved in
+Successful loan additions, updates, returns and deletions are saved in
 `data/loans.txt`, the next unused loan ID is saved in `data/loan-sequence.txt`, and bundle memberships are saved
 in `data/bundles.txt`. Records are loaded when the application starts again. A final save is also attempted when
 `bye` is entered; if it fails, the application reports the affected file and lets you retry.
@@ -549,6 +577,7 @@ duplicate records, the application reports the problem and stops.
 | Add loan | `loan id/[ITEM ID] b/[BORROWER ID] [issued/DD-MM-YY] due/[DD-MM-YY]` |
 | Return equipment | `return loan/[LOAN ID] serviceable/[yes|no] damage/[DAMAGE|none] [remarks/[REMARKS]]` |
 | Delete loan | `delete loan/[LOAN ID]` |
+| Update loan | `update loan/[LOAN ID] [id/[ITEM ID]] [b/[BORROWER ID]] [issued/DD-MM-YY] [due/DD-MM-YY]` |
 | List equipment | `list` |
 | List loans | `list loans` |
 | View issue-time equipment condition | `view loan/[LOAN ID]` |

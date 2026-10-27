@@ -13,7 +13,7 @@ import seedu.snap.equipment.Equipment;
 public class Loan {
     private static final Logger logger = Logger.getLogger(Loan.class.getName());
     private final String loanId;
-    private final String itemId;
+    private String itemId;
     /** Permanent physical-item identity; null only for legacy records that have not been attributed. */
     private String equipmentRecordId;
     private Equipment equipment;
@@ -24,7 +24,7 @@ public class Loan {
 
     // @@author Rohita-29
 
-    private final EquipmentConditionSnapshot issueConditionSnapshot;
+    private EquipmentConditionSnapshot issueConditionSnapshot;
 
     // @@author
 
@@ -219,6 +219,49 @@ public class Loan {
                         issueConditionSnapshot);
         returned.isReturned = true;
         return returned;
+    }
+
+    /**
+     * Creates a detached active proposal for a validated loan update.
+     * Reassigning equipment captures the replacement's condition instead of reusing the old item's snapshot.
+     */
+    Loan updatedCopy(String itemId, String equipmentRecordId, String borrowerId,
+            LocalDateTime issuedDate, LocalDateTime dueDate, Equipment replacement) {
+        assert !isReturned : "Returned loan history must not be updated";
+        assert replacement != null : "A loan update requires replacement equipment";
+        EquipmentConditionSnapshot updatedSnapshot = replacement == equipment
+                ? issueConditionSnapshot : EquipmentConditionSnapshot.fromEquipment(replacement);
+        return new Loan(loanId, itemId, borrowerId, issuedDate, dueDate, equipmentRecordId,
+                updatedSnapshot);
+    }
+
+    /** Applies a saved update and keeps equipment ownership synchronized with the loan. */
+    void applyUpdate(Loan updated, Equipment replacement) {
+        assert updated != null && replacement != null : "Loan update requires a proposal and equipment";
+        assert !isReturned && !updated.isReturned : "Returned loans must not be updated";
+        assert updated.loanId.equals(loanId) : "A loan update must preserve the loan ID";
+        assert updated.itemId.equals(replacement.getItemId()) : "Updated loan must match its equipment";
+        assert updated.equipmentRecordId.equals(replacement.getRecordId())
+                : "Updated loan must match the physical equipment identity";
+        assert replacement == equipment || !replacement.isLoaned()
+                : "Replacement equipment must be available before rebinding";
+
+        Equipment previous = equipment;
+        if (previous != replacement) {
+            assert previous != null : "An active loan must own its current equipment";
+            previous.setLoanId(null);
+        }
+        itemId = updated.itemId;
+        equipmentRecordId = updated.equipmentRecordId;
+        borrowerId = updated.borrowerId;
+        issuedDate = updated.issuedDate;
+        dueDate = updated.dueDate;
+        issueConditionSnapshot = updated.issueConditionSnapshot;
+        equipment = replacement;
+        replacement.setLoanId(loanId);
+        assert equipment == replacement : "Updated loan must retain its replacement equipment";
+        assert replacement.isLoaned() && loanId.equals(replacement.getLoanId())
+                : "Updated loan must own loaned replacement equipment";
     }
 
     /** Associates a saved or fully validated active record with its equipment. */

@@ -175,6 +175,18 @@ public final class Help {
 
                         Deleting returned history leaves newer active loans unchanged. Deleted IDs are never reused.
                         """)),
+                new CommandHelp("update loan", "Loans", lineEndings("""
+                        UPDATE LOAN
+                        Format: update loan/<LOAN ID> [id/<ITEM ID>] [b/<BORROWER ID>] [issued/DD-MM-YY] [due/DD-MM-YY]
+                        Example: update loan/001 id/002 b/007 due/15-10-26
+                        Requires one existing active Loan ID and at least one update field,
+                        in any order, each prefix once.
+                        The Loan ID remains unchanged; omitted fields retain their current values.
+                        A replacement item must exist, be serviceable and have no active loan.
+                        Returned loans cannot be edited.
+                        The issue date must not be later than the due date. Invalid updates leave records unchanged.
+                        Successful updates are saved to data/loans.txt before live records change.
+                        """)),
                 new CommandHelp("list loans", "Loans", lineEndings("""
                         LIST LOANS
                         Format: list loans
@@ -324,8 +336,12 @@ public final class Help {
         appendMenuRow(menu, "snAp command menu");
         menu.append(border);
         for (String group : List.of("Equipment", "Loans", "Bundles", "General")) {
-            String commands = COMMANDS.stream().filter(command -> command.group().equals(group))
-                    .map(CommandHelp::command).collect(Collectors.joining(" | "));
+            List<String> groupCommands = COMMANDS.stream().filter(command -> command.group().equals(group))
+                    .map(CommandHelp::command).toList();
+            String commands = groupCommands.stream().collect(Collectors.joining(" | "));
+            if ((group + ": " + commands).length() > TEXT_WIDTH - 4) {
+                commands = groupCommands.stream().collect(Collectors.joining("|"));
+            }
             appendMenuRow(menu, group + ": " + commands);
         }
         appendMenuRow(menu, "");
