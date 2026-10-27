@@ -95,6 +95,49 @@ class RestoreIntegrationTest {
     }
 
     @Test
+    void restoreCommand_success_persistsClearedBundlesBeforeRestart() throws Exception {
+        Path backupDirectory = temporaryDirectory.resolve("backup");
+        manager.executeInput("backup path/" + backupDirectory);
+        manager.executeInput("add i/Extra Lens id/002 type/lens cond/5 zoom/24-70mm");
+        manager.executeInput("add-bundle name/Persisted old bundle");
+        manager.executeInput("add-to-bundle id/001 002");
+        manager.executeInput("bye");
+        assertTrue(Files.readString(temporaryDirectory.resolve("data/bundles.txt")).contains("002"));
+        manager = new EqmManager(temporaryDirectory.resolve("data"));
+        output.reset();
+
+        manager.executeInput("restore path/" + backupDirectory);
+
+        assertTrue(printed().contains("Backup restored successfully"));
+        assertEquals("", Files.readString(temporaryDirectory.resolve("data/bundles.txt")));
+        EqmManager restarted = new EqmManager(temporaryDirectory.resolve("data"));
+        output.reset();
+        restarted.executeInput("list bundles");
+        assertFalse(printed().contains("Could not load saved data"));
+        assertFalse(printed().contains("Persisted old bundle"));
+    }
+
+    @Test
+    void restoreCommand_startupLoadFailureCanRecoverFromValidBackup() throws Exception {
+        Path dataDirectory = temporaryDirectory.resolve("broken-data");
+        EqmManager creator = new EqmManager(dataDirectory);
+        creator.executeInput("add i/Camera id/001 type/camera cond/4 sensor/APS-C");
+        Path backupDirectory = temporaryDirectory.resolve("recovery-backup");
+        creator.executeInput("backup path/" + backupDirectory);
+        Files.writeString(dataDirectory.resolve("equipment.txt"), "not an equipment record\n");
+        EqmManager broken = new EqmManager(dataDirectory);
+        output.reset();
+
+        broken.executeInput("restore path/" + backupDirectory);
+
+        assertTrue(printed().contains("Backup restored successfully"));
+        output.reset();
+        broken.executeInput("list");
+        assertTrue(printed().contains("Camera"));
+        assertFalse(printed().contains("Could not load saved data"));
+    }
+
+    @Test
     void restoreCommand_invalidBackup_reportsFailureAndPreservesCurrentState() throws Exception {
         Path backupDirectory = temporaryDirectory.resolve("backup");
         manager.executeInput("backup path/" + backupDirectory);

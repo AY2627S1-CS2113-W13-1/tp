@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.List;
@@ -27,32 +28,45 @@ final class BackupHandler {
     static final String EQUIPMENT_FILE_NAME = "equipment.txt";
     static final String LOAN_FILE_NAME = "loans.txt";
     static final String SEQUENCE_FILE_NAME = "loan-sequence.txt";
+    static final String BUNDLE_FILE_NAME = "bundles.txt";
     static final String MANIFEST_FILE_NAME = "backup-manifest.txt";
     private static final String BACKUP_COMMAND_PREFIX = "backup path/";
     private static final String RESTORE_COMMAND_PREFIX = "restore path/";
     private static final String BACKUP_VERSION = "backupVersion/1";
     private static final Pattern NO_LINE_BREAKS = Pattern.compile("(?s).*\\R.*");
+    private static final RestoreFailureInjector NO_RESTORE_FAILURE = () -> { };
     private static final Logger logger = Logger.getLogger(BackupHandler.class.getName());
 
     private final Path dataDirectory;
     private final EquipmentHandler equipment;
     private final LoanHandler loans;
     private final BundleHandler bundles;
+    private final RestoreFailureInjector restoreFailureInjector;
 
     /** Creates a backup handler for the live data directory and current loan sequence state. */
     BackupHandler(Path dataDirectory, EquipmentHandler equipment, LoanHandler loans) {
-        this(dataDirectory, equipment, loans, null);
+        this(dataDirectory, equipment, loans, null, NO_RESTORE_FAILURE);
     }
 
     /** Creates a backup handler that also clears session-only bundles after a successful restore. */
     BackupHandler(Path dataDirectory, EquipmentHandler equipment, LoanHandler loans, BundleHandler bundles) {
+        this(dataDirectory, equipment, loans, bundles, NO_RESTORE_FAILURE);
+    }
+
+    /** Creates a handler with an optional failure hook used to verify restore rollback behaviour. */
+    BackupHandler(Path dataDirectory, EquipmentHandler equipment, LoanHandler loans, BundleHandler bundles,
+            RestoreFailureInjector restoreFailureInjector) {
         if (dataDirectory == null || equipment == null || loans == null) {
             throw new IllegalArgumentException("Backup handler requires data and application handlers.");
+        }
+        if (restoreFailureInjector == null) {
+            throw new IllegalArgumentException("Restore failure injector must not be null.");
         }
         this.dataDirectory = dataDirectory.toAbsolutePath().normalize();
         this.equipment = equipment;
         this.loans = loans;
         this.bundles = bundles;
+        this.restoreFailureInjector = restoreFailureInjector;
     }
 
     /**
@@ -211,10 +225,12 @@ final class BackupHandler {
             moveReplacing(temporaryDirectory.resolve(LOAN_FILE_NAME), dataDirectory.resolve(LOAN_FILE_NAME));
             moveReplacing(temporaryDirectory.resolve(SEQUENCE_FILE_NAME),
                     dataDirectory.resolve(SEQUENCE_FILE_NAME));
-            reloadLiveState();
+            restoreFailureInjector.afterLiveFilesReplaced();
             if (bundles != null) {
                 bundles.clearBundles();
+                bundles.saveToStorage();
             }
+            reloadLiveState();
         } catch (IOException | RuntimeException failure) {
             rollbackLiveData(originals, dataDirectoryExisted, failure);
             if (failure instanceof IOException ioException) {
@@ -234,15 +250,22 @@ final class BackupHandler {
     private void reloadLiveState() throws IOException {
         equipment.loadFromStorage();
         loans.loadFromStorage();
+        if (bundles != null) {
+            bundles.loadFromStorage();
+        }
         assert loans.getLoanCount() == loans.getLoanList().size() : "Reloaded loan count must match its records";
     }
 
     /** Captures current live files before any replacement is attempted. */
     private List<LiveFileSnapshot> captureLiveFiles() throws IOException {
-        return List.of(
+        List<LiveFileSnapshot> originals = new ArrayList<>(List.of(
                 LiveFileSnapshot.capture(dataDirectory.resolve(EQUIPMENT_FILE_NAME)),
                 LiveFileSnapshot.capture(dataDirectory.resolve(LOAN_FILE_NAME)),
-                LiveFileSnapshot.capture(dataDirectory.resolve(SEQUENCE_FILE_NAME)));
+                LiveFileSnapshot.capture(dataDirectory.resolve(SEQUENCE_FILE_NAME))));
+        if (bundles != null) {
+            originals.add(LiveFileSnapshot.capture(dataDirectory.resolve(BUNDLE_FILE_NAME)));
+        }
+        return originals;
     }
 
     /** Replaces one staged file; the outer transaction restores all originals if any move fails. */
@@ -423,5 +446,11 @@ final class BackupHandler {
                 Files.delete(path);
             }
         }
+    }
+
+    /** Allows tests to force a post-replacement failure and verify the restore transaction rollback. */
+    @FunctionalInterface
+    interface RestoreFailureInjector {
+        void afterLiveFilesReplaced() throws IOException;
     }
 }

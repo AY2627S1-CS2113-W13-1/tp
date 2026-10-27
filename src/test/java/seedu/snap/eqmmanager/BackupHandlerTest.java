@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
@@ -263,6 +264,41 @@ class BackupHandlerTest {
 
         assertTrue(exception.getMessage().contains("not an existing directory"));
         assertFalse(Files.exists(dataDirectory));
+    }
+
+    @Test
+    void restoreBackup_failureAfterFileReplacement_rollsBackFilesAndInMemoryState() throws Exception {
+        Path dataDirectory = temporaryDirectory.resolve("data");
+        EquipmentHandler equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
+        equipment.addEquipment("add i/Camera id/001 type/camera cond/4 sensor/APS-C");
+        LoanHandler loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"),
+                dataDirectory.resolve("loan-sequence.txt"));
+        Loan original = loans.addLoan("loan id/001 b/111 issued/01-10-26 due/02-10-26");
+        BackupHandler handler = new BackupHandler(dataDirectory, equipment, loans);
+        Path backup = temporaryDirectory.resolve("rollback-backup");
+        handler.createBackup("backup path/" + backup);
+
+        loans.returnLoan("return loan/" + original.getLoanId() + " serviceable/yes damage/NONE remarks/");
+        equipment.addEquipment("add i/Lens id/002 type/lens cond/5 zoom/24-70mm");
+        List<Path> liveFiles = List.of(dataDirectory.resolve(BackupHandler.EQUIPMENT_FILE_NAME),
+                dataDirectory.resolve(BackupHandler.LOAN_FILE_NAME),
+                dataDirectory.resolve(BackupHandler.SEQUENCE_FILE_NAME));
+        List<byte[]> liveContents = liveFiles.stream().map(this::readBytes).toList();
+
+        BackupHandler failingHandler = new BackupHandler(dataDirectory, equipment, loans, null,
+                () -> {
+                    throw new IOException("forced restore failure");
+                });
+
+        BackupUnsuccessful exception = assertThrows(BackupUnsuccessful.class,
+                () -> failingHandler.restoreBackup("restore path/" + backup));
+
+        assertTrue(exception.getMessage().contains("forced restore failure"));
+        for (int i = 0; i < liveFiles.size(); i++) {
+            assertArrayEquals(liveContents.get(i), readBytes(liveFiles.get(i)));
+        }
+        assertEquals(2, equipment.getEquipmentList().size());
+        assertTrue(loans.getLoanList().getFirst().isReturned());
     }
 
     private byte[] readBytes(Path path) {

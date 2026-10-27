@@ -43,7 +43,7 @@ public class EqmManager {
     private final BackupHandler backups;
     private final Path dataDirectory;
     private final Clock clock;
-    private final String startupError;
+    private String startupError;
     private boolean isRunning;
 
     /** Creates an equipment manager ready to accept commands. */
@@ -104,16 +104,20 @@ public class EqmManager {
      */
     public void executeInput(String input) {
         String normalizedInput = input == null ? "" : input.replaceAll("(?U)^\\s+|\\s+$", "");
-        if (startupError != null) {
-            System.out.println("Could not load saved data: " + startupError);
+        if (normalizedInput.equals("restore") || normalizedInput.startsWith("restore ")) {
+            restoreBackup(normalizedInput);
+        } else if (startupError != null) {
+            if (normalizedInput.equals("bye")) {
+                isRunning = false;
+            } else {
+                System.out.println("Could not load saved data: " + startupError);
+            }
         } else if (normalizedInput.matches("(?sU)help(?:\\s.*)?")) {
             Help.print(normalizedInput.substring("help".length()));
         } else if (normalizedInput.equals("bye")) {
             isRunning = !saveBeforeExit();
         } else if (normalizedInput.equals("backup") || normalizedInput.startsWith("backup ")) {
             createBackup(normalizedInput);
-        } else if (normalizedInput.equals("restore") || normalizedInput.startsWith("restore ")) {
-            restoreBackup(normalizedInput);
         } else if (normalizedInput.equals("delete loan")
                 || normalizedInput.startsWith("delete loan/")
                 || normalizedInput.startsWith("delete loan ")) {
@@ -165,14 +169,13 @@ public class EqmManager {
     public void run() {
         if (startupError != null) {
             System.out.println("Could not load saved data: " + startupError);
-            return;
+        } else {
+            Welcome.printLogo();
+            System.out.println("Welcome to snAp. Loaded " + equipment.getEquipmentList().size()
+                    + " equipment record(s) and " + loans.getLoanCount() + " loan(s).");
+            System.out.println();
+            Help.print();
         }
-
-        Welcome.printLogo();
-        System.out.println("Welcome to snAp. Loaded " + equipment.getEquipmentList().size()
-                + " equipment record(s) and " + loans.getLoanCount() + " loan(s).");
-        System.out.println();
-        Help.print();
 
         // main process
         String input;
@@ -245,6 +248,7 @@ public class EqmManager {
     private void restoreBackup(String input) {
         try {
             Path source = backups.restoreBackup(input);
+            startupError = null;
             System.out.println("Backup restored successfully from " + source + ".");
         } catch (BackupUnsuccessful exception) {
             System.out.println(exception.getMessage());
