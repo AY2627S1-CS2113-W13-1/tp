@@ -201,6 +201,16 @@ public final class Help {
                         Legacy loans without a saved snapshot report that the issue condition was not recorded.
                         This read-only command does not change equipment, loans or saved records.
                         """)),
+                new CommandHelp("list borrower", "Loans", lineEndings("""
+                        EQUIPMENT HELD BY MEMBER
+                        Format: list borrower/<BORROWER ID>
+                        Example: list borrower/002
+                        The equivalent alias list member/<MEMBER ID> is also accepted.
+                        Shows only active equipment held by the selected borrower, with loan details.
+                        Returned loans and loans held by other borrowers are excluded.
+                        An unknown borrower ID and a known borrower with no active loans receive clear messages.
+                        This read-only query does not change equipment, loans or saved files.
+                        """)),
                 new CommandHelp("list overdue", "Loans", lineEndings("""
                         LIST OVERDUE LOANS
                         Format: list overdue
@@ -337,16 +347,29 @@ public final class Help {
         for (String group : List.of("Equipment", "Loans", "Bundles", "General")) {
             List<String> groupCommands = COMMANDS.stream().filter(command -> command.group().equals(group))
                     .map(CommandHelp::command).toList();
-            String commands = groupCommands.stream().collect(Collectors.joining(" | "));
-            if ((group + ": " + commands).length() > TEXT_WIDTH - 4) {
-                commands = groupCommands.stream().collect(Collectors.joining("|"));
-            }
-            appendMenuRow(menu, group + ": " + commands);
+            appendMenuGroup(menu, group, groupCommands);
         }
         appendMenuRow(menu, "");
         appendMenuRow(menu, "Type help <COMMAND> for details (for example, help loan or help list overdue).");
         appendMenuRow(menu, "Type help all for the complete reference.");
         return menu.append(border).toString();
+    }
+
+    /** Adds a command group to the menu, wrapping long groups without splitting command names. */
+    private static void appendMenuGroup(StringBuilder menu, String group, List<String> commands) {
+        String prefix = group + ": ";
+        String row = prefix;
+        for (String command : commands) {
+            String separator = row.equals(prefix) ? "" : " | ";
+            String candidate = row + separator + command;
+            if (candidate.length() > TEXT_WIDTH - 4 && !row.equals(prefix)) {
+                appendMenuRow(menu, row);
+                row = " ".repeat(prefix.length()) + command;
+            } else {
+                row = candidate;
+            }
+        }
+        appendMenuRow(menu, row);
     }
 
     /** Pads each menu row to the same width, including its ASCII borders. */
