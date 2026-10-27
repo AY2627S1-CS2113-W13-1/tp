@@ -126,19 +126,15 @@ class EqmManagerTest {
         output.reset();
 
         manager.executeInput("list");
-        String expected = String.format("%-4s %-24s | %-6s | %-15s | %-9s | %-13s | %-30s | %-30s%n",
-                "No.", "NAME", "ID", "TYPE", "CONDITION", "STATUS", "DETAILS", "REMARKS")
-                + String.format("%-4s %-24s | %-6s | %-15s | %-9d | %-13s | %-30s | %-30s%n",
-                        "1)", "Canon EOS R10", "001", "camera", 1, "Available",
-                        "sensor/unspecified damage/NONE", "")
-                + String.format("%-4s %-24s | %-6s | %-15s | %-9d | %-13s | %-30s | %-30s%n",
-                        "2)", "Tripod", "002", "tripod", 5, "Available",
-                        "thread/unspecified damage/NONE", "");
-        assertEquals(expected, output.toString(StandardCharsets.UTF_8));
+        String actual = output.toString(StandardCharsets.UTF_8);
+        assertTrue(actual.contains("| 001 | Canon EOS R10"));
+        assertTrue(actual.contains("| 002 | Tripod"));
+        assertTrue(actual.contains("2 equipment items."));
+        assertTrue(actual.lines().allMatch(line -> line.length() <= 100));
     }
 
     @Test
-    void addEquipment_explicitSubtypeDetails_listsSavedDetails() {
+    void addEquipment_explicitSubtypeDetails_showsSavedDetails() {
         EqmManager manager = new EqmManager(temporaryDirectory);
         manager.executeInput("add i/Camera id/001 type/CAMERA cond/7 sensor/Full frame damage/sensor_damage");
         manager.executeInput("add i/Lens id/002 type/lens cond/6 zoom/24 to 70 mm damage/scratched_glass");
@@ -148,21 +144,21 @@ class EqmManagerTest {
 
         manager.executeInput("list");
 
-        String expected = String.format("%-4s %-24s | %-6s | %-15s | %-9s | %-13s | %-30s | %-30s%n",
-                "No.", "NAME", "ID", "TYPE", "CONDITION", "STATUS", "DETAILS", "REMARKS")
-                + String.format("%-4s %-24s | %-6s | %-15s | %-9d | %-13s | %-30s | %-30s%n",
-                        "1)", "Camera", "001", "camera", 7, "Available",
-                        "sensor/Full frame damage/SENSOR_DAMAGE", "")
-                + String.format("%-4s %-24s | %-6s | %-15s | %-9d | %-13s | %-30s | %-30s%n",
-                        "2)", "Lens", "002", "lens", 6, "Available",
-                        "zoom/24 to 70 mm damage/SCRATCHED_GLASS", "")
-                + String.format("%-4s %-24s | %-6s | %-15s | %-9d | %-13s | %-30s | %-30s%n",
-                        "3)", "Battery", "003", "battery", 5, "Available",
-                        "capacity/2000 mAh damage/SWELLING", "")
-                + String.format("%-4s %-24s | %-6s | %-15s | %-9d | %-13s | %-30s | %-30s%n",
-                        "4)", "Tripod", "004", "tripod", 4, "Available",
-                        "thread/Quarter inch damage/BENT_LEG", "");
-        assertEquals(expected, output.toString(StandardCharsets.UTF_8));
+        String table = output.toString(StandardCharsets.UTF_8);
+        assertEquals(4, table.lines().filter(line -> line.contains("Available")).count());
+        assertTrue(table.contains("4 equipment items."));
+        output.reset();
+        for (String id : java.util.List.of("001", "002", "003", "004")) {
+            manager.executeInput("show id/" + id);
+        }
+        String details = output.toString(StandardCharsets.UTF_8);
+        assertTrue(details.contains("Sensor format: Full frame"));
+        assertTrue(details.contains("Zoom range: 24 to 70 mm"));
+        assertTrue(details.contains("Capacity: 2000 mAh"));
+        assertTrue(details.contains("Thread: Quarter inch"));
+        for (String damage : java.util.List.of("SENSOR_DAMAGE", "SCRATCHED_GLASS", "SWELLING", "BENT_LEG")) {
+            assertTrue(details.contains("Damage: " + damage));
+        }
     }
 
     @Test
@@ -171,14 +167,12 @@ class EqmManagerTest {
         manager.executeInput("add i/Lens id/001 type/lens cond/3 remarks/Handle with care");
         output.reset();
 
-        manager.executeInput("list");
+        manager.executeInput("show id/001");
 
-        String expected = String.format("%-4s %-24s | %-6s | %-15s | %-9s | %-13s | %-30s | %-30s%n",
-                "No.", "NAME", "ID", "TYPE", "CONDITION", "STATUS", "DETAILS", "REMARKS")
-                + String.format("%-4s %-24s | %-6s | %-15s | %-9d | %-13s | %-30s | %-30s%n",
-                        "1)", "Lens", "001", "lens", 3, "Available",
-                        "zoom/unspecified damage/NONE", "Handle with care");
-        assertEquals(expected, output.toString(StandardCharsets.UTF_8));
+        String details = output.toString(StandardCharsets.UTF_8);
+        assertTrue(details.contains("Equipment 001"));
+        assertTrue(details.contains("Name: Lens"));
+        assertTrue(details.contains("Remarks: Handle with care"));
         assertTrue(Files.readString(temporaryDirectory.resolve("equipment.txt"))
                 .contains("remarks/Handle with care"));
     }
