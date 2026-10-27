@@ -9,7 +9,7 @@ state Loaned
 state Unserviceable
 
 [*] --> Available : add equipment
-Available --> Loaned : saved loan:\nattach equipment
-Loaned --> Available : saved serviceable return\nor active-loan deletion
-Loaned --> Unserviceable : saved unserviceable return
+Available --> Loaned : loan saved or reassigned\n/ attach equipment
+Loaned --> Available : serviceable return saved,\nloan deleted or reassigned\n/ release equipment
+Loaned --> Unserviceable : unserviceable return saved\n/ release equipment
 @enduml

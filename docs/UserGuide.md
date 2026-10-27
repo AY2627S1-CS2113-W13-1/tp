@@ -7,19 +7,19 @@ title: User Guide
 
 ## Introduction
 
-snAp tracks individual pieces of equipment, their loans and equipment bundles. Equipment, loan and bundle
-records are retained between application sessions.
+snAp helps photography-club equipment officers track shared gear and borrowing through typed commands.
+It helps you find available items, avoid double borrowing and retain equipment, loan and bundle records between sessions.
+
+**Version:** This guide describes the development build on `master`, including features added after
+[v1.0](https://github.com/AY2627S1-CS2113-W13-1/tp/releases/tag/v1.0). The v1.0 JAR does not support every command
+below. Use the matching development build for these examples.
 
 ## Quick Start
 
-1. Install Java 25 and ensure that `java -version` reports version 25.
-2. To run the packaged application, open a terminal in the folder containing `snAp.jar` and enter:
-
-   ```sh
-   java -jar snAp.jar
-   ```
-
-   To run from source instead, use the command for your shell from the project directory.
+1. Install Java 25 and check that `java -version` reports version 25.
+2. Download the [development source ZIP](https://github.com/AY2627S1-CS2113-W13-1/tp/archive/refs/heads/master.zip)
+   and extract it. The first Gradle run needs internet access to download build dependencies.
+3. Open a terminal in the extracted project folder and run the command for your shell.
 
    **macOS/Linux:**
 
@@ -33,9 +33,19 @@ records are retained between application sessions.
    .\gradlew.bat run --console=plain --quiet
    ```
 
-   These options remove Gradle's progress display and task logs. Application prompts, command results and
-   errors remain visible.
-3. Enter one command per line. Type `bye` to exit.
+   The plain, quiet console hides Gradle progress messages while keeping application prompts, results and errors.
+4. Enter one command per line. Use `help` for the menu and `bye` to save and exit.
+
+To run a packaged build, use `./gradlew shadowJar` on macOS/Linux or `.\gradlew.bat shadowJar` in PowerShell.
+This produces `build/libs/snAp.jar`. Copy it to your chosen working folder and run:
+
+```sh
+java -jar snAp.jar
+```
+
+[Published release downloads](https://github.com/AY2627S1-CS2113-W13-1/tp/releases) contain versioned JARs.
+Use the documentation from the same version as the JAR. No internet connection is needed for normal commands
+once a build is installed.
 
 The welcome screen displays the snAp logo. It uses green on supported
 interactive terminals and plain text when output is redirected. Gradle pipes the application's output, so you
@@ -67,7 +77,7 @@ and blank lines.
 Replace `<command>` with one of these exact lowercase topics:
 
 * Equipment: `add`, `list`, `delete item`, `filter`, `update`.
-* Loans: `loan`, `return`, `delete loan`, `update loan`, `list loans`, `view loan`, `list overdue`, `history`.
+* Loans: `loan`, `return`, `delete loan`, `update loan`, `list loans`, `list borrower`, `view loan`, `list overdue`, `history`.
 * Bundles: `add-bundle`, `add-to-bundle`, `remove-from-bundle`, `list bundles`, `history bundle`.
 * General: `backup`, `restore`, `help`, `bye`.
 
@@ -107,6 +117,23 @@ Equipment name, Item ID, type and numeric condition remain required when adding 
 Loans require Item ID, borrower ID and due date. Returns require loan ID, serviceability and damage.
 There is no default due date or serviceability decision.
 
+## Equipment worked example
+
+Use a separate working folder with an empty inventory to reproduce these results. Enter these four commands
+in order; later reference examples use different Item IDs.
+
+```text
+add i/Demo camera id/010 type/camera cond/1
+filter type/camera cond/1-3 status/available
+update id/010 cond/5
+filter type/camera cond/1-3 status/available
+```
+
+[![Worked example: camera 010 initially matches condition 1-3; after updating its condition to 5, repeating the filter gives no matches](images/EquipmentWorkflow.svg)](images/EquipmentWorkflow.svg)
+
+The first filter displays item `010`. The update changes its condition to `5`, so the repeated filter prints
+`No equipment matches the filters.` Its ID, name and `Available` status stay the same.
+
 ## Adding equipment: `add`
 
 Format: `add i/<NAME> id/<ITEM ID> type/<TYPE> cond/<CONDITION> [TYPE DETAIL] [damage/<DAMAGE>] [remarks/<REMARKS>]`
@@ -118,11 +145,14 @@ Example: `add i/Canon EOS R10 id/001 type/camera cond/1 remarks/Handle with care
 * `ITEM ID` uses exactly three digits from `001` to `999` and must not already exist.
 * `TYPE` is `camera`, `lens`, `battery` or `tripod`. Type names are case-insensitive and stored in lowercase.
 * `CONDITION` is a whole number from `1` to `10`, without leading zeros, signs or decimals.
-  We recommend `1` for pristine and `10` for non-functional.
+  Use `1` for pristine and `10` for non-functional as a descriptive rating; the number does not set availability.
 * `REMARKS` is free-form text of up to 200 characters. It must remain on one line and is trimmed at both ends.
 * Put `remarks/` last when provided. Non-empty remarks are required for `damage/OTHER`.
 * Enter the fields in the order shown above. Names can contain spaces.
 * Equipment with the same name can be added separately using different IDs.
+
+**Condition and availability are separate:** even an item added with `cond/10` starts as `Available`.
+Borrowing is controlled by its [availability status](#equipment-availability), not a numeric threshold.
 
 Success prints `Equipment added successfully.` The item appears at the end of `list` and is saved automatically.
 Adding an existing Item ID does not replace its equipment; use `update` to correct the existing item's details.
@@ -170,25 +200,30 @@ After `cond/`, you can add the fields for the equipment type, followed by
 Examples:
 
 ```text
-add i/Canon EOS R10 id/001 type/camera cond/1 sensor/APS-C mount/Canon RF thread/1/4"-20 battery/Li-ion damage/NONE
+add i/Canon EOS R10 id/006 type/camera cond/1 sensor/APS-C mount/Canon RF thread/1/4"-20 battery/Li-ion damage/NONE
 add i/Standard Zoom id/002 type/lens cond/2 zoom/24-70 mm mount/Canon RF sensor/APS-C damage/NONE
 add i/Spare Battery id/003 type/battery cond/3 capacity/2000 mAh battery/Li-ion damage/NONE
 add i/Travel Tripod id/004 type/tripod cond/2 thread/1/4"-20 damage/NONE
 add i/Backup Camera id/005 type/camera cond/5 damage/OTHER remarks/Damaged control dial
 ```
 
-* Names can contain text such as `USB id/card reader` or `fluid/head tripod`.
-  The actual `id/` field is the last one before `type/`. Earlier whitespace-prefixed `id/` text in the name must
-  have a non-empty value starting with a non-whitespace character other than a digit, `+`, or `-`.
-  Whitespace-prefixed numeric ID-like text such as `id/001` is reserved and cannot be part of the name.
-* Prefixes `i/`, `type/` and `cond/` at the start or after whitespace are reserved command delimiters.
-  Prefixes `sensor/`, `mount/`, `zoom/`, `capacity/`, `thread/`, `battery/`, `damage/` and `remarks/`
-  are delimiters only after `cond/`.
-  Names can contain these optional prefixes, such as `Camera sensor/cleaning kit` or `Camera remarks/adapter`.
-  The first `remarks/` after `cond/` starts the remarks field.
-  Required fields must occur once each; optional fields may occur at most once. Fields must follow the
-  documented order and be separated by whitespace. `remarks/` must be the final optional field.
-  There is no quoting or escaping syntax. Prefix-like text inside words remains valid.
+### Names and field markers
+
+Names may contain spaces and slashes. A field prefix after whitespace normally starts another field;
+`id/card`-like text is an exception when it appears within a name.
+
+| Name fragment | Allowed? | Explanation |
+| --- | --- | --- |
+| `USB id/card reader` | Yes | The nonnumeric `id/card` fragment stays in the name. |
+| `fluid/head tripod` | Yes | A slash within a word does not start a field. |
+| `Spare id/001 camera` | No | Numeric ID-like fragments are reserved for the actual Item ID. |
+| `Camera type/lens` | No | `type/` starts a type field after whitespace. |
+
+For `add`, the actual `id/` is the last one before `type/`. Earlier ID-like name fragments cannot start
+with whitespace, a digit, `+` or `-`. Required fields appear once, in the documented order.
+Optional prefixes such as `sensor/` and `remarks/` are recognised only after `cond/`, so
+`Camera sensor/cleaning kit` is a valid name. The first `remarks/` after the condition begins the final
+literal remarks field. There is no quoting or escaping syntax.
 
 ## Viewing equipment: `list`
 
@@ -265,6 +300,16 @@ Format: `list loans`
 This displays all recorded loans with their unique loan ID, item ID, borrower ID, issue date and due date.
 The `LOAN ID` column comes before `ITEM ID`. The final `RETURNED` column is `true` for returned loans
 and `false` for active loans.
+
+## Viewing equipment held by a borrower: `list borrower`
+
+Format: `list borrower/<BORROWER ID>`
+
+Example: `list borrower/002`. The equivalent alias `list member/002` is also accepted.
+
+Use exactly three digits from `000` to `999`. The result shows only equipment currently held by that borrower,
+with its loan details. Returned loans are excluded. An unknown borrower or one with no active loans produces
+a clear message. The query leaves records unchanged.
 
 ## Viewing the issue-time equipment condition: `view loan`
 
@@ -425,11 +470,11 @@ Condition ranges must be ascending. Values such as `3-1`, `01` or `2.5` are reje
 There is no `status/unserviceable` filter. To see those items, use `list` or omit the status criterion.
 An unrecognised type, such as `type/microphone`, produces no matches.
 
-Prefixes `id/`, `i/`, `type/`, `cond/`, and `status/` after whitespace are reserved field separators.
-Text like `id/card` within a name is allowed. Empty or repeated fields are rejected. Filtering leaves equipment
+The [name and field-marker rules](#names-and-field-markers) also apply here. Empty or repeated fields are rejected. Filtering leaves equipment
 unchanged and prints matches in inventory order, or `No equipment matches the filters.` when none match.
 Matching rows include the equipment's current status, type-specific details, recorded damage and remarks, as in `list`.
 An invalid filter also leaves equipment and loan records unchanged; correct the filter and try again.
+See the [worked example](#equipment-worked-example) for a query with known results.
 
 ## Updating equipment: `update`
 
@@ -438,7 +483,6 @@ Format: `update id/<ITEM ID> [i/<NAME>] [type/<TYPE>] [cond/<CONDITION>]`
 Examples:
 
 * `update id/001 cond/5`
-* `update id/001 i/Film Camera type/camera`
 * `update id/001 i/Film Camera cond/5`
 
 Supply an existing ID and at least one of `i/`, `type/`, or `cond/`. Fields may appear in any order, once each.
@@ -459,8 +503,7 @@ With `001` registered as a camera, these commands are rejected:
 | `update id/001 i/Film Camera cond/11` | `Condition must be a whole number from 1 to 10.` |
 | `update id/001 type/lens` | `Equipment type cannot be changed. Item ID 001 must remain camera.` |
 
-Prefixes `id/`, `i/`, `type/`, `cond/`, and `status/` after whitespace are reserved separators; `status/`
-cannot be updated manually. Text such as `USB id/card reader` within a name is allowed.
+The [name and field-marker rules](#names-and-field-markers) apply. `status/` cannot be updated manually.
 Invalid commands or failed saves leave all existing details unchanged. In the first rejected example,
 neither the name nor condition changes. An ID that does not exist is rejected rather than creating equipment.
 Correct the command or storage problem and try again.
@@ -482,7 +525,7 @@ restarts. Bundle IDs continue from the highest restored ID. Equipment and loans 
 
 Format: `add-to-bundle id/<BUNDLE ID> <EQUIPMENT ID> [<EQUIPMENT ID> ...]`
 
-Example: `add-to-bundle id/001 001 002 005`
+Example: `add-to-bundle id/001 001 002 003`
 
 The bundle must exist. Supply one or more equipment IDs, separated by spaces. Each requested item gets
 its own success or error message. Valid items are added even if another requested item is rejected.
@@ -607,7 +650,8 @@ in the backup.
 Diagnostics use up to two rotating files, `logs/snap.log.0` and `logs/snap.log.1`, relative to the launch folder.
 Each file is limited to approximately 1 MB; older records are replaced as the logs rotate. Logs are retained
 between runs. If file logging reports `Warning: Application logging is unavailable: ...`, commands can still
-be used. Check the launch folder's `logs` path if you need to restore file logging.
+be used. Close snAp, check that `logs` is a writable folder rather than a regular file, fix the folder or
+permission problem, then restart snAp. File logging is configured only at startup.
 
 ## Errors
 
@@ -633,6 +677,7 @@ be used. Check the launch folder's `logs` path if you need to restore file loggi
 | Update loan | `update loan/<LOAN ID> [id/<ITEM ID>] [b/<BORROWER ID>] [issued/<DD-MM-YY>] [due/<DD-MM-YY>]` |
 | List equipment | `list` |
 | List loans | `list loans` |
+| View a borrower's current equipment | `list borrower/<BORROWER ID>` (alias `list member/<BORROWER ID>`) |
 | View issue-time equipment condition | `view loan/<LOAN ID>` |
 | Back up equipment and loan records | `backup path/<DIRECTORY>` |
 | Restore equipment and loan records | `restore path/<DIRECTORY>` |
