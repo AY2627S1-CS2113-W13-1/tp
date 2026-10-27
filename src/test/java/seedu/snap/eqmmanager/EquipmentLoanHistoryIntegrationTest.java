@@ -53,11 +53,11 @@ class EquipmentLoanHistoryIntegrationTest {
 
         String printed = printed();
         assertTrue(printed.contains("BORROWER ID"));
-        assertTrue(printed.contains("RETURNED"));
-        assertTrue(printed.lines().anyMatch(line -> line.contains("111") && line.contains("true")
-                && line.contains("2026-10-03") && line.contains("2026-10-04")));
-        assertTrue(printed.lines().anyMatch(line -> line.contains("222") && line.contains("false")
-                && line.contains("2026-10-01") && line.contains("2026-10-02")));
+        assertTrue(printed.contains("STATE"));
+        assertTrue(printed.lines().anyMatch(line -> line.contains("111") && line.contains("Returned")
+                && line.contains("03-10-26") && line.contains("04-10-26")));
+        assertTrue(printed.lines().anyMatch(line -> line.contains("222") && line.contains("Overdue")
+                && line.contains("01-10-26") && line.contains("02-10-26")));
         assertTrue(printed.indexOf("222") < printed.indexOf("111"));
         assertEquals(2, Files.readAllLines(temporaryDirectory.resolve("loans.txt")).size());
         assertEquals("nextLoanId/003", Files.readString(temporaryDirectory.resolve("loan-sequence.txt")).trim());

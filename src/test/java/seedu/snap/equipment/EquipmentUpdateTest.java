@@ -191,9 +191,9 @@ class EquipmentUpdateTest {
             manager.executeInput("delete item/001");
             String text = output.toString(StandardCharsets.UTF_8);
             assertTrue(text.contains("Condition must be a whole number from 1 to 10."));
-            assertTrue(text.contains("Equipment with item ID 001 updated successfully."));
+            assertTrue(text.contains("[OK] Equipment 001 updated."));
             assertTrue(text.contains("Film Camera"));
-            assertTrue(text.contains("Equipment with item ID 001 deleted successfully."));
+            assertTrue(text.contains("[OK] Equipment 001 \"Film Camera\" deleted."));
         } finally {
             System.setOut(original);
         }

@@ -18,6 +18,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -100,7 +101,7 @@ class HelpIntegrationTest {
         Map<Path, SavedFile> filesBefore = savedFiles(dataDirectory);
         List<Path> pathsBefore = treePaths(dataDirectory);
 
-        executeAllHelpForms(manager, before);
+        executeAllReadOnlyForms(manager, before);
 
         assertEquals(before, snapshot(manager));
         assertSavedFilesUnchanged(filesBefore);
@@ -271,7 +272,7 @@ class HelpIntegrationTest {
         ApplicationState before = snapshot(empty);
         assertFalse(Files.exists(missingDirectory.getParent()));
 
-        executeAllHelpForms(empty, before);
+        executeAllReadOnlyForms(empty, before);
 
         assertEquals(before, snapshot(empty));
         assertFalse(Files.exists(missingDirectory));
@@ -293,7 +294,7 @@ class HelpIntegrationTest {
         Map<Path, SavedFile> blockedFiles = savedFiles(dataDirectory);
         List<Path> blockedPaths = treePaths(dataDirectory);
 
-        executeAllHelpForms(manager, before);
+        executeAllReadOnlyForms(manager, before);
 
         assertFalse(printedContent().contains("Could not save"));
         assertFalse(printedContent().contains("Could not load"));
@@ -312,8 +313,8 @@ class HelpIntegrationTest {
         manager.executeInput("loan id/006 b/333 due/25-10-26");
         manager.executeInput("add-bundle name/Next kit");
 
-        assertTrue(printedContent().contains("Loan 003 added successfully."));
-        assertTrue(printedContent().contains("Bundle 002 added successfully."));
+        assertTrue(printedContent().contains("[OK] Loan 003 issued."));
+        assertTrue(printedContent().contains("[OK] Bundle 002 \"Next kit\" created."));
         assertEquals("004", readField(manager, "loans", LoanHandler.class).getNextLoanId());
         assertEquals(3, readField(manager, "loans", LoanHandler.class).getLoanCount());
         assertEquals("003", readField(manager, "equipment", EquipmentHandler.class)
@@ -322,14 +323,14 @@ class HelpIntegrationTest {
 
     @Test
     void help_followedByOtherCommands_keepsTheSessionRunning() throws Exception {
-        executeAllHelpForms(manager, snapshot(manager));
+        executeAllReadOnlyForms(manager, snapshot(manager));
         output.reset();
 
         manager.executeInput("update id/006 i/Updated spare battery cond/9");
         manager.executeInput("list loans");
         manager.executeInput("history id/001");
 
-        assertTrue(printedContent().contains("updated successfully"));
+        assertTrue(printedContent().contains(" updated."));
         assertTrue(printedContent().contains("BORROWER ID"));
         assertTrue(printedContent().contains("222"));
         assertEquals("Updated spare battery", readField(manager, "equipment", EquipmentHandler.class)
@@ -357,7 +358,7 @@ class HelpIntegrationTest {
 
         String newline = System.lineSeparator();
         String divider = "-".repeat(100);
-        String inputBoundary = newline + divider + newline + ">>> " + newline + divider + newline + newline;
+        String inputBoundary = newline + divider + newline + "snAp > " + newline + divider + newline + newline;
         String[] responses = printed().split(Pattern.quote(inputBoundary), -1);
         assertEquals(7, responses.length, "Each of the six input prompts must have dividers and surrounding spacing.");
         assertTrue(responses[0].contains("Welcome to snAp."));
@@ -366,7 +367,7 @@ class HelpIntegrationTest {
         assertTrue(responses[3].contains("Unknown help topic"));
         assertTrue(responses[4].contains("ADD EQUIPMENT"));
         assertTrue(responses[5].contains("EXIT"));
-        assertEquals("Goodbye." + newline, responses[6]);
+        assertEquals("[OK] Goodbye." + newline, responses[6]);
     }
 
     @Test
@@ -381,7 +382,7 @@ class HelpIntegrationTest {
         String border = text.lines().filter(line -> line.matches("\\+-+\\+")).findFirst().orElseThrow();
         int welcome = text.indexOf("Welcome to snAp.");
         int menu = text.indexOf(border);
-        int prompt = text.indexOf(">>>");
+        int prompt = text.indexOf("snAp >");
         assertTrue(welcome >= 0 && welcome < menu);
         assertTrue(menu < text.indexOf("snAp command menu"));
         assertTrue(text.indexOf("snAp command menu") < prompt);
@@ -476,16 +477,21 @@ class HelpIntegrationTest {
                 dataDirectory.resolve("loan-sequence.txt"), dataDirectory.resolve("bundles.txt"));
     }
 
-    /** Repeats every help form so command names in a topic cannot execute or consume identifiers. */
-    private void executeAllHelpForms(EqmManager target, ApplicationState expected) throws Exception {
+    /** Repeats help, lists and histories to check that viewing output never mutates records or identifiers. */
+    private void executeAllReadOnlyForms(EqmManager target, ApplicationState expected) throws Exception {
         for (int repetition = 0; repetition < 2; repetition++) {
-            for (String command : HELP_COMMANDS) {
+            List<String> commands = new ArrayList<>(HELP_COMMANDS);
+            commands.addAll(List.of("list loans", "list overdue", "history id/001", "history id/005",
+                    "history bundle/id/001", "history bundle/name/Camera kit", "list bundles"));
+            for (String command : commands) {
                 output.reset();
                 target.executeInput(command);
                 assertFalse(printedContent().contains("Command not recognised"), command);
                 assertFalse(printedContent().contains("Could not save"), command);
                 assertFalse(printedContent().contains("Could not load"), command);
-                assertTrue(printedContent().contains("help"), command);
+                if (command.startsWith("help")) {
+                    assertTrue(printedContent().contains("help"), command);
+                }
                 assertEquals(expected, snapshot(target), command);
             }
         }

@@ -31,6 +31,9 @@ import seedu.snap.loan.LoanHandler;
 import seedu.snap.parser.Parser;
 import seedu.snap.ui.Help;
 import seedu.snap.ui.Welcome;
+import seedu.snap.ui.BundleView;
+import seedu.snap.ui.ConsoleOutput;
+import seedu.snap.ui.LoanView;
 
 /** Coordinates command input and execution for the SNAP application. */
 public class EqmManager {
@@ -100,7 +103,7 @@ public class EqmManager {
     public void executeInput(String input) {
         String normalizedInput = input == null ? "" : input.replaceAll("(?U)^\\s+|\\s+$", "");
         if (startupError != null) {
-            System.out.println("Could not load saved data: " + startupError);
+            ConsoleOutput.error("Could not load saved data: " + startupError);
         } else if (normalizedInput.matches("(?sU)help(?:\\s.*)?")) {
             Help.print(normalizedInput.substring("help".length()));
         } else if (normalizedInput.equals("bye")) {
@@ -143,19 +146,19 @@ public class EqmManager {
             try {
                 bundles.viewAllBundles(normalizedInput);
             } catch (BundleAdditionUnsuccessful e) {
-                System.out.println(e.getMessage());
+                ConsoleOutput.error(e.getMessage());
             }
         } else if (normalizedInput.equals("list") || normalizedInput.startsWith("list ")) {
             equipment.viewAllEquipment();
         } else {
-            System.out.println("Command not recognised. Type help for available commands.");
+            ConsoleOutput.error("Command not recognised. Type help for available commands.");
         }
     }
 
     /** Runs the main input and execution loop until the user exits. */
     public void run() {
         if (startupError != null) {
-            System.out.println("Could not load saved data: " + startupError);
+            ConsoleOutput.error("Could not load saved data: " + startupError);
             return;
         }
 
@@ -172,7 +175,7 @@ public class EqmManager {
             executeInput(input);
         }
 
-        System.out.println("Goodbye.");
+        ConsoleOutput.success("Goodbye.");
     }
 
     /**
@@ -202,7 +205,7 @@ public class EqmManager {
         }
 
         if (!saveErrors.isEmpty()) {
-            System.out.println("Could not save data: " + String.join(System.lineSeparator(), saveErrors));
+            ConsoleOutput.error("Could not save data: " + String.join(System.lineSeparator(), saveErrors));
             return false;
         }
         logger.log(Level.FINE, "Saved application data before exit");
@@ -216,7 +219,7 @@ public class EqmManager {
         try {
             loans.viewLoanIssueCondition(input);
         } catch (LoanViewingUnsuccessful exception) {
-            System.out.println(exception.getMessage());
+            ConsoleOutput.error(exception.getMessage());
         }
     }
 
@@ -227,10 +230,10 @@ public class EqmManager {
         // @@author Rohita-29
         try {
             Loan deleted = loans.deleteLoan(input);
-            System.out.println("Loan " + deleted.getLoanId() + " for item ID " + deleted.getItemId()
-                    + " deleted successfully.");
+            ConsoleOutput.success("Loan " + deleted.getLoanId() + " deleted.");
+            reportLoanItem(deleted);
         } catch (LoanDeletionUnsuccessful e) {
-            System.out.println(e.getMessage());
+            ConsoleOutput.error(e.getMessage());
         }
         // @@author
     }
@@ -249,9 +252,10 @@ public class EqmManager {
             }
             // @@author Yi An
             equipment.deleteEquipment(input);
-            System.out.println("Equipment with item ID " + target.getItemId() + " deleted successfully.");
+            ConsoleOutput.success("Equipment " + target.getItemId() + " \""
+                    + ConsoleOutput.inline(target.getItemName()) + "\" deleted.");
         } catch (EquipmentDeletionUnsuccessful e) {
-            System.out.println(e.getMessage());
+            ConsoleOutput.error(e.getMessage());
         }
         // @@author
     }
@@ -260,41 +264,40 @@ public class EqmManager {
     private void addBundle(String input) {
         try {
             Bundle bundle = bundles.addBundle(input);
-            System.out.println("Bundle " + bundle.getBundleId() + " added successfully.");
+            ConsoleOutput.success("Bundle " + bundle.getBundleId() + " \""
+                    + ConsoleOutput.inline(bundle.getBundleName()) + "\" created.");
+            System.out.println("  Composition: " + BundleView.composition(bundle));
+            BundleView.persistenceNote();
         } catch (BundleAdditionUnsuccessful e) {
-            System.out.println(e.getMessage());
+            ConsoleOutput.error(e.getMessage());
         }
     }
 
     /** Reports each equipment addition to a bundle independently. */
     private void addItemsToBundle(String input) {
         try {
-            for (String message : bundles.addItemsToBundle(input)) {
-                System.out.println(message);
-            }
+            reportBundleResults(bundles.addItemsToBundleWithResults(input), "added");
         } catch (BundleAdditionUnsuccessful e) {
-            System.out.println(e.getMessage());
+            ConsoleOutput.error(e.getMessage());
         }
     }
 
     /** Reports the outcome of removing equipment from a persisted bundle. */
     private void removeItemsFromBundle(String input) {
         try {
-            for (String message : bundles.removeItemsFromBundle(input)) {
-                System.out.println(message);
-            }
+            reportBundleResults(bundles.removeItemsFromBundleWithResults(input), "removed");
         } catch (BundleAdditionUnsuccessful e) {
-            System.out.println(e.getMessage());
+            ConsoleOutput.error(e.getMessage());
         }
     }
 
     /** Displays the outcome of equipment addition. */
     private void addEquipment(String input) {
         try {
-            equipment.addEquipment(input);
-            System.out.println("Equipment added successfully.");
+            Equipment added = equipment.addEquipment(input);
+            reportEquipment(added, "added");
         } catch (EquipmentAdditionUnsuccessful e) {
-            System.out.println(e.getMessage());
+            ConsoleOutput.error(e.getMessage());
         }
     }
 
@@ -303,9 +306,9 @@ public class EqmManager {
         // @@author Yi An
         try {
             Loan added = loans.addLoan(input);
-            System.out.println("Loan " + added.getLoanId() + " added successfully.");
+            reportLoan(added, "issued");
         } catch (LoanAdditionUnsuccessful e) {
-            System.out.println(e.getMessage());
+            ConsoleOutput.error(e.getMessage());
         }
         // @@author
     }
@@ -314,10 +317,10 @@ public class EqmManager {
     private void returnEquipment(String input) {
         try {
             Loan returned = loans.returnLoan(input);
-            System.out.println("Loan " + returned.getLoanId() + " for item ID " + returned.getItemId()
-                    + " returned successfully.");
+            ConsoleOutput.success("Loan " + returned.getLoanId() + " returned.");
+            reportLoanItem(returned);
         } catch (LoanReturnUnsuccessful exception) {
-            System.out.println(exception.getMessage());
+            ConsoleOutput.error(exception.getMessage());
         }
     }
 
@@ -326,7 +329,7 @@ public class EqmManager {
         try {
             loans.viewLoanHistory(input);
         } catch (LoanHistoryUnsuccessful exception) {
-            System.out.println(exception.getMessage());
+            ConsoleOutput.error(exception.getMessage());
         }
     }
 
@@ -335,7 +338,7 @@ public class EqmManager {
         try {
             bundles.viewBundleLoanHistory(input, loans);
         } catch (BundleHistoryUnsuccessful exception) {
-            System.out.println(exception.getMessage());
+            ConsoleOutput.error(exception.getMessage());
         }
     }
 
@@ -350,7 +353,7 @@ public class EqmManager {
                 equipment.viewEquipment(matches);
             }
         } catch (EquipmentFilteringUnsuccessful e) {
-            System.out.println(e.getMessage());
+            ConsoleOutput.error(e.getMessage());
         }
     }
 
@@ -358,9 +361,9 @@ public class EqmManager {
     private void updateEquipment(String input) {
         try {
             Equipment updated = equipment.updateEquipment(input);
-            System.out.println("Equipment with item ID " + updated.getItemId() + " updated successfully.");
+            reportEquipment(updated, "updated");
         } catch (EquipmentUpdateUnsuccessful e) {
-            System.out.println(e.getMessage());
+            ConsoleOutput.error(e.getMessage());
         }
     }
 
@@ -368,10 +371,63 @@ public class EqmManager {
     private void updateLoan(String input) {
         try {
             Loan updated = loans.updateLoan(input);
-            System.out.println("Loan " + updated.getLoanId() + " updated successfully.");
+            reportLoan(updated, "updated");
         } catch (LoanUpdateUnsuccessful exception) {
-            System.out.println(exception.getMessage());
+            ConsoleOutput.error(exception.getMessage());
         }
+    }
+
+    /** Includes the current values only after the equipment handler has saved its successful change. */
+    private static void reportEquipment(Equipment item, String action) {
+        ConsoleOutput.success("Equipment " + item.getItemId() + " " + action + ".");
+        System.out.println("  Name: \"" + ConsoleOutput.inline(item.getItemName()) + "\"");
+        System.out.println("  Type: " + item.getType() + " | Condition: " + item.getCondition()
+                + " | Status: " + availability(item));
+    }
+
+    /** Shows the assigned or updated loan details without requiring a separate listing request. */
+    private void reportLoan(Loan loan, String action) {
+        ConsoleOutput.success("Loan " + loan.getLoanId() + " " + action + ".");
+        reportLoanItem(loan);
+        System.out.println("  Borrower: " + loan.getBorrowerId() + " | Issued: "
+                + LoanView.date(loan.getIssuedDate()) + " | Due: " + LoanView.date(loan.getDueDate()));
+    }
+
+    /** Avoids attaching a replacement item's name to old history when visible IDs have been reused. */
+    private void reportLoanItem(Loan loan) {
+        Equipment item = equipment.getEquipmentById(loan.getItemId());
+        if (item != null && item.getRecordId().equals(loan.getEquipmentRecordId())) {
+            System.out.println("  Item: " + item.getItemId() + " \""
+                    + ConsoleOutput.inline(item.getItemName()) + "\"");
+            System.out.println("  Status: " + availability(item));
+        } else {
+            System.out.println("  Item: " + loan.getItemId() + " (original equipment is not in the inventory)");
+        }
+    }
+
+    /** Labels every membership result using the handler's outcome rather than interpreting its message text. */
+    private void reportBundleResults(List<BundleHandler.ItemResult> results, String action) {
+        for (BundleHandler.ItemResult result : results) {
+            if (result.successful()) {
+                ConsoleOutput.success(result.message() + " Name: \""
+                        + ConsoleOutput.inline(result.itemName()) + "\".");
+            } else {
+                ConsoleOutput.error(result.message());
+            }
+        }
+        long successes = results.stream().filter(BundleHandler.ItemResult::successful).count();
+        System.out.println(successes + (successes == 1 ? " membership " : " memberships ") + action
+                + "; " + (results.size() - successes) + " failed.");
+        if (!results.isEmpty()) {
+            String bundleId = results.getFirst().bundleId();
+            bundles.getBundleList().stream().filter(bundle -> bundle.getBundleId().equals(bundleId)).findFirst()
+                    .ifPresent(bundle -> System.out.println("  Composition: " + BundleView.composition(bundle)));
+        }
+    }
+
+    /** Reads the existing loan and return-assessment flags without changing availability rules. */
+    private static String availability(Equipment item) {
+        return item.isLoaned() ? "Loaned" : item.isServiceable() ? "Available" : "Unserviceable";
     }
 
     // @@author Rohita-29

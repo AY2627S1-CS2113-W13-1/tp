@@ -353,6 +353,34 @@ previous assessment's notes; retaining them could present an old damage note as 
 supplied values and strict stored records. `OptionalFieldsIntegrationTest` checks persistence, omitted and empty
 return remarks, required assessments, and failed saves followed by successful retries.
 
+### Formatting loan, bundle and command output
+
+`LoanView` renders loan lists, overdue results, item histories and bundle histories with one set of columns,
+`DD-MM-YY` dates and a result count. Handlers retain responsibility for selecting and ordering records.
+The renderer receives one reference date from the handler's clock. It checks returned status first, then calls
+`Loan.isOverdue(LocalDate)` to distinguish `Overdue` from `Active`. It does not store or change a loan's state.
+
+`BundleView` displays each bundle and its members without a wide table. `Bundle.getMissingEquipmentTypes()`
+uses the existing type-count rules to explain incomplete composition. This does not add compatibility or
+availability validation. Persistence guidance describes the current save behaviour: new bundles and additions
+are saved with `bye`, and successful removals are saved immediately.
+
+`ConsoleOutput` prints headings and `[OK]` or `[ERROR]` labels using the welcome logo's existing colour policy.
+Only headings and labels receive ANSI colour, which is reset immediately. Plain output retains the same words.
+Record names have control characters escaped before display so that stored text cannot create terminal commands
+or extra rows. `Parser` retains input dividers and uses the `snAp > ` prompt.
+
+`EqmManager` reports IDs, names and resulting values after successful handler calls. Loan feedback uses permanent
+equipment identity before displaying an item's current name and availability, so deleting old history cannot
+describe a replacement that happens to have the same visible ID. Bundle batch methods return typed `ItemResult`
+values, which distinguish successes from failures without interpreting message text. The existing string-returning
+methods remain available. Removal results are returned only after saving succeeds, preserving rollback behaviour.
+
+`LoanViewTest`, `BundleViewTest`, `ConsoleOutputTest` and `CommandFeedbackIntegrationTest` cover date boundaries,
+states, counts, control characters, plain and coloured labels, mixed batch outcomes and failed saves.
+`HelpIntegrationTest` also repeats list and history commands against populated, empty and blocked storage while
+checking records, object identities, counters, saved bytes and modification times remain unchanged.
+
 ### Showing command help without changing records
 
 #### Implementation and sequence

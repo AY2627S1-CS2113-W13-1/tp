@@ -226,7 +226,7 @@ class EquipmentFilterTest {
             assertTrue(text.contains("The minimum condition must not exceed the maximum."));
             assertTrue(text.contains("No equipment matches the filters."));
             assertTrue(text.contains("Camera"));
-            assertTrue(text.contains("Equipment with item ID 001 deleted successfully."));
+            assertTrue(text.contains("[OK] Equipment 001 \"Camera\" deleted."));
         } finally {
             System.setOut(original);
         }

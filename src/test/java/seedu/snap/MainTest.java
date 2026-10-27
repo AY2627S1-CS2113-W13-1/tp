@@ -39,7 +39,7 @@ class MainTest {
         assertTrue(output.indexOf("#############") < output.indexOf("Welcome to snAp."));
         assertFalse(output.contains("█"), "Redirected startup output should use the ASCII fallback by default.");
         assertFalse(output.contains("\u001B"), "Redirected startup output must not contain colour escape codes.");
-        assertTrue(output.contains("Equipment added successfully."));
+        assertTrue(output.contains("[OK] Equipment 001 added."));
         assertTrue(output.contains("Condition must be a whole number from 1 to 10."));
         assertTrue(output.contains("Item name must contain 1 to 100 characters."));
         assertTrue(output.contains("Type cannot be empty."));
@@ -66,7 +66,7 @@ class MainTest {
         Files.writeString(temporaryDirectory.resolve("logs"), "This file prevents directory creation.");
         String output = runApplication("add i/Camera id/001 type/camera cond/1\nbye\n", true);
         assertTrue(output.contains("Warning: Application logging is unavailable:"));
-        assertTrue(output.contains("Equipment added successfully."));
+        assertTrue(output.contains("[OK] Equipment 001 added."));
         assertFalse(output.contains("Added equipment with item ID"));
     }
 
@@ -75,8 +75,8 @@ class MainTest {
         String output = runApplication("add i/Camera id/001 type/camera cond/1\n"
                 + "loan id/001 b/001 issued/15-10-26 due/16-10-26\n"
                 + "delete loan/001\ndelete loan/999\nbye\n", true);
-        assertTrue(output.contains("Equipment added successfully."));
-        assertTrue(output.contains("Loan 001 for item ID 001 deleted successfully."));
+        assertTrue(output.contains("[OK] Equipment 001 added."));
+        assertTrue(output.contains("[OK] Loan 001 deleted."));
         assertTrue(output.contains("No loan found for loan ID 999."));
         assertFalse(output.contains("Added equipment with item ID"));
         assertFalse(output.contains("Deleted loan 001 for item ID"));
@@ -95,8 +95,8 @@ class MainTest {
                 + " sensor/Full frame damage/SHUTTER_FAULT\n"
                 + "loan id/001 b/002 issued/01-10-26 due/02-10-26\nbye\n", true);
 
-        assertTrue(firstRun.contains("Equipment added successfully."));
-        assertTrue(firstRun.contains("Loan 001 added successfully."));
+        assertTrue(firstRun.contains("[OK] Equipment 001 added."));
+        assertTrue(firstRun.contains("[OK] Loan 001 issued."));
         assertTrue(Files.exists(temporaryDirectory.resolve("data/equipment.txt")));
         assertTrue(Files.exists(temporaryDirectory.resolve("data/loans.txt")));
         assertTrue(Files.readString(temporaryDirectory.resolve("data/equipment.txt"))
@@ -139,7 +139,7 @@ class MainTest {
                 "Loaned", "capacity/2000 mAh damage/CONTACT_DAMAGE")));
         assertTrue(firstRun.contains(equipmentRow("4)", "Tripod", "004", "tripod", 4,
                 "Available", "thread/Quarter inch damage/NONE")));
-        assertTrue(firstRun.contains("Loan 001 for item ID 001 deleted successfully."));
+        assertTrue(firstRun.contains("[OK] Loan 001 deleted."));
 
         String secondRun = runApplication("list\nbye\n", true);
 

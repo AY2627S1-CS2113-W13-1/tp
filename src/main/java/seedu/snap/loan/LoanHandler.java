@@ -27,6 +27,7 @@ import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 import seedu.snap.exceptions.LoanReturnUnsuccessful;
 import seedu.snap.exceptions.LoanHistoryUnsuccessful;
+import seedu.snap.ui.LoanView;
 import seedu.snap.exceptions.LoanViewingUnsuccessful;
 import seedu.snap.exceptions.LoanUpdateUnsuccessful;
 
@@ -645,21 +646,7 @@ public class LoanHandler {
     public void viewOverdueLoans(LocalDate referenceDate) {
         List<Loan> overdueLoans = getOverdueLoans(referenceDate);
         logger.log(Level.INFO, "Viewing {0} overdue loan(s)", overdueLoans.size());
-        if (overdueLoans.isEmpty()) {
-            System.out.println("No overdue loans found.");
-            return;
-        }
-        System.out.printf(
-                "%-4s %-12s | %-12s | %-16s%n",
-                "No.", "ITEM ID", "BORROWER ID", "DUE DATE"
-        );
-        for (int i = 0; i < overdueLoans.size(); i++) {
-            Loan loan = overdueLoans.get(i);
-            System.out.printf(
-                    "%-4s %-12s | %-12s | %-16s%n",
-                    (i + 1) + ")", loan.getItemId(), loan.getBorrowerId(), loan.getDueDate()
-            );
-        }
+        LoanView.print(overdueLoans, referenceDate, "Overdue loans", "No overdue loans found.");
     }
 
     // @@author
@@ -841,12 +828,8 @@ public class LoanHandler {
     public void viewLoanHistory(String input) throws LoanHistoryUnsuccessful {
         List<Loan> history = getLoanHistory(input);
         String itemId = parseHistoryItemId(input);
-        if (history.isEmpty()) {
-            System.out.println("No loan history for item ID " + itemId + ".");
-        } else {
-            System.out.println("Loan history for item ID " + itemId + ":");
-            printLoans(history);
-        }
+        printLoans(history, "Loan history for item ID " + itemId,
+                "No loan history for item ID " + itemId + ".");
         boolean hasUnattributedHistory = loans.stream().anyMatch(loan -> itemId.equals(loan.getItemId())
                 && loan.isReturned() && loan.getEquipmentRecordId() == null);
         if (hasUnattributedHistory) {
@@ -868,30 +851,18 @@ public class LoanHandler {
 
     /** Prints loan records using the same table format as the all-loans command. */
     public void printLoans(List<Loan> records) {
+        printLoans(records, "Loans", "No loans recorded. Type help loan for the command format.");
+    }
+
+    /** Shares the same rows and current-date state with contextual headings and empty messages. */
+    public void printLoans(List<Loan> records, String heading, String emptyMessage) {
         if (records == null) {
             throw new IllegalArgumentException("Loan records must not be null.");
         }
         for (Loan record : records) {
             assert record != null : "Loan records must not contain null items";
         }
-        printLoansTable(records);
-    }
-
-    /** Shares the displayed borrowing details between all-loan and individual-item views. */
-    private static void printLoansTable(List<Loan> records) {
-        System.out.printf(
-                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s | %-8s%n",
-                "No.", "LOAN ID", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE", "RETURNED"
-        );
-        for (int i = 0; i < records.size(); i++) {
-            Loan item = records.get(i);
-            assert item != null : "Loan list must not contain null items";
-            System.out.printf(
-                    "%-4s %-12s | %-12s | %-12s | %-16s | %-16s | %-8s%n",
-                    (i + 1) + ")", item.getLoanId(), item.getItemId(), item.getBorrowerId(),
-                    item.getIssuedDate(), item.getDueDate(), item.isReturned()
-            );
-        }
+        LoanView.print(records, LocalDate.now(clock), heading, emptyMessage);
     }
 
     /** Formats identifiers independently of the computer's default locale. */

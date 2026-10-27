@@ -44,15 +44,17 @@ class LoanUpdateIntegrationTest {
 
         manager.executeInput("update loan/001 id/002 b/007 due/15-10-26");
 
-        assertEquals("Loan 001 updated successfully." + System.lineSeparator(),
-                output.toString(StandardCharsets.UTF_8));
+        String feedback = output.toString(StandardCharsets.UTF_8);
+        assertTrue(feedback.contains("[OK] Loan 001 updated."));
+        assertTrue(feedback.contains("Item: 002 \"Tripod\""));
+        assertTrue(feedback.contains("Borrower: 007 | Issued: 01-10-26 | Due: 15-10-26"));
         assertTrue(Files.readString(temporaryDirectory.resolve("loans.txt"))
                 .contains("loanId/001 id/002 b/007 issued/01-10-26 due/15-10-26"));
 
         output.reset();
         manager.executeInput("list loans");
         assertTrue(output.toString(StandardCharsets.UTF_8).contains(
-                "001          | 002          | 007"));
+                "| 001     | 002     | 007         |"));
     }
 
     @Test
@@ -67,7 +69,7 @@ class LoanUpdateIntegrationTest {
 
         String actual = output.toString(StandardCharsets.UTF_8);
         assertTrue(actual.contains("Issued date must not be later than the due date."));
-        assertTrue(actual.contains("001          | 001          | 002"));
+        assertTrue(actual.contains("| 001     | 001     | 002         |"));
     }
 
     @Test
@@ -81,8 +83,9 @@ class LoanUpdateIntegrationTest {
         manager.executeInput("update\tloan/001 b/008");
 
         String actual = output.toString(StandardCharsets.UTF_8);
-        assertEquals("Loan 001 updated successfully." + System.lineSeparator()
-                + "Loan 001 updated successfully." + System.lineSeparator(), actual);
+        assertEquals(2, actual.lines().filter(line -> line.equals("[OK] Loan 001 updated.")).count());
+        assertTrue(actual.contains("Borrower: 007 | Issued: 01-10-26 | Due: 10-10-26"));
+        assertTrue(actual.contains("Borrower: 008 | Issued: 01-10-26 | Due: 10-10-26"));
         assertTrue(Files.readString(temporaryDirectory.resolve("loans.txt"))
                 .contains("loanId/001 id/001 b/008 issued/01-10-26 due/10-10-26"));
     }
@@ -99,8 +102,8 @@ class LoanUpdateIntegrationTest {
         restarted.executeInput("list loans");
 
         String actual = output.toString(StandardCharsets.UTF_8);
-        assertTrue(actual.contains("001          | 001          | 007"));
-        assertTrue(actual.contains("2026-10-15T00:00"));
+        assertTrue(actual.contains("| 001     | 001     | 007         |"));
+        assertTrue(actual.contains("15-10-26"));
     }
 
     @Test
