@@ -151,6 +151,42 @@ maintenance records from being attached to a replacement item if an Item ID is r
 
 Invalid commands, unknown Item IDs, invalid dates and failed saves leave existing maintenance records unchanged.
 
+## Listing equipment due for maintenance: `list maintenance-due`
+
+Format: `list maintenance-due`
+
+This lists equipment currently marked unserviceable and therefore due for maintenance or inspection. Items are shown
+in Item ID order. An item with an active loan remains protected and is shown as `Loaned`; other unserviceable items
+are shown as `Needs inspection`.
+
+If no equipment is due, the application prints `No equipment is due for maintenance or inspection.` This command is
+read-only and does not change equipment or saved records.
+
+## Completing an inspection: `inspect`
+
+Format: `inspect id/<ITEM ID> date/<DD-MM-YY> outcome/<PASS|FAIL>`
+
+Example: `inspect id/001 date/27-10-26 outcome/PASS`
+
+Only an existing unserviceable item without an active loan can be inspected. The date must not be in the future.
+`PASS` makes the item serviceable; `FAIL` keeps it unavailable. Both outcomes are recorded as maintenance history
+with work `Inspection`, and the equipment and maintenance files are updated together. If either save fails, the
+previous equipment state and maintenance file are restored.
+
+## Viewing maintenance history: `history maintenance`
+
+Format: `history maintenance/id/<ITEM ID>`
+
+Example: `history maintenance/id/001`
+
+Use an existing Item ID from `001` to `999`. The command displays the maintenance date, work performed and outcome
+for the physical equipment item currently registered under that ID. Records are ordered by maintenance date from
+earliest to latest.
+
+If the item has no maintenance records, the application prints `No maintenance history for item ID 001.` Invalid
+and unknown Item IDs are rejected. Viewing history does not modify equipment, loans, maintenance records or saved
+files, and the history remains available after restarting the application.
+
 ## Adding equipment: `add`
 
 Format: `add i/<NAME> id/<ITEM ID> type/<TYPE> cond/<CONDITION> [TYPE DETAIL] [damage/<DAMAGE>] [remarks/<REMARKS>]`
@@ -740,6 +776,9 @@ permission problem, then restart snAp. File logging is configured only at startu
 | View item loan history | `history id/<ITEM ID>` |
 | View bundle loan history | `history bundle/id/<BUNDLE ID>` or `history bundle/name/<NAME>` |
 | Record maintenance work | `maintain id/<ITEM ID> date/<DD-MM-YY> work/<DESCRIPTION> outcome/<OUTCOME>` |
+| List equipment due for maintenance | `list maintenance-due` |
+| Complete an inspection | `inspect id/<ITEM ID> date/<DD-MM-YY> outcome/<PASS|FAIL>` |
+| View maintenance history | `history maintenance/id/<ITEM ID>` |
 | List overdue loans | `list overdue` |
 | Filter equipment | `filter [id/<ITEM ID>] [i/<NAME>] [type/<TYPE>] [cond/<CONDITION>] [status/<STATUS>]` |
 | Update equipment | `update id/<ITEM ID> [i/<NAME>] [type/<TYPE>] [cond/<CONDITION>]` |

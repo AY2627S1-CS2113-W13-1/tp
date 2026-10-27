@@ -29,6 +29,8 @@ import seedu.snap.exceptions.LoanReturnUnsuccessful;
 import seedu.snap.exceptions.LoanHistoryUnsuccessful;
 import seedu.snap.exceptions.LoanViewingUnsuccessful;
 import seedu.snap.exceptions.LoanUpdateUnsuccessful;
+import seedu.snap.exceptions.MaintenanceHistoryUnsuccessful;
+import seedu.snap.exceptions.MaintenanceInspectionUnsuccessful;
 import seedu.snap.loan.Loan;
 import seedu.snap.loan.LoanHandler;
 import seedu.snap.exceptions.MaintenanceRecordUnsuccessful;
@@ -145,8 +147,15 @@ public class EqmManager {
             returnEquipment(normalizedInput);
         } else if (normalizedInput.matches("(?sU)maintain(?:\\s.*)?")) {
             recordMaintenance(normalizedInput);
+        } else if (normalizedInput.equals("list maintenance-due")) {
+            viewMaintenanceDue(normalizedInput);
+        } else if (normalizedInput.matches("(?sU)inspect(?:\\s.*)?")) {
+            completeInspection(normalizedInput);
         } else if (normalizedInput.startsWith("history bundle/")) {
             viewBundleLoanHistory(normalizedInput);
+        } else if (normalizedInput.equals("history maintenance")
+                || normalizedInput.startsWith("history maintenance/")) {
+            viewMaintenanceHistory(normalizedInput);
         } else if (normalizedInput.matches("(?sU)history(?:\\s.*)?")) {
             viewLoanHistory(normalizedInput);
         } else if (normalizedInput.matches("(?U)view(?:\\s.*)?")) {
@@ -395,6 +404,35 @@ public class EqmManager {
             assert record != null : "A successful maintenance command must return a record";
             System.out.println("Maintenance recorded successfully.");
         } catch (MaintenanceRecordUnsuccessful exception) {
+            System.out.println(exception.getMessage());
+        }
+    }
+
+    /** Displays the selected equipment's maintenance history or its validation error. */
+    private void viewMaintenanceHistory(String input) {
+        try {
+            maintenance.viewMaintenanceHistory(input);
+        } catch (MaintenanceHistoryUnsuccessful exception) {
+            System.out.println(exception.getMessage());
+        }
+    }
+
+    /** Displays equipment due for maintenance or inspection. */
+    private void viewMaintenanceDue(String input) {
+        try {
+            maintenance.viewMaintenanceDue(input);
+        } catch (MaintenanceInspectionUnsuccessful exception) {
+            System.out.println(exception.getMessage());
+        }
+    }
+
+    /** Displays the outcome of completing an equipment inspection. */
+    private void completeInspection(String input) {
+        try {
+            MaintenanceRecord record = maintenance.completeInspection(input);
+            assert record != null : "A successful inspection must return a maintenance record";
+            System.out.println("Inspection recorded successfully.");
+        } catch (MaintenanceInspectionUnsuccessful exception) {
             System.out.println(exception.getMessage());
         }
     }
