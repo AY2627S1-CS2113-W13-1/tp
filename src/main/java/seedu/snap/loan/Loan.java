@@ -225,7 +225,8 @@ public class Loan {
     Loan updatedCopy(String itemId, String equipmentRecordId, String borrowerId,
             LocalDateTime issuedDate, LocalDateTime dueDate) {
         assert !isReturned : "Returned loan history must not be updated";
-        return new Loan(loanId, itemId, borrowerId, issuedDate, dueDate, equipmentRecordId);
+        return new Loan(loanId, itemId, borrowerId, issuedDate, dueDate, equipmentRecordId,
+                issueConditionSnapshot);
     }
 
     /** Applies a saved update and keeps equipment ownership synchronized with the loan. */

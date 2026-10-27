@@ -101,4 +101,22 @@ class LoanUpdateIntegrationTest {
         assertTrue(actual.contains("001          | 001          | 007"));
         assertTrue(actual.contains("2026-10-15T00:00"));
     }
+
+    @Test
+    void updateLoanCommand_borrowerOnlyEditPreservesIssueConditionAfterRestart() throws Exception {
+        EqmManager manager = new EqmManager(temporaryDirectory);
+        manager.executeInput("add i/Test Camera id/001 type/camera cond/6 sensor/Full frame "
+                + "damage/SENSOR_DAMAGE remarks/Handle carefully");
+        manager.executeInput("loan id/001 b/101 issued/01-10-26 due/20-10-26");
+        manager.executeInput("update loan/001 b/007");
+
+        EqmManager restarted = new EqmManager(temporaryDirectory);
+        output.reset();
+        restarted.executeInput("view loan/001");
+
+        String actual = output.toString(StandardCharsets.UTF_8);
+        assertTrue(actual.contains("Condition: 6"));
+        assertTrue(actual.contains("Damage: SENSOR_DAMAGE"));
+        assertTrue(actual.contains("Remarks: Handle carefully"));
+    }
 }
