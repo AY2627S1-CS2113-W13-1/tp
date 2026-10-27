@@ -718,16 +718,33 @@ public class LoanHandler {
         } catch (LoanAdditionUnsuccessful exception) {
             throw new LoanHistoryUnsuccessful(exception.getMessage());
         }
+        List<Loan> history = getLoanHistoryForEquipment(current);
+        logger.log(Level.FINE, "Selected {0} history record(s) for item ID {1}.",
+                new Object[]{history.size(), itemId});
+        return history;
+    }
+
+    /**
+     * Selects all active and returned loans belonging to one physical equipment record.
+     *
+     * @param item equipment whose permanent record identity is queried
+     * @return an unmodifiable list in issue-date order, then loan-ID order
+     */
+    public List<Loan> getLoanHistoryForEquipment(Equipment item) {
+        if (item == null) {
+            throw new IllegalArgumentException("Equipment must not be null.");
+        }
         ArrayList<Loan> history = new ArrayList<>();
         for (Loan loan : loans) {
-            if (itemId.equals(loan.getItemId()) && current.getRecordId().equals(loan.getEquipmentRecordId())) {
+            if (item.getItemId().equals(loan.getItemId())
+                    && item.getRecordId().equals(loan.getEquipmentRecordId())) {
                 history.add(loan);
             }
         }
         history.sort(Comparator.comparing(Loan::getIssuedDate)
                 .thenComparingInt(loan -> Integer.parseInt(loan.getLoanId())));
-        logger.log(Level.FINE, "Selected {0} history record(s) for item ID {1}.",
-                new Object[]{history.size(), itemId});
+        assert history.stream().allMatch(loan -> loan.getEquipmentRecordId() != null)
+                : "Equipment history must contain attributed loan records";
         return List.copyOf(history);
     }
 
@@ -760,8 +777,19 @@ public class LoanHandler {
         throw new LoanHistoryUnsuccessful("Invalid format. Use: history id/[ITEM ID], from 001 to 999.");
     }
 
+    /** Prints loan records using the same table format as the all-loans command. */
+    public void printLoans(List<Loan> records) {
+        if (records == null) {
+            throw new IllegalArgumentException("Loan records must not be null.");
+        }
+        for (Loan record : records) {
+            assert record != null : "Loan records must not contain null items";
+        }
+        printLoansTable(records);
+    }
+
     /** Shares the displayed borrowing details between all-loan and individual-item views. */
-    private static void printLoans(List<Loan> records) {
+    private static void printLoansTable(List<Loan> records) {
         System.out.printf(
                 "%-4s %-12s | %-12s | %-12s | %-16s | %-16s | %-8s%n",
                 "No.", "LOAN ID", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE", "RETURNED"

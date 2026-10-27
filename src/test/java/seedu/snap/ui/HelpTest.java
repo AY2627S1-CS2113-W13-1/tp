@@ -28,7 +28,7 @@ import seedu.snap.equipment.Tripod;
 class HelpTest {
     private static final List<String> TOPICS = List.of("add", "list", "delete item", "loan", "return", "delete loan",
             "list loans", "view loan", "list overdue", "history", "filter", "update", "add-bundle", "add-to-bundle",
-            "list bundles", "help", "bye");
+            "remove-from-bundle", "list bundles", "history bundle", "help", "bye");
 
     /** Supplies the user-facing syntax and example for each supported command. */
     private static Stream<Arguments> commandExamples() {
@@ -55,7 +55,11 @@ class HelpTest {
                 Arguments.of("add-bundle", "add-bundle name/<NAME>", "add-bundle name/Studio kit"),
                 Arguments.of("add-to-bundle", "add-to-bundle id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]",
                         "add-to-bundle id/001 001 002 003"),
+                Arguments.of("remove-from-bundle", "remove-from-bundle id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]",
+                        "remove-from-bundle id/001 001"),
                 Arguments.of("list bundles", "list bundles", "list bundles"),
+                Arguments.of("history bundle", "history bundle/id/<BUNDLE ID>", "history bundle/id/001"),
+                Arguments.of("history bundle", "history bundle/name/<NAME>", "history bundle/name/Studio kit"),
                 Arguments.of("help", "help", "help"),
                 Arguments.of("bye", "bye", "bye"));
     }
@@ -172,7 +176,7 @@ class HelpTest {
         List<String> headings = List.of("ADD EQUIPMENT", "LIST EQUIPMENT", "DELETE EQUIPMENT", "ADD LOAN",
                 "RETURN EQUIPMENT", "DELETE LOAN", "LIST LOANS", "VIEW LOAN ISSUE CONDITION", "LIST OVERDUE LOANS",
                 "ITEM LOAN HISTORY", "FILTER EQUIPMENT", "UPDATE EQUIPMENT", "CREATE BUNDLE", "ADD EQUIPMENT TO BUNDLE",
-                "LIST BUNDLES", "HELP", "EXIT");
+                "REMOVE EQUIPMENT FROM BUNDLE", "LIST BUNDLES", "BUNDLE LOAN HISTORY", "HELP", "EXIT");
         String divider = "=".repeat(100);
 
         assertEquals(headings.size() * 2L, lines.stream().filter(divider::equals).count());
@@ -205,14 +209,17 @@ class HelpTest {
         assertEquals(Help.getText("view loan"), Help.getText(" \tview\u2003loan\u00a0 "));
         assertEquals(Help.getText("list overdue"), Help.getText("list\u00a0overdue"));
         assertEquals(Help.getText("list bundles"), Help.getText("list\u2009\u202fbundles"));
+        assertEquals(Help.getText("history bundle"), Help.getText(" \thistory\u2003bundle\u00a0 "));
         assertFalse(labelledValues(Help.getText("list"), "Format:").contains("list loans"));
         assertFalse(labelledValues(Help.getText("delete item"), "Format:").contains("delete loan/<LOAN ID>"));
+        assertFalse(labelledValues(Help.getText("history"), "Format:").contains("history bundle/id/<BUNDLE ID>"));
     }
 
     /** Supplies misspellings, partial topics and aliases that must not select a command guide. */
     private static Stream<String> unknownTopics() {
         return Stream.of("unknown", "HELP", "ADD", "helpall", "helpful", "equipment", "loans", "bundles",
                 "delete", "list loan", "list items", "list loans extra", "view", "view loan/001", "view loan extra",
+                "history bundle/id/001", "history bundle/name/Studio kit", "remove-from-bundle id/001 001",
                 "help add", "all extra");
     }
 
@@ -234,14 +241,15 @@ class HelpTest {
         assertTrue(proseFor("loan").contains("Omitted issued/ defaults to today's date"));
         assertTrue(proseFor("loan").contains("Issue date must be on or before the required due date."));
         assertTrue(proseFor("return").contains("explicit serviceable/ and damage/ assessment"));
-        assertTrue(proseFor("return").contains("Omitted or empty remarks clear the item's previous remarks."));
+        assertTrue(proseFor("return").contains("For other damage values, omitted or empty remarks clear prior notes."));
         assertTrue(proseFor("delete loan").contains(
                 "Deleting returned history leaves newer active loans unchanged."));
         assertTrue(proseFor("list overdue").contains("Returned loans and loans due today or later are excluded."));
         assertTrue(proseFor("history").contains("Reused Item IDs keep separate histories."));
         assertTrue(proseFor("filter").contains("All filters must match (AND)."));
         assertTrue(proseFor("update").contains("Omitted fields retain their current values."));
-        assertTrue(proseFor("add-bundle").contains("Bundles exist only for the current session"));
+        assertTrue(proseFor("add-bundle").contains(
+                "Bundles and their equipment memberships are restored between application runs"));
         assertTrue(proseFor("add-to-bundle").contains(
                 "exactly one camera, at least one lens and at least one battery."));
         assertTrue(proseFor("bye").contains("A save failure keeps the application running;"));
@@ -278,11 +286,12 @@ class HelpTest {
         assertTrue(text.contains("Name, unused Item ID, type and condition are required"));
         assertTrue(text.contains(
                 "Optional order: subtype fields in the order shown, then damage/, then final remarks/."));
-        assertTrue(text.contains("Each optional field may be omitted independently."));
+        assertTrue(text.contains(
+                "Each optional field may be omitted independently, except remarks/ with damage OTHER."));
         assertTrue(text.contains(
                 "Omitted subtype and compatibility details default to unspecified;"));
         assertTrue(text.contains("omitted damage defaults to NONE;"));
-        assertTrue(text.contains("omitted remarks default to empty text."));
+        assertTrue(text.contains("omitted remarks default to empty text, except OTHER requires non-empty remarks."));
         assertTrue(text.contains(
                 "camera: sensor/<TEXT> mount/<TEXT> thread/<TEXT> battery/<TEXT>; damage:"));
         assertTrue(text.contains(
@@ -308,7 +317,8 @@ class HelpTest {
         assertTrue(text.contains("be serviceable and have no active loan."));
         assertTrue(text.contains("Loan IDs are assigned automatically from 001 to 999"));
         assertTrue(text.contains("explicit serviceable/ and damage/ assessment"));
-        assertTrue(text.contains("Omitted or empty remarks clear the item's previous remarks."));
+        assertTrue(text.contains("Remarks/ must be last. For OTHER, provide non-empty text after trimming."));
+        assertTrue(text.contains("For other damage values, omitted or empty remarks clear prior notes."));
         assertTrue(text.contains(
                 "compatibility attributes and bundle memberships."));
         assertTrue(text.contains("Return permanently marks the retained loan returned"));
@@ -357,15 +367,33 @@ class HelpTest {
     }
 
     @Test
-    void getText_bundles_explainSessionLifetimeCompositionAndAvailability() {
+    void getText_bundles_explainPersistenceCompositionAndAvailability() {
         String text = normaliseWhitespace(Help.getText());
 
         assertTrue(text.contains("Requires a name of 1-100 characters."));
-        assertTrue(text.contains("Bundles exist only for the current session"));
+        assertTrue(text.contains("Bundles and their equipment memberships are restored between application runs"));
         assertTrue(text.contains("at least one existing, serviceable, unloaned equipment item."));
         assertTrue(text.contains("An item may appear only once per bundle."));
         assertTrue(text.contains("exactly one camera, at least one lens and at least one battery."));
         assertTrue(text.contains("A tripod is optional, with at most one."));
+        assertTrue(text.contains("Format: remove-from-bundle id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]"));
+        assertTrue(text.contains("eligible for deletion after it has been removed from every bundle."));
+        assertTrue(proseFor("remove-from-bundle").contains(
+                "Successful removals are saved immediately; a save failure restores the previous memberships."));
+        assertFalse(text.contains("Bundles exist only for the current session"));
+        assertFalse(text.contains("Shows current-session bundles"));
+    }
+
+    @Test
+    void getText_bundleHistory_explainsBothSelectorsOrderingAndEmptyResults() {
+        String text = proseFor("history bundle");
+
+        assertTrue(labelledValues(Help.getText("history bundle"), "Format:")
+                .containsAll(List.of("history bundle/id/<BUNDLE ID>", "history bundle/name/<NAME>")));
+        assertTrue(text.contains(
+                "Includes active and returned loans for every equipment item in the selected bundle."));
+        assertTrue(text.contains("Results are sorted by issue date, earliest first, then Loan ID."));
+        assertTrue(text.contains("An empty bundle history and unknown bundle are reported clearly."));
     }
 
     @Test
@@ -388,7 +416,7 @@ class HelpTest {
         assertTrue(labelledValues(text, "Format:").containsAll(List.of("help", "help <COMMAND>", "help all")));
         assertTrue(labelledValues(text, "Example:").containsAll(List.of("help", "help loan", "help all")));
         text = normaliseWhitespace(text);
-        assertTrue(text.contains("Saves equipment and loans before exiting."));
+        assertTrue(text.contains("Saves equipment, loans and bundles before exiting."));
         assertTrue(text.contains("A save failure keeps the application running;"));
         assertTrue(text.contains("fix the reported file problem and retry bye."));
         assertFalse(text.contains("Format: repair"));

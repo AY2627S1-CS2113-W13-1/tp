@@ -13,7 +13,15 @@ public class Battery extends Equipment {
     public enum BatteryDamage {
         NONE,
         SWELLING,
-        CONTACT_DAMAGE
+        CONTACT_DAMAGE,
+
+        // @@author Rohita-29
+
+        WATER_DAMAGE,
+        LEAKING,
+        OTHER
+
+        // @@author
     }
 
     private final String capacity;

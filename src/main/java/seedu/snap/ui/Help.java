@@ -100,11 +100,12 @@ public final class Help {
                           tripod: thread/<TEXT>; damage: %s
 
                         Optional order: subtype fields in the order shown, then damage/, then final remarks/.
-                        Each optional field may be omitted independently.
+                        Each optional field may be omitted independently, except remarks/ with damage OTHER.
 
                         Omitted subtype and compatibility details default to unspecified;
                         omitted damage defaults to NONE;
-                        omitted remarks default to empty text. Text after final remarks/ is kept as remarks.
+                        omitted remarks default to empty text, except OTHER requires non-empty remarks.
+                        Text after final remarks/ is kept as remarks.
 
                         Compatibility comparisons ignore letter case. Missing comparison data produces UNKNOWN;
                         a known mismatch produces INCOMPATIBLE, even when another comparison value is unknown.
@@ -149,7 +150,8 @@ public final class Help {
 
                         Serviceability determines whether the item may be borrowed again; damage alone does not.
 
-                        Optional remarks/ must be last. Omitted or empty remarks clear the item's previous remarks.
+                        Remarks/ must be last. For OTHER, provide non-empty text after trimming.
+                        For other damage values, omitted or empty remarks clear prior notes.
                         The assessment replaces damage and remarks, preserving subtype details,
                         compatibility attributes and bundle memberships.
 
@@ -230,7 +232,7 @@ public final class Help {
                         Example: add-bundle name/Studio kit
                         Requires a name of 1-100 characters. Bundle IDs are assigned automatically, 001-999.
 
-                        Bundles exist only for the current session and are not saved between application runs.
+                        Bundles and their equipment memberships are restored between application runs after bye.
                         """)),
                 new CommandHelp("add-to-bundle", "Bundles", lineEndings("""
                         ADD EQUIPMENT TO BUNDLE
@@ -242,11 +244,29 @@ public final class Help {
                         A complete bundle has exactly one camera, at least one lens and at least one battery.
                         A tripod is optional, with at most one. Additional cameras and tripods are rejected.
                         """)),
+                new CommandHelp("remove-from-bundle", "Bundles", lineEndings("""
+                        REMOVE EQUIPMENT FROM BUNDLE
+                        Format: remove-from-bundle id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]
+                        Example: remove-from-bundle id/001 001
+                        Removes the requested memberships without deleting the equipment. This can make an item
+                        eligible for deletion after it has been removed from every bundle.
+                        Successful removals are saved immediately; a save failure restores the previous memberships.
+                        """)),
                 new CommandHelp("list bundles", "Bundles", lineEndings("""
                         LIST BUNDLES
                         Format: list bundles
                         Example: list bundles
-                        Shows current-session bundles, their equipment and whether their composition is complete.
+                        Shows saved and current bundles, their equipment and whether their composition is complete.
+                        """)),
+                new CommandHelp("history bundle", "Bundles", lineEndings("""
+                        BUNDLE LOAN HISTORY
+                        Format: history bundle/id/<BUNDLE ID>
+                        Example: history bundle/id/001
+                        Format: history bundle/name/<NAME>
+                        Example: history bundle/name/Studio kit
+                        Includes active and returned loans for every equipment item in the selected bundle.
+                        Results are sorted by issue date, earliest first, then Loan ID.
+                        An empty bundle history and unknown bundle are reported clearly.
                         """)),
                 new CommandHelp("help", "General", lineEndings("""
                         HELP
@@ -268,7 +288,7 @@ public final class Help {
                         EXIT
                         Format: bye
                         Example: bye
-                        Saves equipment and loans before exiting. A save failure keeps the application running;
+                        Saves equipment, loans and bundles before exiting. A save failure keeps the application running;
                         fix the reported file problem and retry bye.
                         """)));
     }

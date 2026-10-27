@@ -46,7 +46,8 @@ class HelpIntegrationTest {
     private static final List<String> HELP_COMMANDS = List.of("help", "help all", "help add", "help list",
             "help delete item", "help loan", "help return", "help delete loan", "help list loans", "help view loan",
             "help list overdue", "help history", "help filter", "help update", "help add-bundle",
-            "help add-to-bundle", "help list bundles", "help help", "help bye", "help unknown",
+            "help add-to-bundle", "help remove-from-bundle", "help list bundles", "help history bundle",
+            "help help", "help bye", "help unknown",
             "help list overdue extra", "help add i/Camera", "help Loan", "help all extra");
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
     private PrintStream originalOutput;
@@ -75,6 +76,7 @@ class HelpIntegrationTest {
         manager.executeInput("loan id/005 b/111 due/25-10-26");
         manager.executeInput("return loan/001 serviceable/no damage/SWELLING remarks/Needs repair");
         manager.executeInput("loan id/001 b/222 due/25-10-26");
+        readField(manager, "bundles", BundleHandler.class).saveToStorage();
         assertTrue(readField(manager, "bundles", BundleHandler.class).getBundleList().getFirst().isComplete());
         assertTrue(readField(manager, "equipment", EquipmentHandler.class).getEquipmentById("001").isLoaned());
         assertFalse(readField(manager, "equipment", EquipmentHandler.class)
@@ -150,8 +152,8 @@ class HelpIntegrationTest {
 
         List<String> lines = printed().lines().toList();
         assertTrue(lines.stream().allMatch(line -> line.length() <= 100));
-        assertEquals(19, lines.stream().filter("Format:"::equals).count());
-        assertEquals(19, lines.stream().filter("Example:"::equals).count());
+        assertEquals(22, lines.stream().filter("Format:"::equals).count());
+        assertEquals(22, lines.stream().filter("Example:"::equals).count());
         assertTrue(printed().contains(System.lineSeparator() + System.lineSeparator() + "Format:"
                 + System.lineSeparator() + "  "));
         assertTrue(printed().contains(System.lineSeparator() + System.lineSeparator() + "Example:"
@@ -174,7 +176,9 @@ class HelpIntegrationTest {
         "update | Format: update id/<ID>",
         "add-bundle | Format: add-bundle name/<NAME>",
         "add-to-bundle | Format: add-to-bundle id/<BUNDLE ID>",
+        "remove-from-bundle | Format: remove-from-bundle id/<BUNDLE ID>",
         "list bundles | Format: list bundles",
+        "history bundle | Format: history bundle/id/<BUNDLE ID>",
         "help | Format: help",
         "bye | Format: bye"
     })
@@ -239,6 +243,9 @@ class HelpIntegrationTest {
         assertTrue(printedContent().contains("Format: return loan/<LOAN ID>"));
         assertTrue(printedContent().contains("Format: view loan/<LOAN ID>"));
         assertTrue(printedContent().contains("Format: add-to-bundle id/<BUNDLE ID>"));
+        assertTrue(printedContent().contains("Format: remove-from-bundle id/<BUNDLE ID>"));
+        assertTrue(printedContent().contains("Format: history bundle/id/<BUNDLE ID>"));
+        assertTrue(printedContent().contains("Format: history bundle/name/<NAME>"));
         assertTrue(printedContent().contains("Format: bye"));
         assertTrue(printedContent().contains("Omitted issued/ defaults to today's date"));
     }
@@ -401,6 +408,7 @@ class HelpIntegrationTest {
         assertEquals(original, Files.readString(invalidLoans));
         assertFalse(Files.exists(invalidDirectory.resolve("equipment.txt")));
         assertFalse(Files.exists(invalidDirectory.resolve("loan-sequence.txt")));
+        assertFalse(Files.exists(invalidDirectory.resolve("bundles.txt")));
     }
 
     /** Captures object references as well as their values, including counters that help must not consume. */
@@ -460,10 +468,10 @@ class HelpIntegrationTest {
         }
     }
 
-    /** Returns the three persistent files used by the populated fixture. */
+    /** Returns every persistent file used by the populated fixture, including bundle membership. */
     private List<Path> storagePaths() {
         return List.of(dataDirectory.resolve("equipment.txt"), dataDirectory.resolve("loans.txt"),
-                dataDirectory.resolve("loan-sequence.txt"));
+                dataDirectory.resolve("loan-sequence.txt"), dataDirectory.resolve("bundles.txt"));
     }
 
     /** Repeats every help form so command names in a topic cannot execute or consume identifiers. */
@@ -490,7 +498,9 @@ class HelpIntegrationTest {
         assertTrue(printedContent().contains("view loan"));
         assertTrue(printedContent().contains("delete item"));
         assertTrue(printedContent().contains("add-to-bundle"));
+        assertTrue(printedContent().contains("remove-from-bundle"));
         assertTrue(printedContent().contains("list bundles"));
+        assertTrue(printedContent().contains("history bundle"));
         assertTrue(printed().lines().anyMatch(line -> line.matches("\\+-+\\+")));
         assertTrue(printed().lines().anyMatch(line -> line.startsWith("| ") && line.endsWith(" |")));
     }
