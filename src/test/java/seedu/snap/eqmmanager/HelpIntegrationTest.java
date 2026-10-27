@@ -153,8 +153,8 @@ class HelpIntegrationTest {
 
         List<String> lines = printed().lines().toList();
         assertTrue(lines.stream().allMatch(line -> line.length() <= 100));
-        assertEquals(25, lines.stream().filter("Format:"::equals).count());
-        assertEquals(25, lines.stream().filter("Example:"::equals).count());
+        assertEquals(26, lines.stream().filter("Format:"::equals).count());
+        assertEquals(26, lines.stream().filter("Example:"::equals).count());
         assertTrue(printed().contains(System.lineSeparator() + System.lineSeparator() + "Format:"
                 + System.lineSeparator() + "  "));
         assertTrue(printed().contains(System.lineSeparator() + System.lineSeparator() + "Example:"
