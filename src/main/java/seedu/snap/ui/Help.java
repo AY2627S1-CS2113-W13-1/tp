@@ -347,17 +347,29 @@ public final class Help {
         for (String group : List.of("Equipment", "Loans", "Bundles", "General")) {
             List<String> groupCommands = COMMANDS.stream().filter(command -> command.group().equals(group))
                     .map(CommandHelp::command).toList();
-            String commands = String.join(" | ", groupCommands);
-            String spacedRow = group + ": " + commands;
-            if (spacedRow.length() > TEXT_WIDTH - 4) {
-                commands = String.join("|", groupCommands);
-            }
-            appendMenuRow(menu, group + ": " + commands);
+            appendMenuGroup(menu, group, groupCommands);
         }
         appendMenuRow(menu, "");
         appendMenuRow(menu, "Type help <COMMAND> for details (for example, help loan or help list overdue).");
         appendMenuRow(menu, "Type help all for the complete reference.");
         return menu.append(border).toString();
+    }
+
+    /** Adds a command group to the menu, wrapping long groups without splitting command names. */
+    private static void appendMenuGroup(StringBuilder menu, String group, List<String> commands) {
+        String prefix = group + ": ";
+        String row = prefix;
+        for (String command : commands) {
+            String separator = row.equals(prefix) ? "" : " | ";
+            String candidate = row + separator + command;
+            if (candidate.length() > TEXT_WIDTH - 4 && !row.equals(prefix)) {
+                appendMenuRow(menu, row);
+                row = " ".repeat(prefix.length()) + command;
+            } else {
+                row = candidate;
+            }
+        }
+        appendMenuRow(menu, row);
     }
 
     /** Pads each menu row to the same width, including its ASCII borders. */

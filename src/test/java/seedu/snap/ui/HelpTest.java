@@ -110,13 +110,19 @@ class HelpTest {
         for (String group : List.of("equipment", "loan", "bundle")) {
             assertTrue(lowerCaseText.contains(group), "The menu should group " + group + " commands.");
         }
-        List<String> groupLines = text.lines().filter(line -> line.startsWith("| ") && line.endsWith(" |"))
+        List<String> menuRows = text.lines().filter(line -> line.startsWith("| ") && line.endsWith(" |"))
                 .map(line -> line.substring(2, line.length() - 2).stripTrailing())
-                .filter(line -> line.matches("(?:Equipment|Loans|Bundles|General): .*"))
+                .dropWhile(line -> !line.equals("snAp command menu"))
+                .skip(1)
+                .takeWhile(line -> !line.startsWith("Type help"))
+                .filter(line -> !line.isBlank())
                 .toList();
-        assertEquals(4, groupLines.size());
-        List<String> menuTopics = groupLines.stream()
+        assertEquals(4, menuRows.stream().filter(line -> line.matches("(?:Equipment|Loans|Bundles|General): .*"))
+                .count());
+        List<String> menuTopics = menuRows.stream()
                 .flatMap(line -> Arrays.stream(line.substring(line.indexOf(':') + 1).strip().split("\\s*\\|\\s*")))
+                .map(String::strip)
+                .filter(topic -> !topic.isEmpty())
                 .sorted().toList();
         assertEquals(TOPICS.stream().sorted().toList(), menuTopics,
                 "Each supported command must appear exactly once in the grouped menu.");
