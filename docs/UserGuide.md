@@ -573,8 +573,23 @@ its own success or error message. Valid items are added even if another requeste
 * Equipment must exist in the inventory and be `Available` when added.
 * An item cannot appear twice in the same bundle. It can appear in different bundles.
 * A bundle can contain only one camera and at most one tripod. Extra batteries and lenses are allowed.
+* Each item is compared with equipment already accepted into the bundle, including items accepted earlier
+  in the same command.
+* A known compatibility mismatch rejects only that item. Compatibility comparisons ignore letter case.
+* Missing compatibility details and equipment pairs without shared compatibility fields do not block addition.
 * A bundle is complete when it contains exactly one camera, at least one battery and at least one lens.
   A tripod is optional.
+
+The following fields are compared:
+
+| Equipment pair | Fields that must match when known |
+| --- | --- |
+| Camera and lens | Lens mount and sensor format |
+| Camera and battery | Battery type |
+| Camera and tripod | Tripod thread |
+
+For a camera and lens, a known mismatch in either field causes rejection, even if the other field is missing.
+Lens-battery, lens-tripod, battery-tripod and same-type pairs have no compatibility relationship and are allowed.
 
 Returning a serviceable item or deleting its active loan makes it available for a later `add-to-bundle` command.
 Unserviceable equipment cannot be added to a bundle. Existing bundle memberships are retained on return.

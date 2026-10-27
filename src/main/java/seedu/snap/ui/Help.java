@@ -292,6 +292,8 @@ public final class Help {
 
                         A complete bundle has exactly one camera, at least one lens and at least one battery.
                         A tripod is optional, with at most one. Additional cameras and tripods are rejected.
+                        Known compatibility mismatches are rejected. Missing compatibility details or unrelated
+                        equipment types do not block addition.
                         """)),
                 new CommandHelp("remove-from-bundle", "Bundles", lineEndings("""
                         REMOVE EQUIPMENT FROM BUNDLE
