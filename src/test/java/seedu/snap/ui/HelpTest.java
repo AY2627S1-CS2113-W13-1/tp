@@ -27,8 +27,8 @@ import seedu.snap.equipment.Tripod;
 /** Checks the command guide covers executable syntax, meaningful defaults and important restrictions. */
 class HelpTest {
     private static final List<String> TOPICS = List.of("add", "list", "show", "delete item", "loan", "return",
-            "delete loan",
-            "list loans", "view loan", "list overdue", "history", "filter", "update", "add-bundle", "add-to-bundle",
+            "delete loan", "update loan", "list loans", "view loan", "list borrower", "list overdue", "history",
+            "filter", "update", "maintain", "add-bundle", "add-to-bundle", "backup", "restore",
             "remove-from-bundle", "list bundles", "history bundle", "help", "bye");
 
     /** Supplies the user-facing syntax and example for each supported command. */
@@ -46,12 +46,20 @@ class HelpTest {
                 Arguments.of("return", "return loan/<LOAN ID> serviceable/<yes|no> damage/<DAMAGE> [remarks/<TEXT>]",
                         "return loan/001 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair"),
                 Arguments.of("delete loan", "delete loan/<LOAN ID>", "delete loan/001"),
+                Arguments.of("update loan", "update loan/<LOAN ID> [id/<ITEM ID>] [b/<BORROWER ID>]"
+                                + " [issued/DD-MM-YY] [due/DD-MM-YY]",
+                        "update loan/001 id/002 b/007 due/15-10-26"),
                 Arguments.of("list loans", "list loans", "list loans"),
                 Arguments.of("view loan", "view loan/<LOAN ID>", "view loan/001"),
+                Arguments.of("backup", "backup path/<DIRECTORY>", "backup path/backups/session-1"),
+                Arguments.of("restore", "restore path/<DIRECTORY>", "restore path/backups/session-1"),
+                Arguments.of("list borrower", "list borrower/<BORROWER ID>", "list borrower/002"),
                 Arguments.of("list overdue", "list overdue", "list overdue"),
                 Arguments.of("history", "history id/<ITEM ID>", "history id/001"),
                 Arguments.of("filter", "filter [id/<ID>] [i/<NAME>] [type/<TYPE>] [cond/<N|MIN-MAX>] [status/<STATUS>]",
                         "filter type/camera cond/1-3 status/available"),
+                Arguments.of("maintain", "maintain id/<ITEM ID> date/<DD-MM-YY> work/<DESCRIPTION> outcome/<OUTCOME>",
+                        "maintain id/001 date/27-10-26 work/Replaced battery outcome/Completed"),
                 Arguments.of("update", "update id/<ID> [i/<NAME>] [type/<TYPE>] [cond/<N>]",
                         "update id/001 i/Studio camera cond/5"),
                 Arguments.of("add-bundle", "add-bundle name/<NAME>", "add-bundle name/Studio kit"),
@@ -105,13 +113,19 @@ class HelpTest {
         for (String group : List.of("equipment", "loan", "bundle")) {
             assertTrue(lowerCaseText.contains(group), "The menu should group " + group + " commands.");
         }
-        List<String> groupLines = text.lines().filter(line -> line.startsWith("| ") && line.endsWith(" |"))
+        List<String> menuRows = text.lines().filter(line -> line.startsWith("| ") && line.endsWith(" |"))
                 .map(line -> line.substring(2, line.length() - 2).stripTrailing())
-                .filter(line -> line.matches("(?:Equipment|Loans|Bundles|General): .*"))
+                .dropWhile(line -> !line.equals("snAp command menu"))
+                .skip(1)
+                .takeWhile(line -> !line.startsWith("Type help"))
+                .filter(line -> !line.isBlank())
                 .toList();
-        assertEquals(4, groupLines.size());
-        List<String> menuTopics = groupLines.stream()
+        assertEquals(4, menuRows.stream().filter(line -> line.matches("(?:Equipment|Loans|Bundles|General): .*"))
+                .count());
+        List<String> menuTopics = menuRows.stream()
                 .flatMap(line -> Arrays.stream(line.substring(line.indexOf(':') + 1).strip().split("\\s*\\|\\s*")))
+                .map(String::strip)
+                .filter(topic -> !topic.isEmpty())
                 .sorted().toList();
         assertEquals(TOPICS.stream().sorted().toList(), menuTopics,
                 "Each supported command must appear exactly once in the grouped menu.");
@@ -176,10 +190,11 @@ class HelpTest {
     void getText_all_separatesEveryCommandWithSpacedFullWidthHeadingBands() {
         List<String> lines = Help.getText("all").lines().toList();
         List<String> headings = List.of("ADD EQUIPMENT", "LIST EQUIPMENT", "SHOW EQUIPMENT", "DELETE EQUIPMENT",
-                "ADD LOAN",
-                "RETURN EQUIPMENT", "DELETE LOAN", "LIST LOANS", "VIEW LOAN ISSUE CONDITION", "LIST OVERDUE LOANS",
-                "ITEM LOAN HISTORY", "FILTER EQUIPMENT", "UPDATE EQUIPMENT", "CREATE BUNDLE", "ADD EQUIPMENT TO BUNDLE",
-                "REMOVE EQUIPMENT FROM BUNDLE", "LIST BUNDLES", "BUNDLE LOAN HISTORY", "HELP", "EXIT");
+                "ADD LOAN", "RETURN EQUIPMENT", "DELETE LOAN", "UPDATE LOAN", "LIST LOANS", "VIEW LOAN ISSUE CONDITION",
+                "EQUIPMENT HELD BY MEMBER", "LIST OVERDUE LOANS", "ITEM LOAN HISTORY", "FILTER EQUIPMENT",
+                "UPDATE EQUIPMENT", "RECORD MAINTENANCE", "CREATE BUNDLE", "ADD EQUIPMENT TO BUNDLE",
+                "REMOVE EQUIPMENT FROM BUNDLE", "LIST BUNDLES", "BUNDLE LOAN HISTORY", "BACK UP DATA", "RESTORE DATA",
+                "HELP", "EXIT");
         String divider = "=".repeat(100);
 
         assertEquals(headings.size() * 2L, lines.stream().filter(divider::equals).count());
@@ -327,6 +342,8 @@ class HelpTest {
         assertTrue(text.contains("Return permanently marks the retained loan returned"));
         assertTrue(text.contains("cannot be returned twice or reactivated."));
         assertTrue(text.contains("Changing its numeric condition does not repair it."));
+        assertTrue(text.contains("Successful updates are saved to data/loans.txt before live records change."));
+        assertTrue(text.contains("Returned loans cannot be edited."));
     }
 
     @Test
@@ -338,6 +355,15 @@ class HelpTest {
         assertTrue(text.contains(
                 "Legacy loans without a saved snapshot report that the issue condition was not recorded."));
         assertTrue(text.contains("This read-only command does not change equipment, loans or saved records."));
+    }
+
+    @Test
+    void getText_maintenance_explainsRequiredFieldsAndPersistence() {
+        String text = normaliseWhitespace(Help.getText());
+
+        assertTrue(text.contains("Requires an existing Item ID, a valid maintenance date"));
+        assertTrue(text.contains("Maintenance records are saved to maintenance.txt"));
+        assertTrue(text.contains("Maintenance work: 1-200 characters; outcomes: 1-100 characters."));
     }
 
     @Test
@@ -413,13 +439,37 @@ class HelpTest {
     }
 
     @Test
+    void getText_backupAndRestore_explainConsistencyValidationAndNonDestructiveFailure() {
+        String text = normaliseWhitespace(Help.getText());
+
+        assertTrue(text.contains("Creates a complete backup containing equipment.txt, loans.txt,"
+                + " loan-sequence.txt and a manifest."));
+        assertTrue(text.contains("The destination must be outside the live data directory"));
+        assertTrue(text.contains("Validates the manifest and every equipment, loan and sequence record"));
+        assertTrue(text.contains("A failed restore leaves the current records unchanged."));
+        assertTrue(text.contains("clear session-only"));
+    }
+
+    @Test
+    void getText_borrowerLoans_explainsFilteringAliasesAndReadOnlyBehaviour() {
+        String text = normaliseWhitespace(Help.getText());
+
+        assertTrue(text.contains("EQUIPMENT HELD BY MEMBER"));
+        assertTrue(text.contains("The equivalent alias list member/<MEMBER ID> is also accepted."));
+        assertTrue(text.contains("Shows only active equipment held by the selected borrower"));
+        assertTrue(text.contains("Returned loans and loans held by other borrowers are excluded."));
+        assertTrue(text.contains("An unknown borrower ID and a known borrower with no active loans"));
+        assertTrue(text.contains("This read-only query does not change equipment, loans or saved files."));
+    }
+
+    @Test
     void getText_helpAndExit_explainArgumentsSaveFailureAndImplementedCommandsOnly() {
         String text = Help.getText();
 
         assertTrue(labelledValues(text, "Format:").containsAll(List.of("help", "help <COMMAND>", "help all")));
         assertTrue(labelledValues(text, "Example:").containsAll(List.of("help", "help loan", "help all")));
         text = normaliseWhitespace(text);
-        assertTrue(text.contains("Saves equipment, loans and bundles before exiting."));
+        assertTrue(text.contains("Saves equipment, loans, maintenance records and bundles before exiting."));
         assertTrue(text.contains("A save failure keeps the application running;"));
         assertTrue(text.contains("fix the reported file problem and retry bye."));
         assertFalse(text.contains("Format: repair"));

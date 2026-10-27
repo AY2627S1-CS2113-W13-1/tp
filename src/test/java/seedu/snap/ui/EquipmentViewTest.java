@@ -85,6 +85,34 @@ class EquipmentViewTest {
     }
 
     @Test
+    void inventory_pipeInName_keepsTableColumnsAndOriginalDetails() throws Exception {
+        EquipmentHandler handler = new EquipmentHandler();
+        Equipment item = handler.addEquipment("add i/Camera | Kit id/001 type/camera cond/1");
+
+        handler.viewAllEquipment();
+
+        String row = printed().lines().filter(line -> line.startsWith("| 001 |")).findFirst().orElseThrow();
+        String[] cells = row.split("\\|", -1);
+        assertEquals(7, cells.length);
+        assertEquals("Camera \\u007c Kit", cells[2].strip());
+        assertEquals("camera", cells[3].strip());
+        assertEquals("1", cells[4].strip());
+        assertEquals("Available", cells[5].strip());
+        assertEquals(96, row.length());
+        output.reset();
+
+        handler.viewEquipment(List.of(item));
+
+        assertTrue(printed().lines().anyMatch(row::equals));
+        assertEquals("Camera | Kit", item.getItemName());
+        output.reset();
+
+        handler.showEquipment("show id/001");
+
+        assertEquals("Camera | Kit", field("Name"));
+    }
+
+    @Test
     void inventory_andFilteredResults_useIdenticalTablesInOriginalOrder() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
         handler.addEquipment("add i/Camera id/002 type/camera cond/1");

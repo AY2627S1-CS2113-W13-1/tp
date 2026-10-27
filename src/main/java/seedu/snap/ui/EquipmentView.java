@@ -64,30 +64,26 @@ public final class EquipmentView {
         printField("Status", status(item));
         printField("Serviceable", item.isServiceable() ? "yes" : "no");
         printField("Active loan ID", item.getLoanId() == null ? "(none)" : item.getLoanId());
-        switch (item) {
-        case Camera camera -> {
+        if (item instanceof Camera camera) {
             printField("Sensor format", camera.getSensorFormat());
             printField("Lens mount", camera.getLensMount());
             printField("Tripod thread", camera.getTripodThread());
             printField("Battery type", camera.getBatteryType());
             printField("Damage", camera.getDamage().name());
-        }
-        case Lens lens -> {
+        } else if (item instanceof Lens lens) {
             printField("Zoom range", lens.getZoomRange());
             printField("Lens mount", lens.getLensMount());
             printField("Sensor format", lens.getSensorFormat());
             printField("Damage", lens.getDamage().name());
-        }
-        case Battery battery -> {
+        } else if (item instanceof Battery battery) {
             printField("Capacity", battery.getCapacity());
             printField("Battery type", battery.getBatteryType());
             printField("Damage", battery.getDamage().name());
-        }
-        case Tripod tripod -> {
+        } else if (item instanceof Tripod tripod) {
             printField("Thread", tripod.getThread());
             printField("Damage", tripod.getDamage().name());
-        }
-        default -> printField("Details", item.getDetails());
+        } else {
+            printField("Details", item.getDetails());
         }
         printField("Remarks", item.getRemarks().isEmpty() ? "(none)" : item.getRemarks());
     }
@@ -106,9 +102,9 @@ public final class EquipmentView {
         System.out.println(row);
     }
 
-    /** Truncates whole graphemes and marks truncation with ASCII dots. Control characters remain visible. */
+    /** Escapes column separators and controls before measuring, padding and truncating whole graphemes. */
     private static String cell(String value, int width) {
-        List<String> characters = graphemes(printable(value));
+        List<String> characters = graphemes(printable(value).replace("|", "\\u007c"));
         int total = characters.stream().mapToInt(EquipmentView::columns).sum();
         int limit = total <= width ? width : width - 3;
         StringBuilder text = new StringBuilder();

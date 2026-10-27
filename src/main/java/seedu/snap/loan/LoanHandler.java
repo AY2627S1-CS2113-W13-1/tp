@@ -24,10 +24,12 @@ import java.util.Objects;
 import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
+import seedu.snap.exceptions.LoanBorrowerUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 import seedu.snap.exceptions.LoanReturnUnsuccessful;
 import seedu.snap.exceptions.LoanHistoryUnsuccessful;
 import seedu.snap.exceptions.LoanViewingUnsuccessful;
+import seedu.snap.exceptions.LoanUpdateUnsuccessful;
 
 /** Parses loan commands and stores successfully created loans. */
 public class LoanHandler {
@@ -210,6 +212,94 @@ public class LoanHandler {
         assert numLoans == loans.size() : "numLoans should match the size of the loans list";
         logger.log(Level.INFO, "Added loan {0} for item ID {1}.", new Object[]{loanId, itemId});
         return loan;
+    }
+
+    /** Updates one active loan after validating every supplied field and saving the proposal first. */
+    public Loan updateLoan(String input) throws LoanUpdateUnsuccessful {
+        LoanUpdate update;
+        try {
+            update = LoanUpdate.parse(input);
+        } catch (LoanUpdateUnsuccessful exception) {
+            logger.log(Level.WARNING, "Loan update rejected: {0}", exception.getMessage());
+            throw exception;
+        }
+        Loan loan = findLoanForUpdate(update.loanId());
+        if (loan.isReturned()) {
+            throw rejectLoanUpdate("Loan " + update.loanId()
+                    + " has already been returned and cannot be updated.");
+        }
+
+        Equipment current;
+        Equipment replacement;
+        try {
+            current = findEquipment(loan.getItemId());
+            if (!loan.ownsEquipment(current)) {
+                throw rejectLoanUpdate("Loan " + loan.getLoanId()
+                        + " no longer owns its equipment. No update was recorded.");
+            }
+            replacement = update.changesItem() ? findEquipment(update.itemId()) : current;
+            if (replacement != current) {
+                if (hasActiveLoanForItem(replacement.getItemId()) || replacement.isLoaned()) {
+                    throw rejectLoanUpdate("Item ID " + replacement.getItemId()
+                            + " is already loaned out.");
+                }
+                if (!replacement.isServiceable()) {
+                    throw rejectLoanUpdate("Item ID " + replacement.getItemId()
+                            + " is unserviceable and cannot be assigned to a loan.");
+                }
+            }
+        } catch (LoanAdditionUnsuccessful exception) {
+            logger.log(Level.WARNING, "Loan update equipment validation failed", exception);
+            throw new LoanUpdateUnsuccessful(exception.getMessage());
+        }
+
+        String borrowerId = update.changesBorrower() ? update.borrowerId() : loan.getBorrowerId();
+        LocalDateTime issuedDate = update.changesIssuedDate() ? update.issuedDate() : loan.getIssuedDate();
+        LocalDateTime dueDate = update.changesDueDate() ? update.dueDate() : loan.getDueDate();
+        if (issuedDate.isAfter(dueDate)) {
+            throw rejectLoanUpdate("Issued date must not be later than the due date.");
+        }
+
+        Loan proposal = loan.updatedCopy(replacement.getItemId(), replacement.getRecordId(),
+                borrowerId, issuedDate, dueDate, replacement);
+        ArrayList<Loan> proposedLoans = new ArrayList<>(loans);
+        proposedLoans.set(proposedLoans.indexOf(loan), proposal);
+        try {
+            save(proposedLoans, nextLoanNumber);
+        } catch (IOException exception) {
+            logger.log(Level.WARNING, "Loan update could not be saved", exception);
+            throw new LoanUpdateUnsuccessful("Could not save loan update: " + exception.getMessage());
+        }
+
+        loan.applyUpdate(proposal, replacement);
+        assert loan.getLoanId().equals(update.loanId()) : "A loan update must preserve the loan ID";
+        assert numLoans == loans.size() : "Updating a loan must not change the loan count";
+        logger.log(Level.INFO, "Updated loan {0}; item ID {1}, borrower ID {2}.",
+                new Object[]{loan.getLoanId(), loan.getItemId(), loan.getBorrowerId()});
+        return loan;
+    }
+
+    /** Finds exactly one loan before an update can change its details. */
+    private Loan findLoanForUpdate(String loanId) throws LoanUpdateUnsuccessful {
+        Loan match = null;
+        for (Loan candidate : loans) {
+            if (loanId.equals(candidate.getLoanId())) {
+                if (match != null) {
+                    throw rejectLoanUpdate("Loan ID " + loanId + " is not unique.");
+                }
+                match = candidate;
+            }
+        }
+        if (match == null) {
+            throw rejectLoanUpdate("No loan found for loan ID " + loanId + ".");
+        }
+        return match;
+    }
+
+    /** Logs and creates a consistent rejection for a loan update that failed business validation. */
+    private LoanUpdateUnsuccessful rejectLoanUpdate(String message) {
+        logger.log(Level.WARNING, "Loan update rejected: {0}", message);
+        return new LoanUpdateUnsuccessful(message);
     }
 
     /** Finds one matching item without changing its availability, including during reload validation. */
@@ -764,6 +854,67 @@ public class LoanHandler {
             System.out.println("Earlier returned loans for this Item ID cannot be attributed to the current item. "
                     + "Use list loans to view them.");
         }
+    }
+
+    /**
+     * Returns active loans held by the borrower in a borrower query.
+     * A borrower is known when at least one current or returned loan uses the ID.
+     *
+     * @param input command in the form {@code list borrower/002}
+     * @return an unmodifiable snapshot containing only the borrower's active loans
+     * @throws LoanBorrowerUnsuccessful if syntax is invalid or the borrower is unknown
+     */
+    public List<Loan> getActiveLoansForBorrower(String input) throws LoanBorrowerUnsuccessful {
+        LoanBorrowerQuery query = parseBorrowerQuery(input);
+        return findActiveLoansForBorrower(query);
+    }
+
+    /** Displays the active equipment held by a borrower without changing application state. */
+    public void viewActiveLoansForBorrower(String input) throws LoanBorrowerUnsuccessful {
+        LoanBorrowerQuery query = parseBorrowerQuery(input);
+        List<Loan> activeLoans = findActiveLoansForBorrower(query);
+        if (activeLoans.isEmpty()) {
+            System.out.println("No active loans found for borrower ID " + query.borrowerId() + ".");
+        } else {
+            System.out.println("Equipment currently held by borrower ID " + query.borrowerId() + ":");
+            printLoans(activeLoans);
+        }
+    }
+
+    /** Parses and logs malformed borrower queries before they reach the loan collection. */
+    private LoanBorrowerQuery parseBorrowerQuery(String input) throws LoanBorrowerUnsuccessful {
+        try {
+            return LoanBorrowerQuery.parse(input);
+        } catch (LoanBorrowerUnsuccessful exception) {
+            logger.log(Level.WARNING, "Borrower loan query rejected: {0}", exception.getMessage());
+            throw exception;
+        }
+    }
+
+    /** Selects a borrower's active loans while preserving the stored loan order and all state. */
+    private List<Loan> findActiveLoansForBorrower(LoanBorrowerQuery query)
+            throws LoanBorrowerUnsuccessful {
+        assert numLoans == loans.size() : "numLoans should match the size of the loans list";
+        ArrayList<Loan> activeLoans = new ArrayList<>();
+        boolean borrowerKnown = false;
+        for (Loan loan : loans) {
+            assert loan != null : "Loan list must not contain null items";
+            if (query.borrowerId().equals(loan.getBorrowerId())) {
+                borrowerKnown = true;
+                if (!loan.isReturned()) {
+                    activeLoans.add(loan);
+                }
+            }
+        }
+        if (!borrowerKnown) {
+            logger.log(Level.WARNING, "Borrower loan query found no borrower with ID {0}.", query.borrowerId());
+            throw new LoanBorrowerUnsuccessful("No member found for borrower ID " + query.borrowerId() + ".");
+        }
+        assert activeLoans.stream().allMatch(loan -> query.borrowerId().equals(loan.getBorrowerId())
+                && !loan.isReturned()) : "Borrower query must return only active matching loans";
+        logger.log(Level.INFO, "Viewed {0} active loan(s) for borrower ID {1}.",
+                new Object[]{activeLoans.size(), query.borrowerId()});
+        return List.copyOf(activeLoans);
     }
 
     /** Checks history syntax without reading or writing any record. */

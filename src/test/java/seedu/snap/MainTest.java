@@ -164,7 +164,7 @@ class MainTest {
         Files.writeString(dataDirectory.resolve("equipment.txt"), "not an equipment record\n");
         Files.writeString(dataDirectory.resolve("loans.txt"), "not a loan record\n");
 
-        String output = runApplication("list\n", true);
+        String output = runApplication("list\nbye\n", true);
 
         assertTrue(output.contains("Could not load saved data: equipment.txt:"));
         assertTrue(output.contains("loans.txt: Invalid loan record on line 1:"));

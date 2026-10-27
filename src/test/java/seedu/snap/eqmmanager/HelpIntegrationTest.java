@@ -45,7 +45,8 @@ import seedu.snap.loan.LoanHandler;
 class HelpIntegrationTest {
     private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-10-24T12:00:00Z"), ZoneOffset.UTC);
     private static final List<String> HELP_COMMANDS = List.of("help", "help all", "help add", "help list", "help show",
-            "help delete item", "help loan", "help return", "help delete loan", "help list loans", "help view loan",
+            "help delete item", "help loan", "help return", "help delete loan", "help update loan", "help list loans",
+            "help view loan",
             "help list overdue", "help history", "help filter", "help update", "help add-bundle",
             "help add-to-bundle", "help remove-from-bundle", "help list bundles", "help history bundle",
             "help help", "help bye", "help unknown",
@@ -153,8 +154,8 @@ class HelpIntegrationTest {
 
         List<String> lines = printed().lines().toList();
         assertTrue(lines.stream().allMatch(line -> line.length() <= 100));
-        assertEquals(23, lines.stream().filter("Format:"::equals).count());
-        assertEquals(23, lines.stream().filter("Example:"::equals).count());
+        assertEquals(28, lines.stream().filter("Format:"::equals).count());
+        assertEquals(28, lines.stream().filter("Example:"::equals).count());
         assertTrue(printed().contains(System.lineSeparator() + System.lineSeparator() + "Format:"
                 + System.lineSeparator() + "  "));
         assertTrue(printed().contains(System.lineSeparator() + System.lineSeparator() + "Example:"
@@ -170,12 +171,17 @@ class HelpIntegrationTest {
         "loan | Format: loan id/<ITEM ID>",
         "return | Format: return loan/<LOAN ID>",
         "delete loan | Format: delete loan/<LOAN ID>",
+        "update loan | Format: update loan/<LOAN ID>",
         "list loans | Format: list loans",
         "view loan | Format: view loan/<LOAN ID>",
+        "backup | Format: backup path/<DIRECTORY>",
+        "restore | Format: restore path/<DIRECTORY>",
+        "list borrower | Format: list borrower/<BORROWER ID>",
         "list overdue | Format: list overdue",
         "history | Format: history id/<ITEM ID>",
         "filter | Format: filter [id/<ID>]",
         "update | Format: update id/<ID>",
+        "maintain | Format: maintain id/<ITEM ID>",
         "add-bundle | Format: add-bundle name/<NAME>",
         "add-to-bundle | Format: add-to-bundle id/<BUNDLE ID>",
         "remove-from-bundle | Format: remove-from-bundle id/<BUNDLE ID>",

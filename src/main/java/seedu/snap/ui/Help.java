@@ -10,6 +10,7 @@ import seedu.snap.equipment.Camera;
 import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.Lens;
 import seedu.snap.equipment.Tripod;
+import seedu.snap.maintenance.MaintenanceRecord;
 
 /** Provides command help without reading or changing application records. */
 public final class Help {
@@ -74,13 +75,15 @@ public final class Help {
 
                 Equipment, loan and bundle IDs: exactly three digits, 001-999. Borrower IDs: 000-999.
                 Equipment names: 1-%d characters; condition: %d-%d; remarks: 0-%d characters after trimming.
+                Maintenance work: 1-%d characters; outcomes: 1-%d characters. Both must remain on one line.
                 Type details: 1-100 characters. Type details and remarks must remain on one line.
 
                 Empty supplied details, damage, IDs or dates are invalid; defaults apply to omitted fields.
                 Wrapped formats and examples must be entered as a single line.
                 """,
                 Equipment.MAX_NAME_LENGTH, Equipment.MIN_CONDITION, Equipment.MAX_CONDITION,
-                Equipment.MAX_REMARKS_LENGTH)), false);
+                Equipment.MAX_REMARKS_LENGTH, MaintenanceRecord.MAX_WORK_LENGTH,
+                MaintenanceRecord.MAX_OUTCOME_LENGTH)), false);
     }
 
     /** Keeps each command's description in one immutable entry for every help view. */
@@ -187,6 +190,18 @@ public final class Help {
 
                         Deleting returned history leaves newer active loans unchanged. Deleted IDs are never reused.
                         """)),
+                new CommandHelp("update loan", "Loans", lineEndings("""
+                        UPDATE LOAN
+                        Format: update loan/<LOAN ID> [id/<ITEM ID>] [b/<BORROWER ID>] [issued/DD-MM-YY] [due/DD-MM-YY]
+                        Example: update loan/001 id/002 b/007 due/15-10-26
+                        Requires one existing active Loan ID and at least one update field,
+                        in any order, each prefix once.
+                        The Loan ID remains unchanged; omitted fields retain their current values.
+                        A replacement item must exist, be serviceable and have no active loan.
+                        Returned loans cannot be edited.
+                        The issue date must not be later than the due date. Invalid updates leave records unchanged.
+                        Successful updates are saved to data/loans.txt before live records change.
+                        """)),
                 new CommandHelp("list loans", "Loans", lineEndings("""
                         LIST LOANS
                         Format: list loans
@@ -200,6 +215,16 @@ public final class Help {
                         Shows the equipment type, condition, damage and remarks recorded when the loan was issued.
                         Legacy loans without a saved snapshot report that the issue condition was not recorded.
                         This read-only command does not change equipment, loans or saved records.
+                        """)),
+                new CommandHelp("list borrower", "Loans", lineEndings("""
+                        EQUIPMENT HELD BY MEMBER
+                        Format: list borrower/<BORROWER ID>
+                        Example: list borrower/002
+                        The equivalent alias list member/<MEMBER ID> is also accepted.
+                        Shows only active equipment held by the selected borrower, with loan details.
+                        Returned loans and loans held by other borrowers are excluded.
+                        An unknown borrower ID and a known borrower with no active loans receive clear messages.
+                        This read-only query does not change equipment, loans or saved files.
                         """)),
                 new CommandHelp("list overdue", "Loans", lineEndings("""
                         LIST OVERDUE LOANS
@@ -239,6 +264,17 @@ public final class Help {
                         Omitted fields retain their current values. Type is fixed; type/ must match the current type.
                         Updates retain subtype details, damage, remarks, serviceability, loans and bundle membership.
                         """)),
+                new CommandHelp("maintain", "Equipment", lineEndings(String.format(Locale.ROOT, """
+                        RECORD MAINTENANCE
+                        Format: maintain id/<ITEM ID> date/<DD-MM-YY> work/<DESCRIPTION> outcome/<OUTCOME>
+                        Example: maintain id/001 date/27-10-26 work/Replaced battery outcome/Completed
+                        Requires an existing Item ID, a valid maintenance date that is not in the future,
+                        a non-empty work description and
+                        outcome. Work descriptions and outcomes are trimmed, remain on one line and have documented
+                        length limits.
+                        Maintenance records are saved to maintenance.txt and remain associated with the physical item.
+                        Maintenance work: 1-%d characters; outcomes: 1-%d characters.
+                        """, MaintenanceRecord.MAX_WORK_LENGTH, MaintenanceRecord.MAX_OUTCOME_LENGTH))),
                 new CommandHelp("add-bundle", "Bundles", lineEndings("""
                         CREATE BUNDLE
                         Format: add-bundle name/<NAME>
@@ -281,6 +317,22 @@ public final class Help {
                         Results are sorted by issue date, earliest first, then Loan ID.
                         An empty bundle history and unknown bundle are reported clearly.
                         """)),
+                new CommandHelp("backup", "General", lineEndings("""
+                        BACK UP DATA
+                        Format: backup path/<DIRECTORY>
+                        Example: backup path/backups/session-1
+                        Creates a complete backup containing equipment.txt, loans.txt, loan-sequence.txt and a manifest.
+                        The destination must be outside the live data directory and must not already exist.
+                        Backup creation does not change live records. Paths may contain spaces after path/.
+                        """)),
+                new CommandHelp("restore", "General", lineEndings("""
+                        RESTORE DATA
+                        Format: restore path/<DIRECTORY>
+                        Example: restore path/backups/session-1
+                        Validates the manifest and every equipment, loan and sequence record before replacing live data.
+                        A failed restore leaves the current records unchanged. Successful restores clear session-only
+                        bundles because bundles are not part of the persistent backup.
+                        """)),
                 new CommandHelp("help", "General", lineEndings("""
                         HELP
                         Format: help
@@ -301,8 +353,8 @@ public final class Help {
                         EXIT
                         Format: bye
                         Example: bye
-                        Saves equipment, loans and bundles before exiting. A save failure keeps the application running;
-                        fix the reported file problem and retry bye.
+                        Saves equipment, loans, maintenance records and bundles before exiting. A save failure keeps
+                        the application running; fix the reported file problem and retry bye.
                         """)));
     }
 
@@ -320,14 +372,31 @@ public final class Help {
         appendMenuRow(menu, "snAp command menu");
         menu.append(border);
         for (String group : List.of("Equipment", "Loans", "Bundles", "General")) {
-            String commands = COMMANDS.stream().filter(command -> command.group().equals(group))
-                    .map(CommandHelp::command).collect(Collectors.joining(" | "));
-            appendMenuRow(menu, group + ": " + commands);
+            List<String> groupCommands = COMMANDS.stream().filter(command -> command.group().equals(group))
+                    .map(CommandHelp::command).toList();
+            appendMenuGroup(menu, group, groupCommands);
         }
         appendMenuRow(menu, "");
         appendMenuRow(menu, "Type help <COMMAND> for details (for example, help loan or help list overdue).");
         appendMenuRow(menu, "Type help all for the complete reference.");
         return menu.append(border).toString();
+    }
+
+    /** Adds a command group to the menu, wrapping long groups without splitting command names. */
+    private static void appendMenuGroup(StringBuilder menu, String group, List<String> commands) {
+        String prefix = group + ": ";
+        String row = prefix;
+        for (String command : commands) {
+            String separator = row.equals(prefix) ? "" : " | ";
+            String candidate = row + separator + command;
+            if (candidate.length() > TEXT_WIDTH - 4 && !row.equals(prefix)) {
+                appendMenuRow(menu, row);
+                row = " ".repeat(prefix.length()) + command;
+            } else {
+                row = candidate;
+            }
+        }
+        appendMenuRow(menu, row);
     }
 
     /** Pads each menu row to the same width, including its ASCII borders. */

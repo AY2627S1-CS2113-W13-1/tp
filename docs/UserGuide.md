@@ -7,8 +7,8 @@ title: User Guide
 
 ## Introduction
 
-snAp tracks individual pieces of equipment, their loans and equipment bundles. Equipment, loan and bundle
-records are retained between application sessions.
+snAp tracks individual pieces of equipment, their maintenance records, loans and equipment bundles. Equipment,
+maintenance, loan and bundle records are retained between application sessions.
 
 ## Quick Start
 
@@ -99,6 +99,23 @@ Equipment name, Item ID, type and numeric condition remain required when adding 
 Loans require Item ID, borrower ID and due date. Returns require loan ID, serviceability and damage.
 There is no default due date or serviceability decision.
 
+## Recording maintenance: `maintain`
+
+Format: `maintain id/[ITEM ID] date/[DD-MM-YY] work/[DESCRIPTION] outcome/[OUTCOME]`
+
+Example: `maintain id/001 date/27-10-26 work/Replaced battery outcome/Completed`
+
+This records completed maintenance work for an existing equipment item. The `ITEM ID` must identify an item in the
+current inventory. The date must use `DD-MM-YY` and cannot be later than today's date. Both `DESCRIPTION` and
+`OUTCOME` must be non-empty single-line values. Work descriptions may contain up to 200 characters and outcomes may contain up to 100 characters after
+trimming.
+
+The record is associated with the physical equipment identity rather than only the visible Item ID. This prevents
+maintenance records from being attached to a replacement item if an Item ID is reused later. Records are saved in
+`data/maintenance.txt` and are loaded when the application starts again.
+
+Invalid commands, unknown Item IDs, invalid dates and failed saves leave existing maintenance records unchanged.
+
 ## Adding equipment: `add`
 
 Format: `add i/[ITEM] id/[ITEM ID] type/[TYPE] cond/[CONDITION] [TYPE DETAIL] [damage/[DAMAGE]] [remarks/[REMARKS]]`
@@ -177,6 +194,7 @@ rules. The result count appears below the table.
 
 Names that do not fit end in `...`. Type-specific fields, damage and remarks are available through `show`,
 so long values do not expand the table. An empty inventory shows a count of zero and a valid `add` example.
+Vertical bars in table values appear as `\u007c` to keep the columns separate. Use `show` to see the original text.
 
 ## Viewing full equipment details: `show`
 
@@ -361,6 +379,34 @@ Deleting an active loan releases its equipment without changing its serviceabili
 Deleting returned loan history leaves any
 newer active loan and the equipment's `Loaned` status unchanged.
 
+## Updating loan details: `update loan`
+
+Format: `update loan/[LOAN ID] [id/[ITEM ID]] [b/[BORROWER ID]] [issued/DD-MM-YY] [due/DD-MM-YY]`
+
+Example:
+
+```text
+update loan/001 b/007 due/15-10-26
+update loan/001 id/002 b/007 issued/03-10-26 due/15-10-26
+```
+
+Use the unique loan ID shown by `list loans`. Supply at least one field to update, in any order, once each.
+The loan ID remains unchanged, and omitted fields retain their current values. The supported fields are:
+
+* `id/` changes the equipment assigned to the active loan. The replacement must exist, be serviceable and have
+  no active loan. Its equipment record identity is retained so availability remains correct after a restart.
+* `b/` changes the three-digit borrower ID.
+* `issued/` changes the issue date.
+* `due/` changes the due date.
+
+The effective issue date must not be later than the effective due date. Unknown loan IDs, malformed IDs or dates,
+duplicate fields, unavailable equipment and returned loans are rejected. This project stores borrower IDs rather than
+borrower profiles, so borrower validation is limited to the documented three-digit identifier format.
+
+The complete proposed loan list is saved before the live loan and equipment associations change. If validation or
+saving fails, the original loan, equipment availability and saved file remain unchanged. Successful edits remain after
+restarting the application.
+
 ## Filtering equipment: `filter`
 
 Format: `filter [id/ITEM ID] [i/NAME] [type/TYPE] [cond/CONDITION] [status/STATUS]`
@@ -473,7 +519,7 @@ so a reused visible Item ID cannot inherit the wrong historical membership.
 
 Successful equipment additions, updates, deletions and return assessments are saved automatically in
 `data/equipment.txt`, relative to the directory from which the application is run.
-Successful loan additions, returns and deletions are saved in
+Successful loan additions, updates, returns and deletions are saved in
 `data/loans.txt`, the next unused loan ID is saved in `data/loan-sequence.txt`, and bundle memberships are saved
 in `data/bundles.txt`. Records are loaded when the application starts again. A final save is also attempted when
 `bye` is entered; if it fails, the application reports the affected file and lets you retry.
@@ -519,9 +565,32 @@ Existing loan records without loan IDs are assigned IDs in file order on first l
 These IDs remain stable on later restarts. The sequence file preserves the next unused ID even when loan records
 are deleted. Equipment records retain their details and remarks; loan associations are restored from the loan records.
 
-To transfer your records, copy `data/equipment.txt`, `data/loans.txt`, `data/loan-sequence.txt` and
-`data/bundles.txt` to the same location on the other computer. If a file cannot be read or contains invalid or
+To transfer your records, copy `data/equipment.txt`, `data/loans.txt`, `data/loan-sequence.txt`,
+`data/bundles.txt` and `data/maintenance.txt` to the same location on the other computer. If a file cannot be read or contains invalid or
 duplicate records, the application reports the problem and stops.
+
+## Backing up and restoring records
+
+Format: `backup path/[DIRECTORY]`
+
+Example: `backup path/backups/session-1`
+
+The `backup` command creates a new directory containing `equipment.txt`, `loans.txt`, `loan-sequence.txt` and a
+checksum manifest. The three records are captured as one logical snapshot. The destination must be outside the live
+data directory and must not already exist, so an existing backup cannot be silently overwritten. Empty equipment and
+loan records are represented by valid empty files, while the sequence file records the next available loan ID.
+Backup creation is read-only with respect to the live records.
+
+Format: `restore path/[DIRECTORY]`
+
+Example: `restore path/backups/session-1`
+
+The `restore` command verifies the manifest and loads all three records in an isolated temporary location before
+replacing the live files. Equipment, loans and the loan sequence are restored together; active loans mark their
+equipment as `Loaned`, returned loans remain in history, and the next loan ID is preserved. If the backup is missing,
+tampered with, malformed, incomplete, duplicated or inconsistent, the restore is rejected and the current live files
+and in-memory state remain unchanged. Successful restores clear session-only bundles because bundles are not included
+in the persistent backup.
 
 ## Errors
 
@@ -544,12 +613,16 @@ duplicate records, the application reports the problem and stops.
 | Add loan | `loan id/[ITEM ID] b/[BORROWER ID] [issued/DD-MM-YY] due/[DD-MM-YY]` |
 | Return equipment | `return loan/[LOAN ID] serviceable/[yes|no] damage/[DAMAGE|none] [remarks/[REMARKS]]` |
 | Delete loan | `delete loan/[LOAN ID]` |
+| Update loan | `update loan/[LOAN ID] [id/[ITEM ID]] [b/[BORROWER ID]] [issued/DD-MM-YY] [due/DD-MM-YY]` |
 | List equipment | `list` |
 | Show full equipment details | `show id/[ITEM ID]` |
 | List loans | `list loans` |
 | View issue-time equipment condition | `view loan/[LOAN ID]` |
+| Back up equipment and loan records | `backup path/[DIRECTORY]` |
+| Restore equipment and loan records | `restore path/[DIRECTORY]` |
 | View item loan history | `history id/[ITEM ID]` |
 | View bundle loan history | `history bundle/id/[BUNDLE ID]` or `history bundle/name/[NAME]` |
+| Record maintenance work | `maintain id/[ITEM ID] date/[DD-MM-YY] work/[DESCRIPTION] outcome/[OUTCOME]` |
 | List overdue loans | `list overdue` |
 | Filter equipment | `filter [id/ID] [i/NAME] [type/TYPE] [cond/1-3] [status/available]` |
 | Update equipment | `update id/ID [i/NAME] [type/TYPE] [cond/CONDITION]` |
