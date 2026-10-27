@@ -27,7 +27,7 @@ they are not a description of the v1.0 JAR.
 ## Design
 
 The following sections explain the architecture and implementation of equipment management, loans,
-returns, history, optional fields, help and shared logging.
+returns, history, maintenance, optional fields, help, backup and restore, and shared logging.
 
 Diagrams omit minor helpers and repetitive calls; `...` omits parameters. Named and unnamed object lifelines
 use `item:Equipment` and `:Equipment` notation. Class and utility lifelines receive static calls.
@@ -52,15 +52,18 @@ the feature sequence diagrams illustrate execution order for individual commands
 | Equipment | `EquipmentHandler`, `EquipmentFilter`, `Equipment` and its subclasses | Manages the inventory, filtering, updates and subtype details. |
 | Loans | `LoanHandler`, `Loan` | Manages borrowing, returns, history and overdue queries. |
 | Bundles | `BundleHandler`, `Bundle` | Manages reusable equipment groups and restores their memberships between sessions. |
-| File storage | `EquipmentStorage`, `BundleStorage`, `LoanStorage`, `LoanReturnStorage` | Loads and saves records, including coordinated return saves. |
+| Maintenance | `MaintenanceHandler`, `MaintenanceRecord` | Validates and records completed maintenance against a physical equipment identity. |
+| File storage | `EquipmentStorage`, `BundleStorage`, `LoanStorage`, `LoanReturnStorage`, `MaintenanceStorage` | Loads and saves records, including coordinated return and maintenance saves. |
 
 Both `LoanHandler` and `BundleHandler` use the same `EquipmentHandler` created by `EqmManager`.
 They therefore work with the current equipment objects and availability. For example, updating an item's
 name changes the item seen by an existing loan or bundle without replacing its equipment reference.
 
 The file-storage box groups the existing utilities. Default paths are `data/equipment.txt`,
-`data/bundles.txt`, `data/loans.txt` and `data/loan-sequence.txt`. The [logging section](#shared-logging-and-equipment-assertions)
-explains the shared file handler and cleanup.
+`data/bundles.txt`, `data/loans.txt`, `data/loan-sequence.txt` and `data/maintenance.txt`. The backup format
+contains the equipment, loan and sequence files plus a checksum manifest; bundle and maintenance files are not part
+of the backup format. The [logging section](#shared-logging-and-equipment-assertions) explains the shared file
+handler and cleanup.
 
 Build and run with Java 25. Gradle starts `seedu.snap.Main`; `shadowJar` produces
 `build/libs/snAp.jar`. The `run` and `test` tasks enable assertions. For the packaged JAR,
@@ -441,6 +444,110 @@ existing equipment loan and serviceability state. They do not create a second eq
 messages. The read-only integration fixture also repeats list, filter and show requests against populated,
 empty, reloaded and blocked storage, comparing record references, values, counters, file bytes and timestamps.
 
+### Recording maintenance records
+
+#### Purpose and responsibilities
+
+The `maintain` command records completed work for an existing equipment item. Maintenance is kept as a separate
+history rather than being stored as a mutable field on `Equipment`, so multiple activities can be retained without
+changing equipment or loan records.
+
+| Class | Responsibility |
+| --- | --- |
+| `MaintenanceHandler` | Parses commands, validates dates and Item IDs, resolves equipment and coordinates safe saves. |
+| `MaintenanceRecord` | Stores one immutable maintenance date, work description, outcome and permanent equipment identity. |
+| `MaintenanceStorage` | Loads and saves tab-separated UTF-8 records using temporary-file replacement. |
+| `EqmManager` | Loads maintenance history at startup, routes `maintain` and saves the history on exit. |
+
+#### Command and identity flow
+
+For a command such as `maintain id/001 date/27-10-26 work/Repair outcome/Completed`,
+`EqmManager` delegates to `MaintenanceHandler`. The handler validates the exact command format, the three-digit
+visible Item ID, the strict date format and the maximum text lengths. Future dates are rejected because the records
+represent completed maintenance. The application clock is injected into the handler so this rule is deterministic
+in tests.
+
+After resolving the current equipment object, the handler creates the record using `Equipment.getRecordId()` rather
+than storing only the visible Item ID. It saves a proposed list first and appends the new record to the live list
+only after the save succeeds. This prevents an in-memory record from existing without its corresponding file entry.
+
+The permanent record identity is important when an Item ID is reused. Deleting item `001` and later adding another
+item with ID `001` creates a different permanent record identity. Maintenance entries therefore remain attached to
+the original physical item instead of appearing in the replacement item's history.
+
+#### Persistence, diagnostics and failure handling
+
+`MaintenanceStorage` stores each record as a tab-separated line containing the permanent equipment identity, date,
+work and outcome. It rejects malformed identities, dates, empty fields, line breaks and tabs. Saving writes the
+complete proposed list to a temporary file before replacing `data/maintenance.txt`, preserving the previous file if
+the write fails.
+
+Validation failures are logged at `FINE` and reported as input errors. Storage failures are logged at `WARNING` and
+reported separately. Assertions check that loading preserves the record count, successful additions append exactly
+one record, rejected additions do not change the live list and saved records are non-null.
+
+#### Design choices and verification
+
+Permanent equipment identities were chosen over visible Item IDs because visible IDs are intentionally reusable.
+Keeping maintenance as immutable records also avoids overwriting previous work when the same equipment is serviced
+again. The handler owns command and clock-dependent validation, while the record owns value and format invariants;
+this keeps the domain object independent of the system clock.
+
+`MaintenanceRecordTest` covers immutable values, identity validation and text boundaries. `MaintenanceStorageTest`
+covers round-trip persistence, malformed records, missing files and failure-safe replacement.
+`MaintenanceHandlerTest` covers valid commands, invalid values, future dates, unknown equipment, save failures,
+restart loading and reused visible IDs. `MaintenanceIntegrationTest` covers command output, persistence, restart
+behaviour and startup handling for invalid saved data.
+
+### Backing up and restoring equipment and loan records
+
+#### Purpose and responsibilities
+
+The `backup` and `restore` commands protect the equipment inventory, loan history and next loan identifier. They are
+coordinated by `EqmManager` and implemented by `BackupHandler`, which keeps path parsing, manifest validation and
+file replacement outside the command-routing logic.
+
+| Class | Responsibility |
+| --- | --- |
+| `EqmManager` | Routes backup and restore commands and reports their outcomes. |
+| `BackupHandler` | Captures live files, writes manifests, validates backup contents and performs transactional restore. |
+| `EquipmentHandler` | Loads restored equipment and reconstructs equipment state. |
+| `LoanHandler` | Loads restored loans and the next loan identifier, including active-loan associations. |
+| `BundleHandler` | Clears and persists bundle memberships after restore because bundles are excluded from the backup. |
+
+#### Backup creation
+
+For `backup path/[DIRECTORY]`, `BackupHandler` rejects destinations inside or overlapping the live data directory,
+existing destinations and invalid parent paths. It captures `equipment.txt`, `loans.txt` and
+`loan-sequence.txt` before creating the destination. Missing live files are represented as valid empty files, while
+non-regular paths are rejected.
+
+The three files and a versioned SHA-256 manifest are first written to a temporary directory. The completed temporary
+directory is then moved into place, so a failed write does not leave a partial backup reported as successful.
+
+#### Restore validation and rollback
+
+For `restore path/[DIRECTORY]`, the handler requires an external directory, reads every required file and verifies
+the manifest against the file bytes. It then loads the equipment and loans in an isolated temporary directory,
+which detects malformed records, duplicate IDs and inconsistent active-loan relationships before touching live data.
+
+The original live files are captured before replacement. If replacement, bundle cleanup or handler reload fails, the
+original bytes and in-memory state are restored. A successful restore clears and saves bundle memberships because
+bundles refer to the equipment objects from the previous live state. Maintenance records are also excluded from this
+backup format and are not changed by the restore operation.
+
+#### Design choices and verification
+
+A checksum manifest detects tampering and incomplete copies. Staged validation and rollback prevent a failed restore
+from leaving a mixture of old and new equipment or loan data. The backup deliberately covers only equipment, loans
+and the loan sequence; bundle memberships and maintenance history use separate persistence files and are not silently
+replaced by an equipment-and-loan backup.
+
+`BackupHandlerTest` covers empty and populated backups, destination validation, manifest mismatches, malformed and
+inconsistent records, and rollback after a replacement failure. `BackupIntegrationTest` covers command routing and
+non-overwriting behaviour. `RestoreIntegrationTest` covers valid restoration, restart persistence, invalid sources,
+startup recovery, bundle clearing and preservation of live state after a failed restore.
+
 ### Preserving equipment condition when a loan is issued
 
 #### Purpose and responsibilities
@@ -735,7 +842,10 @@ one session at a time; feature loggers need no separate file or cleanup code.
 #### Diagnostics and invariants
 
 Equipment additions and updates log accepted/rejected outcomes at `FINE` and save failures at `WARNING`.
-Other features may use `INFO` for state changes. Parameterized messages such as
+Maintenance validation failures use `FINE`, maintenance save failures use `WARNING`, and successful maintenance
+loads or state changes use `INFO`. Backup creation and restoration use `INFO` when successful and `WARNING` when
+validation or file operations fail; rollback failures are escalated to `SEVERE`. Other features may use `INFO` for
+state changes. Parameterized messages such as
 `Added equipment with item ID {0}` insert values through the logging API.
 
 Exceptions reject invalid user input whether assertions are enabled or disabled. Equipment construction
@@ -745,7 +855,8 @@ size and Item ID. State changes happen outside assertions so disabling them cann
 
 #### Verification and limits
 
-`EquipmentHandlerTest` checks addition log records. `MainTest` runs separate JVMs with assertions enabled
+`EquipmentHandlerTest`, `MaintenanceHandlerTest` and `BackupHandlerTest` check feature behaviour and failure
+boundaries. `MainTest` runs separate JVMs with assertions enabled
 and disabled, tests blocked log setup and checks equipment/loan diagnostics sharing one output without
 duplicate command records. `AppLoggingTest` checks cleanup after an application exception, restored logger
 settings, flushed output and lock release. The suite does not force rotation or explicitly test appending
@@ -936,6 +1047,20 @@ update id/001 cond/2
 The first two commands fail without changing the four items. The first filter shows only `001`;
 after its condition becomes `5`, the same filter has no matches. The final update leaves `001` named
 `Studio camera` with condition `2`. Inspect `list` to check that other details and rows remain unchanged.
+
+### Maintenance records
+
+```text
+add i/Camera id/001 type/camera cond/5
+maintain id/001 date/27-10-26 work/Replaced battery outcome/Completed
+bye
+```
+
+Restart in the same data folder and confirm that `data/maintenance.txt` still contains the maintenance entry.
+Delete the equipment with `delete item/001`, add a replacement using the same visible ID, and record another
+maintenance entry. Inspect `data/maintenance.txt` to confirm that the two entries contain different permanent
+equipment identities. Try a malformed date, a future date, empty work or outcome text and a blocked storage path;
+each request should report an error without changing the existing maintenance records.
 
 ### Bundles, borrowing and returns
 
