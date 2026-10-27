@@ -275,6 +275,37 @@ public final class Help {
                         Maintenance records are saved to maintenance.txt and remain associated with the physical item.
                         Maintenance work: 1-%d characters; outcomes: 1-%d characters.
                         """, MaintenanceRecord.MAX_WORK_LENGTH, MaintenanceRecord.MAX_OUTCOME_LENGTH))),
+                new CommandHelp("list maintenance-due", "Equipment", lineEndings("""
+                        LIST MAINTENANCE DUE
+                        Format: list maintenance-due
+                        Example: list maintenance-due
+                        Lists equipment marked unserviceable and therefore due for maintenance or inspection.
+                        Active loan relationships remain protected and are shown as Loaned when applicable.
+                        """)),
+                new CommandHelp("inspect", "Equipment", lineEndings("""
+                        COMPLETE INSPECTION
+                        Format: inspect id/<ITEM ID> date/<DD-MM-YY> outcome/<PASS|FAIL>
+                        Example: inspect id/001 date/27-10-26 outcome/PASS
+                        Only equipment due for inspection can be inspected; active loans are rejected.
+                        PASS makes equipment serviceable and available when no other availability rule blocks it.
+                        FAIL keeps equipment unavailable. Both outcomes are recorded in maintenance history.
+                        """)),
+                new CommandHelp("history maintenance", "Equipment", lineEndings("""
+                        VIEW MAINTENANCE HISTORY
+                        Format: history maintenance/id/<ITEM ID>
+                        Example: history maintenance/id/001
+                        Requires an existing Item ID. Displays maintenance dates, work performed and outcomes for that
+                        item. Records are sorted by maintenance date, earliest first. An item without records shows a
+                        clear message.
+                        Viewing history does not change equipment, loans, maintenance records or saved files.
+                        """)),
+                new CommandHelp("summary maintenance", "Equipment", lineEndings("""
+                        MAINTENANCE SUMMARY
+                        Format: summary maintenance
+                        Example: summary maintenance
+                        Shows unserviceable equipment and equipment with at least three repair records.
+                        Inspection records are excluded from the repair count. The summary is read-only.
+                        """)),
                 new CommandHelp("add-bundle", "Bundles", lineEndings("""
                         CREATE BUNDLE
                         Format: add-bundle name/<NAME>
