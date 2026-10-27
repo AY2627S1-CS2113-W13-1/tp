@@ -35,8 +35,8 @@ keeping equipment references consistent when an item is borrowed or updated.
   availability. Condition ranges include both endpoints. Matching preserves inventory order and returns
   original equipment references without changing records. Stress tests cover all 120 field orders and
   generated queries across 999 items. ([#58](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/58))
-- **Equipment updates:** Implemented partial name and condition updates using a fixed Item ID. All values are
-  validated and a proposed inventory is saved before the original object changes. Updates preserve its
+- **Equipment updates:** Allowed corrections without deleting and recreating equipment. The Item ID stays
+  fixed, all values are validated and the proposed inventory is saved before the original object changes. Updates preserve its
   subtype, details, availability and loan/bundle references. Tests cover failed saves, restarts, rejected type
   changes and repeated operations. ([#59](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/59))
 - **Shared logging and assertions:** Implemented `AppLogging` so feature loggers share rotating files and
@@ -58,16 +58,18 @@ keeping equipment references consistent when an item is borrowed or updated.
   ([#80](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/80),
   [#88](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/88),
   [#82](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/82), all merged)
-- **Guide refinements and NFRs:** Submitted clearer command examples, error messages, recovery guidance and
-  logging instructions for the User Guide. Added seven non-functional requirements to the Developer Guide,
-  covering portability, offline use, usability, data integrity, text compatibility, capacity and log storage.
+- **Guide review fixes:** Added a worked example and recovery guidance to the UG, and updated diagrams to
+  current code. Completed the DG acknowledgements, scope, user stories, glossary and a verified manual test
+  path, and refined seven NFRs.
   ([#131](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/131), awaiting review)
 
 ### Team tasks and reviews
 
-- **Issue tracking:** Maintained the team's [issue tracker](https://github.com/AY2627S1-CS2113-W13-1/tp/issues),
-  creating and updating feature descriptions, assignees, priorities and labels so responsibilities and scope
-  were clear.
+- **Issue tracking:** Created and maintained the
+  [addition-validation](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/38),
+  [filtering](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/47) and
+  [equipment-update](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/48) issues, including scope,
+  assignees, priorities and labels.
 - **Deadline coordination:** Kept the team on track with project deadlines by reminding members about
   upcoming deliverables and following up on progress.
 - Renamed the packaged application JAR to `snAp.jar` and removed a redundant equipment insertion helper.
