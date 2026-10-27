@@ -67,9 +67,9 @@ and blank lines.
 Replace `<command>` with one of these exact lowercase topics:
 
 * Equipment: `add`, `list`, `delete item`, `filter`, `update`.
-* Loans: `loan`, `return`, `delete loan`, `list loans`, `view loan`, `list overdue`, `history`.
+* Loans: `loan`, `return`, `delete loan`, `update loan`, `list loans`, `view loan`, `list overdue`, `history`.
 * Bundles: `add-bundle`, `add-to-bundle`, `remove-from-bundle`, `list bundles`, `history bundle`.
-* General: `help`, `bye`.
+* General: `backup`, `restore`, `help`, `bye`.
 
 Include the whole topic for commands with more than one word, for example `help list overdue` or
 `help delete loan`. Extra whitespace around or between words is accepted. The group names are menu labels;

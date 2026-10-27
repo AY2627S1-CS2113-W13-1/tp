@@ -792,7 +792,17 @@ matches, but these tests do not explicitly assert its diagnostic log records or 
 
 ## Non-Functional Requirements
 
-{Give non-functional requirements}
+These requirements apply to a single user running one local instance of snAp.
+
+| ID | Area | Requirement |
+| --- | --- | --- |
+| NFR-1 | Portability | The same executable JAR must run on Windows, macOS and Linux with Java 25, without platform-specific application code. |
+| NFR-2 | Offline use | After installation, equipment, loan and bundle commands must work without an internet connection, external server or database service. |
+| NFR-3 | Usability | Each command must have a format and valid example in the help reference and User Guide. Invalid user input must produce an explanatory error and allow another command without restarting. |
+| NFR-4 | Data integrity | Rejected equipment additions and updates must preserve existing records. A failure while writing a temporary equipment or loan file must preserve the previous saved file. |
+| NFR-5 | Text compatibility | Equipment and loan files must use UTF-8. Supported names, remarks and other text fields must retain their values after saving and reloading. |
+| NFR-6 | Capacity | The inventory must support 999 equipment items at once. A data set supports 999 distinct loan IDs over its lifetime; ID exhaustion must produce an error without overwriting existing records. |
+| NFR-7 | Log storage | For one running instance, diagnostic logs must rotate across two files of approximately 1 MB each rather than grow indefinitely. |
 
 ## Glossary
 
