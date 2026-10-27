@@ -82,11 +82,12 @@ class HelpTest {
         assertTrue(text.contains("Name, unused Item ID, type and condition are required"));
         assertTrue(text.contains(
                 "Optional order: subtype fields in the order shown, then damage/, then final remarks/."));
-        assertTrue(text.contains("Each optional field may be omitted independently."));
+        assertTrue(text.contains(
+                "Each optional field may be omitted independently, except remarks/ with damage OTHER."));
         assertTrue(text.contains(
                 "Omitted subtype and compatibility details default to unspecified;"));
         assertTrue(text.contains("omitted damage defaults to NONE;"));
-        assertTrue(text.contains("omitted remarks default to empty text."));
+        assertTrue(text.contains("omitted remarks default to empty text, except OTHER requires non-empty remarks."));
         assertTrue(text.contains(
                 "camera: sensor/<TEXT> mount/<TEXT> thread/<TEXT> battery/<TEXT>; damage:"));
         assertTrue(text.contains(
@@ -112,7 +113,8 @@ class HelpTest {
         assertTrue(text.contains("be serviceable and have no active loan."));
         assertTrue(text.contains("Loan IDs are assigned automatically from 001 to 999"));
         assertTrue(text.contains("explicit serviceable/ and damage/ assessment"));
-        assertTrue(text.contains("Omitted or empty remarks clear the item's previous remarks."));
+        assertTrue(text.contains("Remarks/ must be last. For OTHER, provide non-empty text after trimming."));
+        assertTrue(text.contains("For other damage values, omitted or empty remarks clear prior notes."));
         assertTrue(text.contains(
                 "compatibility attributes and bundle memberships."));
         assertTrue(text.contains("Return permanently marks the retained loan returned"));

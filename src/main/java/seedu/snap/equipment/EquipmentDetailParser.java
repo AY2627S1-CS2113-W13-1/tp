@@ -146,10 +146,10 @@ final class EquipmentDetailParser {
     /**
      * Ensures that an OTHER damage classification includes an explanation.
      *
-     * @param damage parsed equipment-specific damage value
-     * @param remarks optional equipment remarks
-     * @param equipmentType equipment type used in the error message
-     * @throws EquipmentAdditionUnsuccessful if OTHER has no remarks
+     * @param damage the parsed equipment-specific damage value.
+     * @param remarks the optional equipment remarks.
+     * @param equipmentType the equipment type used in the error message.
+     * @throws EquipmentAdditionUnsuccessful if OTHER has no remarks.
      */
     static void validateDamageRemarks(
             Enum<?> damage,

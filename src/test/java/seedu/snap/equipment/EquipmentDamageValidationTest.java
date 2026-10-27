@@ -13,6 +13,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 
@@ -156,6 +157,40 @@ class EquipmentDamageValidationTest {
                         "add i/Tripod id/004 type/tripod cond/5 "
                                 + "damage/OTHER remarks/   ",
                         "tripod"));
+    }
+
+    @ParameterizedTest
+    @MethodSource("damageFromAnotherSubtype")
+    void parseEquipment_damageFromAnotherSubtype_rejects(String command, String type) {
+        EquipmentAdditionUnsuccessful exception = assertThrows(EquipmentAdditionUnsuccessful.class,
+                () -> EquipmentHandler.parseEquipment(command));
+        assertTrue(exception.getMessage().contains("Invalid damage for " + type));
+    }
+
+    /** Supplies new damage values that belong only to a different equipment subtype. */
+    private static Stream<Arguments> damageFromAnotherSubtype() {
+        return Stream.of(
+                Arguments.of("add i/Camera id/001 type/camera cond/5 damage/CRACKED_GLASS", "camera"),
+                Arguments.of("add i/Lens id/002 type/lens cond/5 damage/LEAKING", "lens"),
+                Arguments.of("add i/Battery id/003 type/battery cond/5 damage/MISSING_PART", "battery"),
+                Arguments.of("add i/Tripod id/004 type/tripod cond/5 damage/BODY_CRACK", "tripod"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"camera", "lens", "battery", "tripod"})
+    void parseEquipment_otherRemarksBoundary_acceptsValidLengthAndRejectsTooLong(String type) throws Exception {
+        String prefix = "add i/Item id/001 type/" + type + " cond/5 damage/other remarks/";
+        String longest = "r".repeat(Equipment.MAX_REMARKS_LENGTH);
+
+        Equipment shortest = EquipmentHandler.parseEquipment(prefix + " r ");
+        Equipment maximum = EquipmentHandler.parseEquipment(prefix + longest);
+        EquipmentAdditionUnsuccessful exception = assertThrows(EquipmentAdditionUnsuccessful.class,
+                () -> EquipmentHandler.parseEquipment(prefix + longest + "r"));
+
+        assertEquals("r", shortest.getRemarks());
+        assertTrue(shortest.getDetails().contains("damage/OTHER"));
+        assertEquals(longest, maximum.getRemarks());
+        assertEquals("Remarks must contain at most 200 characters and no line breaks.", exception.getMessage());
     }
 
     @Test

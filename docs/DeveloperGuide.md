@@ -115,14 +115,15 @@ and changing records.
 [PlantUML source](diagrams/ReturnSequence.puml)
 
 1. `LoanReturn.parse(...)` requires a Loan ID from `001` to `999`, an explicit serviceability decision and
-   a damage value. Final `remarks/` is optional and defaults to empty text. Supplied remarks must be a single
-   line of at most 200 characters after trimming; text after that final prefix remains literal.
+   a damage value. Final `remarks/` is optional unless damage is `OTHER`, which requires non-empty text.
+   Supplied remarks must be one line of at most 200 characters after trimming; final text remains literal.
 2. `LoanHandler.findLoanForReturn(...)` requires exactly one active loan. The handler finds the current equipment
    and calls `Loan.ownsEquipment(...)`, checking the object reference, active loan ID and permanent equipment
    record ID. It also rejects another active loan for the same Item ID. These checks prevent a stale association
    from assessing or releasing replacement equipment.
-3. `EquipmentHandler.prepareReturnAssessment(...)` uses the equipment subtype's damage enum to create a detached
-   proposal. It preserves the name, Item ID, permanent record ID, numeric condition and subtype attributes.
+3. `EquipmentHandler.prepareReturnAssessment(...)` validates damage against the equipment subtype and rejects
+   `OTHER` when the trimmed remarks are empty. It creates a detached proposal preserving the name, Item ID,
+   permanent record ID, numeric condition and subtype attributes.
    `Loan.returnedCopy()` creates a detached returned loan with the same loan ID, equipment identity, borrower
    and dates. The proposals do not change either live object.
 4. `LoanReturnStorage.save(...)` saves a proposed inventory containing the assessment and a proposed loan list
@@ -175,10 +176,10 @@ loss between file replacements. That would need a persistent transaction journal
 #### Verification
 
 `LoanReturnTest`, `EquipmentReturnAssessmentTest` and `EquipmentReturnIntegrationTest` cover valid assessments
-for each subtype, required fields, permanent returned state, stale ownership, unchanged bundle references and
-serviceability restrictions. Persistence tests reload returned records and verify the assessment. Failure tests
-block equipment, loan and sequence saves, check that records and previous files are retained where restoration
-is possible, and retry successfully after the storage problem is removed.
+for each subtype, `OTHER` with and without remarks, required fields, permanent returned state, stale ownership,
+unchanged bundle references and serviceability restrictions. Persistence tests verify damage, remarks and
+serviceability after restart. Failure tests block equipment, loan and sequence saves, and check that records
+and previous files remain unchanged where restoration is possible before retrying successfully.
 
 ### Viewing the history of a physical equipment item
 
@@ -266,9 +267,9 @@ an invalid supplied value is rejected so that a typing mistake does not silently
 | --- | --- |
 | Equipment subtype detail | `unspecified` |
 | Equipment `damage/` | `NONE` |
-| Equipment `remarks/` | Empty text |
+| Equipment `remarks/` | Empty text; rejected with `OTHER` damage |
 | Loan `issued/` | Today's date in the application's local time zone, at midnight |
-| Return `remarks/` | Empty text, replacing previous remarks after a successful save |
+| Return `remarks/` | Empty text, replacing previous remarks; rejected with `OTHER` damage |
 | An update field | Keep its current value |
 | A filter criterion | Impose no restriction for that criterion |
 
