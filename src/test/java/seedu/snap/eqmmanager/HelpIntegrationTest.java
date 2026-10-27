@@ -18,6 +18,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,10 +41,10 @@ import seedu.snap.loan.EquipmentConditionSnapshot;
 import seedu.snap.loan.Loan;
 import seedu.snap.loan.LoanHandler;
 
-/** Verifies that help is discoverable and leaves application records, files and counters unchanged. */
+/** Verifies that help and equipment views leave application records, files and counters unchanged. */
 class HelpIntegrationTest {
     private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-10-24T12:00:00Z"), ZoneOffset.UTC);
-    private static final List<String> HELP_COMMANDS = List.of("help", "help all", "help add", "help list",
+    private static final List<String> HELP_COMMANDS = List.of("help", "help all", "help add", "help list", "help show",
             "help delete item", "help loan", "help return", "help delete loan", "help update loan", "help list loans",
             "help view loan",
             "help list overdue", "help history", "help filter", "help update", "help add-bundle",
@@ -100,7 +101,7 @@ class HelpIntegrationTest {
         Map<Path, SavedFile> filesBefore = savedFiles(dataDirectory);
         List<Path> pathsBefore = treePaths(dataDirectory);
 
-        executeAllHelpForms(manager, before);
+        executeAllReadOnlyForms(manager, before);
 
         assertEquals(before, snapshot(manager));
         assertSavedFilesUnchanged(filesBefore);
@@ -153,8 +154,8 @@ class HelpIntegrationTest {
 
         List<String> lines = printed().lines().toList();
         assertTrue(lines.stream().allMatch(line -> line.length() <= 100));
-        assertEquals(23, lines.stream().filter("Format:"::equals).count());
-        assertEquals(23, lines.stream().filter("Example:"::equals).count());
+        assertEquals(28, lines.stream().filter("Format:"::equals).count());
+        assertEquals(28, lines.stream().filter("Example:"::equals).count());
         assertTrue(printed().contains(System.lineSeparator() + System.lineSeparator() + "Format:"
                 + System.lineSeparator() + "  "));
         assertTrue(printed().contains(System.lineSeparator() + System.lineSeparator() + "Example:"
@@ -165,6 +166,7 @@ class HelpIntegrationTest {
     @CsvSource(delimiter = '|', value = {
         "add | Format: add i/<NAME>",
         "list | Format: list",
+        "show | Format: show id/<ID>",
         "delete item | Format: delete item/<ID>",
         "loan | Format: loan id/<ITEM ID>",
         "return | Format: return loan/<LOAN ID>",
@@ -172,10 +174,14 @@ class HelpIntegrationTest {
         "update loan | Format: update loan/<LOAN ID>",
         "list loans | Format: list loans",
         "view loan | Format: view loan/<LOAN ID>",
+        "backup | Format: backup path/<DIRECTORY>",
+        "restore | Format: restore path/<DIRECTORY>",
+        "list borrower | Format: list borrower/<BORROWER ID>",
         "list overdue | Format: list overdue",
         "history | Format: history id/<ITEM ID>",
         "filter | Format: filter [id/<ID>]",
         "update | Format: update id/<ID>",
+        "maintain | Format: maintain id/<ITEM ID>",
         "add-bundle | Format: add-bundle name/<NAME>",
         "add-to-bundle | Format: add-to-bundle id/<BUNDLE ID>",
         "remove-from-bundle | Format: remove-from-bundle id/<BUNDLE ID>",
@@ -271,7 +277,7 @@ class HelpIntegrationTest {
         ApplicationState before = snapshot(empty);
         assertFalse(Files.exists(missingDirectory.getParent()));
 
-        executeAllHelpForms(empty, before);
+        executeAllReadOnlyForms(empty, before);
 
         assertEquals(before, snapshot(empty));
         assertFalse(Files.exists(missingDirectory));
@@ -293,7 +299,7 @@ class HelpIntegrationTest {
         Map<Path, SavedFile> blockedFiles = savedFiles(dataDirectory);
         List<Path> blockedPaths = treePaths(dataDirectory);
 
-        executeAllHelpForms(manager, before);
+        executeAllReadOnlyForms(manager, before);
 
         assertFalse(printedContent().contains("Could not save"));
         assertFalse(printedContent().contains("Could not load"));
@@ -322,7 +328,7 @@ class HelpIntegrationTest {
 
     @Test
     void help_followedByOtherCommands_keepsTheSessionRunning() throws Exception {
-        executeAllHelpForms(manager, snapshot(manager));
+        executeAllReadOnlyForms(manager, snapshot(manager));
         output.reset();
 
         manager.executeInput("update id/006 i/Updated spare battery cond/9");
@@ -413,6 +419,58 @@ class HelpIntegrationTest {
         assertFalse(Files.exists(invalidDirectory.resolve("bundles.txt")));
     }
 
+    @Test
+    void equipmentViews_afterReload_preserveStatusAssociationsAndSavedData() throws Exception {
+        EqmManager restarted = new EqmManager(dataDirectory, FIXED_CLOCK);
+        ApplicationState before = snapshot(restarted);
+        Map<Path, SavedFile> files = savedFiles(dataDirectory);
+        output.reset();
+
+        restarted.executeInput("show id/001");
+        assertTrue(printed().contains("Name: Camera"));
+        assertTrue(printed().contains("Sensor format: Full frame"));
+        assertTrue(printed().contains("Status: Loaned"));
+        assertTrue(printed().contains("Active loan ID: 002"));
+        output.reset();
+        restarted.executeInput("show id/005");
+        assertTrue(printed().contains("Status: Unserviceable"));
+        assertTrue(printed().contains("Damage: SWELLING"));
+        assertTrue(printed().contains("Remarks: Needs repair"));
+        assertTrue(printed().contains("Active loan ID: (none)"));
+        output.reset();
+        restarted.executeInput("show id/006");
+        assertTrue(printed().contains("Status: Available"));
+        assertTrue(printed().contains("Active loan ID: (none)"));
+        executeAllReadOnlyForms(restarted, before);
+
+        assertEquals(before, snapshot(restarted));
+        assertSavedFilesUnchanged(files);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"show", "show id/000", "show id/01", "show id/1000", "show id/-01",
+        "show id/１２３", "show id/001 unexpected", "show id/001 id/002", "show id/001 type/camera"})
+    void equipmentViews_invalidShowSyntax_reportsFormatWithoutChangingState(String command) throws Exception {
+        ApplicationState before = snapshot(manager);
+        Map<Path, SavedFile> files = savedFiles(dataDirectory);
+
+        manager.executeInput(command);
+
+        assertTrue(printed().contains("Invalid format. Use: show id/[ITEM ID], from 001 to 999."));
+        assertEquals(before, snapshot(manager));
+        assertSavedFilesUnchanged(files);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"show id/001", "  show\tid/001  ", "show\u2003id/001", "show\u00a0id/001"})
+    void equipmentViews_showWhitespace_selectsExactItem(String command) {
+        manager.executeInput(command);
+
+        assertTrue(printed().contains("Equipment 001"));
+        assertTrue(printed().contains("Name: Camera"));
+        assertFalse(printed().contains("Equipment 002"));
+    }
+
     /** Captures object references as well as their values, including counters that help must not consume. */
     private ApplicationState snapshot(EqmManager target) throws Exception {
         EquipmentHandler inventory = readField(target, "equipment", EquipmentHandler.class);
@@ -476,16 +534,22 @@ class HelpIntegrationTest {
                 dataDirectory.resolve("loan-sequence.txt"), dataDirectory.resolve("bundles.txt"));
     }
 
-    /** Repeats every help form so command names in a topic cannot execute or consume identifiers. */
-    private void executeAllHelpForms(EqmManager target, ApplicationState expected) throws Exception {
+    /** Repeats help and equipment requests so reading records cannot save data or consume identifiers. */
+    private void executeAllReadOnlyForms(EqmManager target, ApplicationState expected) throws Exception {
+        List<String> requests = new ArrayList<>(HELP_COMMANDS);
+        requests.addAll(List.of("list", "filter cond/1-10", "filter id/999", "show id/001", "show id/002",
+                "show id/003", "show id/004", "show id/005", "show id/006", "show id/999", "show",
+                "show id/000", "show id/001 id/002", "show id/001 remarks/Unexpected"));
         for (int repetition = 0; repetition < 2; repetition++) {
-            for (String command : HELP_COMMANDS) {
+            for (String command : requests) {
                 output.reset();
                 target.executeInput(command);
                 assertFalse(printedContent().contains("Command not recognised"), command);
                 assertFalse(printedContent().contains("Could not save"), command);
                 assertFalse(printedContent().contains("Could not load"), command);
-                assertTrue(printedContent().contains("help"), command);
+                if (command.startsWith("help")) {
+                    assertTrue(printedContent().contains("help"), command);
+                }
                 assertEquals(expected, snapshot(target), command);
             }
         }

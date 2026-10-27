@@ -77,7 +77,7 @@ class EquipmentStorageLocationIntegrationTest {
         String printed = output.toString(StandardCharsets.UTF_8);
         assertTrue(printed.contains("Field location/ cannot be empty."));
         assertTrue(printed.contains("Equipment with item ID 001 updated successfully."));
-        assertTrue(printed.contains("LOCATION"));
+        assertFalse(printed.contains("LOCATION"), "Cleared locations must not remain in list output");
         assertFalse(printed.contains("Cabinet A-3"));
         assertTrue(Files.readString(temporaryDirectory.resolve("equipment.txt")).contains("location/\tadd"));
     }
