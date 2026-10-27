@@ -113,12 +113,12 @@ public class EquipmentHandler {
      * Validates a return assessment and creates a detached proposal of the same equipment subtype.
      * Existing equipment and its active loan references remain unchanged until the return is saved.
      *
-     * @param current equipment being returned
-     * @param serviceable whether the equipment can be loaned again
-     * @param damage damage value belonging to this equipment's existing damage enum
-     * @param remarks single-line assessment remarks, up to 200 characters
-     * @return the validated detached equipment proposal
-     * @throws IllegalArgumentException if any assessment field is invalid
+     * @param current the equipment being returned.
+     * @param serviceable whether the equipment can be loaned again.
+     * @param damage a damage value supported by the equipment subtype.
+     * @param remarks single-line assessment remarks, up to 200 characters; required for OTHER damage.
+     * @return the validated detached equipment proposal.
+     * @throws IllegalArgumentException if any assessment field is invalid.
      */
     public Equipment prepareReturnAssessment(Equipment current, boolean serviceable, String damage, String remarks) {
         if (current == null || damage == null) {
@@ -188,6 +188,15 @@ public class EquipmentHandler {
                     normalisedRemarks);
             default -> throw new IllegalArgumentException("Unsupported equipment type for return assessment.");
             };
+            Enum<?> assessedDamage = switch (proposed) {
+            case Camera camera -> camera.getDamage();
+            case Lens lens -> lens.getDamage();
+            case Battery battery -> battery.getDamage();
+            case Tripod tripod -> tripod.getDamage();
+            default -> throw new IllegalArgumentException("Unsupported equipment type for return assessment.");
+            };
+            EquipmentDetailParser.validateDamageRemarks(
+                    assessedDamage, normalisedRemarks, current.getType());
             proposed.restoreRecordId(current.getRecordId());
             proposed.setServiceable(serviceable);
             return proposed;

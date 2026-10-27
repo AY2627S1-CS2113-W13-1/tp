@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.BundleAdditionUnsuccessful;
+import seedu.snap.exceptions.BundleHistoryUnsuccessful;
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.loan.Loan;
@@ -60,6 +61,15 @@ class BundleHandlerTest {
                     () -> bundleHandler.addBundle("add-bundle name/" + name));
             assertTrue(bundleHandler.getBundleList().isEmpty());
         }
+    }
+
+    @Test
+    void addBundle_duplicateName_throwsException() throws BundleAdditionUnsuccessful {
+        bundleHandler.addBundle("add-bundle name/Travel Kit");
+
+        assertThrows(BundleAdditionUnsuccessful.class,
+                () -> bundleHandler.addBundle("add-bundle name/Travel Kit"));
+        assertEquals(1, bundleHandler.getBundleList().size());
     }
 
     @Test
@@ -185,6 +195,30 @@ class BundleHandlerTest {
     }
 
     @Test
+    void removeItemsFromBundle_removesMembersAndReportsEachResult() throws Exception {
+        Bundle bundle = bundleHandler.addBundle("add-bundle name/Travel Kit");
+        bundleHandler.addItemsToBundle("add-to-bundle id/001 001 002 005");
+
+        List<String> messages = bundleHandler.removeItemsFromBundle("remove-from-bundle id/001 002 999 001");
+
+        assertEquals(3, messages.size());
+        assertTrue(messages.get(0).contains("removed from bundle 001 successfully"));
+        assertTrue(messages.get(1).contains("not in bundle 001"));
+        assertTrue(messages.get(2).contains("removed from bundle 001 successfully"));
+        assertEquals(List.of(equipmentHandler.getEquipmentById("005")), bundle.getEquipmentList());
+        assertFalse(bundleHandler.containsEquipmentId("001"));
+        assertFalse(bundleHandler.containsEquipmentId("002"));
+    }
+
+    @Test
+    void removeItemsFromBundle_invalidCommandOrUnknownBundle_throwsException() {
+        assertThrows(BundleAdditionUnsuccessful.class,
+                () -> bundleHandler.removeItemsFromBundle("remove-from-bundle id/001"));
+        assertThrows(BundleAdditionUnsuccessful.class,
+                () -> bundleHandler.removeItemsFromBundle("remove-from-bundle id/999 001"));
+    }
+
+    @Test
     void containsEquipmentId_checksAllBundlesWithoutChangingContents() throws BundleAdditionUnsuccessful {
         Bundle first = bundleHandler.addBundle("add-bundle name/First Kit");
         Bundle second = bundleHandler.addBundle("add-bundle name/Second Kit");
@@ -236,5 +270,44 @@ class BundleHandlerTest {
         assertTrue(listing.contains("001"));
         assertTrue(listing.contains("camera"));
         assertTrue(listing.contains("battery"));
+    }
+
+    @Test
+    void getBundleLoanHistory_combinesActiveAndReturnedLoansInChronologicalOrder() throws Exception {
+        Bundle bundle = bundleHandler.addBundle("add-bundle name/Travel Kit");
+        bundleHandler.addItemsToBundle("add-to-bundle id/001 001 002");
+        LoanHandler loans = new LoanHandler(equipmentHandler);
+        Loan firstLoan = loans.addLoan("loan id/001 b/111 issued/01-10-26 due/02-10-26");
+        Loan secondLoan = loans.addLoan("loan id/002 b/222 issued/03-10-26 due/04-10-26");
+        secondLoan.setReturned(true);
+
+        List<Loan> history = bundleHandler.getBundleLoanHistory("history bundle/id/001", loans);
+
+        assertEquals(List.of(firstLoan, secondLoan), history);
+        assertEquals("111", history.getFirst().getBorrowerId());
+        assertTrue(history.get(1).isReturned());
+        assertEquals("001", bundle.getBundleId());
+    }
+
+    @Test
+    void getBundleLoanHistory_canSelectByNameAndHandlesEmptyHistory() throws Exception {
+        bundleHandler.addBundle("add-bundle name/Travel Kit");
+
+        List<Loan> history = bundleHandler.getBundleLoanHistory("history bundle/name/Travel Kit",
+                new LoanHandler(equipmentHandler));
+
+        assertTrue(history.isEmpty());
+    }
+
+    @Test
+    void getBundleLoanHistory_rejectsInvalidAndUnknownSelectors() {
+        LoanHandler loans = new LoanHandler(equipmentHandler);
+        for (String input : new String[]{"history bundle/id/000", "history bundle/id/01",
+            "history bundle/name/", "history id/001"}) {
+            assertThrows(BundleHistoryUnsuccessful.class,
+                    () -> bundleHandler.getBundleLoanHistory(input, loans));
+        }
+        assertThrows(BundleHistoryUnsuccessful.class,
+                () -> bundleHandler.getBundleLoanHistory("history bundle/id/001", loans));
     }
 }

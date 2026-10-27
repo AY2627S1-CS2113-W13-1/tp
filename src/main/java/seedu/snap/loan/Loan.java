@@ -13,7 +13,7 @@ import seedu.snap.equipment.Equipment;
 public class Loan {
     private static final Logger logger = Logger.getLogger(Loan.class.getName());
     private final String loanId;
-    private final String itemId;
+    private String itemId;
     /** Permanent physical-item identity; null only for legacy records that have not been attributed. */
     private String equipmentRecordId;
     private Equipment equipment;
@@ -21,6 +21,13 @@ public class Loan {
     private LocalDateTime issuedDate;
     private LocalDateTime dueDate;
     private boolean isReturned;
+
+    // @@author Rohita-29
+
+    private EquipmentConditionSnapshot issueConditionSnapshot;
+
+    // @@author
+
 
     /** Creates a detached legacy record for parsing or migration, without assigning a loan ID. */
     public Loan(String itemId, String borrowerId, LocalDateTime issuedDate, LocalDateTime dueDate) {
@@ -30,12 +37,46 @@ public class Loan {
     /** Creates an identified detached record without changing equipment availability. */
     public Loan(String loanId, String itemId, String borrowerId, LocalDateTime issuedDate,
             LocalDateTime dueDate) {
-        this(loanId, itemId, borrowerId, issuedDate, dueDate, null);
+        this(
+                loanId,
+                itemId,
+                borrowerId,
+                issuedDate,
+                dueDate,
+                null,
+                null);
     }
 
     /** Creates a stored record with an optional permanent equipment identity for legacy compatibility. */
     public Loan(String loanId, String itemId, String borrowerId, LocalDateTime issuedDate,
             LocalDateTime dueDate, String equipmentRecordId) {
+        this(
+                loanId,
+                itemId,
+                borrowerId,
+                issuedDate,
+                dueDate,
+                equipmentRecordId,
+                null);
+    }
+
+    /** Creates a detached record with an optional saved issue-condition snapshot. */
+    Loan(String loanId, String itemId, String borrowerId, LocalDateTime issuedDate,
+            LocalDateTime dueDate, EquipmentConditionSnapshot issueConditionSnapshot) {
+        this(
+                loanId,
+                itemId,
+                borrowerId,
+                issuedDate,
+                dueDate,
+                null,
+                issueConditionSnapshot);
+    }
+
+    /** Creates a stored record with optional identity and issue-condition information. */
+    Loan(String loanId, String itemId, String borrowerId, LocalDateTime issuedDate,
+            LocalDateTime dueDate, String equipmentRecordId,
+            EquipmentConditionSnapshot issueConditionSnapshot) {
         if (equipmentRecordId != null && !isValidEquipmentRecordId(equipmentRecordId)) {
             throw new IllegalArgumentException("Equipment record identity must be a canonical UUID.");
         }
@@ -50,6 +91,7 @@ public class Loan {
         this.issuedDate = issuedDate;
         this.dueDate = dueDate;
         this.equipmentRecordId = equipmentRecordId;
+        this.issueConditionSnapshot = issueConditionSnapshot;
     }
 
     /** Creates a legacy candidate without retaining or reserving its equipment before saving. */
@@ -60,7 +102,14 @@ public class Loan {
     /** Creates an identified candidate; the handler attaches its equipment only after saving. */
     public Loan(String loanId, Equipment equipment, String borrowerId, LocalDateTime issuedDate,
             LocalDateTime dueDate) {
-        this(loanId, getAvailableItemId(equipment), borrowerId, issuedDate, dueDate, equipment.getRecordId());
+        this(
+                loanId,
+                getAvailableItemId(equipment),
+                borrowerId,
+                issuedDate,
+                dueDate,
+                equipment.getRecordId(),
+                EquipmentConditionSnapshot.fromEquipment(equipment));
         logger.log(Level.FINE, "Created loan candidate {0} for item ID {1}.", new Object[]{loanId, itemId});
     }
 
@@ -140,6 +189,16 @@ public class Loan {
         return isReturned;
     }
 
+    // @@author Rohita-29
+
+    /** Returns the equipment-condition snapshot captured when this loan was issued. */
+    public EquipmentConditionSnapshot getIssueConditionSnapshot() {
+        return issueConditionSnapshot;
+    }
+
+    // @@author
+
+
     /** Checks object identity as well as loan ownership before a return can assess live equipment. */
     boolean ownsEquipment(Equipment item) {
         return !isReturned && equipment == item && item.isLoaned()
@@ -149,9 +208,60 @@ public class Loan {
 
     /** Creates a detached storage proposal without changing or logging a return on the live loan. */
     Loan returnedCopy() {
-        Loan returned = new Loan(loanId, itemId, borrowerId, issuedDate, dueDate, equipmentRecordId);
+        Loan returned =
+                new Loan(
+                        loanId,
+                        itemId,
+                        borrowerId,
+                        issuedDate,
+                        dueDate,
+                        equipmentRecordId,
+                        issueConditionSnapshot);
         returned.isReturned = true;
         return returned;
+    }
+
+    /**
+     * Creates a detached active proposal for a validated loan update.
+     * Reassigning equipment captures the replacement's condition instead of reusing the old item's snapshot.
+     */
+    Loan updatedCopy(String itemId, String equipmentRecordId, String borrowerId,
+            LocalDateTime issuedDate, LocalDateTime dueDate, Equipment replacement) {
+        assert !isReturned : "Returned loan history must not be updated";
+        assert replacement != null : "A loan update requires replacement equipment";
+        EquipmentConditionSnapshot updatedSnapshot = replacement == equipment
+                ? issueConditionSnapshot : EquipmentConditionSnapshot.fromEquipment(replacement);
+        return new Loan(loanId, itemId, borrowerId, issuedDate, dueDate, equipmentRecordId,
+                updatedSnapshot);
+    }
+
+    /** Applies a saved update and keeps equipment ownership synchronized with the loan. */
+    void applyUpdate(Loan updated, Equipment replacement) {
+        assert updated != null && replacement != null : "Loan update requires a proposal and equipment";
+        assert !isReturned && !updated.isReturned : "Returned loans must not be updated";
+        assert updated.loanId.equals(loanId) : "A loan update must preserve the loan ID";
+        assert updated.itemId.equals(replacement.getItemId()) : "Updated loan must match its equipment";
+        assert updated.equipmentRecordId.equals(replacement.getRecordId())
+                : "Updated loan must match the physical equipment identity";
+        assert replacement == equipment || !replacement.isLoaned()
+                : "Replacement equipment must be available before rebinding";
+
+        Equipment previous = equipment;
+        if (previous != replacement) {
+            assert previous != null : "An active loan must own its current equipment";
+            previous.setLoanId(null);
+        }
+        itemId = updated.itemId;
+        equipmentRecordId = updated.equipmentRecordId;
+        borrowerId = updated.borrowerId;
+        issuedDate = updated.issuedDate;
+        dueDate = updated.dueDate;
+        issueConditionSnapshot = updated.issueConditionSnapshot;
+        equipment = replacement;
+        replacement.setLoanId(loanId);
+        assert equipment == replacement : "Updated loan must retain its replacement equipment";
+        assert replacement.isLoaned() && loanId.equals(replacement.getLoanId())
+                : "Updated loan must own loaned replacement equipment";
     }
 
     /** Associates a saved or fully validated active record with its equipment. */

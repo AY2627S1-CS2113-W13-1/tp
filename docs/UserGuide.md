@@ -7,8 +7,8 @@ title: User Guide
 
 ## Introduction
 
-snAp tracks individual pieces of equipment and their loans. Equipment and loan records are retained between
-application sessions. Bundles group equipment during the current session.
+snAp tracks individual pieces of equipment, their loans and equipment bundles. Equipment, loan and bundle
+records are retained between application sessions.
 
 ## Quick Start
 
@@ -37,33 +37,69 @@ application sessions. Bundles group equipment during the current session.
    errors remain visible.
 3. Enter one command per line. Type `bye` to exit.
 
+The welcome screen displays the snAp logo. It uses green on supported
+interactive terminals and plain text when output is redirected. Gradle pipes the application's output, so you
+can request colour in PowerShell with `$env:SNAP_COLOUR = 'always'` before running the application. On
+macOS/Linux, use `SNAP_COLOUR=always ./gradlew run`. Set `SNAP_COLOUR=never` to disable colour, or remove the
+variable to restore automatic detection. A non-empty `NO_COLOR` variable or `TERM=dumb` also disables colour.
+
+The logo uses `#` by default, preserving every space and line break in the original artwork.
+Use `$env:SNAP_LOGO = 'ascii'` in PowerShell to force `#`, or `$env:SNAP_LOGO = 'unicode'` to request `█`.
+On macOS/Linux, use `SNAP_LOGO=ascii ./gradlew run` or `SNAP_LOGO=unicode ./gradlew run`.
+Even with `SNAP_LOGO=unicode`, an output encoding that cannot represent `█` falls back to `#`.
+The optional `SNAP_LOGO=auto` mode uses blocks only on an attached terminal with a suitable output encoding;
+redirected output, including Gradle runs, and `TERM=dumb` terminals use `#`. Font support cannot be detected.
+Remove `SNAP_LOGO` to restore the ASCII default. Colour works with either version.
+
+After the logo and loaded-record counts, snAp displays a boxed command menu automatically. The menu groups
+commands by Equipment, Loans, Bundles and General, and shows how to request more help.
+The `>>>` input prompt is separated from the previous output and the next response by horizontal lines
+and blank lines.
+
 ## Getting help: `help`
 
-Format: `help`
+| Format | What it displays | Example |
+| --- | --- | --- |
+| `help` | The same boxed command menu shown at startup | `help` |
+| `help <command>` | The format, example, fields, defaults and restrictions for one command | `help loan` |
+| `help all` | The complete command reference | `help all` |
 
-Example: `help`
+Replace `<command>` with one of these exact lowercase topics:
 
-This displays every available command with its format, an example, required and optional fields, defaults and
-important restrictions. Help uses `<VALUE>` for a value you must replace and `[field/<VALUE>]` for a field you
-can omit. Enter `help` without arguments. The welcome message and unrecognised-command errors point to it.
+* Equipment: `add`, `list`, `delete item`, `filter`, `update`.
+* Loans: `loan`, `return`, `delete loan`, `list loans`, `view loan`, `list overdue`, `history`.
+* Bundles: `add-bundle`, `add-to-bundle`, `remove-from-bundle`, `list bundles`, `history bundle`.
+* General: `help`, `bye`.
 
-Requesting help leaves equipment, loans, bundles, availability, identifiers and saved records unchanged.
-You can then enter another command normally. Help does not save data or end the session.
+Include the whole topic for commands with more than one word, for example `help list overdue` or
+`help delete loan`. Extra whitespace around or between words is accepted. The group names are menu labels;
+they are not help topics. An unknown topic, such as `help loans`, displays an error followed by the compact
+menu so that you can choose a supported topic.
+
+Help uses `<VALUE>` for a value you must replace and `[field/<VALUE>]` for a field you can omit.
+Command details have separate headings, formats, examples and notes, with blank lines between them.
+Each command heading has a full-width divider above and below it. In `help all`, two blank lines separate
+each command from the previous section.
+Help text wraps at 100 columns. A long displayed format or example can span several rows; enter each command
+on one line. Unrecognised-command errors point to `help`.
+
+Every help request, including an unknown topic, leaves equipment, loans, bundles, availability, identifiers and
+saved records unchanged. You can then enter another command normally. Help does not save data or end the session.
 
 ## Optional fields and defaults
 
 In command formats, `<VALUE>` is a value to replace and `[field/<VALUE>]` is an optional field.
 Do not type the angle or square brackets. Commands and field prefixes use lowercase spelling.
 Defaults apply only when a field is absent. Supplied empty or invalid values produce an error,
-except that empty remarks are valid.
+except that empty remarks are valid unless damage is `OTHER`.
 
 | Command | Optional field | When omitted |
 | --- | --- | --- |
 | `add` | Subtype and compatibility details | `unspecified` |
 | `add` | `damage/` | `NONE` |
-| `add` | `remarks/` | Empty text |
+| `add` | `remarks/` | Empty text; rejected if damage is `OTHER` |
 | `loan` | `issued/` | Today's date in the application's local time zone, at midnight |
-| `return` | `remarks/` | Empty text, replacing any previous remarks |
+| `return` | `remarks/` | Empty text, replacing previous remarks; rejected if damage is `OTHER` |
 | `update` | Name, type or condition | Keep the existing value; supply an ID and at least one field |
 | `filter` | Any individual criterion | No restriction for that criterion; supply at least one criterion |
 
@@ -83,8 +119,8 @@ Example: `add i/Canon EOS R10 id/001 type/camera cond/1 remarks/Handle with care
 * `TYPE` is `camera`, `lens`, `battery` or `tripod`. Type names are case-insensitive and stored in lowercase.
 * `CONDITION` is a whole number from `1` to `10`, without leading zeros, signs or decimals.
   We recommend `1` for pristine and `10` for non-functional.
-* `REMARKS` is optional free-form text of up to 200 characters. It must remain on one line and is trimmed at both ends.
-* Put `remarks/` last when remarks are provided. Omit it to add equipment without remarks.
+* `REMARKS` is free-form text of up to 200 characters. It must remain on one line and is trimmed at both ends.
+* Put `remarks/` last when provided. Non-empty remarks are required for `damage/OTHER`.
 * Enter the fields in the order shown above. Names can contain spaces.
 * Equipment with the same name can be added separately using different IDs.
 
@@ -106,19 +142,19 @@ After `cond/`, you can add the fields for the equipment type, followed by
 
 | Type | Optional fields, in command order | Damage values |
 | --- | --- | --- |
-| `camera` | `sensor/<SENSOR FORMAT>`, `mount/<LENS MOUNT>`, `thread/<TRIPOD THREAD>`, `battery/<BATTERY TYPE>` | `NONE`, `SENSOR_DAMAGE`, `SHUTTER_FAULT` |
-| `lens` | `zoom/<ZOOM RANGE>`, `mount/<LENS MOUNT>`, `sensor/<SENSOR FORMAT>` | `NONE`, `SCRATCHED_GLASS`, `AUTOFOCUS_FAULT` |
-| `battery` | `capacity/<CAPACITY>`, `battery/<BATTERY TYPE>` | `NONE`, `SWELLING`, `CONTACT_DAMAGE` |
-| `tripod` | `thread/<TRIPOD THREAD>` | `NONE`, `BENT_LEG`, `HEAD_FAULT` |
+| `camera` | `sensor/<SENSOR FORMAT>`, `mount/<LENS MOUNT>`, `thread/<TRIPOD THREAD>`, `battery/<BATTERY TYPE>` | `NONE`, `SENSOR_DAMAGE`, `SHUTTER_FAULT`, `WATER_DAMAGE`, `BODY_CRACK`, `MISSING_CAP`, `OTHER` |
+| `lens` | `zoom/<ZOOM RANGE>`, `mount/<LENS MOUNT>`, `sensor/<SENSOR FORMAT>` | `NONE`, `SCRATCHED_GLASS`, `AUTOFOCUS_FAULT`, `WATER_DAMAGE`, `CRACKED_GLASS`, `MISSING_CAP`, `OTHER` |
+| `battery` | `capacity/<CAPACITY>`, `battery/<BATTERY TYPE>` | `NONE`, `SWELLING`, `CONTACT_DAMAGE`, `WATER_DAMAGE`, `LEAKING`, `OTHER` |
+| `tripod` | `thread/<TRIPOD THREAD>` | `NONE`, `BENT_LEG`, `HEAD_FAULT`, `WATER_DAMAGE`, `MISSING_PART`, `OTHER` |
 
 * Each type-specific value is free text containing 1 to 100 characters
   on one line.
 * Type-specific fields must appear in the order shown in the table.
   `damage/` follows those fields when supplied.
-* Every optional field may be omitted. Omitted compatibility values
-  default to `unspecified`, and damage defaults to `NONE`.
+* Optional fields may be omitted independently, except `remarks/` with `damage/OTHER`.
+  Omitted compatibility values default to `unspecified`, and damage defaults to `NONE`.
 * Damage values are case-insensitive and stored in uppercase. Use a
-  damage value from the row belonging to the selected equipment type.
+  damage value from the selected type's row. For `OTHER`, remarks must be non-empty after trimming.
 * Fields belonging to another equipment type, invalid damage values,
   repeated fields and fields in the wrong order are rejected.
 * Compatibility comparisons ignore letter case.
@@ -138,6 +174,7 @@ add i/Canon EOS R10 id/001 type/camera cond/1 sensor/APS-C mount/Canon RF thread
 add i/Standard Zoom id/002 type/lens cond/2 zoom/24-70 mm mount/Canon RF sensor/APS-C damage/NONE
 add i/Spare Battery id/003 type/battery cond/3 capacity/2000 mAh battery/Li-ion damage/NONE
 add i/Travel Tripod id/004 type/tripod cond/2 thread/1/4"-20 damage/NONE
+add i/Backup Camera id/005 type/camera cond/5 damage/OTHER remarks/Damaged control dial
 ```
 
 * Names can contain text such as `USB id/card reader` or `fluid/head tripod`.
@@ -173,8 +210,9 @@ Equipment with an active (unreturned) loan cannot be deleted. This prevents its 
 for a different item while the original loan is still active. Deletion is allowed once there are no active
 loans for that ID; returned loan records do not block deletion.
 
-Equipment that belongs to a bundle cannot be deleted during that session. This keeps each bundle's contents
-and completion status consistent with the inventory. Bundles are cleared when the application restarts.
+Equipment that belongs to a bundle cannot be deleted. Use `remove-from-bundle` to remove the item from every
+bundle that contains it before deleting the equipment. This keeps each persisted bundle's contents and completion
+status consistent with the inventory.
 
 Invalid delete syntax produces an error followed by the delete command format.
 An ID that does not exist produces an error without changing the saved records.
@@ -228,6 +266,18 @@ This displays all recorded loans with their unique loan ID, item ID, borrower ID
 The `LOAN ID` column comes before `ITEM ID`. The final `RETURNED` column is `true` for returned loans
 and `false` for active loans.
 
+## Viewing the issue-time equipment condition: `view loan`
+
+Format: `view loan/<LOAN ID>`
+
+Example: `view loan/001`
+
+Use an existing loan ID from `001` to `999`. This displays the equipment type, numeric condition, damage and remarks captured when that loan was issued. The snapshot describes the equipment at issue time, not its current condition.
+
+Later equipment updates and return assessments do not change the saved snapshot. Returned loans retain their snapshots. Older loan records created before this feature report that the issue condition was not recorded.
+
+This is a read-only command. It does not change equipment, loans, availability or saved records. An invalid command or unknown loan ID produces an error without modifying any data.
+
 ## Viewing an item's loan history: `history`
 
 Format: `history id/<ITEM ID>`
@@ -273,6 +323,7 @@ Examples:
 return loan/001 serviceable/yes damage/none remarks/Checked on return
 return loan/002 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair
 return loan/003 serviceable/yes damage/none
+return loan/004 serviceable/no damage/OTHER remarks/Mounting plate damaged
 ```
 
 * Use the loan ID from `list loans`, from `001` to `999`. It must identify an active loan.
@@ -282,9 +333,9 @@ return loan/003 serviceable/yes damage/none
   The assessment determines whether the equipment may be borrowed again; damage alone does not decide this.
 * `damage/` must use a value from the equipment type's damage table under **Adding equipment**.
   Values are case-insensitive. Use `none` when no damage is found.
-* `remarks/` is optional and must be last when supplied. Omit it or supply empty text to clear previous remarks.
-  Supplied text may contain up to 200 characters after trimming. All text after this prefix is treated as remarks,
-  including prefix-like text.
+* `remarks/` must be last. For `damage/OTHER`, provide non-empty text after trimming.
+  For other damage values, omit it or supply empty text to clear previous remarks. Remarks may contain up to 200
+  characters after trimming. All text after `remarks/`, including prefix-like text, is treated as remarks.
 * The assessment replaces the item's previous damage and remarks. Its name, numeric condition, type-specific
   attributes and existing bundle memberships are retained. The numeric condition can be changed separately with `update`.
 
@@ -318,6 +369,34 @@ after fixing the storage problem.
 Deleting an active loan releases its equipment without changing its serviceability assessment.
 Deleting returned loan history leaves any
 newer active loan and the equipment's `Loaned` status unchanged.
+
+## Updating loan details: `update loan`
+
+Format: `update loan/<LOAN ID> [id/<ITEM ID>] [b/<BORROWER ID>] [issued/<DD-MM-YY>] [due/<DD-MM-YY>]`
+
+Example:
+
+```text
+update loan/001 b/007 due/15-10-26
+update loan/001 id/002 b/007 issued/03-10-26 due/15-10-26
+```
+
+Use the unique loan ID shown by `list loans`. Supply at least one field to update, in any order, once each.
+The loan ID remains unchanged, and omitted fields retain their current values. The supported fields are:
+
+* `id/` changes the equipment assigned to the active loan. The replacement must exist, be serviceable and have
+  no active loan. Its equipment record identity is retained so availability remains correct after a restart.
+* `b/` changes the three-digit borrower ID.
+* `issued/` changes the issue date.
+* `due/` changes the due date.
+
+The effective issue date must not be later than the effective due date. Unknown loan IDs, malformed IDs or dates,
+duplicate fields, unavailable equipment and returned loans are rejected. This project stores borrower IDs rather than
+borrower profiles, so borrower validation is limited to the documented three-digit identifier format.
+
+The complete proposed loan list is saved before the live loan and equipment associations change. If validation or
+saving fails, the original loan, equipment availability and saved file remain unchanged. Successful edits remain after
+restarting the application.
 
 ## Filtering equipment: `filter`
 
@@ -393,11 +472,11 @@ Format: `add-bundle name/<NAME>`
 Example: `add-bundle name/Travel Kit`
 
 The name must contain 1 to 100 characters. A bundle starts empty and incomplete. The application assigns
-three-digit bundle IDs in creation order, starting at `001`, with at most 999 bundles per session.
+three-digit bundle IDs in creation order, starting at `001`, with at most 999 bundles in the saved collection.
 Bundle IDs are separate from equipment IDs.
 
-Bundles are stored only for the current session. They are not saved when you enter `bye`, and restarting
-the application clears all bundles and starts their IDs at `001` again. Equipment and loans remain saved.
+Bundles and their equipment memberships are saved when you enter `bye` and restored when the application
+restarts. Bundle IDs continue from the highest restored ID. Equipment and loans remain saved separately.
 
 ## Adding equipment to a bundle: `add-to-bundle`
 
@@ -418,6 +497,16 @@ Returning a serviceable item or deleting its active loan makes it available for 
 Unserviceable equipment cannot be added to a bundle. Existing bundle memberships are retained on return.
 Updating a bundled item's name or condition also updates the item shown in the bundle.
 
+## Removing equipment from a bundle: `remove-from-bundle`
+
+Format: `remove-from-bundle id/<BUNDLE ID> <EQUIPMENT ID> [<EQUIPMENT ID> ...]`
+
+Example: `remove-from-bundle id/001 001`
+
+The bundle must exist. Each requested equipment ID is removed independently, and an equipment item can be
+deleted only after it has been removed from every bundle that contains it. Successful membership removals are
+saved immediately; a save failure restores the previous membership.
+
 ## Viewing bundles: `list bundles`
 
 Format: `list bundles`
@@ -425,14 +514,25 @@ Format: `list bundles`
 This displays each bundle's ID, name, completion status and contained equipment. The `COMPLETE` column
 checks the required equipment counts. Borrowing an item later does not remove it from its bundle.
 
-## Saving equipment
+## Viewing a bundle's loan history: `history bundle`
+
+Format: `history bundle/id/<BUNDLE ID>` or `history bundle/name/<NAME>`
+
+Examples: `history bundle/id/001` and `history bundle/name/Travel Kit`
+
+This displays all active and returned loans for every physical equipment item in the selected bundle.
+Results are ordered by issue date from earliest to latest, then by loan ID. An empty history and an unknown
+bundle are reported clearly. Bundle memberships are matched using each equipment record's permanent identity,
+so a reused visible Item ID cannot inherit the wrong historical membership.
+
+## Saving application data
 
 Successful equipment additions, updates, deletions and return assessments are saved automatically in
 `data/equipment.txt`, relative to the directory from which the application is run.
-Successful loan additions, returns and deletions are saved in
-`data/loans.txt`, and the next unused loan ID is saved in `data/loan-sequence.txt`. Records are loaded when the
-application starts again. A final save is also attempted when `bye` is entered; if it fails, the application
-reports the affected file and lets you retry.
+Successful loan additions, updates, returns and deletions are saved in
+`data/loans.txt`, the next unused loan ID is saved in `data/loan-sequence.txt`, and bundle memberships are saved
+in `data/bundles.txt`. Records are loaded when the application starts again. A final save is also attempted when
+`bye` is entered; if it fails, the application reports the affected file and lets you retry.
 The directory and saved files are created on the first save, including the final save performed by `bye`.
 Each item's availability and associated loan ID are rebuilt from active loans at startup, so loaned items
 remain `Loaned` after restarting the application.
@@ -448,6 +548,7 @@ add i/Canon EOS R10 id/004 type/camera cond/1 remarks/Handle with care
 Saved equipment records use the four supported types and retain their type-specific values and damage.
 Existing records of supported types without optional fields are also accepted, using `unspecified` and `NONE`.
 Records created before remarks were supported may omit the `remarks/` field; they load with empty remarks.
+Records with `damage/OTHER` require non-empty remarks; invalid saved records are reported when loaded.
 Remarks are shown in the `list` equipment table and are restored when the application starts again.
 Saved records may start with `serviceable/yes` or `serviceable/no`, followed by a tab and the add record.
 This prefix is storage metadata, not an add-command field. Older records without the prefix are serviceable.
@@ -474,9 +575,32 @@ Existing loan records without loan IDs are assigned IDs in file order on first l
 These IDs remain stable on later restarts. The sequence file preserves the next unused ID even when loan records
 are deleted. Equipment records retain their details and remarks; loan associations are restored from the loan records.
 
-To transfer your records, copy `data/equipment.txt`, `data/loans.txt` and `data/loan-sequence.txt` to the same
-location on the other computer. If a file cannot be read or contains invalid or duplicate records, the application
-reports the problem and stops.
+To transfer your records, copy `data/equipment.txt`, `data/loans.txt`, `data/loan-sequence.txt` and
+`data/bundles.txt` to the same location on the other computer. If a file cannot be read or contains invalid or
+duplicate records, the application reports the problem and stops.
+
+## Backing up and restoring records
+
+Format: `backup path/<DIRECTORY>`
+
+Example: `backup path/backups/session-1`
+
+The `backup` command creates a new directory containing `equipment.txt`, `loans.txt`, `loan-sequence.txt` and a
+checksum manifest. The three records are captured as one logical snapshot. The destination must be outside the live
+data directory and must not already exist, so an existing backup cannot be silently overwritten. Empty equipment and
+loan records are represented by valid empty files, while the sequence file records the next available loan ID.
+Backup creation is read-only with respect to the live records.
+
+Format: `restore path/<DIRECTORY>`
+
+Example: `restore path/backups/session-1`
+
+The `restore` command verifies the manifest and loads all three records in an isolated temporary location before
+replacing the live files. Equipment, loans and the loan sequence are restored together; active loans mark their
+equipment as `Loaned`, returned loans remain in history, and the next loan ID is preserved. If the backup is missing,
+tampered with, malformed, incomplete, duplicated or inconsistent, the restore is rejected and the current live files
+and in-memory state remain unchanged. Successful restores clear current bundles because bundles are not included
+in the backup.
 
 ## Diagnostic logs
 
@@ -498,19 +622,27 @@ be used. Check the launch folder's `logs` path if you need to restore file loggi
 
 | Action | Command |
 | --- | --- |
-| Show command formats, examples and defaults | `help` |
+| Show the compact command menu | `help` |
+| Show one command's format, example and defaults | `help <command>` |
+| Show the complete command reference | `help all` |
 | Add equipment | `add i/<NAME> id/<ITEM ID> type/<TYPE> cond/<CONDITION>` with optional details, damage and remarks |
 | Delete equipment | `delete item/<ITEM ID>` |
 | Add loan | `loan id/<ITEM ID> b/<BORROWER ID> [issued/<DD-MM-YY>] due/<DD-MM-YY>` |
 | Return equipment | `return loan/<LOAN ID> serviceable/<VALUE> damage/<DAMAGE> [remarks/<REMARKS>]` |
 | Delete loan | `delete loan/<LOAN ID>` |
+| Update loan | `update loan/<LOAN ID> [id/<ITEM ID>] [b/<BORROWER ID>] [issued/<DD-MM-YY>] [due/<DD-MM-YY>]` |
 | List equipment | `list` |
 | List loans | `list loans` |
+| View issue-time equipment condition | `view loan/<LOAN ID>` |
+| Back up equipment and loan records | `backup path/<DIRECTORY>` |
+| Restore equipment and loan records | `restore path/<DIRECTORY>` |
 | View item loan history | `history id/<ITEM ID>` |
+| View bundle loan history | `history bundle/id/<BUNDLE ID>` or `history bundle/name/<NAME>` |
 | List overdue loans | `list overdue` |
 | Filter equipment | `filter [id/<ITEM ID>] [i/<NAME>] [type/<TYPE>] [cond/<CONDITION>] [status/<STATUS>]` |
 | Update equipment | `update id/<ITEM ID> [i/<NAME>] [type/<TYPE>] [cond/<CONDITION>]` |
 | Create bundle | `add-bundle name/<NAME>` |
 | Add equipment to bundle | `add-to-bundle id/<BUNDLE ID> <EQUIPMENT ID> [<EQUIPMENT ID> ...]` |
+| Remove equipment from bundle | `remove-from-bundle id/<BUNDLE ID> <EQUIPMENT ID> [<EQUIPMENT ID> ...]` |
 | List bundles | `list bundles` |
 | Exit | `bye` |

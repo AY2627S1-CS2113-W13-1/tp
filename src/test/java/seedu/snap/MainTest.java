@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,6 +35,10 @@ class MainTest {
                 + "add i/\u2003 id/002 type/camera cond/1\n"
                 + "add i/Camera id/002 type/\u2003 cond/1\nbye\n";
         String output = runApplication(commands, areAssertionsEnabled);
+        assertTrue(output.contains("#############"));
+        assertTrue(output.indexOf("#############") < output.indexOf("Welcome to snAp."));
+        assertFalse(output.contains("█"), "Redirected startup output should use the ASCII fallback by default.");
+        assertFalse(output.contains("\u001B"), "Redirected startup output must not contain colour escape codes.");
         assertTrue(output.contains("Equipment added successfully."));
         assertTrue(output.contains("Condition must be a whole number from 1 to 10."));
         assertTrue(output.contains("Item name must contain 1 to 100 characters."));
@@ -44,6 +49,16 @@ class MainTest {
         String logs = Files.readString(temporaryDirectory.resolve("logs/snap.log.0"));
         assertTrue(logs.contains("Added equipment with item ID 001"));
         assertTrue(logs.contains("Equipment addition rejected: Condition must be a whole number from 1 to 10."));
+    }
+
+    @Test
+    void main_explicitUnicodeLogo_preservesBlocksThroughRedirectedOutput() throws Exception {
+        String output = runApplication("bye\n", true, "unicode");
+
+        assertEquals(441, output.chars().filter(character -> character == '█').count());
+        assertTrue(output.indexOf("█████████████") < output.indexOf("Welcome to snAp."));
+        assertFalse(output.contains("\uFFFD"), "Redirected Unicode output must decode as UTF-8.");
+        assertTrue(output.contains("Goodbye."));
     }
 
     @Test
@@ -158,11 +173,13 @@ class MainTest {
         Files.writeString(dataDirectory.resolve("equipment.txt"), "not an equipment record\n");
         Files.writeString(dataDirectory.resolve("loans.txt"), "not a loan record\n");
 
-        String output = runApplication("list\n", true);
+        String output = runApplication("list\nbye\n", true);
 
         assertTrue(output.contains("Could not load saved data: equipment.txt:"));
         assertTrue(output.contains("loans.txt: Invalid loan record on line 1:"));
         assertFalse(output.contains("Welcome to snAp."));
+        assertFalse(output.contains("█"), "A failed startup must not print the welcome logo.");
+        assertFalse(output.contains("#############"), "A failed startup must not print the ASCII logo.");
 
         String logs = Files.readString(temporaryDirectory.resolve("logs/snap.log.0"));
         assertTrue(logs.contains("Could not load saved equipment data"));
@@ -171,15 +188,30 @@ class MainTest {
 
     /** Runs the application with isolated files and a timeout so tests cannot hang on console I/O. */
     private String runApplication(String commands, boolean areAssertionsEnabled) throws Exception {
+        return runApplication(commands, areAssertionsEnabled, null);
+    }
+
+    /** Runs with a selected logo mode while removing inherited terminal settings for repeatable output. */
+    private String runApplication(String commands, boolean areAssertionsEnabled, String logoMode) throws Exception {
         Path inputFile = temporaryDirectory.resolve("input.txt");
         Path outputFile = temporaryDirectory.resolve("output.txt");
         Files.writeString(inputFile, commands, StandardCharsets.UTF_8);
         Path javaExecutable = Path.of(System.getProperty("java.home"), "bin", "java");
         Path classes = Path.of(Main.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+        Path resources = Path.of(Main.class.getResource("/logo.txt").toURI()).getParent();
+        String classpath = classes + File.pathSeparator + resources;
         String assertionOption = areAssertionsEnabled ? "-ea" : "-da";
-        Process process = new ProcessBuilder(javaExecutable.toString(), assertionOption, "-cp", classes.toString(),
+        ProcessBuilder processBuilder = new ProcessBuilder(javaExecutable.toString(), assertionOption,
+                "-cp", classpath,
                 Main.class.getName()).directory(temporaryDirectory.toFile()).redirectErrorStream(true)
-                .redirectInput(inputFile.toFile()).redirectOutput(outputFile.toFile()).start();
+                .redirectInput(inputFile.toFile()).redirectOutput(outputFile.toFile());
+        processBuilder.environment().remove("SNAP_COLOUR");
+        processBuilder.environment().remove("SNAP_LOGO");
+        processBuilder.environment().remove("TERM");
+        if (logoMode != null) {
+            processBuilder.environment().put("SNAP_LOGO", logoMode);
+        }
+        Process process = processBuilder.start();
         try {
             assertTrue(process.waitFor(15, TimeUnit.SECONDS), "The application should exit after bye");
             assertEquals(0, process.exitValue(), "Application failure; inspect " + outputFile);

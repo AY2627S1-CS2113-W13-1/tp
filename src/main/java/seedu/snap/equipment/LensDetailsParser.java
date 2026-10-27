@@ -62,6 +62,10 @@ final class LensDetailsParser {
                         Lens.LensDamage.NONE,
                         Lens.LensDamage.class,
                         "lens");
+        EquipmentDetailParser.validateDamageRemarks(
+                damage,
+                remarks,
+                "lens");
 
         return new Lens(
                 name,

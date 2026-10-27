@@ -1,0 +1,19 @@
+@startuml LoggingLifecycle
+!include style.puml
+
+start
+:Main calls AppLogging.start();
+:Create the log directory and file handler;
+if (I/O setup succeeds?) then (yes)
+    :Configure shared package logging\nwith rotation and append mode;
+else (IOException)
+    :Print a warning;\nreturn a session without a file handler;
+endif
+:Construct EqmManager and run the command loop;
+:Main closes the logging session\non normal or exceptional exit;
+if (Session has a file handler?) then (yes)
+    :Remove and close the handler;\nrestore previous logger settings;
+else (no)
+endif
+stop
+@enduml

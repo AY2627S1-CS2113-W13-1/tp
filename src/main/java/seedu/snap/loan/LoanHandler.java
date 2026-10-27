@@ -27,6 +27,8 @@ import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 import seedu.snap.exceptions.LoanReturnUnsuccessful;
 import seedu.snap.exceptions.LoanHistoryUnsuccessful;
+import seedu.snap.exceptions.LoanViewingUnsuccessful;
+import seedu.snap.exceptions.LoanUpdateUnsuccessful;
 
 /** Parses loan commands and stores successfully created loans. */
 public class LoanHandler {
@@ -209,6 +211,94 @@ public class LoanHandler {
         assert numLoans == loans.size() : "numLoans should match the size of the loans list";
         logger.log(Level.INFO, "Added loan {0} for item ID {1}.", new Object[]{loanId, itemId});
         return loan;
+    }
+
+    /** Updates one active loan after validating every supplied field and saving the proposal first. */
+    public Loan updateLoan(String input) throws LoanUpdateUnsuccessful {
+        LoanUpdate update;
+        try {
+            update = LoanUpdate.parse(input);
+        } catch (LoanUpdateUnsuccessful exception) {
+            logger.log(Level.WARNING, "Loan update rejected: {0}", exception.getMessage());
+            throw exception;
+        }
+        Loan loan = findLoanForUpdate(update.loanId());
+        if (loan.isReturned()) {
+            throw rejectLoanUpdate("Loan " + update.loanId()
+                    + " has already been returned and cannot be updated.");
+        }
+
+        Equipment current;
+        Equipment replacement;
+        try {
+            current = findEquipment(loan.getItemId());
+            if (!loan.ownsEquipment(current)) {
+                throw rejectLoanUpdate("Loan " + loan.getLoanId()
+                        + " no longer owns its equipment. No update was recorded.");
+            }
+            replacement = update.changesItem() ? findEquipment(update.itemId()) : current;
+            if (replacement != current) {
+                if (hasActiveLoanForItem(replacement.getItemId()) || replacement.isLoaned()) {
+                    throw rejectLoanUpdate("Item ID " + replacement.getItemId()
+                            + " is already loaned out.");
+                }
+                if (!replacement.isServiceable()) {
+                    throw rejectLoanUpdate("Item ID " + replacement.getItemId()
+                            + " is unserviceable and cannot be assigned to a loan.");
+                }
+            }
+        } catch (LoanAdditionUnsuccessful exception) {
+            logger.log(Level.WARNING, "Loan update equipment validation failed", exception);
+            throw new LoanUpdateUnsuccessful(exception.getMessage());
+        }
+
+        String borrowerId = update.changesBorrower() ? update.borrowerId() : loan.getBorrowerId();
+        LocalDateTime issuedDate = update.changesIssuedDate() ? update.issuedDate() : loan.getIssuedDate();
+        LocalDateTime dueDate = update.changesDueDate() ? update.dueDate() : loan.getDueDate();
+        if (issuedDate.isAfter(dueDate)) {
+            throw rejectLoanUpdate("Issued date must not be later than the due date.");
+        }
+
+        Loan proposal = loan.updatedCopy(replacement.getItemId(), replacement.getRecordId(),
+                borrowerId, issuedDate, dueDate, replacement);
+        ArrayList<Loan> proposedLoans = new ArrayList<>(loans);
+        proposedLoans.set(proposedLoans.indexOf(loan), proposal);
+        try {
+            save(proposedLoans, nextLoanNumber);
+        } catch (IOException exception) {
+            logger.log(Level.WARNING, "Loan update could not be saved", exception);
+            throw new LoanUpdateUnsuccessful("Could not save loan update: " + exception.getMessage());
+        }
+
+        loan.applyUpdate(proposal, replacement);
+        assert loan.getLoanId().equals(update.loanId()) : "A loan update must preserve the loan ID";
+        assert numLoans == loans.size() : "Updating a loan must not change the loan count";
+        logger.log(Level.INFO, "Updated loan {0}; item ID {1}, borrower ID {2}.",
+                new Object[]{loan.getLoanId(), loan.getItemId(), loan.getBorrowerId()});
+        return loan;
+    }
+
+    /** Finds exactly one loan before an update can change its details. */
+    private Loan findLoanForUpdate(String loanId) throws LoanUpdateUnsuccessful {
+        Loan match = null;
+        for (Loan candidate : loans) {
+            if (loanId.equals(candidate.getLoanId())) {
+                if (match != null) {
+                    throw rejectLoanUpdate("Loan ID " + loanId + " is not unique.");
+                }
+                match = candidate;
+            }
+        }
+        if (match == null) {
+            throw rejectLoanUpdate("No loan found for loan ID " + loanId + ".");
+        }
+        return match;
+    }
+
+    /** Logs and creates a consistent rejection for a loan update that failed business validation. */
+    private LoanUpdateUnsuccessful rejectLoanUpdate(String message) {
+        logger.log(Level.WARNING, "Loan update rejected: {0}", message);
+        return new LoanUpdateUnsuccessful(message);
     }
 
     /** Finds one matching item without changing its availability, including during reload validation. */
@@ -574,6 +664,124 @@ public class LoanHandler {
 
     // @@author
 
+    // @@author Rohita-29
+
+    /**
+     * Displays the issue-time equipment condition for one loan.
+     *
+     * @param input complete view-loan command
+     * @throws LoanViewingUnsuccessful if the command or loan ID is invalid
+     */
+    public void viewLoanIssueCondition(String input)
+            throws LoanViewingUnsuccessful {
+        String loanId = parseViewLoanId(input);
+        Loan loan = findLoanForViewing(loanId);
+        EquipmentConditionSnapshot snapshot =
+                loan.getIssueConditionSnapshot();
+
+        if (snapshot == null) {
+            logger.log(
+                    Level.INFO,
+                    "Viewed loan {0}; issue-time condition was not recorded.",
+                    loanId);
+            System.out.println(
+                    "Loan "
+                            + loanId
+                            + " issue-time condition: Not recorded");
+            return;
+        }
+
+        System.out.println(
+                "Loan "
+                        + loanId
+                        + " issue-time condition:");
+        System.out.println("Item ID: " + loan.getItemId());
+        System.out.println(
+                "Type: " + snapshot.getEquipmentType());
+        System.out.println(
+                "Condition: " + snapshot.getCondition());
+        System.out.println(
+                "Damage: " + snapshot.getDamage());
+
+        String remarks =
+                snapshot.getRemarks().isEmpty()
+                        ? "None"
+                        : snapshot.getRemarks();
+        System.out.println("Remarks: " + remarks);
+        logger.log(
+                Level.INFO,
+                "Viewed issue-time condition for loan {0}.",
+                loanId);
+    }
+
+    /** Extracts and validates a loan ID from a viewing command. */
+    private static String parseViewLoanId(String input)
+            throws LoanViewingUnsuccessful {
+        String normalizedInput =
+                input == null
+                        ? ""
+                        : input.replaceAll("(?U)^\\s+|\\s+$", "");
+        String[] arguments =
+                normalizedInput.isEmpty()
+                        ? new String[0]
+                        : normalizedInput.split("(?U)\\s+");
+
+        if (arguments.length != 2
+                || !arguments[0].equals("view")
+                || !arguments[1].startsWith("loan/")) {
+            throw new LoanViewingUnsuccessful(
+                    "Invalid command format. Expected: "
+                            + "view loan/[LOAN ID].");
+        }
+
+        String loanId =
+                arguments[1].substring("loan/".length());
+        if (!loanId.matches(ID_FORMAT)
+                || loanId.equals("000")) {
+            throw new LoanViewingUnsuccessful(
+                    "Invalid loan ID \""
+                            + loanId
+                            + "\". Loan ID must be exactly "
+                            + "three digits from 001 to 999.");
+        }
+
+        return loanId;
+    }
+
+    /** Finds the unique loan matching an ID without modifying it. */
+    private Loan findLoanForViewing(String loanId)
+            throws LoanViewingUnsuccessful {
+        assert numLoans == loans.size()
+                : "numLoans should match the size of the loans list";
+        Loan matchingLoan = null;
+
+        for (Loan loan : loans) {
+            assert loan != null
+                    : "Loan list must not contain null items";
+            if (!loanId.equals(loan.getLoanId())) {
+                continue;
+            }
+            if (matchingLoan != null) {
+                throw new LoanViewingUnsuccessful(
+                        "Loan ID "
+                                + loanId
+                                + " is not unique.");
+            }
+            matchingLoan = loan;
+        }
+
+        if (matchingLoan == null) {
+            throw new LoanViewingUnsuccessful(
+                    "No loan found for loan ID "
+                            + loanId
+                            + ".");
+        }
+
+        return matchingLoan;
+    }
+
+    // @@author
+
     /**
      * Prints out all equipment in inventory
      */
@@ -599,16 +807,33 @@ public class LoanHandler {
         } catch (LoanAdditionUnsuccessful exception) {
             throw new LoanHistoryUnsuccessful(exception.getMessage());
         }
+        List<Loan> history = getLoanHistoryForEquipment(current);
+        logger.log(Level.FINE, "Selected {0} history record(s) for item ID {1}.",
+                new Object[]{history.size(), itemId});
+        return history;
+    }
+
+    /**
+     * Selects all active and returned loans belonging to one physical equipment record.
+     *
+     * @param item equipment whose permanent record identity is queried
+     * @return an unmodifiable list in issue-date order, then loan-ID order
+     */
+    public List<Loan> getLoanHistoryForEquipment(Equipment item) {
+        if (item == null) {
+            throw new IllegalArgumentException("Equipment must not be null.");
+        }
         ArrayList<Loan> history = new ArrayList<>();
         for (Loan loan : loans) {
-            if (itemId.equals(loan.getItemId()) && current.getRecordId().equals(loan.getEquipmentRecordId())) {
+            if (item.getItemId().equals(loan.getItemId())
+                    && item.getRecordId().equals(loan.getEquipmentRecordId())) {
                 history.add(loan);
             }
         }
         history.sort(Comparator.comparing(Loan::getIssuedDate)
                 .thenComparingInt(loan -> Integer.parseInt(loan.getLoanId())));
-        logger.log(Level.FINE, "Selected {0} history record(s) for item ID {1}.",
-                new Object[]{history.size(), itemId});
+        assert history.stream().allMatch(loan -> loan.getEquipmentRecordId() != null)
+                : "Equipment history must contain attributed loan records";
         return List.copyOf(history);
     }
 
@@ -641,8 +866,19 @@ public class LoanHandler {
         throw new LoanHistoryUnsuccessful("Invalid format. Use: history id/[ITEM ID], from 001 to 999.");
     }
 
+    /** Prints loan records using the same table format as the all-loans command. */
+    public void printLoans(List<Loan> records) {
+        if (records == null) {
+            throw new IllegalArgumentException("Loan records must not be null.");
+        }
+        for (Loan record : records) {
+            assert record != null : "Loan records must not contain null items";
+        }
+        printLoansTable(records);
+    }
+
     /** Shares the displayed borrowing details between all-loan and individual-item views. */
-    private static void printLoans(List<Loan> records) {
+    private static void printLoansTable(List<Loan> records) {
         System.out.printf(
                 "%-4s %-12s | %-12s | %-12s | %-16s | %-16s | %-8s%n",
                 "No.", "LOAN ID", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE", "RETURNED"

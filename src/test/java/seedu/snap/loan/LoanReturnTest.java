@@ -2,6 +2,7 @@ package seedu.snap.loan;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -86,6 +87,76 @@ class LoanReturnTest {
     }
 
     @Test
+    void returnLoan_changedConditionAssessmentAndReloan_snapshotsSurviveRestart()
+            throws Exception {
+        EquipmentConditionSnapshot firstSnapshot =
+                original.getIssueConditionSnapshot();
+
+        assertNotNull(firstSnapshot);
+        assertEquals(4, firstSnapshot.getCondition());
+        assertEquals("SENSOR_DAMAGE", firstSnapshot.getDamage());
+        assertEquals("Original assessment", firstSnapshot.getRemarks());
+
+        loans.returnLoan(
+                "return loan/001 serviceable/yes "
+                        + "damage/SHUTTER_FAULT "
+                        + "remarks/Assessed after return");
+        equipment.updateEquipment("update id/001 cond/8");
+        Loan second = loans.addLoan(
+                "loan id/001 b/003 issued/03-10-26 due/04-10-26");
+
+        EquipmentConditionSnapshot secondSnapshot =
+                second.getIssueConditionSnapshot();
+        assertNotNull(secondSnapshot);
+        assertEquals(4, firstSnapshot.getCondition());
+        assertEquals("SENSOR_DAMAGE", firstSnapshot.getDamage());
+        assertEquals("Original assessment", firstSnapshot.getRemarks());
+        assertEquals(8, secondSnapshot.getCondition());
+        assertEquals("SHUTTER_FAULT", secondSnapshot.getDamage());
+        assertEquals("Assessed after return", secondSnapshot.getRemarks());
+
+        EquipmentHandler reloadedEquipment =
+                new EquipmentHandler(equipmentFile);
+        reloadedEquipment.loadFromStorage();
+        LoanHandler reloadedLoans =
+                new LoanHandler(
+                        reloadedEquipment,
+                        loanFile,
+                        sequenceFile);
+        reloadedLoans.loadFromStorage();
+
+        List<Loan> restoredLoans = reloadedLoans.getLoanList();
+        assertEquals(2, restoredLoans.size());
+        Loan restoredFirst = restoredLoans.get(0);
+        Loan restoredSecond = restoredLoans.get(1);
+        EquipmentConditionSnapshot restoredFirstSnapshot =
+                restoredFirst.getIssueConditionSnapshot();
+        EquipmentConditionSnapshot restoredSecondSnapshot =
+                restoredSecond.getIssueConditionSnapshot();
+
+        assertNotNull(restoredFirstSnapshot);
+        assertNotNull(restoredSecondSnapshot);
+        assertTrue(restoredFirst.isReturned());
+        assertFalse(restoredSecond.isReturned());
+        assertEquals("001", restoredFirst.getLoanId());
+        assertEquals("002", restoredSecond.getLoanId());
+        assertEquals(4, restoredFirstSnapshot.getCondition());
+        assertEquals(
+                "SENSOR_DAMAGE",
+                restoredFirstSnapshot.getDamage());
+        assertEquals(
+                "Original assessment",
+                restoredFirstSnapshot.getRemarks());
+        assertEquals(8, restoredSecondSnapshot.getCondition());
+        assertEquals(
+                "SHUTTER_FAULT",
+                restoredSecondSnapshot.getDamage());
+        assertEquals(
+                "Assessed after return",
+                restoredSecondSnapshot.getRemarks());
+    }
+
+    @Test
     void returnLoan_unserviceableItem_survivesReloadAndCannotBeLoanedAgain() throws Exception {
         loans.returnLoan("return loan/001 serviceable/no damage/SHUTTER_FAULT remarks/Needs repair");
 
@@ -134,6 +205,34 @@ class LoanReturnTest {
         reloaded.loadFromStorage();
         assertEquals(remarks, camera.getRemarks());
         assertEquals(remarks, reloaded.getEquipmentList().getFirst().getRemarks());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"yes", "no"})
+    void returnLoan_otherDamageWithRemarks_survivesRestart(String serviceability) throws Exception {
+        String remarks = "Damage outside listed categories";
+        String command = "return loan/001 serviceable/" + serviceability
+                + " damage/other remarks/" + remarks;
+        boolean expectedServiceable = "yes".equals(serviceability);
+
+        assertSame(original, loans.returnLoan(command));
+        assertEquals(CameraDamage.OTHER, camera.getDamage());
+        assertEquals(remarks, camera.getRemarks());
+        assertEquals(expectedServiceable, camera.isServiceable());
+        assertFalse(camera.isLoaned());
+        assertTrue(original.isReturned());
+
+        EquipmentHandler restoredEquipment = new EquipmentHandler(equipmentFile);
+        restoredEquipment.loadFromStorage();
+        LoanHandler restoredLoans = new LoanHandler(restoredEquipment, loanFile, sequenceFile);
+        restoredLoans.loadFromStorage();
+        Camera restored = (Camera) restoredEquipment.getEquipmentList().getFirst();
+
+        assertEquals(CameraDamage.OTHER, restored.getDamage());
+        assertEquals(remarks, restored.getRemarks());
+        assertEquals(expectedServiceable, restored.isServiceable());
+        assertFalse(restored.isLoaned());
+        assertTrue(restoredLoans.getLoanList().getFirst().isReturned());
     }
 
     @Test
@@ -210,6 +309,9 @@ class LoanReturnTest {
                 "return loan/001 serviceable/yes damage/ remarks/",
                 "return loan/001 serviceable/yes damage/SCRATCHED_GLASS remarks/",
                 "return loan/001 serviceable/yes damage/UNKNOWN remarks/",
+                "return loan/001 serviceable/yes damage/OTHER",
+                "return loan/001 serviceable/yes damage/OTHER remarks/",
+                "return loan/001 serviceable/no damage/other remarks/   ",
                 "return loan/001 damage/NONE serviceable/yes remarks/",
                 "return serviceable/yes loan/001 damage/NONE remarks/",
                 "return loan/001 loan/001 serviceable/yes damage/NONE remarks/",
