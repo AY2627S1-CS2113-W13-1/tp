@@ -2,6 +2,7 @@ package seedu.snap.maintenance;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
@@ -41,19 +42,30 @@ public class MaintenanceHandler {
     private final ArrayList<MaintenanceRecord> records = new ArrayList<>();
     /** File used for persistence, or null for an in-memory handler. */
     private final Path storageFile;
+    /** Clock used to reject maintenance dates that are later than the application date. */
+    private final Clock clock;
 
     /** Creates an in-memory maintenance handler for isolated tests or callers without persistence. */
     public MaintenanceHandler(EquipmentHandler equipment) {
-        this(equipment, null);
+        this(equipment, null, Clock.systemDefaultZone());
     }
 
     /** Creates a maintenance handler backed by the supplied text file. */
     public MaintenanceHandler(EquipmentHandler equipment, Path storageFile) {
+        this(equipment, storageFile, Clock.systemDefaultZone());
+    }
+
+    /** Creates a maintenance handler with an explicit clock for deterministic date validation. */
+    public MaintenanceHandler(EquipmentHandler equipment, Path storageFile, Clock clock) {
         if (equipment == null) {
             throw new IllegalArgumentException("Equipment handler must not be null.");
         }
+        if (clock == null) {
+            throw new IllegalArgumentException("Clock must not be null.");
+        }
         this.equipment = equipment;
         this.storageFile = storageFile;
+        this.clock = clock;
     }
 
     /**
@@ -67,6 +79,11 @@ public class MaintenanceHandler {
             return;
         }
         List<MaintenanceRecord> loaded = MaintenanceStorage.load(storageFile);
+        for (MaintenanceRecord record : loaded) {
+            if (isFutureDate(record.getMaintenanceDate())) {
+                throw new IOException("Maintenance date cannot be in the future.");
+            }
+        }
         records.clear();
         records.addAll(loaded);
         assert records.size() == loaded.size() : "Loaded maintenance record count must be preserved";
@@ -95,6 +112,9 @@ public class MaintenanceHandler {
         int previousSize = records.size();
         try {
             ParsedCommand parsed = parseCommand(input);
+            if (isFutureDate(parsed.date())) {
+                throw new MaintenanceRecordUnsuccessful("Maintenance date cannot be in the future.");
+            }
             Equipment item = equipment.getEquipmentById(parsed.itemId());
             if (item == null) {
                 throw new MaintenanceRecordUnsuccessful("Equipment ID " + parsed.itemId() + " does not exist.");
@@ -114,7 +134,11 @@ public class MaintenanceHandler {
             assert records.size() == previousSize : "Rejected maintenance must not change the record count";
             logger.log(Level.FINE, "Maintenance record rejected: {0}", exception.getMessage());
             throw exception;
-        } catch (IOException | IllegalArgumentException exception) {
+        } catch (IllegalArgumentException exception) {
+            assert records.size() == previousSize : "Invalid maintenance must not change records";
+            logger.log(Level.FINE, "Maintenance record failed validation: {0}", exception.getMessage());
+            throw new MaintenanceRecordUnsuccessful(exception.getMessage());
+        } catch (IOException exception) {
             assert records.size() == previousSize : "Failed maintenance saves must not change records";
             logger.log(Level.WARNING, "Maintenance record could not be saved", exception);
             throw new MaintenanceRecordUnsuccessful("Could not save maintenance record: "
@@ -205,6 +229,11 @@ public class MaintenanceHandler {
     /** Checks the visible three-digit item ID accepted by the existing equipment commands. */
     private static boolean isValidItemId(String itemId) {
         return itemId != null && itemId.matches("[0-9]{3}") && !itemId.equals("000");
+    }
+
+    /** Returns whether a maintenance date is later than today in the configured application time zone. */
+    private boolean isFutureDate(LocalDate date) {
+        return date.isAfter(LocalDate.now(clock));
     }
 
     /** Validates the read-only maintenance-history command and returns its item ID. */

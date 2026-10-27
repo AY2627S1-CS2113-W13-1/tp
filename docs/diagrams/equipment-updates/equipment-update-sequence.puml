@@ -1,0 +1,38 @@
+@startuml equipment-update-sequence
+!include ../style.puml
+hide footbox
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 150
+skinparam defaultFontSize 16
+
+participant ":EqmManager" as Manager
+participant ":EquipmentHandler" as Handler
+participant "EquipmentStorage" as Storage <<utility>>
+participant "target:Camera" as Target
+
+title update id/001 i/Film Camera cond/5
+
+Manager -> Handler : updateEquipment(input)
+activate Handler
+Handler -> Handler : parse fields and find target
+note over Handler : Fill omitted values;\nvalidate the complete proposal.
+
+Handler -> Handler : saveUpdate(target, ...)
+activate Handler
+note over Handler, Storage : Prepare a same-subtype proposal\nin a copied inventory.
+Handler -> Storage : save(file, proposedInventory)
+activate Storage
+Storage --> Handler
+deactivate Storage
+Handler --> Handler
+deactivate Handler
+
+Handler -> Target : updateDetails("Film Camera", 5)
+activate Target
+Target --> Handler
+deactivate Target
+Handler --> Manager : target
+deactivate Handler
+Manager -> Manager : display success
+
+@enduml

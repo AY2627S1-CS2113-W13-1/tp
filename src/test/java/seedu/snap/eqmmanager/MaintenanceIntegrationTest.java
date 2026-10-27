@@ -10,6 +10,9 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,6 +21,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 /** Tests maintenance commands through the application manager and persistent data directory. */
 class MaintenanceIntegrationTest {
+    private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-10-27T12:00:00Z"), ZoneOffset.UTC);
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
     private PrintStream originalOutput;
 
@@ -37,7 +41,7 @@ class MaintenanceIntegrationTest {
 
     @Test
     void maintain_validCommand_reportsSuccessAndPersistsRecord() throws Exception {
-        EqmManager manager = new EqmManager(temporaryDirectory);
+        EqmManager manager = new EqmManager(temporaryDirectory, FIXED_CLOCK);
         manager.executeInput("add i/Camera id/001 type/camera cond/5");
         output.reset();
 
@@ -54,7 +58,7 @@ class MaintenanceIntegrationTest {
 
     @Test
     void maintain_invalidCommand_reportsErrorAndAcceptsNextValidCommand() throws Exception {
-        EqmManager manager = new EqmManager(temporaryDirectory);
+        EqmManager manager = new EqmManager(temporaryDirectory, FIXED_CLOCK);
         manager.executeInput("add i/Camera id/001 type/camera cond/5");
         output.reset();
 
@@ -69,7 +73,7 @@ class MaintenanceIntegrationTest {
 
     @Test
     void bye_withoutMaintenanceRecords_createsMaintenanceFile() throws Exception {
-        EqmManager manager = new EqmManager(temporaryDirectory);
+        EqmManager manager = new EqmManager(temporaryDirectory, FIXED_CLOCK);
 
         manager.executeInput("bye");
 
@@ -83,7 +87,7 @@ class MaintenanceIntegrationTest {
         Path file = temporaryDirectory.resolve("maintenance.txt");
         String original = "not a maintenance record" + System.lineSeparator();
         Files.writeString(file, original);
-        EqmManager manager = new EqmManager(temporaryDirectory);
+        EqmManager manager = new EqmManager(temporaryDirectory, FIXED_CLOCK);
 
         manager.executeInput("maintain id/001 date/27-10-26 work/Repair outcome/Completed");
 
@@ -95,7 +99,7 @@ class MaintenanceIntegrationTest {
 
     @Test
     void historyMaintenance_validCommand_displaysChronologicalRecordsWithoutWriting() throws Exception {
-        EqmManager manager = new EqmManager(temporaryDirectory);
+        EqmManager manager = new EqmManager(temporaryDirectory, FIXED_CLOCK);
         manager.executeInput("add i/Camera id/001 type/camera cond/5");
         manager.executeInput("maintain id/001 date/27-10-26 work/Later repair outcome/Completed");
         manager.executeInput("maintain id/001 date/24-10-26 work/Earlier repair outcome/Completed");
@@ -116,7 +120,7 @@ class MaintenanceIntegrationTest {
 
     @Test
     void historyMaintenance_emptyUnknownAndInvalidQueries_areHandled() throws Exception {
-        EqmManager manager = new EqmManager(temporaryDirectory);
+        EqmManager manager = new EqmManager(temporaryDirectory, FIXED_CLOCK);
         manager.executeInput("add i/Camera id/001 type/camera cond/5");
         output.reset();
 
@@ -132,7 +136,7 @@ class MaintenanceIntegrationTest {
 
     @Test
     void historyMaintenance_afterRestart_displaysPersistedRecords() throws Exception {
-        EqmManager manager = new EqmManager(temporaryDirectory);
+        EqmManager manager = new EqmManager(temporaryDirectory, FIXED_CLOCK);
         manager.executeInput("add i/Camera id/001 type/camera cond/5");
         manager.executeInput("maintain id/001 date/27-10-26 work/Replaced battery outcome/Completed");
         output.reset();
@@ -143,5 +147,18 @@ class MaintenanceIntegrationTest {
         String printed = output.toString(StandardCharsets.UTF_8);
         assertTrue(printed.contains("Replaced battery"));
         assertTrue(printed.contains("Completed"));
+    }
+
+    @Test
+    void maintain_futureDate_isRejectedWithoutCreatingARecord() throws Exception {
+        EqmManager manager = new EqmManager(temporaryDirectory, FIXED_CLOCK);
+        manager.executeInput("add i/Camera id/001 type/camera cond/5");
+        output.reset();
+
+        manager.executeInput("maintain id/001 date/28-10-26 work/Planned outcome/Not completed");
+
+        assertEquals("Maintenance date cannot be in the future." + System.lineSeparator(),
+                output.toString(StandardCharsets.UTF_8));
+        assertFalse(Files.exists(temporaryDirectory.resolve("maintenance.txt")));
     }
 }

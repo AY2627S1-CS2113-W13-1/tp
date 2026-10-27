@@ -1,0 +1,15 @@
+@startuml EquipmentAvailability
+!include style.puml
+!pragma layout smetana
+top to bottom direction
+hide empty description
+
+state Available
+state Loaned
+state Unserviceable
+
+[*] --> Available : add equipment
+Available --> Loaned : loan saved or reassigned\n/ attach equipment
+Loaned --> Available : serviceable return saved,\nloan deleted or reassigned\n/ release equipment
+Loaned --> Unserviceable : unserviceable return saved\n/ release equipment
+@enduml
