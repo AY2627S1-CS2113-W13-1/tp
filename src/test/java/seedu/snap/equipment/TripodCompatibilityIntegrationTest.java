@@ -156,7 +156,7 @@ class TripodCompatibilityIntegrationTest {
     }
 
     @Test
-    void viewAllEquipment_tripodDetails_displaysValues()
+    void showEquipment_tripodDetails_displaysValues()
             throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
         handler.addEquipment(FULL_TRIPOD_COMMAND);
@@ -170,15 +170,15 @@ class TripodCompatibilityIntegrationTest {
                             output,
                             true,
                             StandardCharsets.UTF_8));
-            handler.viewAllEquipment();
+            handler.showEquipment("show id/301");
         } finally {
             System.setOut(originalOutput);
         }
 
         String displayed =
                 output.toString(StandardCharsets.UTF_8);
-        assertTrue(displayed.contains("thread/1/4\"-20"));
-        assertTrue(displayed.contains("damage/NONE"));
+        assertTrue(displayed.contains("Thread: 1/4\"-20"));
+        assertTrue(displayed.contains("Damage: NONE"));
     }
 
     /** Checks every explicit compatibility field on a Tripod. */

@@ -120,8 +120,20 @@ public final class Help {
                         LIST EQUIPMENT
                         Format: list
                         Example: list
-                        Shows all equipment, including status, subtype details, damage and remarks.
+                        Shows all equipment with Item ID, name, type, numeric condition and status in a compact table.
+                        Long names end in ...; use show id/<ID> for full values, subtype details, damage and remarks.
                         Status is Available, Loaned or Unserviceable.
+                        """)),
+                new CommandHelp("show", "Equipment", lineEndings("""
+                        SHOW EQUIPMENT
+                        Format: show id/<ID>
+                        Example: show id/001
+                        Requires an existing Item ID from 001 to 999. Extra fields are not accepted.
+                        Shows the full name, type, numeric condition, status, serviceability and active Loan ID.
+                        Includes all subtype and compatibility fields, damage and remarks, without truncation.
+                        Long values wrap onto indented lines; (none) marks an empty value.
+                        Tabs and control characters are shown as escapes so they cannot change the layout.
+                        This read-only command does not change records, identifiers or saved data.
                         """)),
                 new CommandHelp("delete item", "Equipment", lineEndings("""
                         DELETE EQUIPMENT
@@ -204,6 +216,16 @@ public final class Help {
                         Legacy loans without a saved snapshot report that the issue condition was not recorded.
                         This read-only command does not change equipment, loans or saved records.
                         """)),
+                new CommandHelp("list borrower", "Loans", lineEndings("""
+                        EQUIPMENT HELD BY MEMBER
+                        Format: list borrower/<BORROWER ID>
+                        Example: list borrower/002
+                        The equivalent alias list member/<MEMBER ID> is also accepted.
+                        Shows only active equipment held by the selected borrower, with loan details.
+                        Returned loans and loans held by other borrowers are excluded.
+                        An unknown borrower ID and a known borrower with no active loans receive clear messages.
+                        This read-only query does not change equipment, loans or saved files.
+                        """)),
                 new CommandHelp("list overdue", "Loans", lineEndings("""
                         LIST OVERDUE LOANS
                         Format: list overdue
@@ -231,6 +253,7 @@ public final class Help {
                         cond/ accepts one value or an inclusive ascending range, such as 1-3.
 
                         status/ accepts available or loaned. Available excludes active loans and unserviceable items.
+                        Uses the same compact table as list. Use show id/<ID> for full equipment values.
                         """)),
                 new CommandHelp("update", "Equipment", lineEndings("""
                         UPDATE EQUIPMENT
@@ -245,7 +268,8 @@ public final class Help {
                         RECORD MAINTENANCE
                         Format: maintain id/<ITEM ID> date/<DD-MM-YY> work/<DESCRIPTION> outcome/<OUTCOME>
                         Example: maintain id/001 date/27-10-26 work/Replaced battery outcome/Completed
-                        Requires an existing Item ID, a valid maintenance date, a non-empty work description and
+                        Requires an existing Item ID, a valid maintenance date that is not in the future,
+                        a non-empty work description and
                         outcome. Work descriptions and outcomes are trimmed, remain on one line and have documented
                         length limits.
                         Maintenance records are saved to maintenance.txt and remain associated with the physical item.
@@ -292,6 +316,8 @@ public final class Help {
 
                         A complete bundle has exactly one camera, at least one lens and at least one battery.
                         A tripod is optional, with at most one. Additional cameras and tripods are rejected.
+                        Known compatibility mismatches are rejected. Missing compatibility details or unrelated
+                        equipment types do not block addition.
                         """)),
                 new CommandHelp("remove-from-bundle", "Bundles", lineEndings("""
                         REMOVE EQUIPMENT FROM BUNDLE
@@ -316,6 +342,22 @@ public final class Help {
                         Includes active and returned loans for every equipment item in the selected bundle.
                         Results are sorted by issue date, earliest first, then Loan ID.
                         An empty bundle history and unknown bundle are reported clearly.
+                        """)),
+                new CommandHelp("backup", "General", lineEndings("""
+                        BACK UP DATA
+                        Format: backup path/<DIRECTORY>
+                        Example: backup path/backups/session-1
+                        Creates a complete backup containing equipment.txt, loans.txt, loan-sequence.txt and a manifest.
+                        The destination must be outside the live data directory and must not already exist.
+                        Backup creation does not change live records. Paths may contain spaces after path/.
+                        """)),
+                new CommandHelp("restore", "General", lineEndings("""
+                        RESTORE DATA
+                        Format: restore path/<DIRECTORY>
+                        Example: restore path/backups/session-1
+                        Validates the manifest and every equipment, loan and sequence record before replacing live data.
+                        A failed restore leaves the current records unchanged. Successful restores clear session-only
+                        bundles because bundles are not part of the persistent backup.
                         """)),
                 new CommandHelp("help", "General", lineEndings("""
                         HELP
@@ -356,7 +398,9 @@ public final class Help {
         appendMenuRow(menu, "snAp command menu");
         menu.append(border);
         for (String group : List.of("Equipment", "Loans", "Bundles", "General")) {
-            appendGroupRows(menu, group);
+            List<String> groupCommands = COMMANDS.stream().filter(command -> command.group().equals(group))
+                    .map(CommandHelp::command).toList();
+            appendMenuGroup(menu, group, groupCommands);
         }
         appendMenuRow(menu, "");
         appendMenuRow(menu, "Type help <COMMAND> for details (for example, help loan or help list overdue).");
@@ -364,26 +408,21 @@ public final class Help {
         return menu.append(border).toString();
     }
 
-    /** Splits long command groups into aligned rows while keeping every command visible. */
-    private static void appendGroupRows(StringBuilder menu, String group) {
-        List<String> groupCommands = COMMANDS.stream().filter(command -> command.group().equals(group))
-                .map(CommandHelp::command).toList();
+    /** Adds a command group to the menu, wrapping long groups without splitting command names. */
+    private static void appendMenuGroup(StringBuilder menu, String group, List<String> commands) {
         String prefix = group + ": ";
-        StringBuilder row = new StringBuilder(prefix);
-        for (String command : groupCommands) {
-            boolean hasCommand = row.length() > prefix.length();
-            int separatorLength = hasCommand ? 1 : 0;
-            if (hasCommand && row.length() + separatorLength + command.length() > TEXT_WIDTH - 4) {
-                appendMenuRow(menu, row.toString());
-                row = new StringBuilder(prefix);
-                hasCommand = false;
+        String row = prefix;
+        for (String command : commands) {
+            String separator = row.equals(prefix) ? "" : " | ";
+            String candidate = row + separator + command;
+            if (candidate.length() > TEXT_WIDTH - 4 && !row.equals(prefix)) {
+                appendMenuRow(menu, row);
+                row = " ".repeat(prefix.length()) + command;
+            } else {
+                row = candidate;
             }
-            if (hasCommand) {
-                row.append('|');
-            }
-            row.append(command);
         }
-        appendMenuRow(menu, row.toString());
+        appendMenuRow(menu, row);
     }
 
     /** Pads each menu row to the same width, including its ASCII borders. */

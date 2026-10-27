@@ -205,7 +205,7 @@ class CameraCompatibilityIntegrationTest {
     }
 
     @Test
-    void viewAllEquipment_cameraCompatibility_displaysValues()
+    void showEquipment_cameraCompatibility_displaysValues()
             throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
         handler.addEquipment(FULL_CAMERA_COMMAND);
@@ -218,15 +218,15 @@ class CameraCompatibilityIntegrationTest {
                             output,
                             true,
                             StandardCharsets.UTF_8));
-            handler.viewAllEquipment();
+            handler.showEquipment("show id/001");
         } finally {
             System.setOut(originalOutput);
         }
 
         String displayed = output.toString(StandardCharsets.UTF_8);
-        assertTrue(displayed.contains("mount/Canon RF"));
-        assertTrue(displayed.contains("thread/1/4\"-20"));
-        assertTrue(displayed.contains("battery/LP-E17"));
+        assertTrue(displayed.contains("Lens mount: Canon RF"));
+        assertTrue(displayed.contains("Tripod thread: 1/4\"-20"));
+        assertTrue(displayed.contains("Battery type: LP-E17"));
     }
 
     /** Checks all explicit compatibility fields on a Camera. */
