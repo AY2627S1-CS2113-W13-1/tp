@@ -328,6 +328,12 @@ public class LoanHandler {
             logger.log(Level.WARNING, "Loan rejected: item ID {0} is already loaned out.", itemId);
             throw new LoanAdditionUnsuccessful("Item ID " + itemId + " is already loaned out.");
         }
+        if (match.isMissingOrLost()) {
+            logger.log(Level.WARNING, "Loan rejected: item ID {0} is marked {1}.",
+                    new Object[]{itemId, match.getStatus().getStorageValue()});
+            throw new LoanAdditionUnsuccessful("Item ID " + itemId
+                    + " is marked " + match.getStatus().getStorageValue() + " and cannot be loaned.");
+        }
         if (!match.isServiceable()) {
             throw new LoanAdditionUnsuccessful("Item ID " + itemId + " is unserviceable and cannot be loaned.");
         }

@@ -28,8 +28,8 @@ import seedu.snap.equipment.Tripod;
 class HelpTest {
     private static final List<String> TOPICS = List.of("add", "list", "show", "delete item", "loan", "return",
             "delete loan", "update loan", "list loans", "view loan", "list borrower", "list overdue", "history",
-            "filter", "update", "maintain", "add-bundle", "add-to-bundle", "backup", "restore",
-            "remove-from-bundle", "list bundles", "history bundle", "help", "bye");
+            "mark", "status-history", "filter", "update", "maintain", "add-bundle", "add-to-bundle", "backup",
+            "restore", "remove-from-bundle", "list bundles", "history bundle", "help", "bye");
 
     /** Supplies the user-facing syntax and example for each supported command. */
     private static Stream<Arguments> commandExamples() {
@@ -56,6 +56,8 @@ class HelpTest {
                 Arguments.of("list borrower", "list borrower/<BORROWER ID>", "list borrower/002"),
                 Arguments.of("list overdue", "list overdue", "list overdue"),
                 Arguments.of("history", "history id/<ITEM ID>", "history id/001"),
+                Arguments.of("mark", "mark id/<ITEM ID> status/<missing|lost>", "mark id/001 status/missing"),
+                Arguments.of("status-history", "status-history id/<ITEM ID>", "status-history id/001"),
                 Arguments.of("filter", "filter [id/<ID>] [i/<NAME>] [type/<TYPE>] [cond/<N|MIN-MAX>] [status/<STATUS>]",
                         "filter type/camera cond/1-3 status/available"),
                 Arguments.of("maintain", "maintain id/<ITEM ID> date/<DD-MM-YY> work/<DESCRIPTION> outcome/<OUTCOME>",
@@ -191,7 +193,8 @@ class HelpTest {
         List<String> lines = Help.getText("all").lines().toList();
         List<String> headings = List.of("ADD EQUIPMENT", "LIST EQUIPMENT", "SHOW EQUIPMENT", "DELETE EQUIPMENT",
                 "ADD LOAN", "RETURN EQUIPMENT", "DELETE LOAN", "UPDATE LOAN", "LIST LOANS", "VIEW LOAN ISSUE CONDITION",
-                "EQUIPMENT HELD BY MEMBER", "LIST OVERDUE LOANS", "ITEM LOAN HISTORY", "FILTER EQUIPMENT",
+                "EQUIPMENT HELD BY MEMBER", "LIST OVERDUE LOANS", "ITEM LOAN HISTORY", "MARK EQUIPMENT STATUS",
+                "EQUIPMENT STATUS HISTORY", "FILTER EQUIPMENT",
                 "UPDATE EQUIPMENT", "RECORD MAINTENANCE", "CREATE BUNDLE", "ADD EQUIPMENT TO BUNDLE",
                 "REMOVE EQUIPMENT FROM BUNDLE", "LIST BUNDLES", "BUNDLE LOAN HISTORY", "BACK UP DATA", "RESTORE DATA",
                 "HELP", "EXIT");
@@ -264,6 +267,8 @@ class HelpTest {
                 "Deleting returned history leaves newer active loans unchanged."));
         assertTrue(proseFor("list overdue").contains("Returned loans and loans due today or later are excluded."));
         assertTrue(proseFor("history").contains("Reused Item IDs keep separate histories."));
+        assertTrue(proseFor("mark").contains("A marked item is not available for loan or bundle membership."));
+        assertTrue(proseFor("status-history").contains("persists after restarting."));
         assertTrue(proseFor("filter").contains("All filters must match (AND)."));
         assertTrue(proseFor("update").contains("Omitted fields retain their current values."));
         assertTrue(proseFor("add-bundle").contains(

@@ -317,6 +317,9 @@ public class BundleHandler {
         if (item.isLoaned()) {
             return failureMessage(itemId, "equipment is currently loaned");
         }
+        if (item.isMissingOrLost()) {
+            return failureMessage(itemId, "equipment is marked " + item.getStatus().getStorageValue());
+        }
         if (!item.isServiceable()) {
             return failureMessage(itemId, "equipment is unserviceable");
         }

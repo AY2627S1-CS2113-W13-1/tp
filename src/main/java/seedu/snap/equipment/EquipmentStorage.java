@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -18,6 +19,10 @@ final class EquipmentStorage {
     private static final String RECORD_ID_PREFIX = "recordId/";
     /** Storage-only metadata appears before the add record so free-form fields remain unambiguous. */
     private static final String SERVICEABILITY_PREFIX = "serviceable/";
+    /** Persistent physical-item state appears beside serviceability metadata. */
+    private static final String STATUS_PREFIX = "status/";
+    /** Timestamped status changes are stored as status@instant metadata tokens. */
+    private static final String STATUS_HISTORY_PREFIX = "statusHistory/";
 
     private EquipmentStorage() {
         // Utility class; do not instantiate.
@@ -57,7 +62,7 @@ final class EquipmentStorage {
                             + equipment.getRecordId() + ".");
                 }
                 loaded.add(equipment);
-                requiresMigration |= !line.startsWith(RECORD_ID_PREFIX);
+                requiresMigration |= !line.startsWith(RECORD_ID_PREFIX) || !hasCurrentStatusMetadata(line);
             } catch (EquipmentAdditionUnsuccessful | IllegalArgumentException exception) {
                 throw new IOException("Invalid equipment record on line " + lineNumber + ": "
                         + exception.getMessage(), exception);
@@ -94,7 +99,7 @@ final class EquipmentStorage {
         return equipment;
     }
 
-    /** Loads legacy add records as serviceable and reads assessment metadata without parsing free-form field text. */
+    /** Loads legacy add records as serviceable and reads metadata without parsing free-form field text. */
     private static Equipment parseServiceabilityLine(String line) throws EquipmentAdditionUnsuccessful {
         if (!line.startsWith(SERVICEABILITY_PREFIX)) {
             return EquipmentHandler.parseEquipment(line);
@@ -107,9 +112,65 @@ final class EquipmentStorage {
         if (!serviceability.equals("yes") && !serviceability.equals("no")) {
             throw new IllegalArgumentException("Saved serviceability must be yes or no.");
         }
-        Equipment equipment = EquipmentHandler.parseEquipment(line.substring(delimiter + 1));
+        String metadataAndRecord = line.substring(delimiter + 1);
+        String metadata = "";
+        String addRecord = metadataAndRecord;
+        if (!metadataAndRecord.startsWith("add ")) {
+            int addDelimiter = metadataAndRecord.indexOf("\tadd ");
+            if (addDelimiter < 0) {
+                throw new IllegalArgumentException("Status metadata must precede an add record.");
+            }
+            metadata = metadataAndRecord.substring(0, addDelimiter);
+            addRecord = metadataAndRecord.substring(addDelimiter + 1);
+        }
+        Equipment equipment = EquipmentHandler.parseEquipment(addRecord);
         equipment.setServiceable(serviceability.equals("yes"));
+        restoreStatusMetadata(equipment, metadata);
         return equipment;
+    }
+
+    /** Restores optional status metadata while retaining support for records written before this feature. */
+    private static void restoreStatusMetadata(Equipment equipment, String metadata) {
+        EquipmentStatus currentStatus = EquipmentStatus.PRESENT;
+        List<EquipmentStatusChange> history = new ArrayList<>();
+        if (!metadata.isEmpty()) {
+            for (String token : metadata.split("\\t", -1)) {
+                if (token.startsWith(STATUS_PREFIX)) {
+                    if (currentStatus != EquipmentStatus.PRESENT) {
+                        throw new IllegalArgumentException("Saved equipment status must appear only once.");
+                    }
+                    currentStatus = EquipmentStatus.fromValue(token.substring(STATUS_PREFIX.length()));
+                } else if (token.startsWith(STATUS_HISTORY_PREFIX)) {
+                    history.add(parseStatusChange(token.substring(STATUS_HISTORY_PREFIX.length())));
+                } else {
+                    throw new IllegalArgumentException("Unsupported equipment metadata: " + token);
+                }
+            }
+        }
+        equipment.restoreStatusState(currentStatus, history);
+    }
+
+    /** Parses one compact status-history token from equipment storage. */
+    private static EquipmentStatusChange parseStatusChange(String value) {
+        int delimiter = value.indexOf('@');
+        if (delimiter <= 0 || delimiter == value.length() - 1 || value.indexOf('@', delimiter + 1) >= 0) {
+            throw new IllegalArgumentException("Status history must use status@timestamp format.");
+        }
+        EquipmentStatus status = EquipmentStatus.fromValue(value.substring(0, delimiter));
+        if (status == EquipmentStatus.PRESENT) {
+            throw new IllegalArgumentException("Status history cannot record present as a transition.");
+        }
+        try {
+            return new EquipmentStatusChange(status, Instant.parse(value.substring(delimiter + 1)));
+        } catch (RuntimeException exception) {
+            throw new IllegalArgumentException("Status history timestamp is invalid.", exception);
+        }
+    }
+
+    /** Detects whether a record already contains the new current-status metadata. */
+    private static boolean hasCurrentStatusMetadata(String line) {
+        int addDelimiter = line.indexOf("\tadd ");
+        return addDelimiter >= 0 && line.substring(0, addDelimiter).contains("\t" + STATUS_PREFIX);
     }
 
     /**
@@ -137,10 +198,16 @@ final class EquipmentStorage {
         }
     }
 
-    /** Adds permanent identity and serviceability metadata before the add record, preserving free-form field values. */
+    /** Adds identity, availability and status metadata before the add record. */
     private static String toStorageLine(Equipment equipment) {
         String record = RECORD_ID_PREFIX + equipment.getRecordId() + "\t"
-                + SERVICEABILITY_PREFIX + (equipment.isServiceable() ? "yes" : "no") + "\tadd i/"
+                + SERVICEABILITY_PREFIX + (equipment.isServiceable() ? "yes" : "no")
+                + "\t" + STATUS_PREFIX + equipment.getStatus().getStorageValue();
+        for (EquipmentStatusChange change : equipment.getStatusHistory()) {
+            record += "\t" + STATUS_HISTORY_PREFIX + change.status().getStorageValue()
+                    + "@" + change.changedAt();
+        }
+        record += "\tadd i/"
                 + equipment.getItemName()
                 + " id/" + equipment.getItemId()
                 + " type/" + equipment.getType()

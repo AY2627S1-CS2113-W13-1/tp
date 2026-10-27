@@ -89,7 +89,8 @@ public final class EquipmentFilter {
         boolean matchesType = type == null || type.equalsIgnoreCase(item.getType());
         boolean matchesCondition = item.getCondition() >= minimumCondition && item.getCondition() <= maximumCondition;
         String status = fields.get(EquipmentFields.STATUS_FIELD);
-        String actualStatus = isLoaned ? "loaned" : item.isServiceable() ? "available" : "unserviceable";
+        String actualStatus = item.isMissingOrLost() ? item.getStatus().getStorageValue()
+                : isLoaned ? "loaned" : item.isServiceable() ? "available" : "unserviceable";
         boolean matchesStatus = status == null || status.equalsIgnoreCase(actualStatus);
         return matchesId && matchesName && matchesType && matchesCondition && matchesStatus;
     }

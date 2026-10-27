@@ -90,7 +90,8 @@ public final class EquipmentView {
 
     /** Retains the existing precedence of active loan and serviceability state. */
     private static String status(Equipment item) {
-        return item.isLoaned() ? "Loaned" : item.isServiceable() ? "Available" : "Unserviceable";
+        String label = item.getStatusLabel();
+        return label.substring(0, 1).toUpperCase(Locale.ROOT) + label.substring(1);
     }
 
     /** Pads by terminal columns rather than Java string length so wide names keep their neighbours aligned. */

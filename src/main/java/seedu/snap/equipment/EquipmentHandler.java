@@ -2,9 +2,12 @@ package seedu.snap.equipment;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -15,6 +18,7 @@ import java.util.regex.Pattern;
 
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
+import seedu.snap.exceptions.EquipmentStatusUnsuccessful;
 import seedu.snap.exceptions.EquipmentUpdateUnsuccessful;
 import seedu.snap.exceptions.EquipmentViewingUnsuccessful;
 import seedu.snap.ui.EquipmentView;
@@ -42,15 +46,26 @@ public class EquipmentHandler {
     private final ArrayList<Equipment> inventory = new ArrayList<>();
     /** File used for persistence, or null when the handler is intentionally in-memory only. */
     private final Path storageFile;
+    /** Clock used to timestamp status transitions; injectable for deterministic tests. */
+    private final Clock clock;
 
     /** Creates an in-memory equipment handler, mainly useful for isolated unit tests. */
     public EquipmentHandler() {
-        this(null);
+        this(null, Clock.systemUTC());
     }
 
     /** Creates an equipment handler backed by the supplied text file. */
     public EquipmentHandler(Path storageFile) {
+        this(storageFile, Clock.systemUTC());
+    }
+
+    /** Creates an equipment handler with an explicit clock for deterministic status timestamps. */
+    public EquipmentHandler(Path storageFile, Clock clock) {
+        if (clock == null) {
+            throw new IllegalArgumentException("Clock must not be null.");
+        }
         this.storageFile = storageFile;
+        this.clock = clock;
     }
 
     /**
@@ -202,6 +217,7 @@ public class EquipmentHandler {
                     assessedDamage, normalisedRemarks, current.getType());
             proposed.restoreRecordId(current.getRecordId());
             proposed.setServiceable(serviceable);
+            current.copyStatusStateTo(proposed);
             return proposed;
         } catch (EquipmentAdditionUnsuccessful exception) {
             throw new IllegalArgumentException(exception.getMessage(), exception);
@@ -637,6 +653,147 @@ public class EquipmentHandler {
         }
     }
 
+    /** Marks one existing physical item as missing or lost after saving the proposed state. */
+    public Equipment markStatus(String input) throws EquipmentStatusUnsuccessful {
+        try {
+            Map<String, String> fields = EquipmentFields.parse(input, "mark", EquipmentFields.ID_FIELD,
+                    EquipmentFields.STATUS_FIELD);
+            if (fields.size() != 2) {
+                throw new EquipmentStatusUnsuccessful(
+                        "Use: mark id/[ITEM ID] status/[missing|lost].");
+            }
+            String id = fields.get(EquipmentFields.ID_FIELD);
+            if (!Equipment.isValidItemId(id)) {
+                throw new EquipmentStatusUnsuccessful("Item ID must be from 001 to 999.");
+            }
+            EquipmentStatus requested = EquipmentStatus.fromValue(fields.get(EquipmentFields.STATUS_FIELD));
+            if (requested == EquipmentStatus.PRESENT) {
+                throw new EquipmentStatusUnsuccessful("Status must be missing or lost.");
+            }
+            Equipment target = findEquipmentForStatus(id);
+            if (target.isLoaned()) {
+                throw new EquipmentStatusUnsuccessful("Cannot mark item ID " + id
+                        + " as missing or lost while it has an active loan.");
+            }
+            if (target.getStatus() == requested) {
+                throw new EquipmentStatusUnsuccessful("Item ID " + id + " is already marked "
+                        + requested.getStorageValue() + ".");
+            }
+
+            Instant timestamp = nextStatusTimestamp(target);
+            Equipment proposed = createStatusProposal(target, requested, timestamp);
+            ArrayList<Equipment> updatedInventory = new ArrayList<>(inventory);
+            updatedInventory.set(inventory.indexOf(target), proposed);
+            try {
+                save(updatedInventory);
+            } catch (IOException exception) {
+                logger.log(Level.WARNING, "Equipment status change could not be saved", exception);
+                throw new EquipmentStatusUnsuccessful(
+                        "Could not save equipment status change: " + exception.getMessage());
+            }
+            target.restoreStatusState(proposed.getStatus(), proposed.getStatusHistory());
+            assert target.getStatus() == requested : "Successful status changes must update the target";
+            assert target.getStatusHistory().getLast().status() == requested
+                    : "Successful status changes must append a matching history entry";
+            logger.log(Level.INFO, "Marked item ID {0} as {1}.",
+                    new Object[]{id, requested.getStorageValue()});
+            return target;
+        } catch (IllegalArgumentException | EquipmentAdditionUnsuccessful | EquipmentStatusUnsuccessful exception) {
+            logger.log(Level.FINE, "Equipment status change rejected: {0}", exception.getMessage());
+            throw new EquipmentStatusUnsuccessful(exception.getMessage());
+        }
+    }
+
+    /** Returns one item's status history in chronological order without changing saved state. */
+    public List<EquipmentStatusChange> getStatusHistory(String input) throws EquipmentStatusUnsuccessful {
+        try {
+            Map<String, String> fields = EquipmentFields.parse(input, "status-history", EquipmentFields.ID_FIELD);
+            if (fields.size() != 1) {
+                throw new EquipmentStatusUnsuccessful("Use: status-history id/[ITEM ID].");
+            }
+            String id = fields.get(EquipmentFields.ID_FIELD);
+            if (!Equipment.isValidItemId(id)) {
+                throw new EquipmentStatusUnsuccessful("Item ID must be from 001 to 999.");
+            }
+            Equipment target = findEquipmentForStatus(id);
+            ArrayList<EquipmentStatusChange> history = new ArrayList<>(target.getStatusHistory());
+            history.sort(Comparator.comparing(EquipmentStatusChange::changedAt));
+            logger.log(Level.FINE, "Viewed {0} status change(s) for item ID {1}.",
+                    new Object[]{history.size(), id});
+            return List.copyOf(history);
+        } catch (IllegalArgumentException | EquipmentStatusUnsuccessful exception) {
+            logger.log(Level.FINE, "Status history query rejected: {0}", exception.getMessage());
+            throw new EquipmentStatusUnsuccessful(exception.getMessage());
+        }
+    }
+
+    /** Prints the current physical-item status and its chronological status changes. */
+    public void viewStatusHistory(String input) throws EquipmentStatusUnsuccessful {
+        Map<String, String> fields;
+        try {
+            fields = EquipmentFields.parse(input, "status-history", EquipmentFields.ID_FIELD);
+        } catch (IllegalArgumentException exception) {
+            throw new EquipmentStatusUnsuccessful(exception.getMessage());
+        }
+        String id = fields.get(EquipmentFields.ID_FIELD);
+        Equipment target = findEquipmentForStatus(id);
+        List<EquipmentStatusChange> history = getStatusHistory(input);
+        System.out.println("Status history for item ID " + id + ":");
+        System.out.println("Current status: " + target.getStatusLabel());
+        if (history.isEmpty()) {
+            System.out.println("No status changes recorded.");
+            return;
+        }
+        System.out.printf("%-4s %-12s | %-24s%n", "No.", "STATUS", "CHANGED AT");
+        for (int index = 0; index < history.size(); index++) {
+            EquipmentStatusChange change = history.get(index);
+            System.out.printf("%-4s %-12s | %-24s%n", (index + 1) + ")",
+                    change.status().getStorageValue().toUpperCase(Locale.ROOT), change.changedAt());
+        }
+    }
+
+    /** Finds exactly one item for a status operation. */
+    private Equipment findEquipmentForStatus(String id) throws EquipmentStatusUnsuccessful {
+        Equipment match = null;
+        for (Equipment item : inventory) {
+            if (item.getItemId().equals(id)) {
+                if (match != null) {
+                    throw new EquipmentStatusUnsuccessful("Item ID " + id + " is not unique.");
+                }
+                match = item;
+            }
+        }
+        if (match == null) {
+            throw new EquipmentStatusUnsuccessful("Item ID " + id + " does not exist.");
+        }
+        return match;
+    }
+
+    /** Creates a detached status proposal while retaining every existing equipment property. */
+    private Equipment createStatusProposal(Equipment target, EquipmentStatus requested, Instant timestamp)
+            throws EquipmentAdditionUnsuccessful {
+        Equipment proposed = createValidatedEquipment(target.getItemName(), target.getItemId(), target.getType(),
+                Integer.toString(target.getCondition()), target.getDetails(), target.getRemarks());
+        proposed.restoreRecordId(target.getRecordId());
+        proposed.setServiceable(target.isServiceable());
+        ArrayList<EquipmentStatusChange> history = new ArrayList<>(target.getStatusHistory());
+        history.add(new EquipmentStatusChange(requested, timestamp));
+        proposed.restoreStatusState(requested, history);
+        return proposed;
+    }
+
+    /** Ensures status timestamps remain strictly chronological when a clock repeats or moves backwards. */
+    private Instant nextStatusTimestamp(Equipment target) {
+        Instant timestamp = clock.instant();
+        List<EquipmentStatusChange> history = target.getStatusHistory();
+        if (!history.isEmpty() && !history.getLast().changedAt().isBefore(timestamp)) {
+            logger.log(Level.WARNING, "Clock did not advance for item ID {0}; using a monotonic timestamp.",
+                    target.getItemId());
+            return history.getLast().changedAt().plusNanos(1);
+        }
+        return timestamp;
+    }
+
     /** Finds exactly one item before applying an update. */
     private Equipment findEquipmentForUpdate(String id) throws EquipmentUpdateUnsuccessful {
         Equipment match = null;
@@ -661,6 +818,7 @@ public class EquipmentHandler {
                 Integer.toString(condition), target.getDetails(), target.getRemarks());
         proposed.restoreRecordId(target.getRecordId());
         proposed.setServiceable(target.isServiceable());
+        target.copyStatusStateTo(proposed);
         ArrayList<Equipment> updatedInventory = new ArrayList<>(inventory);
         updatedInventory.set(inventory.indexOf(target), proposed);
         try {
