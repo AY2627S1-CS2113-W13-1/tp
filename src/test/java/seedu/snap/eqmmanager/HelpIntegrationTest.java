@@ -41,10 +41,10 @@ import seedu.snap.loan.EquipmentConditionSnapshot;
 import seedu.snap.loan.Loan;
 import seedu.snap.loan.LoanHandler;
 
-/** Verifies that help is discoverable and leaves application records, files and counters unchanged. */
+/** Verifies that help and equipment views leave application records, files and counters unchanged. */
 class HelpIntegrationTest {
     private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-10-24T12:00:00Z"), ZoneOffset.UTC);
-    private static final List<String> HELP_COMMANDS = List.of("help", "help all", "help add", "help list",
+    private static final List<String> HELP_COMMANDS = List.of("help", "help all", "help add", "help list", "help show",
             "help delete item", "help loan", "help return", "help delete loan", "help update loan", "help list loans",
             "help view loan",
             "help list overdue", "help history", "help filter", "help update", "help add-bundle",
@@ -154,8 +154,8 @@ class HelpIntegrationTest {
 
         List<String> lines = printed().lines().toList();
         assertTrue(lines.stream().allMatch(line -> line.length() <= 100));
-        assertEquals(27, lines.stream().filter("Format:"::equals).count());
-        assertEquals(27, lines.stream().filter("Example:"::equals).count());
+        assertEquals(28, lines.stream().filter("Format:"::equals).count());
+        assertEquals(28, lines.stream().filter("Example:"::equals).count());
         assertTrue(printed().contains(System.lineSeparator() + System.lineSeparator() + "Format:"
                 + System.lineSeparator() + "  "));
         assertTrue(printed().contains(System.lineSeparator() + System.lineSeparator() + "Example:"
@@ -166,6 +166,7 @@ class HelpIntegrationTest {
     @CsvSource(delimiter = '|', value = {
         "add | Format: add i/<NAME>",
         "list | Format: list",
+        "show | Format: show id/<ID>",
         "delete item | Format: delete item/<ID>",
         "loan | Format: loan id/<ITEM ID>",
         "return | Format: return loan/<LOAN ID>",
@@ -418,6 +419,58 @@ class HelpIntegrationTest {
         assertFalse(Files.exists(invalidDirectory.resolve("bundles.txt")));
     }
 
+    @Test
+    void equipmentViews_afterReload_preserveStatusAssociationsAndSavedData() throws Exception {
+        EqmManager restarted = new EqmManager(dataDirectory, FIXED_CLOCK);
+        ApplicationState before = snapshot(restarted);
+        Map<Path, SavedFile> files = savedFiles(dataDirectory);
+        output.reset();
+
+        restarted.executeInput("show id/001");
+        assertTrue(printed().contains("Name: Camera"));
+        assertTrue(printed().contains("Sensor format: Full frame"));
+        assertTrue(printed().contains("Status: Loaned"));
+        assertTrue(printed().contains("Active loan ID: 002"));
+        output.reset();
+        restarted.executeInput("show id/005");
+        assertTrue(printed().contains("Status: Unserviceable"));
+        assertTrue(printed().contains("Damage: SWELLING"));
+        assertTrue(printed().contains("Remarks: Needs repair"));
+        assertTrue(printed().contains("Active loan ID: (none)"));
+        output.reset();
+        restarted.executeInput("show id/006");
+        assertTrue(printed().contains("Status: Available"));
+        assertTrue(printed().contains("Active loan ID: (none)"));
+        executeAllReadOnlyForms(restarted, before);
+
+        assertEquals(before, snapshot(restarted));
+        assertSavedFilesUnchanged(files);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"show", "show id/000", "show id/01", "show id/1000", "show id/-01",
+        "show id/１２３", "show id/001 unexpected", "show id/001 id/002", "show id/001 type/camera"})
+    void equipmentViews_invalidShowSyntax_reportsFormatWithoutChangingState(String command) throws Exception {
+        ApplicationState before = snapshot(manager);
+        Map<Path, SavedFile> files = savedFiles(dataDirectory);
+
+        manager.executeInput(command);
+
+        assertTrue(printed().contains("Invalid format. Use: show id/[ITEM ID], from 001 to 999."));
+        assertEquals(before, snapshot(manager));
+        assertSavedFilesUnchanged(files);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"show id/001", "  show\tid/001  ", "show\u2003id/001", "show\u00a0id/001"})
+    void equipmentViews_showWhitespace_selectsExactItem(String command) {
+        manager.executeInput(command);
+
+        assertTrue(printed().contains("Equipment 001"));
+        assertTrue(printed().contains("Name: Camera"));
+        assertFalse(printed().contains("Equipment 002"));
+    }
+
     /** Captures object references as well as their values, including counters that help must not consume. */
     private ApplicationState snapshot(EqmManager target) throws Exception {
         EquipmentHandler inventory = readField(target, "equipment", EquipmentHandler.class);
@@ -481,13 +534,17 @@ class HelpIntegrationTest {
                 dataDirectory.resolve("loan-sequence.txt"), dataDirectory.resolve("bundles.txt"));
     }
 
-    /** Repeats help, lists and histories to check that viewing output never mutates records or identifiers. */
+    /** Repeats help, lists and histories so viewing records cannot save data or consume identifiers. */
     private void executeAllReadOnlyForms(EqmManager target, ApplicationState expected) throws Exception {
+        List<String> requests = new ArrayList<>(HELP_COMMANDS);
+        requests.addAll(List.of("list", "filter cond/1-10", "filter id/999", "show id/001", "show id/002",
+                "show id/003", "show id/004", "show id/005", "show id/006", "show id/999", "show",
+                "show id/000", "show id/001 id/002", "show id/001 remarks/Unexpected"));
+        requests.addAll(List.of("list loans", "list overdue", "history id/001", "history id/005",
+                "history bundle/id/001", "history bundle/name/Camera kit", "list bundles",
+                "list borrower/222", "list member/111", "list borrower/999"));
         for (int repetition = 0; repetition < 2; repetition++) {
-            List<String> commands = new ArrayList<>(HELP_COMMANDS);
-            commands.addAll(List.of("list loans", "list overdue", "history id/001", "history id/005",
-                    "history bundle/id/001", "history bundle/name/Camera kit", "list bundles"));
-            for (String command : commands) {
+            for (String command : requests) {
                 output.reset();
                 target.executeInput(command);
                 assertFalse(printedContent().contains("Command not recognised"), command);

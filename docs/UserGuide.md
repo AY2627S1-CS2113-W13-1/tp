@@ -81,7 +81,7 @@ remain readable.
 
 Replace `<command>` with one of these exact lowercase topics:
 
-* Equipment: `add`, `list`, `delete item`, `filter`, `update`.
+* Equipment: `add`, `list`, `show`, `delete item`, `filter`, `update`.
 * Loans: `loan`, `return`, `delete loan`, `update loan`, `list loans`, `list borrower`, `view loan`, `list overdue`, `history`.
 * Bundles: `add-bundle`, `add-to-bundle`, `remove-from-bundle`, `list bundles`, `history bundle`.
 * General: `backup`, `restore`, `help`, `bye`.
@@ -252,9 +252,31 @@ literal remarks field. There is no quoting or escaping syntax.
 
 Format: `list`
 
-This displays all equipment with its name, ID, type and condition. The `STATUS` column, before `DETAILS`, shows
-`Available`, `Loaned` or `Unserviceable`. The `DETAILS` column shows the type-specific value and damage, including the defaults
-when optional fields were omitted. The `REMARKS` column follows `DETAILS` and is empty when no remarks were given.
+This displays equipment in inventory order using a 96-column table with `ID`, `NAME`, `TYPE`, `CONDITION`
+and `STATUS`. Status is `Available`, `Loaned` or `Unserviceable`, using the existing loan and return-assessment
+rules. The result count appears below the table.
+
+Names that do not fit end in `...`. Type-specific fields, damage and remarks are available through `show`,
+so long values do not expand the table. An empty inventory shows a count of zero and a valid `add` example.
+Vertical bars in table values appear as `\u007c` to keep the columns separate. Use `show` to see the original text.
+
+## Viewing full equipment details: `show`
+
+Format: `show id/[ITEM ID]`
+
+Example: `show id/001`
+
+Use an existing three-digit Item ID from `001` to `999`. The command displays the complete name, type, numeric
+condition, status, serviceability, active Loan ID, all subtype and compatibility fields, damage and remarks.
+Omitted compatibility values appear as `unspecified`; an empty remarks field or absent active Loan ID appears
+as `(none)`. Long values wrap onto indented lines at 100 columns and are not truncated.
+
+Tabs and control characters appear as visible escapes, such as `\t`, so that stored text cannot change the
+layout. The stored values are preserved. Extra fields, repeated IDs, invalid IDs and unknown items produce a
+clear error. Equipment listings, filters and detail requests leave records, identifiers and saved data unchanged.
+
+`show` describes the equipment's current state. Use `view loan/[LOAN ID]` for its condition when a particular
+loan was issued, and `list loans` to see borrower IDs and loan dates.
 
 ## Deleting equipment: `delete`
 
@@ -511,7 +533,8 @@ An unrecognised type, such as `type/microphone`, produces no matches.
 
 The [name and field-marker rules](#names-and-field-markers) also apply here. Empty or repeated fields are rejected. Filtering leaves equipment
 unchanged and prints matches in inventory order, or `No equipment matches the filters.` when none match.
-Matching rows include the equipment's current status, type-specific details, recorded damage and remarks, as in `list`.
+Matching rows use the same compact columns and truncation rules as `list`, followed by a result count.
+Use `show id/[ITEM ID]` for full values. A filter with no matches shows a count of zero and a clear message.
 An invalid filter also leaves equipment and loan records unchanged; correct the filter and try again.
 See the [worked example](#equipment-worked-example) for a query with known results.
 
@@ -574,8 +597,23 @@ then totals such as `2 memberships added; 1 failed.` and the resulting bundle co
 * Equipment must exist in the inventory and be `Available` when added.
 * An item cannot appear twice in the same bundle. It can appear in different bundles.
 * A bundle can contain only one camera and at most one tripod. Extra batteries and lenses are allowed.
+* Each item is compared with equipment already accepted into the bundle, including items accepted earlier
+  in the same command.
+* A known compatibility mismatch rejects only that item. Compatibility comparisons ignore letter case.
+* Missing compatibility details and equipment pairs without shared compatibility fields do not block addition.
 * A bundle is complete when it contains exactly one camera, at least one battery and at least one lens.
   A tripod is optional.
+
+The following fields are compared:
+
+| Equipment pair | Fields that must match when known |
+| --- | --- |
+| Camera and lens | Lens mount and sensor format |
+| Camera and battery | Battery type |
+| Camera and tripod | Tripod thread |
+
+For a camera and lens, a known mismatch in either field causes rejection, even if the other field is missing.
+Lens-battery, lens-tripod, battery-tripod and same-type pairs have no compatibility relationship and are allowed.
 
 Returning a serviceable item or deleting its active loan makes it available for a later `add-to-bundle` command.
 Unserviceable equipment cannot be added to a bundle. Existing bundle memberships are retained on return.
@@ -641,7 +679,7 @@ Saved equipment records use the four supported types and retain their type-speci
 Existing records of supported types without optional fields are also accepted, using `unspecified` and `NONE`.
 Records created before remarks were supported may omit the `remarks/` field; they load with empty remarks.
 Records with `damage/OTHER` require non-empty remarks; invalid saved records are reported when loaded.
-Remarks are shown in the `list` equipment table and are restored when the application starts again.
+Remarks are shown by `show id/[ITEM ID]` and are restored when the application starts again.
 Saved records may start with `serviceable/yes` or `serviceable/no`, followed by a tab and the add record.
 This prefix is storage metadata, not an add-command field. Older records without the prefix are serviceable.
 New records also start with `recordId/` and a permanent equipment identifier, followed by a tab before
@@ -727,6 +765,7 @@ permission problem, then restart snAp. File logging is configured only at startu
 | Delete loan | `delete loan/<LOAN ID>` |
 | Update loan | `update loan/<LOAN ID> [id/<ITEM ID>] [b/<BORROWER ID>] [issued/<DD-MM-YY>] [due/<DD-MM-YY>]` |
 | List equipment | `list` |
+| Show full equipment details | `show id/[ITEM ID]` |
 | List loans | `list loans` |
 | View a borrower's current equipment | `list borrower/<BORROWER ID>` (alias `list member/<BORROWER ID>`) |
 | View issue-time equipment condition | `view loan/<LOAN ID>` |

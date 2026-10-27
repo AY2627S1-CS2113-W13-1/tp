@@ -11,7 +11,9 @@ import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import seedu.snap.equipment.CompatibilityResult;
 import seedu.snap.equipment.Equipment;
+import seedu.snap.equipment.EquipmentCompatibility;
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.BundleAdditionUnsuccessful;
 import seedu.snap.exceptions.BundleHistoryUnsuccessful;
@@ -324,6 +326,11 @@ public class BundleHandler {
             return itemResult(bundle, itemId, false,
                     failureMessage(itemId, "a bundle can contain at most one tripod"));
         }
+        Equipment incompatibleItem = findIncompatibleEquipment(bundle, item);
+        if (incompatibleItem != null) {
+            return itemResult(bundle, itemId, false, failureMessage(itemId,
+                    "equipment is incompatible with equipment ID " + incompatibleItem.getItemId()));
+        }
 
         bundle.addEquipment(item);
         LOGGER.log(Level.INFO, "Added equipment {0} to bundle {1}.",
@@ -354,6 +361,26 @@ public class BundleHandler {
     /** Carries a membership result while retaining the original message API for existing callers. */
     public record ItemResult(String bundleId, String itemId, String itemName, boolean successful, String message) {
     }
+
+    // @@author Rohita-29
+
+    /**
+     * Finds the first existing bundle item that is incompatible with a candidate.
+     *
+     * @param bundle bundle whose current contents are checked
+     * @param candidate equipment proposed for addition
+     * @return the first incompatible item, or null when no known incompatibility exists
+     */
+    private Equipment findIncompatibleEquipment(Bundle bundle, Equipment candidate) {
+        for (Equipment existingItem : bundle.getEquipmentList()) {
+            if (EquipmentCompatibility.compare(candidate, existingItem) == CompatibilityResult.INCOMPATIBLE) {
+                return existingItem;
+            }
+        }
+        return null;
+    }
+
+    // @@author
 
     private Bundle findBundle(String bundleId) {
         for (Bundle bundle : bundles) {

@@ -175,7 +175,7 @@ class BatteryCompatibilityIntegrationTest {
     }
 
     @Test
-    void viewAllEquipment_batteryCompatibility_displaysValues()
+    void showEquipment_batteryCompatibility_displaysValues()
             throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
         handler.addEquipment(FULL_BATTERY_COMMAND);
@@ -189,15 +189,15 @@ class BatteryCompatibilityIntegrationTest {
                             output,
                             true,
                             StandardCharsets.UTF_8));
-            handler.viewAllEquipment();
+            handler.showEquipment("show id/201");
         } finally {
             System.setOut(originalOutput);
         }
 
         String displayed =
                 output.toString(StandardCharsets.UTF_8);
-        assertTrue(displayed.contains("capacity/2000 mAh"));
-        assertTrue(displayed.contains("battery/Li-ion"));
+        assertTrue(displayed.contains("Capacity: 2000 mAh"));
+        assertTrue(displayed.contains("Battery type: Li-ion"));
     }
 
     /** Checks every explicit compatibility field on a Battery. */

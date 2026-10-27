@@ -21,6 +21,7 @@ import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
 import seedu.snap.exceptions.EquipmentFilteringUnsuccessful;
 import seedu.snap.exceptions.EquipmentUpdateUnsuccessful;
+import seedu.snap.exceptions.EquipmentViewingUnsuccessful;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanBorrowerUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
@@ -161,6 +162,8 @@ public class EqmManager {
             filterEquipment(normalizedInput);
         } else if (normalizedInput.matches("(?U)update(?:\\s.*)?")) {
             updateEquipment(normalizedInput);
+        } else if (normalizedInput.matches("(?sU)show(?:\\s.*)?")) {
+            showEquipment(normalizedInput);
         } else if (normalizedInput.equals("list overdue")) {
             viewOverdueLoans();
         } else if (normalizedInput.equals("list loans")) {
@@ -181,6 +184,15 @@ public class EqmManager {
             equipment.viewAllEquipment();
         } else {
             ConsoleOutput.error("Command not recognised. Type help for available commands.");
+        }
+    }
+
+    /** Displays complete equipment values without changing records or performing a save. */
+    private void showEquipment(String input) {
+        try {
+            equipment.showEquipment(input);
+        } catch (EquipmentViewingUnsuccessful exception) {
+            ConsoleOutput.error(exception.getMessage());
         }
     }
 
@@ -431,11 +443,7 @@ public class EqmManager {
         try {
             EquipmentFilter filter = EquipmentFilter.parse(input);
             List<Equipment> matches = filter.apply(equipment.getEquipmentList(), loans);
-            if (matches.isEmpty()) {
-                System.out.println("No equipment matches the filters.");
-            } else {
-                equipment.viewEquipment(matches);
-            }
+            equipment.viewEquipment(matches);
         } catch (EquipmentFilteringUnsuccessful e) {
             ConsoleOutput.error(e.getMessage());
         }

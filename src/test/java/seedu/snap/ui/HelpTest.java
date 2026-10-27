@@ -26,9 +26,9 @@ import seedu.snap.equipment.Tripod;
 
 /** Checks the command guide covers executable syntax, meaningful defaults and important restrictions. */
 class HelpTest {
-    private static final List<String> TOPICS = List.of("add", "list", "delete item", "loan", "return", "delete loan",
-            "update loan", "list loans", "view loan", "list borrower", "list overdue", "history", "filter",
-            "update", "maintain", "add-bundle", "add-to-bundle", "backup", "restore",
+    private static final List<String> TOPICS = List.of("add", "list", "show", "delete item", "loan", "return",
+            "delete loan", "update loan", "list loans", "view loan", "list borrower", "list overdue", "history",
+            "filter", "update", "maintain", "add-bundle", "add-to-bundle", "backup", "restore",
             "remove-from-bundle", "list bundles", "history bundle", "help", "bye");
 
     /** Supplies the user-facing syntax and example for each supported command. */
@@ -39,6 +39,7 @@ class HelpTest {
                         "add i/Canon EOS R10 id/001 type/camera cond/1 "
                                 + "sensor/APS-C mount/Canon RF damage/NONE"),
                 Arguments.of("list", "list", "list"),
+                Arguments.of("show", "show id/<ID>", "show id/001"),
                 Arguments.of("delete item", "delete item/<ID>", "delete item/001"),
                 Arguments.of("loan", "loan id/<ITEM ID> b/<BORROWER ID> [issued/<DD-MM-YY>] due/<DD-MM-YY>",
                         "loan id/001 b/002 issued/24-10-26 due/31-10-26"),
@@ -188,8 +189,8 @@ class HelpTest {
     @Test
     void getText_all_separatesEveryCommandWithSpacedFullWidthHeadingBands() {
         List<String> lines = Help.getText("all").lines().toList();
-        List<String> headings = List.of("ADD EQUIPMENT", "LIST EQUIPMENT", "DELETE EQUIPMENT", "ADD LOAN",
-                "RETURN EQUIPMENT", "DELETE LOAN", "UPDATE LOAN", "LIST LOANS", "VIEW LOAN ISSUE CONDITION",
+        List<String> headings = List.of("ADD EQUIPMENT", "LIST EQUIPMENT", "SHOW EQUIPMENT", "DELETE EQUIPMENT",
+                "ADD LOAN", "RETURN EQUIPMENT", "DELETE LOAN", "UPDATE LOAN", "LIST LOANS", "VIEW LOAN ISSUE CONDITION",
                 "EQUIPMENT HELD BY MEMBER", "LIST OVERDUE LOANS", "ITEM LOAN HISTORY", "FILTER EQUIPMENT",
                 "UPDATE EQUIPMENT", "RECORD MAINTENANCE", "CREATE BUNDLE", "ADD EQUIPMENT TO BUNDLE",
                 "REMOVE EQUIPMENT FROM BUNDLE", "LIST BUNDLES", "BUNDLE LOAN HISTORY", "BACK UP DATA", "RESTORE DATA",
@@ -404,6 +405,9 @@ class HelpTest {
         assertTrue(text.contains("An item may appear only once per bundle."));
         assertTrue(text.contains("exactly one camera, at least one lens and at least one battery."));
         assertTrue(text.contains("A tripod is optional, with at most one."));
+        assertTrue(text.contains("Known compatibility mismatches are rejected."));
+        assertTrue(text.contains(
+                "Missing compatibility details or unrelated equipment types do not block addition."));
         assertTrue(text.contains("Format: remove-from-bundle id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]"));
         assertTrue(text.contains("eligible for deletion after it has been removed from every bundle."));
         assertTrue(proseFor("remove-from-bundle").contains(

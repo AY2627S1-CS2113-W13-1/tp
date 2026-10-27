@@ -104,11 +104,12 @@ class MainTest {
         assertTrue(Files.readString(temporaryDirectory.resolve("data/loans.txt"))
                 .contains("loan loanId/001 id/001 b/002 issued/01-10-26 due/02-10-26 returned/false"));
 
-        String secondRun = runApplication("list\nlist loans\nbye\n", true);
+        String secondRun = runApplication("list\nlist loans\nshow id/001\nbye\n", true);
 
         assertTrue(secondRun.contains("Welcome to snAp. Loaded 1 equipment record(s) and 1 loan(s)."));
         assertTrue(secondRun.contains("Camera"));
-        assertTrue(secondRun.contains("sensor/Full frame damage/SHUTTER_FAULT"));
+        assertTrue(secondRun.contains("Sensor format: Full frame"));
+        assertTrue(secondRun.contains("Damage: SHUTTER_FAULT"));
         assertTrue(secondRun.contains("001"));
         assertTrue(secondRun.contains("002"));
     }
@@ -131,27 +132,19 @@ class MainTest {
         String firstRun = runApplication("list\ndelete loan/001\nbye\n", true);
 
         assertTrue(firstRun.contains("Welcome to snAp. Loaded 4 equipment record(s) and 4 loan(s)."));
-        assertTrue(firstRun.contains(equipmentRow("1)", "Camera", "001", "camera", 7,
-                "Loaned", "sensor/Full frame damage/SHUTTER_FAULT")));
-        assertTrue(firstRun.contains(equipmentRow("2)", "Lens", "002", "lens", 6,
-                "Available", "zoom/24 to 70 mm damage/NONE")));
-        assertTrue(firstRun.contains(equipmentRow("3)", "Battery", "003", "battery", 5,
-                "Loaned", "capacity/2000 mAh damage/CONTACT_DAMAGE")));
-        assertTrue(firstRun.contains(equipmentRow("4)", "Tripod", "004", "tripod", 4,
-                "Available", "thread/Quarter inch damage/NONE")));
+        assertTrue(firstRun.contains(equipmentRow("Camera", "001", "camera", 7, "Loaned")));
+        assertTrue(firstRun.contains(equipmentRow("Lens", "002", "lens", 6, "Available")));
+        assertTrue(firstRun.contains(equipmentRow("Battery", "003", "battery", 5, "Loaned")));
+        assertTrue(firstRun.contains(equipmentRow("Tripod", "004", "tripod", 4, "Available")));
         assertTrue(firstRun.contains("[OK] Loan 001 deleted."));
 
         String secondRun = runApplication("list\nbye\n", true);
 
         assertTrue(secondRun.contains("Welcome to snAp. Loaded 4 equipment record(s) and 3 loan(s)."));
-        assertTrue(secondRun.contains(equipmentRow("1)", "Camera", "001", "camera", 7,
-                "Available", "sensor/Full frame damage/SHUTTER_FAULT")));
-        assertTrue(secondRun.contains(equipmentRow("2)", "Lens", "002", "lens", 6,
-                "Available", "zoom/24 to 70 mm damage/NONE")));
-        assertTrue(secondRun.contains(equipmentRow("3)", "Battery", "003", "battery", 5,
-                "Loaned", "capacity/2000 mAh damage/CONTACT_DAMAGE")));
-        assertTrue(secondRun.contains(equipmentRow("4)", "Tripod", "004", "tripod", 4,
-                "Available", "thread/Quarter inch damage/NONE")));
+        assertTrue(secondRun.contains(equipmentRow("Camera", "001", "camera", 7, "Available")));
+        assertTrue(secondRun.contains(equipmentRow("Lens", "002", "lens", 6, "Available")));
+        assertTrue(secondRun.contains(equipmentRow("Battery", "003", "battery", 5, "Loaned")));
+        assertTrue(secondRun.contains(equipmentRow("Tripod", "004", "tripod", 4, "Available")));
         String savedLoans = Files.readString(dataDirectory.resolve("loans.txt"));
         assertFalse(savedLoans.contains("loan loanId/001 "));
         assertTrue(savedLoans.contains("loan loanId/002 id/002 b/020 issued/01-10-26 due/02-10-26 returned/true"));
@@ -159,11 +152,9 @@ class MainTest {
         assertTrue(savedLoans.contains("loan loanId/004 id/004 b/040 issued/01-10-26 due/02-10-26 returned/true"));
     }
 
-    /** Formats one complete row so restart checks associate each status with its equipment ID. */
-    private String equipmentRow(String number, String name, String id, String type, int condition,
-            String status, String details) {
-        return String.format("%-4s %-24s | %-6s | %-15s | %-9d | %-13s | %-30s | %-30s%n",
-                number, name, id, type, condition, status, details, "");
+    /** Associates each compact row's status with its equipment ID after restart. */
+    private String equipmentRow(String name, String id, String type, int condition, String status) {
+        return String.format("| %-3s | %-48s | %-7s | %-9d | %-13s |%n", id, name, type, condition, status);
     }
 
     @Test

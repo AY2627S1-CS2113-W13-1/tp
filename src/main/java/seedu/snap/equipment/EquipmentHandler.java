@@ -16,6 +16,8 @@ import java.util.regex.Pattern;
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
 import seedu.snap.exceptions.EquipmentUpdateUnsuccessful;
+import seedu.snap.exceptions.EquipmentViewingUnsuccessful;
+import seedu.snap.ui.EquipmentView;
 
 /** Handles adding, updating, deleting, and displaying equipment, including filtered and persistent records. */
 public class EquipmentHandler {
@@ -25,6 +27,7 @@ public class EquipmentHandler {
     private static final String ADD_FORMAT_ERROR = "Invalid format. Use: add i/[ITEM] id/[ITEM ID] "
             + "type/[TYPE] cond/[CONDITION]";
     private static final Pattern DELETE_PATTERN = Pattern.compile("delete\\s+item/([0-9]{3})");
+    private static final Pattern SHOW_PATTERN = Pattern.compile("(?U)show\\s+id/([0-9]{3})");
     private static final String ITEM_MARKER = "i/";
     private static final String ID_MARKER = "id/";
     private static final String TYPE_MARKER = "type/";
@@ -554,22 +557,27 @@ public class EquipmentHandler {
      * Prints out all equipment in inventory
      */
     public void viewAllEquipment() {
-        viewEquipment(getEquipmentList());
+        EquipmentView.printInventory(getEquipmentList());
+        logger.log(Level.INFO, "Viewing {0} equipment item(s)", inventory.size());
     }
 
     /** Prints matching items in their existing order using the normal equipment table. */
     public void viewEquipment(List<Equipment> equipmentList) {
-        System.out.printf("%-4s %-24s | %-6s | %-15s | %-9s | %-13s | %-30s | %-30s%n",
-                "No.", "NAME", "ID", "TYPE", "CONDITION", "STATUS", "DETAILS", "REMARKS");
+        EquipmentView.printMatches(equipmentList);
         logger.log(Level.INFO, "Viewing {0} equipment item(s)", equipmentList.size());
-        for (int index = 0; index < equipmentList.size(); index++) {
-            Equipment item = equipmentList.get(index);
-            assert item != null : "Equipment list must not contain null items";
-            String status = item.isLoaned() ? "Loaned" : item.isServiceable() ? "Available" : "Unserviceable";
-            System.out.printf("%-4s %-24s | %-6s | %-15s | %-9d | %-13s | %-30s | %-30s%n",
-                    (index + 1) + ")", item.getItemName(), item.getItemId(), item.getType(), item.getCondition(),
-                    status, item.getDetails(), item.getRemarks());
+    }
+
+    /** Validates an exact item-detail command and prints full values without saving or changing records. */
+    public void showEquipment(String input) throws EquipmentViewingUnsuccessful {
+        Matcher matcher = input == null ? null : SHOW_PATTERN.matcher(EquipmentFields.trimWhitespace(input));
+        if (matcher == null || !matcher.matches() || matcher.group(1).equals("000")) {
+            throw new EquipmentViewingUnsuccessful("Invalid format. Use: show id/[ITEM ID], from 001 to 999.");
         }
+        Equipment item = getEquipmentById(matcher.group(1));
+        if (item == null) {
+            throw new EquipmentViewingUnsuccessful("Item ID " + matcher.group(1) + " does not exist.");
+        }
+        EquipmentView.printDetails(item);
     }
 
     /** Rejects duplicate IDs before saving or changing the current inventory. */

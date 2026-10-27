@@ -120,8 +120,20 @@ public final class Help {
                         LIST EQUIPMENT
                         Format: list
                         Example: list
-                        Shows all equipment, including status, subtype details, damage and remarks.
+                        Shows all equipment with Item ID, name, type, numeric condition and status in a compact table.
+                        Long names end in ...; use show id/<ID> for full values, subtype details, damage and remarks.
                         Status is Available, Loaned or Unserviceable.
+                        """)),
+                new CommandHelp("show", "Equipment", lineEndings("""
+                        SHOW EQUIPMENT
+                        Format: show id/<ID>
+                        Example: show id/001
+                        Requires an existing Item ID from 001 to 999. Extra fields are not accepted.
+                        Shows the full name, type, numeric condition, status, serviceability and active Loan ID.
+                        Includes all subtype and compatibility fields, damage and remarks, without truncation.
+                        Long values wrap onto indented lines; (none) marks an empty value.
+                        Tabs and control characters are shown as escapes so they cannot change the layout.
+                        This read-only command does not change records, identifiers or saved data.
                         """)),
                 new CommandHelp("delete item", "Equipment", lineEndings("""
                         DELETE EQUIPMENT
@@ -247,6 +259,7 @@ public final class Help {
                         cond/ accepts one value or an inclusive ascending range, such as 1-3.
 
                         status/ accepts available or loaned. Available excludes active loans and unserviceable items.
+                        Uses the same compact table as list. Use show id/<ID> for full equipment values.
                         """)),
                 new CommandHelp("update", "Equipment", lineEndings("""
                         UPDATE EQUIPMENT
@@ -287,6 +300,8 @@ public final class Help {
 
                         A complete bundle has exactly one camera, at least one lens and at least one battery.
                         A tripod is optional, with at most one. Additional cameras and tripods are rejected.
+                        Known compatibility mismatches are rejected. Missing compatibility details or unrelated
+                        equipment types do not block addition.
                         """)),
                 new CommandHelp("remove-from-bundle", "Bundles", lineEndings("""
                         REMOVE EQUIPMENT FROM BUNDLE
