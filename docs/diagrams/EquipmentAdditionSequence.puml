@@ -1,0 +1,33 @@
+@startuml EquipmentAdditionSequence
+!include style.puml
+hide footbox
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 220
+
+title add i/Camera id/001 type/camera cond/1
+
+participant ":EqmManager" as Manager
+participant ":EquipmentHandler" as Handler
+participant "EquipmentStorage" as Storage <<utility>>
+
+Manager -> Handler : addEquipment(input)
+activate Handler
+Handler -> Handler : parse input and construct candidate
+Handler -> Handler : ensureUniqueItemId(candidate)
+alt Item ID already exists
+    Handler --> Manager : throws EquipmentAdditionUnsuccessful
+else unused Item ID
+    Handler -> Handler : saveAddition(candidate)
+    activate Handler
+    Handler -> Storage : save(file, proposedInventory)
+    activate Storage
+    Storage --> Handler
+    deactivate Storage
+    Handler --> Handler
+    deactivate Handler
+    Handler -> Handler : append candidate to inventory
+    Handler --> Manager : candidate
+end
+deactivate Handler
+Manager -> Manager : display result or error
+@enduml

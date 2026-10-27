@@ -130,7 +130,8 @@ class EquipmentFilterTest {
             System.setOut(captured);
             EqmManager manager = new EqmManager(temporaryDataDirectory);
             manager.executeInput("filter cond/1-10");
-            assertEquals("No equipment matches the filters." + System.lineSeparator(),
+            assertEquals(String.join(System.lineSeparator(), "Matching equipment", "No equipment matches the filters.",
+                    "0 equipment items.", ""),
                     output.toString(StandardCharsets.UTF_8));
             manager.executeInput("add i/Camera id/001 type/camera cond/1");
             output.reset();
@@ -182,7 +183,8 @@ class EquipmentFilterTest {
             manager.executeInput("loan id/998 b/002 issued/01-10-26 due/02-10-26");
             output.reset();
             manager.executeInput("filter id/998 status/available");
-            assertEquals("No equipment matches the filters." + System.lineSeparator(),
+            assertEquals(String.join(System.lineSeparator(), "Matching equipment", "No equipment matches the filters.",
+                    "0 equipment items.", ""),
                     output.toString(StandardCharsets.UTF_8));
             output.reset();
             manager.executeInput("filter id/998 status/loaned");

@@ -1,0 +1,40 @@
+@startuml AppArchitecture
+!include style.puml
+!pragma layout smetana
+allowmixing
+top to bottom direction
+skinparam componentStyle rectangle
+skinparam nodesep 30
+skinparam ranksep 40
+
+component "Main" as Startup
+component "AppLogging\nRotating logs" as Logging
+component "Coordination\nEqmManager, BackupHandler" as Manager
+component "Parser" as Input
+component "Help" as Help
+
+component "Loans\nLoanHandler" as Loans
+component "Equipment\nEquipmentHandler" as Equipment
+component "Bundles\nBundleHandler" as Bundles
+
+component "File storage\nEquipmentStorage, BundleStorage\nLoanStorage, LoanReturnStorage" as Storage
+artifact "Data files (data/)\nequipment.txt, bundles.txt\nloans.txt, loan-sequence.txt" as Files
+
+Startup ..> Manager : starts
+Startup .right.> Logging : starts / closes
+Manager .left.> Input : reads input
+Manager .right.> Help : displays help
+Manager ..> Loans
+Manager ..> Equipment
+Manager ..> Bundles
+Loans .right.> Equipment : inventory
+Bundles .left.> Equipment : inventory
+Equipment ..> Storage : loads / saves
+Loans ..> Storage : loads / saves
+Bundles ..> Storage : loads / saves
+Storage ..> Files : reads / writes
+
+legend bottom left
+Arrows show dependencies, not execution order.
+endlegend
+@enduml

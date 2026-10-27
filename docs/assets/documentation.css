@@ -70,5 +70,8 @@
   .documentation-content { max-width: none; font-size: 11pt; }
   .documentation-content h1, .documentation-content h2, .documentation-content h3 { color: inherit; break-after: avoid; }
   .documentation-content a, .documentation-content td { color: inherit; }
+  .documentation-content pre,
+  .documentation-content :not(pre) > code { color: inherit; background: #eeeeee; border-color: #bbbbbb; }
+  .documentation-content pre code { white-space: pre-wrap; overflow-wrap: anywhere; }
   .documentation-content pre, .documentation-content table { overflow: visible; }
 }

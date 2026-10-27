@@ -63,10 +63,13 @@ class EquipmentFilterIntegrationTest {
         }
         String table = output.toString(StandardCharsets.UTF_8);
         assertTrue(table.contains("STATUS"));
-        assertTrue(table.contains("DETAILS"));
+        assertTrue(table.contains("CONDITION"));
+        assertTrue(table.lines().allMatch(line -> line.length() <= 100));
         assertEquals(4, table.lines().filter(line -> line.contains("Available")).count());
         for (Equipment item : original) {
-            assertTrue(table.contains(item.getDetails()));
+            assertTrue(table.contains(item.getItemId()));
+            assertTrue(table.contains(item.getItemName()));
+            assertTrue(!table.contains(item.getDetails()));
         }
 
         EquipmentHandler restarted = new EquipmentHandler(file);

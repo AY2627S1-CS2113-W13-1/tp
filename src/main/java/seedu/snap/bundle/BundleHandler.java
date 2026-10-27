@@ -11,7 +11,9 @@ import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import seedu.snap.equipment.CompatibilityResult;
 import seedu.snap.equipment.Equipment;
+import seedu.snap.equipment.EquipmentCompatibility;
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.BundleAdditionUnsuccessful;
 import seedu.snap.exceptions.BundleHistoryUnsuccessful;
@@ -86,6 +88,15 @@ public class BundleHandler {
     /** @return an unmodifiable view of all bundles */
     public List<Bundle> getBundleList() {
         return Collections.unmodifiableList(bundles);
+    }
+
+    /** Clears session-only bundles after a restore replaces the equipment objects they reference. */
+    public void clearBundles() {
+        int previousSize = bundles.size();
+        bundles.clear();
+        nextBundleNumber = 1;
+        assert bundles.isEmpty() : "Clearing bundles must remove every session-only bundle";
+        LOGGER.log(Level.INFO, "Cleared {0} session-only bundle(s) after data restore.", previousSize);
     }
 
     /**
@@ -321,6 +332,11 @@ public class BundleHandler {
         if (item.getType().equals("tripod") && bundle.countType("tripod") >= 1) {
             return failureMessage(itemId, "a bundle can contain at most one tripod");
         }
+        Equipment incompatibleItem = findIncompatibleEquipment(bundle, item);
+        if (incompatibleItem != null) {
+            return failureMessage(itemId,
+                    "equipment is incompatible with equipment ID " + incompatibleItem.getItemId());
+        }
 
         bundle.addEquipment(item);
         LOGGER.log(Level.INFO, "Added equipment {0} to bundle {1}.",
@@ -338,6 +354,26 @@ public class BundleHandler {
         }
         return "Equipment ID " + itemId + " removed from bundle " + bundle.getBundleId() + " successfully.";
     }
+
+    // @@author Rohita-29
+
+    /**
+     * Finds the first existing bundle item that is incompatible with a candidate.
+     *
+     * @param bundle bundle whose current contents are checked
+     * @param candidate equipment proposed for addition
+     * @return the first incompatible item, or null when no known incompatibility exists
+     */
+    private Equipment findIncompatibleEquipment(Bundle bundle, Equipment candidate) {
+        for (Equipment existingItem : bundle.getEquipmentList()) {
+            if (EquipmentCompatibility.compare(candidate, existingItem) == CompatibilityResult.INCOMPATIBLE) {
+                return existingItem;
+            }
+        }
+        return null;
+    }
+
+    // @@author
 
     private Bundle findBundle(String bundleId) {
         for (Bundle bundle : bundles) {
