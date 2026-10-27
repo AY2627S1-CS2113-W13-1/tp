@@ -103,8 +103,8 @@ The equipment detail view displays the individual subtype values with readable l
 
 #### Compatibility comparison
 
-`EquipmentCompatibility.compare(first, second)` provides an internal API for bundle and other follow-up
-features. This version does not expose a separate command that prints compatibility results.
+`EquipmentCompatibility.compare(first, second)` checks candidates added through `add-to-bundle` against the
+existing bundle members. There is no separate command that prints compatibility results.
 Comparison works in either argument order and follows these relationships:
 
 1. A camera and lens compare their lens mounts and sensor formats.
@@ -408,12 +408,12 @@ return remarks, required assessments, and failed saves followed by successful re
 one command's format, example, fields, defaults and restrictions; `help all` displays the complete reference
 for all supported commands. Topics use exact lowercase command names, including multiword names such as
 `delete loan`, `view loan` and `history bundle`. Group names are menu labels, not topics. Unknown topics print
-an error and the menu.
+an error and the menu. `list member` is an alias for the `list borrower` topic; the menu lists the canonical name.
 
 `EqmManager.executeInput(...)` recognises `help` followed by whitespace or the end of the input and passes the
 optional topic to `Help`. `Help` trims surrounding Unicode whitespace and normalises whitespace between topic
-words before lookup. This does not make other command names or fields case-insensitive. The existing
-startup-error check remains first: the input loop stops if saved data cannot be loaded.
+words before lookup. This does not make other command names or fields case-insensitive. If saved data fails to load,
+`EqmManager` accepts only `restore` and `bye`; help requests report the loading error until restoration succeeds.
 
 [![Help sequence: EqmManager calls Help with a topic, which prints the menu, one command or the full reference without using record or storage handlers.](images/HelpSequence.svg)](images/HelpSequence.svg)
 
@@ -423,7 +423,7 @@ startup-error check remains first: the input loop stops if saved data cannot be 
 `Help` is a utility class containing an immutable list of command descriptions. The compact menu, command-specific
 help and complete reference use this list, so changes to a command remain consistent in all three views. It uses immutable
 equipment limits and damage enums when constructing the text, so those values come from the model. Printing help
-has no equipment, loan or bundle handler references and performs no storage operations. Consequently, any help
+has no equipment, loan, bundle or maintenance handler references and performs no storage operations. Consequently, any help
 request, including an invalid topic, does not consume identifiers, save files, alter records or end the session.
 
 #### Design choices and alternatives
@@ -443,11 +443,15 @@ on storage and could change files unnecessarily.
 
 `HelpTest` checks the compact menu, each command topic, complete reference, invalid topics, formats and examples,
 defaults, limits, subtype damage values and output line endings. `HelpIntegrationTest` compares record contents,
-object references, permanent IDs, assessments, counts, next identifiers, bundle completion, file bytes and
+object references, permanent IDs, assessments, maintenance records, counts, next identifiers, bundle completion, file bytes and
 modification times before and after repeated requests.
 It also checks missing and blocked storage paths, Unicode whitespace around and between topic words, invalid help
 topics, continued commands and the interactive help-then-exit loop. These checks cover the menu, individual topics,
-the complete reference and invalid-topic requests. Invalid saved data still causes the existing startup abort.
+the complete reference and invalid-topic requests. A startup loading error keeps help unavailable while allowing
+`restore` or `bye` without saving damaged records on exit.
+`HelpExamplesIntegrationTest` runs every example from the rendered reference through `EqmManager`, using isolated
+records and a fixed clock so required equipment, loans and dates are known. This checks that help examples reach
+their intended command handlers and succeed.
 
 ### Compact equipment views
 
@@ -540,31 +544,33 @@ file replacement outside the command-routing logic.
 
 #### Backup creation
 
-For `backup path/[DIRECTORY]`, `BackupHandler` rejects destinations inside or overlapping the live data directory,
+For `backup path/<DIRECTORY>`, `BackupHandler` rejects destinations inside or overlapping the live data directory,
 existing destinations and invalid parent paths. It captures `equipment.txt`, `loans.txt` and
 `loan-sequence.txt` before creating the destination. Missing live files are represented as valid empty files, while
 non-regular paths are rejected.
+It copies saved files without saving pending changes. Bundles and maintenance records are excluded.
 
 The three files and a versioned SHA-256 manifest are first written to a temporary directory. The completed temporary
 directory is then moved into place, so a failed write does not leave a partial backup reported as successful.
 
 #### Restore validation and rollback
 
-For `restore path/[DIRECTORY]`, the handler requires an external directory, reads every required file and verifies
+For `restore path/<DIRECTORY>`, the handler requires an external directory, reads every required file and verifies
 the manifest against the file bytes. It then loads the equipment and loans in an isolated temporary directory,
 which detects malformed records, duplicate IDs and inconsistent active-loan relationships before touching live data.
 
 The original live files are captured before replacement. If replacement, bundle cleanup or handler reload fails, the
-original bytes and in-memory state are restored. A successful restore clears and saves bundle memberships because
+handler attempts to restore the original file bytes and reload their saved records. This does not preserve unsaved
+in-memory changes, and rollback failures are logged. A successful restore clears and saves bundle memberships because
 bundles refer to the equipment objects from the previous live state. Maintenance records are also excluded from this
 backup format and are not changed by the restore operation.
 
 #### Design choices and verification
 
-A checksum manifest detects tampering and incomplete copies. Staged validation and rollback prevent a failed restore
-from leaving a mixture of old and new equipment or loan data. The backup deliberately covers only equipment, loans
-and the loan sequence; bundle memberships and maintenance history use separate persistence files and are not silently
-replaced by an equipment-and-loan backup.
+A checksum manifest detects tampering and incomplete copies. Staged validation rejects invalid backups before
+replacement; rollback attempts to recover the previous saved records if replacement fails. The backup covers only
+equipment, loans and the loan sequence. Restore clears bundles and their saved memberships, while maintenance
+history remains unchanged in its separate persistence file.
 
 `BackupHandlerTest` covers empty and populated backups, destination validation, manifest mismatches, malformed and
 inconsistent records, and rollback after a replacement failure. `BackupIntegrationTest` covers command routing and
@@ -1074,16 +1080,18 @@ after its condition becomes `5`, the same filter has no matches. The final updat
 ### Maintenance records
 
 ```text
-add i/Camera id/001 type/camera cond/5
 maintain id/001 date/27-10-26 work/Replaced battery outcome/Completed
 bye
 ```
 
 Restart in the same data folder and confirm that `data/maintenance.txt` still contains the maintenance entry.
-Delete the equipment with `delete item/001`, add a replacement using the same visible ID, and record another
-maintenance entry. Inspect `data/maintenance.txt` to confirm that the two entries contain different permanent
-equipment identities. Try a malformed date, a future date, empty work or outcome text and a blocked storage path;
-each request should report an error without changing the existing maintenance records.
+Item `001` must still be named `Studio camera` with condition `2`; recording maintenance does not change its
+assessment. Continue the bundle test below in this folder.
+
+In a separate test folder, add equipment, record maintenance, delete the equipment, then add a replacement using
+the same visible ID and record maintenance again. Inspect `data/maintenance.txt` to confirm that the two entries
+contain different permanent equipment identities. Try a malformed date, a future date, empty work or outcome text
+and a blocked storage path; each request should report an error without changing the existing maintenance records.
 
 ### Bundles, borrowing and returns
 

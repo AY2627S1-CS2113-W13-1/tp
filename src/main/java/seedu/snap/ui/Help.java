@@ -46,6 +46,9 @@ public final class Help {
         if (normalised.equals("all")) {
             return TEXT;
         }
+        if (normalised.equals("list member")) {
+            normalised = "list borrower";
+        }
         for (CommandHelp command : COMMANDS) {
             if (command.command().equals(normalised)) {
                 return formatReference(command.text(), true) + LINE_SEPARATOR + OVERVIEW;
@@ -71,7 +74,7 @@ public final class Help {
                 snAp command help
                 <VALUE> is a placeholder. [field/<VALUE>] is optional. Do not type angle or square brackets.
 
-                Commands and field prefixes use exact lowercase spelling. Separate fields with whitespace.
+                Commands and field prefixes use exact lowercase spelling. Use spaces as shown in each format.
 
                 Equipment, loan and bundle IDs: exactly three digits, 001-999. Borrower IDs: 000-999.
                 Equipment names: 1-%d characters; condition: %d-%d; remarks: 0-%d characters after trimming.
@@ -192,12 +195,15 @@ public final class Help {
                         """)),
                 new CommandHelp("update loan", "Loans", lineEndings("""
                         UPDATE LOAN
-                        Format: update loan/<LOAN ID> [id/<ITEM ID>] [b/<BORROWER ID>] [issued/DD-MM-YY] [due/DD-MM-YY]
-                        Example: update loan/001 id/002 b/007 due/15-10-26
+                        Format: update loan/<LOAN ID> [id/<ITEM ID>] [b/<BORROWER ID>] \
+                        [issued/<DD-MM-YY>] [due/<DD-MM-YY>]
+                        Example: update loan/001 id/002 b/007 due/07-11-26
                         Requires one existing active Loan ID and at least one update field,
                         in any order, each prefix once.
                         The Loan ID remains unchanged; omitted fields retain their current values.
                         A replacement item must exist, be serviceable and have no active loan.
+                        Reassigning to another item releases the old item and captures the replacement's condition.
+                        Changing only the borrower or dates preserves the recorded issue condition.
                         Returned loans cannot be edited.
                         The issue date must not be later than the due date. Invalid updates leave records unchanged.
                         Successful updates are saved to data/loans.txt before live records change.
@@ -213,6 +219,7 @@ public final class Help {
                         Format: view loan/<LOAN ID>
                         Example: view loan/001
                         Shows the equipment type, condition, damage and remarks recorded when the loan was issued.
+                        If update loan assigns another item, this shows the replacement's condition at reassignment.
                         Legacy loans without a saved snapshot report that the issue condition was not recorded.
                         This read-only command does not change equipment, loans or saved records.
                         """)),
@@ -220,10 +227,13 @@ public final class Help {
                         EQUIPMENT HELD BY MEMBER
                         Format: list borrower/<BORROWER ID>
                         Example: list borrower/002
+                        Format: list member/<MEMBER ID>
+                        Example: list member/002
                         The equivalent alias list member/<MEMBER ID> is also accepted.
                         Shows only active equipment held by the selected borrower, with loan details.
                         Returned loans and loans held by other borrowers are excluded.
-                        An unknown borrower ID and a known borrower with no active loans receive clear messages.
+                        A borrower is known when at least one active or returned loan uses that ID.
+                        An unknown borrower ID and a known borrower with no active loans receive separate messages.
                         This read-only query does not change equipment, loans or saved files.
                         """)),
                 new CommandHelp("list overdue", "Loans", lineEndings("""
@@ -252,7 +262,8 @@ public final class Help {
                         Names use case-insensitive partial matching; types use case-insensitive full matching.
                         cond/ accepts one value or an inclusive ascending range, such as 1-3.
 
-                        status/ accepts available or loaned. Available excludes active loans and unserviceable items.
+                        status/ accepts available or loaned, ignoring letter case.
+                        Available excludes active loans and unserviceable items.
                         Uses the same compact table as list. Use show id/<ID> for full equipment values.
                         """)),
                 new CommandHelp("update", "Equipment", lineEndings("""
@@ -261,7 +272,8 @@ public final class Help {
                         Example: update id/001 i/Studio camera cond/5
                         Requires an existing Item ID and at least one update field, in any order, each prefix once.
 
-                        Omitted fields retain their current values. Type is fixed; type/ must match the current type.
+                        Omitted fields retain their current values. Type is fixed; type/ must match the current type,
+                        ignoring letter case.
                         Updates retain subtype details, damage, remarks, serviceability, loans and bundle membership.
                         """)),
                 new CommandHelp("maintain", "Equipment", lineEndings(String.format(Locale.ROOT, """
@@ -269,18 +281,22 @@ public final class Help {
                         Format: maintain id/<ITEM ID> date/<DD-MM-YY> work/<DESCRIPTION> outcome/<OUTCOME>
                         Example: maintain id/001 date/27-10-26 work/Replaced battery outcome/Completed
                         Requires an existing Item ID, a valid maintenance date that is not in the future,
-                        a non-empty work description and
-                        outcome. Work descriptions and outcomes are trimmed, remain on one line and have documented
-                        length limits.
-                        Maintenance records are saved to maintenance.txt and remain associated with the physical item.
+                        a non-empty work description and outcome, in the displayed field order.
+                        Work descriptions and outcomes are trimmed and cannot contain tabs or line breaks.
                         Maintenance work: 1-%d characters; outcomes: 1-%d characters.
+
+                        Maintenance records are saved to maintenance.txt immediately and remain associated
+                        with the physical item. A failed save leaves maintenance records unchanged.
+                        Recording maintenance does not change condition, damage, remarks or serviceability.
                         """, MaintenanceRecord.MAX_WORK_LENGTH, MaintenanceRecord.MAX_OUTCOME_LENGTH))),
                 new CommandHelp("add-bundle", "Bundles", lineEndings("""
                         CREATE BUNDLE
                         Format: add-bundle name/<NAME>
                         Example: add-bundle name/Studio kit
                         Requires a name of 1-100 characters. Bundle IDs are assigned automatically, 001-999.
+                        Names must be unique; name comparisons are case-sensitive.
 
+                        Save new bundles and additions with bye before exiting.
                         Bundles and their equipment memberships are restored between application runs after bye.
                         """)),
                 new CommandHelp("add-to-bundle", "Bundles", lineEndings("""
@@ -294,13 +310,20 @@ public final class Help {
                         A tripod is optional, with at most one. Additional cameras and tripods are rejected.
                         Known compatibility mismatches are rejected. Missing compatibility details or unrelated
                         equipment types do not block addition.
+                        Camera/lens comparisons use mount/ and sensor/; camera/battery uses battery/;
+                        camera/tripod uses thread/. Comparisons ignore letter case.
+
+                        Items are checked in the supplied order. A rejected item does not undo earlier additions.
+                        Save additions with bye before exiting.
                         """)),
                 new CommandHelp("remove-from-bundle", "Bundles", lineEndings("""
                         REMOVE EQUIPMENT FROM BUNDLE
                         Format: remove-from-bundle id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]
                         Example: remove-from-bundle id/001 001
+                        Requires an existing bundle and at least one Item ID. Each ID receives its own result.
                         Removes the requested memberships without deleting the equipment. This can make an item
                         eligible for deletion after it has been removed from every bundle.
+                        Loaned and unserviceable items may be removed from a bundle.
                         Successful removals are saved immediately; a save failure restores the previous memberships.
                         """)),
                 new CommandHelp("list bundles", "Bundles", lineEndings("""
@@ -316,6 +339,8 @@ public final class Help {
                         Format: history bundle/name/<NAME>
                         Example: history bundle/name/Studio kit
                         Includes active and returned loans for every equipment item in the selected bundle.
+                        Uses current bundle membership, including loans issued before an item joined the bundle.
+                        Removing an item excludes its loans from this view. Names must match exactly, including case.
                         Results are sorted by issue date, earliest first, then Loan ID.
                         An empty bundle history and unknown bundle are reported clearly.
                         """)),
@@ -323,17 +348,22 @@ public final class Help {
                         BACK UP DATA
                         Format: backup path/<DIRECTORY>
                         Example: backup path/backups/session-1
-                        Creates a complete backup containing equipment.txt, loans.txt, loan-sequence.txt and a manifest.
+                        Copies saved equipment.txt, loans.txt and loan-sequence.txt, plus backup-manifest.txt.
+                        Bundles and maintenance records are not included. Backup does not save unsaved changes.
                         The destination must be outside the live data directory and must not already exist.
+                        Neither backup nor restore paths may be a parent of the live data directory.
                         Backup creation does not change live records. Paths may contain spaces after path/.
                         """)),
                 new CommandHelp("restore", "General", lineEndings("""
                         RESTORE DATA
                         Format: restore path/<DIRECTORY>
                         Example: restore path/backups/session-1
+                        Requires an existing backup directory outside the live data directory.
                         Validates the manifest and every equipment, loan and sequence record before replacing live data.
-                        A failed restore leaves the current records unchanged. Successful restores clear session-only
-                        bundles because bundles are not part of the persistent backup.
+                        Successful restores replace equipment, loans and the next Loan ID with the saved backup.
+                        All bundles and their saved memberships are cleared. Maintenance records remain unchanged.
+                        A failed restore attempts to restore the previous saved records; report any rollback error.
+                        Restore is available after a startup loading error. Other commands are blocked except bye.
                         """)),
                 new CommandHelp("help", "General", lineEndings("""
                         HELP
@@ -344,6 +374,7 @@ public final class Help {
                         Example: help loan
                         Shows one command's syntax, examples, required and optional fields, defaults and restrictions.
                         Use the full command name for multiword topics, such as help list overdue or help delete loan.
+                        help list member is an alias for help list borrower.
                         Format: help all
                         Example: help all
                         Shows the complete command guide.
@@ -357,6 +388,7 @@ public final class Help {
                         Example: bye
                         Saves equipment, loans, maintenance records and bundles before exiting. A save failure keeps
                         the application running; fix the reported file problem and retry bye.
+                        After a startup loading error, bye exits without saving the failed data set.
                         """)));
     }
 

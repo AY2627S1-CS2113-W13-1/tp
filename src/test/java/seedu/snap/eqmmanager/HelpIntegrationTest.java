@@ -40,17 +40,13 @@ import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.loan.EquipmentConditionSnapshot;
 import seedu.snap.loan.Loan;
 import seedu.snap.loan.LoanHandler;
+import seedu.snap.maintenance.MaintenanceHandler;
+import seedu.snap.maintenance.MaintenanceRecord;
+import seedu.snap.ui.Help;
 
 /** Verifies that help and equipment views leave application records, files and counters unchanged. */
 class HelpIntegrationTest {
     private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-10-24T12:00:00Z"), ZoneOffset.UTC);
-    private static final List<String> HELP_COMMANDS = List.of("help", "help all", "help add", "help list", "help show",
-            "help delete item", "help loan", "help return", "help delete loan", "help update loan", "help list loans",
-            "help view loan",
-            "help list overdue", "help history", "help filter", "help update", "help add-bundle",
-            "help add-to-bundle", "help remove-from-bundle", "help list bundles", "help history bundle",
-            "help help", "help bye", "help unknown",
-            "help list overdue extra", "help add i/Camera", "help Loan", "help all extra");
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
     private PrintStream originalOutput;
     private InputStream originalInput;
@@ -78,11 +74,13 @@ class HelpIntegrationTest {
         manager.executeInput("loan id/005 b/111 due/25-10-26");
         manager.executeInput("return loan/001 serviceable/no damage/SWELLING remarks/Needs repair");
         manager.executeInput("loan id/001 b/222 due/25-10-26");
+        manager.executeInput("maintain id/005 date/24-10-26 work/Inspected swelling outcome/Repair required");
         readField(manager, "bundles", BundleHandler.class).saveToStorage();
         assertTrue(readField(manager, "bundles", BundleHandler.class).getBundleList().getFirst().isComplete());
         assertTrue(readField(manager, "equipment", EquipmentHandler.class).getEquipmentById("001").isLoaned());
         assertFalse(readField(manager, "equipment", EquipmentHandler.class)
                 .getEquipmentById("005").isServiceable());
+        assertEquals(1, readField(manager, "maintenance", MaintenanceHandler.class).getMaintenanceRecords().size());
         output.reset();
     }
 
@@ -154,8 +152,8 @@ class HelpIntegrationTest {
 
         List<String> lines = printed().lines().toList();
         assertTrue(lines.stream().allMatch(line -> line.length() <= 100));
-        assertEquals(28, lines.stream().filter("Format:"::equals).count());
-        assertEquals(28, lines.stream().filter("Example:"::equals).count());
+        assertEquals(29, lines.stream().filter("Format:"::equals).count());
+        assertEquals(29, lines.stream().filter("Example:"::equals).count());
         assertTrue(printed().contains(System.lineSeparator() + System.lineSeparator() + "Format:"
                 + System.lineSeparator() + "  "));
         assertTrue(printed().contains(System.lineSeparator() + System.lineSeparator() + "Example:"
@@ -476,6 +474,7 @@ class HelpIntegrationTest {
         EquipmentHandler inventory = readField(target, "equipment", EquipmentHandler.class);
         LoanHandler loanHandler = readField(target, "loans", LoanHandler.class);
         BundleHandler bundleHandler = readField(target, "bundles", BundleHandler.class);
+        MaintenanceHandler maintenanceHandler = readField(target, "maintenance", MaintenanceHandler.class);
         List<EquipmentState> items = inventory.getEquipmentList().stream()
                 .map(item -> new EquipmentState(item, item.getItemName(), item.getItemId(), item.getType(),
                         item.getRecordId(), item.getCondition(), item.getDetails(), item.getRemarks(),
@@ -487,7 +486,8 @@ class HelpIntegrationTest {
         List<BundleState> bundleRecords = bundleHandler.getBundleList().stream()
                 .map(bundle -> new BundleState(bundle, bundle.getBundleId(), bundle.getBundleName(),
                         bundle.isComplete(), List.copyOf(bundle.getEquipmentList()))).toList();
-        return new ApplicationState(inventory, loanHandler, bundleHandler, items, loanRecords, bundleRecords,
+        return new ApplicationState(inventory, loanHandler, bundleHandler, maintenanceHandler,
+                items, loanRecords, bundleRecords, List.copyOf(maintenanceHandler.getMaintenanceRecords()),
                 loanHandler.getLoanCount(), loanHandler.getNextLoanId(),
                 readField(bundleHandler, "nextBundleNumber", Integer.class),
                 readField(target, "isRunning", Boolean.class));
@@ -531,15 +531,18 @@ class HelpIntegrationTest {
     /** Returns every persistent file used by the populated fixture, including bundle membership. */
     private List<Path> storagePaths() {
         return List.of(dataDirectory.resolve("equipment.txt"), dataDirectory.resolve("loans.txt"),
-                dataDirectory.resolve("loan-sequence.txt"), dataDirectory.resolve("bundles.txt"));
+                dataDirectory.resolve("loan-sequence.txt"), dataDirectory.resolve("bundles.txt"),
+                dataDirectory.resolve("maintenance.txt"));
     }
 
     /** Repeats help and equipment requests so reading records cannot save data or consume identifiers. */
     private void executeAllReadOnlyForms(EqmManager target, ApplicationState expected) throws Exception {
-        List<String> requests = new ArrayList<>(HELP_COMMANDS);
+        List<String> requests = new ArrayList<>(helpRequests());
         requests.addAll(List.of("list", "filter cond/1-10", "filter id/999", "show id/001", "show id/002",
                 "show id/003", "show id/004", "show id/005", "show id/006", "show id/999", "show",
-                "show id/000", "show id/001 id/002", "show id/001 remarks/Unexpected"));
+                "show id/000", "show id/001 id/002", "show id/001 remarks/Unexpected",
+                "list loans", "list overdue", "list borrower/222", "list member/222", "view loan/001",
+                "history id/001", "history bundle/id/001", "history bundle/name/Camera kit", "list bundles"));
         for (int repetition = 0; repetition < 2; repetition++) {
             for (String command : requests) {
                 output.reset();
@@ -553,6 +556,29 @@ class HelpIntegrationTest {
                 assertEquals(expected, snapshot(target), command);
             }
         }
+    }
+
+    /** Exercises every advertised topic as the menu grows, plus aliases and malformed requests. */
+    private static List<String> helpRequests() {
+        List<String> requests = new ArrayList<>(List.of("help", "help all", "help list member", "help unknown",
+                "help list overdue extra", "help add i/Camera", "help Loan", "help all extra"));
+        for (String line : Help.getText("").lines().toList()) {
+            if (!line.startsWith("| ")) {
+                continue;
+            }
+            String content = line.substring(2, line.length() - 2).stripTrailing();
+            if (content.matches("(?:Equipment|Loans|Bundles|General): .*")) {
+                content = content.substring(content.indexOf(':') + 1).strip();
+            } else if (!content.isBlank() && content.startsWith(" ")) {
+                content = content.strip();
+            } else {
+                continue;
+            }
+            for (String topic : content.split(" \\| ")) {
+                requests.add("help " + topic);
+            }
+        }
+        return requests;
     }
 
     /** Checks the discovery menu independently of the production text generator. */
@@ -598,7 +624,9 @@ class HelpIntegrationTest {
 
     /** Keeps complete in-memory state separate from file snapshots for precise failures. */
     private record ApplicationState(EquipmentHandler equipment, LoanHandler loans, BundleHandler bundles,
+            MaintenanceHandler maintenance,
             List<EquipmentState> items, List<LoanState> loanRecords, List<BundleState> bundleRecords,
+            List<MaintenanceRecord> maintenanceRecords,
             int loanCount, String nextLoanId, int nextBundleNumber, boolean running) {
     }
 
