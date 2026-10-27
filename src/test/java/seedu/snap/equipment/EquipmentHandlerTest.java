@@ -654,38 +654,30 @@ class EquipmentHandlerTest {
     }
 
     @Test
-    void viewAllEquipment_emptyInventory_printsHeaderOnly() {
+    void viewAllEquipment_emptyInventory_printsCountAndValidExample() {
         EquipmentHandler handler = new EquipmentHandler();
 
         handler.viewAllEquipment();
 
-        String expected = String.format(
-                "%-4s %-24s | %-6s | %-15s | %-9s | %-13s | %-30s | %-30s%n",
-                "No.", "NAME", "ID", "TYPE", "CONDITION", "STATUS", "DETAILS", "REMARKS");
+        String expected = String.join(System.lineSeparator(), "Equipment", "No equipment in the inventory.",
+                "0 equipment items.", "Add an item: add i/Camera id/001 type/camera cond/1", "");
         assertEquals(expected, output.toString(StandardCharsets.UTF_8));
     }
 
     @Test
-    void viewAllEquipment_populatedInventory_printsHeaderAndRows()
-            throws EquipmentAdditionUnsuccessful {
+    void viewAllEquipment_populatedInventory_printsSummaryAndCount() throws EquipmentAdditionUnsuccessful {
         EquipmentHandler handler = new EquipmentHandler();
         handler.addEquipment("add i/Canon EOS R10 id/001 type/camera cond/1");
         handler.addEquipment("add i/Manfrotto Tripod id/002 type/tripod cond/8 remarks/Needs cleaning");
 
         handler.viewAllEquipment();
 
-        String expected = String.format(
-                "%-4s %-24s | %-6s | %-15s | %-9s | %-13s | %-30s | %-30s%n",
-                "No.", "NAME", "ID", "TYPE", "CONDITION", "STATUS", "DETAILS", "REMARKS");
-        expected += String.format(
-                "%-4s %-24s | %-6s | %-15s | %-9d | %-13s | %-30s | %-30s%n",
-                "1)", "Canon EOS R10", "001", "camera", 1, "Available",
-                "sensor/unspecified damage/NONE", "");
-        expected += String.format(
-                "%-4s %-24s | %-6s | %-15s | %-9d | %-13s | %-30s | %-30s%n",
-                "2)", "Manfrotto Tripod", "002", "tripod", 8, "Available",
-                "thread/unspecified damage/NONE", "Needs cleaning");
-
-        assertEquals(expected, output.toString(StandardCharsets.UTF_8));
+        String actual = output.toString(StandardCharsets.UTF_8);
+        assertTrue(actual.contains("| 001 | Canon EOS R10"));
+        assertTrue(actual.contains("| 002 | Manfrotto Tripod"));
+        assertEquals(2, actual.lines().filter(line -> line.contains("Available")).count());
+        assertTrue(actual.contains("2 equipment items."));
+        assertTrue(actual.lines().allMatch(line -> line.length() <= 100));
+        assertTrue(!actual.contains("Needs cleaning"));
     }
 }

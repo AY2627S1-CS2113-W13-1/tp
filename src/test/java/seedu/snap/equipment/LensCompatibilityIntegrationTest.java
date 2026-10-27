@@ -180,7 +180,7 @@ class LensCompatibilityIntegrationTest {
     }
 
     @Test
-    void viewAllEquipment_lensCompatibility_displaysValues()
+    void showEquipment_lensCompatibility_displaysValues()
             throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
         handler.addEquipment(FULL_LENS_COMMAND);
@@ -194,16 +194,16 @@ class LensCompatibilityIntegrationTest {
                             output,
                             true,
                             StandardCharsets.UTF_8));
-            handler.viewAllEquipment();
+            handler.showEquipment("show id/101");
         } finally {
             System.setOut(originalOutput);
         }
 
         String displayed =
                 output.toString(StandardCharsets.UTF_8);
-        assertTrue(displayed.contains("zoom/24-70 mm"));
-        assertTrue(displayed.contains("mount/Canon RF"));
-        assertTrue(displayed.contains("sensor/Full frame"));
+        assertTrue(displayed.contains("Zoom range: 24-70 mm"));
+        assertTrue(displayed.contains("Lens mount: Canon RF"));
+        assertTrue(displayed.contains("Sensor format: Full frame"));
     }
 
     /** Checks every explicit compatibility field on a Lens. */

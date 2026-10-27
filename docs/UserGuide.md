@@ -60,7 +60,7 @@ and blank lines.
 
 Replace `<command>` with one of these exact lowercase topics:
 
-* Equipment: `add`, `list`, `delete item`, `filter`, `update`.
+* Equipment: `add`, `list`, `show`, `delete item`, `filter`, `update`.
 * Loans: `loan`, `return`, `delete loan`, `list loans`, `view loan`, `list overdue`, `history`.
 * Bundles: `add-bundle`, `add-to-bundle`, `remove-from-bundle`, `list bundles`, `history bundle`.
 * General: `help`, `bye`.
@@ -171,9 +171,30 @@ add i/Backup Camera id/005 type/camera cond/5 damage/OTHER remarks/Damaged contr
 
 Format: `list`
 
-This displays all equipment with its name, ID, type and condition. The `STATUS` column, before `DETAILS`, shows
-`Available`, `Loaned` or `Unserviceable`. The `DETAILS` column shows the type-specific value and damage, including the defaults
-when optional fields were omitted. The `REMARKS` column follows `DETAILS` and is empty when no remarks were given.
+This displays equipment in inventory order using a 96-column table with `ID`, `NAME`, `TYPE`, `CONDITION`
+and `STATUS`. Status is `Available`, `Loaned` or `Unserviceable`, using the existing loan and return-assessment
+rules. The result count appears below the table.
+
+Names that do not fit end in `...`. Type-specific fields, damage and remarks are available through `show`,
+so long values do not expand the table. An empty inventory shows a count of zero and a valid `add` example.
+
+## Viewing full equipment details: `show`
+
+Format: `show id/[ITEM ID]`
+
+Example: `show id/001`
+
+Use an existing three-digit Item ID from `001` to `999`. The command displays the complete name, type, numeric
+condition, status, serviceability, active Loan ID, all subtype and compatibility fields, damage and remarks.
+Omitted compatibility values appear as `unspecified`; an empty remarks field or absent active Loan ID appears
+as `(none)`. Long values wrap onto indented lines at 100 columns and are not truncated.
+
+Tabs and control characters appear as visible escapes, such as `\t`, so that stored text cannot change the
+layout. The stored values are preserved. Extra fields, repeated IDs, invalid IDs and unknown items produce a
+clear error. Equipment listings, filters and detail requests leave records, identifiers and saved data unchanged.
+
+`show` describes the equipment's current state. Use `view loan/[LOAN ID]` for its condition when a particular
+loan was issued, and `list loans` to see borrower IDs and loan dates.
 
 ## Deleting equipment: `delete`
 
@@ -361,7 +382,8 @@ The `available` filter also excludes unserviceable equipment. Returned loans do 
 Prefixes `id/`, `i/`, `type/`, `cond/`, and `status/` after whitespace are reserved field separators.
 Text like `id/card` within a name is allowed. Empty or repeated fields are rejected. Filtering leaves equipment
 unchanged and prints matches in inventory order, or `No equipment matches the filters.` when none match.
-Matching rows include the equipment's current status, type-specific details, recorded damage and remarks, as in `list`.
+Matching rows use the same compact columns and truncation rules as `list`, followed by a result count.
+Use `show id/[ITEM ID]` for full values. A filter with no matches shows a count of zero and a clear message.
 
 ## Updating equipment: `update`
 
@@ -471,7 +493,7 @@ Saved equipment records use the four supported types and retain their type-speci
 Existing records of supported types without optional fields are also accepted, using `unspecified` and `NONE`.
 Records created before remarks were supported may omit the `remarks/` field; they load with empty remarks.
 Records with `damage/OTHER` require non-empty remarks; invalid saved records are reported when loaded.
-Remarks are shown in the `list` equipment table and are restored when the application starts again.
+Remarks are shown by `show id/[ITEM ID]` and are restored when the application starts again.
 Saved records may start with `serviceable/yes` or `serviceable/no`, followed by a tab and the add record.
 This prefix is storage metadata, not an add-command field. Older records without the prefix are serviceable.
 New records also start with `recordId/` and a permanent equipment identifier, followed by a tab before
@@ -523,6 +545,7 @@ duplicate records, the application reports the problem and stops.
 | Return equipment | `return loan/[LOAN ID] serviceable/[yes|no] damage/[DAMAGE|none] [remarks/[REMARKS]]` |
 | Delete loan | `delete loan/[LOAN ID]` |
 | List equipment | `list` |
+| Show full equipment details | `show id/[ITEM ID]` |
 | List loans | `list loans` |
 | View issue-time equipment condition | `view loan/[LOAN ID]` |
 | View item loan history | `history id/[ITEM ID]` |

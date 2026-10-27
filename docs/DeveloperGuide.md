@@ -48,7 +48,8 @@ through `CompatibilityText`. Leading and trailing Unicode whitespace is removed,
 `EquipmentDetailField` defines the supported command markers. `EquipmentDetailParser` scans the optional fields,
 rejects repeated, reordered or inapplicable markers, and returns the values supplied by the user.
 The subtype-specific parsers then construct `Camera`, `Lens`, `Battery` or `Tripod` objects.
-`EquipmentDetailFormatter` generates the same ordered representation for listing and persistence.
+`EquipmentDetailFormatter` generates the ordered representation used for validation and persistence.
+The equipment detail view displays the individual subtype values with readable labels.
 
 #### Compatibility comparison
 
@@ -374,6 +375,23 @@ modification times before and after repeated requests.
 It also checks missing and blocked storage paths, Unicode whitespace around and between topic words, invalid help
 topics, continued commands and the interactive help-then-exit loop. These checks cover the menu, individual topics,
 the complete reference and invalid-topic requests. Invalid saved data still causes the existing startup abort.
+
+### Compact equipment views
+
+`EquipmentHandler.viewAllEquipment()` and `viewEquipment(...)` delegate to the shared `EquipmentView` renderer.
+Both use the same fixed columns and preserve inventory order. Names are shortened at complete grapheme
+boundaries with an ASCII `...` marker; the renderer accounts for common wide CJK and emoji characters when
+padding columns. Tabs and control characters are displayed as escapes so that they cannot introduce new rows
+or shift columns. The original model values are retained.
+
+`EqmManager` routes `show` to `EquipmentHandler.showEquipment(...)`, which validates exactly one `id/` field
+and selects the existing object. `EquipmentView.printDetails(...)` reads common and subtype-specific getters
+and wraps complete values at 100 columns. These paths call no save method, alter no identifiers and use the
+existing equipment loan and serviceability state. They do not create a second equipment-to-loan association.
+
+`EquipmentViewTest` verifies bounded columns, Unicode graphemes, truncation, full values and useful empty
+messages. The read-only integration fixture also repeats list, filter and show requests against populated,
+empty, reloaded and blocked storage, comparing record references, values, counters, file bytes and timestamps.
 
 ### Preserving equipment condition when a loan is issued
 
