@@ -275,6 +275,15 @@ public final class Help {
                         Maintenance records are saved to maintenance.txt and remain associated with the physical item.
                         Maintenance work: 1-%d characters; outcomes: 1-%d characters.
                         """, MaintenanceRecord.MAX_WORK_LENGTH, MaintenanceRecord.MAX_OUTCOME_LENGTH))),
+                new CommandHelp("history maintenance", "Equipment", lineEndings("""
+                        VIEW MAINTENANCE HISTORY
+                        Format: history maintenance/id/<ITEM ID>
+                        Example: history maintenance/id/001
+                        Requires an existing Item ID. Displays maintenance dates, work performed and outcomes for that
+                        item. Records are sorted by maintenance date, earliest first. An item without records shows a
+                        clear message.
+                        Viewing history does not change equipment, loans, maintenance records or saved files.
+                        """)),
                 new CommandHelp("add-bundle", "Bundles", lineEndings("""
                         CREATE BUNDLE
                         Format: add-bundle name/<NAME>

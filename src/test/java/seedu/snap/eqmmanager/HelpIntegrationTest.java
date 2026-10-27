@@ -47,7 +47,8 @@ class HelpIntegrationTest {
     private static final List<String> HELP_COMMANDS = List.of("help", "help all", "help add", "help list", "help show",
             "help delete item", "help loan", "help return", "help delete loan", "help update loan", "help list loans",
             "help view loan",
-            "help list overdue", "help history", "help filter", "help update", "help add-bundle",
+            "help list overdue", "help history", "help history maintenance", "help filter", "help update",
+            "help add-bundle",
             "help add-to-bundle", "help remove-from-bundle", "help list bundles", "help history bundle",
             "help help", "help bye", "help unknown",
             "help list overdue extra", "help add i/Camera", "help Loan", "help all extra");
@@ -154,8 +155,8 @@ class HelpIntegrationTest {
 
         List<String> lines = printed().lines().toList();
         assertTrue(lines.stream().allMatch(line -> line.length() <= 100));
-        assertEquals(28, lines.stream().filter("Format:"::equals).count());
-        assertEquals(28, lines.stream().filter("Example:"::equals).count());
+        assertEquals(29, lines.stream().filter("Format:"::equals).count());
+        assertEquals(29, lines.stream().filter("Example:"::equals).count());
         assertTrue(printed().contains(System.lineSeparator() + System.lineSeparator() + "Format:"
                 + System.lineSeparator() + "  "));
         assertTrue(printed().contains(System.lineSeparator() + System.lineSeparator() + "Example:"
@@ -182,6 +183,7 @@ class HelpIntegrationTest {
         "filter | Format: filter [id/<ID>]",
         "update | Format: update id/<ID>",
         "maintain | Format: maintain id/<ITEM ID>",
+        "history maintenance | Format: history maintenance/id/<ITEM ID>",
         "add-bundle | Format: add-bundle name/<NAME>",
         "add-to-bundle | Format: add-to-bundle id/<BUNDLE ID>",
         "remove-from-bundle | Format: remove-from-bundle id/<BUNDLE ID>",

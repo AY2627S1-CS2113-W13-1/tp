@@ -9,6 +9,7 @@ import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.logging.Level;
@@ -18,6 +19,7 @@ import java.util.regex.Pattern;
 
 import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.EquipmentHandler;
+import seedu.snap.exceptions.MaintenanceHistoryUnsuccessful;
 import seedu.snap.exceptions.MaintenanceRecordUnsuccessful;
 
 /** Handles validated maintenance-record commands and their persistent records. */
@@ -27,8 +29,12 @@ public class MaintenanceHandler {
             .withResolverStyle(ResolverStyle.STRICT);
     private static final Pattern COMMAND = Pattern.compile(
             "(?sU)\\Amaintain\\s+id/([^\\s]+)\\s+date/([^\\s]+)\\s+work/(.*?)\\s+outcome/(.+)\\z");
+    private static final Pattern HISTORY_COMMAND = Pattern.compile(
+            "(?U)\\Ahistory\\s+maintenance/id/([0-9]{3})\\z");
     private static final String COMMAND_FORMAT = "Invalid format. Use: maintain id/[ITEM ID] "
             + "date/[DD-MM-YY] work/[DESCRIPTION] outcome/[OUTCOME].";
+    private static final String HISTORY_FORMAT = "Invalid format. Use: history maintenance/id/[ITEM ID], "
+            + "from 001 to 999.";
 
     /** Equipment inventory used to resolve the physical record identity for each command. */
     private final EquipmentHandler equipment;
@@ -36,7 +42,7 @@ public class MaintenanceHandler {
     private final ArrayList<MaintenanceRecord> records = new ArrayList<>();
     /** File used for persistence, or null for an in-memory handler. */
     private final Path storageFile;
-    /** Clock used to validate that completed maintenance is not dated in the future. */
+    /** Clock used to reject maintenance dates that are later than the application date. */
     private final Clock clock;
 
     /** Creates an in-memory maintenance handler for isolated tests or callers without persistence. */
@@ -145,6 +151,49 @@ public class MaintenanceHandler {
         save(records);
     }
 
+    /**
+     * Selects maintenance records belonging to the currently registered physical item.
+     * The returned copy is sorted by maintenance date without changing stored records.
+     *
+     * @param input command in the form {@code history maintenance/id/001}
+     * @return an unmodifiable list in chronological order
+     * @throws MaintenanceHistoryUnsuccessful if syntax is invalid or the item is missing
+     */
+    public List<MaintenanceRecord> getMaintenanceHistory(String input)
+            throws MaintenanceHistoryUnsuccessful {
+        String itemId = parseHistoryItemId(input);
+        Equipment item = equipment.getEquipmentById(itemId);
+        if (item == null) {
+            throw new MaintenanceHistoryUnsuccessful("Equipment ID " + itemId + " does not exist.");
+        }
+
+        ArrayList<MaintenanceRecord> history = new ArrayList<>();
+        for (MaintenanceRecord record : records) {
+            if (item.getRecordId().equals(record.getEquipmentRecordId())) {
+                history.add(record);
+            }
+        }
+        history.sort(Comparator.comparing(MaintenanceRecord::getMaintenanceDate));
+        logger.log(Level.FINE, "Selected {0} maintenance record(s) for item ID {1}.",
+                new Object[]{history.size(), itemId});
+        assert history.stream().allMatch(record -> record != null)
+                : "Maintenance history must not contain null records";
+        return List.copyOf(history);
+    }
+
+    /** Displays a physical item's maintenance history without changing application state. */
+    public void viewMaintenanceHistory(String input) throws MaintenanceHistoryUnsuccessful {
+        String itemId = parseHistoryItemId(input);
+        List<MaintenanceRecord> history = getMaintenanceHistory(input);
+        if (history.isEmpty()) {
+            System.out.println("No maintenance history for item ID " + itemId + ".");
+            return;
+        }
+
+        System.out.println("Maintenance history for item ID " + itemId + ":");
+        printMaintenanceRecords(history);
+    }
+
     /** Parses the strict command format and validates its date and visible item ID. */
     private static ParsedCommand parseCommand(String input) throws MaintenanceRecordUnsuccessful {
         String command = input == null ? "" : input.strip();
@@ -163,7 +212,11 @@ public class MaintenanceHandler {
         } catch (DateTimeParseException exception) {
             throw new MaintenanceRecordUnsuccessful("Maintenance date must use DD-MM-YY.");
         }
-        return new ParsedCommand(itemId, date, matcher.group(3), matcher.group(4));
+        try {
+            return new ParsedCommand(itemId, date, matcher.group(3), matcher.group(4));
+        } catch (IllegalArgumentException exception) {
+            throw new MaintenanceRecordUnsuccessful(exception.getMessage());
+        }
     }
 
     /** Saves the proposed record list without changing the live list first. */
@@ -181,6 +234,28 @@ public class MaintenanceHandler {
     /** Returns whether a maintenance date is later than today in the configured application time zone. */
     private boolean isFutureDate(LocalDate date) {
         return date.isAfter(LocalDate.now(clock));
+    }
+
+    /** Validates the read-only maintenance-history command and returns its item ID. */
+    private static String parseHistoryItemId(String input) throws MaintenanceHistoryUnsuccessful {
+        if (input != null && !input.matches("(?s).*\\R.*")) {
+            Matcher matcher = HISTORY_COMMAND.matcher(input.strip());
+            if (matcher.matches() && isValidItemId(matcher.group(1))) {
+                return matcher.group(1);
+            }
+        }
+        throw new MaintenanceHistoryUnsuccessful(HISTORY_FORMAT);
+    }
+
+    /** Prints the selected maintenance records in a stable table format. */
+    private static void printMaintenanceRecords(List<MaintenanceRecord> history) {
+        System.out.printf("%-4s %-16s | %-30s | %-30s%n", "No.", "DATE", "WORK", "OUTCOME");
+        for (int index = 0; index < history.size(); index++) {
+            MaintenanceRecord record = history.get(index);
+            assert record != null : "Maintenance history rows must not contain null records";
+            System.out.printf("%-4s %-16s | %-30s | %-30s%n", (index + 1) + ")",
+                    record.getMaintenanceDate(), record.getWork(), record.getOutcome());
+        }
     }
 
     /** Parsed and validated command values before resolving the equipment identity. */
