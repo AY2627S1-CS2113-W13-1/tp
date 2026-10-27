@@ -260,7 +260,7 @@ public class LoanHandler {
         }
 
         Loan proposal = loan.updatedCopy(replacement.getItemId(), replacement.getRecordId(),
-                borrowerId, issuedDate, dueDate);
+                borrowerId, issuedDate, dueDate, replacement);
         ArrayList<Loan> proposedLoans = new ArrayList<>(loans);
         proposedLoans.set(proposedLoans.indexOf(loan), proposal);
         try {

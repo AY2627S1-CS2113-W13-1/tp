@@ -1,6 +1,7 @@
 package seedu.snap.eqmmanager;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
@@ -118,5 +119,37 @@ class LoanUpdateIntegrationTest {
         assertTrue(actual.contains("Condition: 6"));
         assertTrue(actual.contains("Damage: SENSOR_DAMAGE"));
         assertTrue(actual.contains("Remarks: Handle carefully"));
+    }
+
+    @Test
+    void updateLoanCommand_equipmentChangeUsesReplacementConditionAfterRestart() throws Exception {
+        EqmManager manager = new EqmManager(temporaryDirectory);
+        manager.executeInput("add i/Test Camera id/001 type/camera cond/6 sensor/Full frame "
+                + "damage/SENSOR_DAMAGE remarks/Handle carefully");
+        manager.executeInput("add i/Test Tripod id/002 type/tripod cond/3 thread/3/8");
+        manager.executeInput("loan id/001 b/101 issued/01-10-26 due/20-10-26");
+        manager.executeInput("update loan/001 id/002");
+
+        output.reset();
+        manager.executeInput("view loan/001");
+        assertReplacementConditionIsDisplayed();
+
+        EqmManager restarted = new EqmManager(temporaryDirectory);
+        output.reset();
+        restarted.executeInput("view loan/001");
+
+        assertReplacementConditionIsDisplayed();
+    }
+
+    /** Checks that a reassigned loan displays only the replacement equipment's condition. */
+    private void assertReplacementConditionIsDisplayed() {
+        String actual = output.toString(StandardCharsets.UTF_8);
+        assertTrue(actual.contains("Item ID: 002"));
+        assertTrue(actual.contains("Type: tripod"));
+        assertTrue(actual.contains("Condition: 3"));
+        assertTrue(actual.contains("Damage: NONE"));
+        assertFalse(actual.contains("Type: camera"));
+        assertFalse(actual.contains("Damage: SENSOR_DAMAGE"));
+        assertFalse(actual.contains("Remarks: Handle carefully"));
     }
 }

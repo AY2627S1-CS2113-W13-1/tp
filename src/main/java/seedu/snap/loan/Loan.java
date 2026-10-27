@@ -24,7 +24,7 @@ public class Loan {
 
     // @@author Rohita-29
 
-    private final EquipmentConditionSnapshot issueConditionSnapshot;
+    private EquipmentConditionSnapshot issueConditionSnapshot;
 
     // @@author
 
@@ -221,12 +221,18 @@ public class Loan {
         return returned;
     }
 
-    /** Creates a detached active proposal for a validated loan update. */
+    /**
+     * Creates a detached active proposal for a validated loan update.
+     * Reassigning equipment captures the replacement's condition instead of reusing the old item's snapshot.
+     */
     Loan updatedCopy(String itemId, String equipmentRecordId, String borrowerId,
-            LocalDateTime issuedDate, LocalDateTime dueDate) {
+            LocalDateTime issuedDate, LocalDateTime dueDate, Equipment replacement) {
         assert !isReturned : "Returned loan history must not be updated";
+        assert replacement != null : "A loan update requires replacement equipment";
+        EquipmentConditionSnapshot updatedSnapshot = replacement == equipment
+                ? issueConditionSnapshot : EquipmentConditionSnapshot.fromEquipment(replacement);
         return new Loan(loanId, itemId, borrowerId, issuedDate, dueDate, equipmentRecordId,
-                issueConditionSnapshot);
+                updatedSnapshot);
     }
 
     /** Applies a saved update and keeps equipment ownership synchronized with the loan. */
@@ -250,6 +256,7 @@ public class Loan {
         borrowerId = updated.borrowerId;
         issuedDate = updated.issuedDate;
         dueDate = updated.dueDate;
+        issueConditionSnapshot = updated.issueConditionSnapshot;
         equipment = replacement;
         replacement.setLoanId(loanId);
         assert equipment == replacement : "Updated loan must retain its replacement equipment";

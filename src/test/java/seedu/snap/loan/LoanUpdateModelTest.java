@@ -24,7 +24,8 @@ class LoanUpdateModelTest {
         original.attachEquipment(originalEquipment);
 
         Loan updated = original.updatedCopy("002", replacementEquipment.getRecordId(), "007",
-                LocalDateTime.of(2026, 10, 3, 0, 0), LocalDateTime.of(2026, 10, 9, 0, 0));
+                LocalDateTime.of(2026, 10, 3, 0, 0), LocalDateTime.of(2026, 10, 9, 0, 0),
+                replacementEquipment);
         original.applyUpdate(updated, replacementEquipment);
 
         assertEquals("004", original.getLoanId());
@@ -32,6 +33,8 @@ class LoanUpdateModelTest {
         assertEquals("007", original.getBorrowerId());
         assertEquals(updated.getIssuedDate(), original.getIssuedDate());
         assertEquals(updated.getDueDate(), original.getDueDate());
+        assertEquals("tripod", updated.getIssueConditionSnapshot().getEquipmentType());
+        assertEquals(5, updated.getIssueConditionSnapshot().getCondition());
         assertFalse(originalEquipment.isLoaned());
         assertTrue(replacementEquipment.isLoaned());
         assertEquals("004", replacementEquipment.getLoanId());
