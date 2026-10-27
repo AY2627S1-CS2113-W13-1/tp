@@ -27,9 +27,9 @@ import seedu.snap.equipment.Tripod;
 /** Checks the command guide covers executable syntax, meaningful defaults and important restrictions. */
 class HelpTest {
     private static final List<String> TOPICS = List.of("add", "list", "delete item", "loan", "return", "delete loan",
-            "list loans", "view loan", "list overdue", "history", "filter", "update", "maintain",
-            "list maintenance-due", "inspect", "history maintenance", "summary maintenance", "add-bundle",
-            "add-to-bundle",
+            "update loan", "list loans", "view loan", "list overdue", "history", "filter", "update",
+            "maintain", "list maintenance-due", "inspect", "history maintenance", "summary maintenance",
+            "add-bundle", "add-to-bundle",
             "remove-from-bundle", "list bundles", "history bundle", "help", "bye");
 
     /** Supplies the user-facing syntax and example for each supported command. */
@@ -46,6 +46,9 @@ class HelpTest {
                 Arguments.of("return", "return loan/<LOAN ID> serviceable/<yes|no> damage/<DAMAGE> [remarks/<TEXT>]",
                         "return loan/001 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair"),
                 Arguments.of("delete loan", "delete loan/<LOAN ID>", "delete loan/001"),
+                Arguments.of("update loan", "update loan/<LOAN ID> [id/<ITEM ID>] [b/<BORROWER ID>]"
+                                + " [issued/DD-MM-YY] [due/DD-MM-YY]",
+                        "update loan/001 id/002 b/007 due/15-10-26"),
                 Arguments.of("list loans", "list loans", "list loans"),
                 Arguments.of("view loan", "view loan/<LOAN ID>", "view loan/001"),
                 Arguments.of("list overdue", "list overdue", "list overdue"),
@@ -183,11 +186,10 @@ class HelpTest {
     void getText_all_separatesEveryCommandWithSpacedFullWidthHeadingBands() {
         List<String> lines = Help.getText("all").lines().toList();
         List<String> headings = List.of("ADD EQUIPMENT", "LIST EQUIPMENT", "DELETE EQUIPMENT", "ADD LOAN",
-                "RETURN EQUIPMENT", "DELETE LOAN", "LIST LOANS", "VIEW LOAN ISSUE CONDITION", "LIST OVERDUE LOANS",
-                "ITEM LOAN HISTORY", "FILTER EQUIPMENT", "UPDATE EQUIPMENT", "RECORD MAINTENANCE",
-                "LIST MAINTENANCE DUE", "COMPLETE INSPECTION", "VIEW MAINTENANCE HISTORY", "MAINTENANCE SUMMARY",
-                "CREATE BUNDLE",
-                "ADD EQUIPMENT TO BUNDLE",
+                "RETURN EQUIPMENT", "DELETE LOAN", "UPDATE LOAN", "LIST LOANS", "VIEW LOAN ISSUE CONDITION",
+                "LIST OVERDUE LOANS", "ITEM LOAN HISTORY", "FILTER EQUIPMENT", "UPDATE EQUIPMENT",
+                "RECORD MAINTENANCE", "LIST MAINTENANCE DUE", "COMPLETE INSPECTION",
+                "VIEW MAINTENANCE HISTORY", "MAINTENANCE SUMMARY", "CREATE BUNDLE", "ADD EQUIPMENT TO BUNDLE",
                 "REMOVE EQUIPMENT FROM BUNDLE", "LIST BUNDLES", "BUNDLE LOAN HISTORY", "HELP", "EXIT");
         String divider = "=".repeat(100);
 
@@ -336,6 +338,8 @@ class HelpTest {
         assertTrue(text.contains("Return permanently marks the retained loan returned"));
         assertTrue(text.contains("cannot be returned twice or reactivated."));
         assertTrue(text.contains("Changing its numeric condition does not repair it."));
+        assertTrue(text.contains("Successful updates are saved to data/loans.txt before live records change."));
+        assertTrue(text.contains("Returned loans cannot be edited."));
     }
 
     @Test
