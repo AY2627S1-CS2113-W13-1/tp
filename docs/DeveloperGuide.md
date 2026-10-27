@@ -117,6 +117,25 @@ If a required value is `unspecified`, the result is `UNKNOWN`. For camera-and-le
 takes precedence over an unknown value; the pair cannot be compatible when one known attribute conflicts.
 Comparisons ignore letter case because compatibility identifiers may be entered with different capitalisation.
 
+#### Bundle compatibility validation
+
+`BundleHandler.addItemsToBundle(...)` processes requested equipment IDs in command order and reports one result
+for each ID. For every otherwise valid candidate, `findIncompatibleEquipment(...)` compares it with each item
+currently in the target bundle by calling `EquipmentCompatibility.compare(...)`.
+
+If a comparison returns `INCOMPATIBLE`, the candidate is rejected and the result identifies the first conflicting
+equipment ID. Validation occurs before `Bundle.addEquipment(...)`, so the rejected candidate does not change the
+bundle contents or completion state. `UNKNOWN` and `NOT_APPLICABLE` do not block addition because missing
+compatibility information and unrelated equipment types do not prove that the equipment cannot be used together.
+
+Successful additions earlier in the same command immediately become part of the bundle. They are therefore
+included when later candidates are checked. An incompatible candidate does not stop the remaining IDs from being
+processed, preserving the command's existing per-item result and partial-success behaviour.
+
+Compatibility validation belongs in `BundleHandler` because that class already checks inventory availability,
+duplicates and category limits and creates user-facing failure messages. `Bundle` remains responsible for storing
+already-validated equipment and calculating whether its required composition is complete.
+
 #### Preservation and persistence
 
 Compatibility attributes form part of each subtype's normal equipment details. `EquipmentStorage` therefore
@@ -141,6 +160,10 @@ precedence rules and comparisons after persistence reload. Subtype parser and in
 repeated, reordered and inapplicable fields, Unicode whitespace, listing, updating and legacy saved records.
 `EquipmentReturnAssessmentTest` verifies that compatibility attributes survive assessment preparation,
 application, saving and restart.
+
+`BundleCompatibilityTest` covers compatible camera-lens, camera-battery and camera-tripod relationships,
+both camera-lens fields, reversed insertion order, candidates supplied together, missing compatibility data and
+equipment pairs without a compatibility relationship. Existing bundle tests verify all previous validation rules.
 
 ### Returning equipment with an assessment
 

@@ -405,6 +405,9 @@ class HelpTest {
         assertTrue(text.contains("An item may appear only once per bundle."));
         assertTrue(text.contains("exactly one camera, at least one lens and at least one battery."));
         assertTrue(text.contains("A tripod is optional, with at most one."));
+        assertTrue(text.contains("Known compatibility mismatches are rejected."));
+        assertTrue(text.contains(
+                "Missing compatibility details or unrelated equipment types do not block addition."));
         assertTrue(text.contains("Format: remove-from-bundle id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]"));
         assertTrue(text.contains("eligible for deletion after it has been removed from every bundle."));
         assertTrue(proseFor("remove-from-bundle").contains(
