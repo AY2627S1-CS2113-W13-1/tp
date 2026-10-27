@@ -77,7 +77,7 @@ public class EqmManager {
         this.equipment = new EquipmentHandler(this.dataDirectory.resolve("equipment.txt"));
         this.loans = new LoanHandler(equipment, this.dataDirectory.resolve("loans.txt"),
                 this.dataDirectory.resolve("loan-sequence.txt"), clock);
-        this.maintenance = new MaintenanceHandler(equipment, this.dataDirectory.resolve("maintenance.txt"));
+        this.maintenance = new MaintenanceHandler(equipment, this.dataDirectory.resolve("maintenance.txt"), clock);
         this.bundles = new BundleHandler(equipment, this.dataDirectory.resolve("bundles.txt"));
         this.backups = new BackupHandler(this.dataDirectory, equipment, loans, bundles);
         List<String> loadErrors = new ArrayList<>();

@@ -255,7 +255,8 @@ public final class Help {
                         RECORD MAINTENANCE
                         Format: maintain id/<ITEM ID> date/<DD-MM-YY> work/<DESCRIPTION> outcome/<OUTCOME>
                         Example: maintain id/001 date/27-10-26 work/Replaced battery outcome/Completed
-                        Requires an existing Item ID, a valid maintenance date, a non-empty work description and
+                        Requires an existing Item ID, a valid maintenance date that is not in the future,
+                        a non-empty work description and
                         outcome. Work descriptions and outcomes are trimmed, remain on one line and have documented
                         length limits.
                         Maintenance records are saved to maintenance.txt and remain associated with the physical item.

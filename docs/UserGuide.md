@@ -106,8 +106,8 @@ Format: `maintain id/[ITEM ID] date/[DD-MM-YY] work/[DESCRIPTION] outcome/[OUTCO
 Example: `maintain id/001 date/27-10-26 work/Replaced battery outcome/Completed`
 
 This records completed maintenance work for an existing equipment item. The `ITEM ID` must identify an item in the
-current inventory. The date must use `DD-MM-YY`, and both `DESCRIPTION` and `OUTCOME` must be non-empty single-line
-values. Work descriptions may contain up to 200 characters and outcomes may contain up to 100 characters after
+current inventory. The date must use `DD-MM-YY` and cannot be later than today's date. Both `DESCRIPTION` and
+`OUTCOME` must be non-empty single-line values. Work descriptions may contain up to 200 characters and outcomes may contain up to 100 characters after
 trimming.
 
 The record is associated with the physical equipment identity rather than only the visible Item ID. This prevents
@@ -542,8 +542,8 @@ Existing loan records without loan IDs are assigned IDs in file order on first l
 These IDs remain stable on later restarts. The sequence file preserves the next unused ID even when loan records
 are deleted. Equipment records retain their details and remarks; loan associations are restored from the loan records.
 
-To transfer your records, copy `data/equipment.txt`, `data/loans.txt`, `data/loan-sequence.txt` and
-`data/bundles.txt` to the same location on the other computer. If a file cannot be read or contains invalid or
+To transfer your records, copy `data/equipment.txt`, `data/loans.txt`, `data/loan-sequence.txt`,
+`data/bundles.txt` and `data/maintenance.txt` to the same location on the other computer. If a file cannot be read or contains invalid or
 duplicate records, the application reports the problem and stops.
 
 ## Backing up and restoring records

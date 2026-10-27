@@ -9,6 +9,9 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,6 +20,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 /** Tests maintenance commands through the application manager and persistent data directory. */
 class MaintenanceIntegrationTest {
+    private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-10-27T12:00:00Z"), ZoneOffset.UTC);
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
     private PrintStream originalOutput;
 
@@ -36,7 +40,7 @@ class MaintenanceIntegrationTest {
 
     @Test
     void maintain_validCommand_reportsSuccessAndPersistsRecord() throws Exception {
-        EqmManager manager = new EqmManager(temporaryDirectory);
+        EqmManager manager = new EqmManager(temporaryDirectory, FIXED_CLOCK);
         manager.executeInput("add i/Camera id/001 type/camera cond/5");
         output.reset();
 
@@ -53,7 +57,7 @@ class MaintenanceIntegrationTest {
 
     @Test
     void maintain_invalidCommand_reportsErrorAndAcceptsNextValidCommand() throws Exception {
-        EqmManager manager = new EqmManager(temporaryDirectory);
+        EqmManager manager = new EqmManager(temporaryDirectory, FIXED_CLOCK);
         manager.executeInput("add i/Camera id/001 type/camera cond/5");
         output.reset();
 
@@ -68,7 +72,7 @@ class MaintenanceIntegrationTest {
 
     @Test
     void bye_withoutMaintenanceRecords_createsMaintenanceFile() throws Exception {
-        EqmManager manager = new EqmManager(temporaryDirectory);
+        EqmManager manager = new EqmManager(temporaryDirectory, FIXED_CLOCK);
 
         manager.executeInput("bye");
 
@@ -82,7 +86,7 @@ class MaintenanceIntegrationTest {
         Path file = temporaryDirectory.resolve("maintenance.txt");
         String original = "not a maintenance record" + System.lineSeparator();
         Files.writeString(file, original);
-        EqmManager manager = new EqmManager(temporaryDirectory);
+        EqmManager manager = new EqmManager(temporaryDirectory, FIXED_CLOCK);
 
         manager.executeInput("maintain id/001 date/27-10-26 work/Repair outcome/Completed");
 
