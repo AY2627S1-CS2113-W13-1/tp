@@ -47,25 +47,6 @@ java -jar snAp.jar
 Use the documentation from the same version as the JAR. No internet connection is needed for normal commands
 once a build is installed.
 
-The welcome screen displays the snAp logo. It uses green on supported
-interactive terminals and plain text when output is redirected. Gradle pipes the application's output, so you
-can request colour in PowerShell with `$env:SNAP_COLOUR = 'always'` before running the application. On
-macOS/Linux, use `SNAP_COLOUR=always ./gradlew run`. Set `SNAP_COLOUR=never` to disable colour, or remove the
-variable to restore automatic detection. A non-empty `NO_COLOR` variable or `TERM=dumb` also disables colour.
-
-The logo uses `#` by default, preserving every space and line break in the original artwork.
-Use `$env:SNAP_LOGO = 'ascii'` in PowerShell to force `#`, or `$env:SNAP_LOGO = 'unicode'` to request `█`.
-On macOS/Linux, use `SNAP_LOGO=ascii ./gradlew run` or `SNAP_LOGO=unicode ./gradlew run`.
-Even with `SNAP_LOGO=unicode`, an output encoding that cannot represent `█` falls back to `#`.
-The optional `SNAP_LOGO=auto` mode uses blocks only on an attached terminal with a suitable output encoding;
-redirected output, including Gradle runs, and `TERM=dumb` terminals use `#`. Font support cannot be detected.
-Remove `SNAP_LOGO` to restore the ASCII default. Colour works with either version.
-
-After the logo and loaded-record counts, snAp displays a boxed command menu automatically. The menu groups
-commands by Equipment, Loans, Bundles and General, and shows how to request more help.
-The `>>>` input prompt is separated from the previous output and the next response by horizontal lines
-and blank lines.
-
 ## Getting help: `help`
 
 | Format | What it displays | Example |
