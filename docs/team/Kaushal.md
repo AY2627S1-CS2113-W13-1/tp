@@ -5,6 +5,4 @@ title: Kaushal Rajesh
 
 # Kaushal Rajesh - Project Portfolio Page
 
-## Overview
-
-### Summary of Contributions
+My portfolio is now maintained at [rktheg.md](rktheg.md), following the course's GitHub-username filename format.

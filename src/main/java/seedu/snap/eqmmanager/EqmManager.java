@@ -30,6 +30,9 @@ import seedu.snap.exceptions.LoanViewingUnsuccessful;
 import seedu.snap.exceptions.LoanUpdateUnsuccessful;
 import seedu.snap.loan.Loan;
 import seedu.snap.loan.LoanHandler;
+import seedu.snap.exceptions.MaintenanceRecordUnsuccessful;
+import seedu.snap.maintenance.MaintenanceHandler;
+import seedu.snap.maintenance.MaintenanceRecord;
 import seedu.snap.parser.Parser;
 import seedu.snap.ui.Help;
 import seedu.snap.ui.Welcome;
@@ -40,6 +43,7 @@ public class EqmManager {
     private final Parser parser;
     private final LoanHandler loans;
     private final EquipmentHandler equipment;
+    private final MaintenanceHandler maintenance;
     private final BundleHandler bundles;
     private final BackupHandler backups;
     private final Path dataDirectory;
@@ -53,7 +57,7 @@ public class EqmManager {
     }
 
     /**
-     * Creates a manager using the supplied directory for persistent equipment and loan files.
+     * Creates a manager using the supplied directory for persistent equipment, loan, and maintenance files.
      * A missing directory or file is treated as an empty data set.
      *
      * @param dataDirectory directory containing equipment.txt and loans.txt
@@ -73,6 +77,7 @@ public class EqmManager {
         this.equipment = new EquipmentHandler(this.dataDirectory.resolve("equipment.txt"));
         this.loans = new LoanHandler(equipment, this.dataDirectory.resolve("loans.txt"),
                 this.dataDirectory.resolve("loan-sequence.txt"), clock);
+        this.maintenance = new MaintenanceHandler(equipment, this.dataDirectory.resolve("maintenance.txt"), clock);
         this.bundles = new BundleHandler(equipment, this.dataDirectory.resolve("bundles.txt"));
         this.backups = new BackupHandler(this.dataDirectory, equipment, loans, bundles);
         List<String> loadErrors = new ArrayList<>();
@@ -93,6 +98,12 @@ public class EqmManager {
         } catch (IOException e) {
             loadErrors.add("bundles.txt: " + e.getMessage());
             logger.log(Level.SEVERE, "Could not load saved bundle data", e);
+        }
+        try {
+            maintenance.loadFromStorage();
+        } catch (IOException e) {
+            loadErrors.add("maintenance.txt: " + e.getMessage());
+            logger.log(Level.SEVERE, "Could not load saved maintenance data", e);
         }
         this.startupError = loadErrors.isEmpty() ? null : String.join(System.lineSeparator(), loadErrors);
         this.isRunning = true;
@@ -131,6 +142,8 @@ public class EqmManager {
             addLoan(normalizedInput);
         } else if (normalizedInput.matches("(?sU)return(?:\\s.*)?")) {
             returnEquipment(normalizedInput);
+        } else if (normalizedInput.matches("(?sU)maintain(?:\\s.*)?")) {
+            recordMaintenance(normalizedInput);
         } else if (normalizedInput.startsWith("history bundle/")) {
             viewBundleLoanHistory(normalizedInput);
         } else if (normalizedInput.matches("(?sU)history(?:\\s.*)?")) {
@@ -214,6 +227,12 @@ public class EqmManager {
         } catch (IOException e) {
             saveErrors.add("bundles.txt: " + e.getMessage());
             logger.log(Level.SEVERE, "Could not save bundle data before exit", e);
+        }
+        try {
+            maintenance.saveToStorage();
+        } catch (IOException e) {
+            saveErrors.add("maintenance.txt: " + e.getMessage());
+            logger.log(Level.SEVERE, "Could not save maintenance data before exit", e);
         }
 
         if (!saveErrors.isEmpty()) {
@@ -353,6 +372,17 @@ public class EqmManager {
             System.out.println("Loan " + returned.getLoanId() + " for item ID " + returned.getItemId()
                     + " returned successfully.");
         } catch (LoanReturnUnsuccessful exception) {
+            System.out.println(exception.getMessage());
+        }
+    }
+
+    /** Displays the outcome of recording a maintenance activity. */
+    private void recordMaintenance(String input) {
+        try {
+            MaintenanceRecord record = maintenance.addMaintenanceRecord(input);
+            assert record != null : "A successful maintenance command must return a record";
+            System.out.println("Maintenance recorded successfully.");
+        } catch (MaintenanceRecordUnsuccessful exception) {
             System.out.println(exception.getMessage());
         }
     }

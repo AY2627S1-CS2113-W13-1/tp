@@ -7,8 +7,8 @@ title: User Guide
 
 ## Introduction
 
-snAp helps photography-club equipment officers track shared gear and borrowing through typed commands.
-It helps you find available items, avoid double borrowing and retain equipment, loan and bundle records between sessions.
+snAp helps photography-club equipment officers track shared gear, maintenance and borrowing through typed commands.
+It helps you find available items, avoid double borrowing and retain equipment, maintenance, loan and bundle records between sessions.
 
 **Version:** This guide describes the development build on `master`, including features added after
 [v1.0](https://github.com/AY2627S1-CS2113-W13-1/tp/releases/tag/v1.0). The v1.0 JAR does not support every command
@@ -133,6 +133,23 @@ filter type/camera cond/1-3 status/available
 
 The first filter displays item `010`. The update changes its condition to `5`, so the repeated filter prints
 `No equipment matches the filters.` Its ID, name and `Available` status stay the same.
+
+## Recording maintenance: `maintain`
+
+Format: `maintain id/<ITEM ID> date/<DD-MM-YY> work/<DESCRIPTION> outcome/<OUTCOME>`
+
+Example: `maintain id/001 date/27-10-26 work/Replaced battery outcome/Completed`
+
+This records completed maintenance work for an existing equipment item. The `ITEM ID` must identify an item in the
+current inventory. The date must use `DD-MM-YY` and cannot be later than today's date. Both `DESCRIPTION` and
+`OUTCOME` must be non-empty single-line values. Work descriptions may contain up to 200 characters and outcomes may contain up to 100 characters after
+trimming.
+
+The record is associated with the physical equipment identity rather than only the visible Item ID. This prevents
+maintenance records from being attached to a replacement item if an Item ID is reused later. Records are saved in
+`data/maintenance.txt` and are loaded when the application starts again.
+
+Invalid commands, unknown Item IDs, invalid dates and failed saves leave existing maintenance records unchanged.
 
 ## Adding equipment: `add`
 
@@ -618,8 +635,8 @@ Existing loan records without loan IDs are assigned IDs in file order on first l
 These IDs remain stable on later restarts. The sequence file preserves the next unused ID even when loan records
 are deleted. Equipment records retain their details and remarks; loan associations are restored from the loan records.
 
-To transfer your records, copy `data/equipment.txt`, `data/loans.txt`, `data/loan-sequence.txt` and
-`data/bundles.txt` to the same location on the other computer. If a file cannot be read or contains invalid or
+To transfer your records, copy `data/equipment.txt`, `data/loans.txt`, `data/loan-sequence.txt`,
+`data/bundles.txt` and `data/maintenance.txt` to the same location on the other computer. If a file cannot be read or contains invalid or
 duplicate records, the application reports the problem and stops.
 
 ## Backing up and restoring records
@@ -683,6 +700,7 @@ permission problem, then restart snAp. File logging is configured only at startu
 | Restore equipment and loan records | `restore path/<DIRECTORY>` |
 | View item loan history | `history id/<ITEM ID>` |
 | View bundle loan history | `history bundle/id/<BUNDLE ID>` or `history bundle/name/<NAME>` |
+| Record maintenance work | `maintain id/<ITEM ID> date/<DD-MM-YY> work/<DESCRIPTION> outcome/<OUTCOME>` |
 | List overdue loans | `list overdue` |
 | Filter equipment | `filter [id/<ITEM ID>] [i/<NAME>] [type/<TYPE>] [cond/<CONDITION>] [status/<STATUS>]` |
 | Update equipment | `update id/<ITEM ID> [i/<NAME>] [type/<TYPE>] [cond/<CONDITION>]` |
