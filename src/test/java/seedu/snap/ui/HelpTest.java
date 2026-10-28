@@ -469,7 +469,7 @@ class HelpTest {
         assertTrue(text.contains(
                 "Returned loans and loans due today or later are excluded."));
         assertTrue(text.contains(
-                "Displays Item ID, borrower ID and due date without changing any records."));
+                "Uses the same columns and DD-MM-YY dates as list loans, with Overdue state and a count."));
     }
 
     @Test

@@ -47,10 +47,10 @@ class BundleLoanHistoryIntegrationTest {
         manager.executeInput("history bundle/id/001");
 
         String printed = output.toString(StandardCharsets.UTF_8);
-        assertTrue(printed.contains("Loan history for bundle 001 (Travel Kit):"));
+        assertTrue(printed.contains("Loan history for bundle 001 (Travel Kit)"));
         assertTrue(printed.contains("111"));
         assertTrue(printed.contains("222"));
-        assertTrue(printed.contains("RETURNED"));
+        assertTrue(printed.contains("STATE"));
         assertTrue(printed.indexOf("111") < printed.indexOf("222"));
     }
 
@@ -82,7 +82,7 @@ class BundleLoanHistoryIntegrationTest {
         restarted.executeInput("history bundle/name/Travel Kit");
 
         String printed = output.toString(StandardCharsets.UTF_8);
-        assertTrue(printed.contains("Loan history for bundle 001 (Travel Kit):"));
+        assertTrue(printed.contains("Loan history for bundle 001 (Travel Kit)"));
         assertTrue(printed.contains("111"));
         assertTrue(printed.contains("222"));
         assertTrue(printed.indexOf("111") < printed.indexOf("222"));

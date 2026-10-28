@@ -92,7 +92,7 @@ class LoanIssueConditionCommandTest {
         manager.executeInput("view loan/999");
 
         assertEquals(
-                "No loan found for loan ID 999."
+                "[ERROR] No loan found for loan ID 999."
                         + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
     }
@@ -104,7 +104,7 @@ class LoanIssueConditionCommandTest {
         manager.executeInput("view item/001");
 
         assertEquals(
-                "Invalid command format. Expected: "
+                "[ERROR] Invalid command format. Expected: "
                         + "view loan/[LOAN ID]."
                         + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));

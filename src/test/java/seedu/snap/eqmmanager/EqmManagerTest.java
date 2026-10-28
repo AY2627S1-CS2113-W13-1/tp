@@ -55,7 +55,7 @@ class EqmManagerTest {
         String actual = output.toString(StandardCharsets.UTF_8);
         assertTrue(actual.contains("Cannot delete item ID 001 while it belongs to a bundle."));
         assertTrue(actual.contains("Canon EOS R10"));
-        assertTrue(actual.contains("true"));
+        assertTrue(actual.contains("Composition: Complete"));
         assertEquals(saved, Files.readString(temporaryDirectory.resolve("equipment.txt")));
     }
 
@@ -74,7 +74,7 @@ class EqmManagerTest {
 
         String actual = output.toString(StandardCharsets.UTF_8);
         assertTrue(actual.contains("Equipment ID 001 removed from bundle 001 successfully."));
-        assertTrue(actual.contains("Equipment with item ID 001 deleted successfully."));
+        assertTrue(actual.contains("[OK] Equipment 001 \"Canon EOS R10\" deleted."));
         assertEquals("", Files.readString(temporaryDirectory.resolve("equipment.txt")));
         assertEquals("bundle id/001 name64/Q2FtZXJhIGtpdA items/" + System.lineSeparator(),
                 Files.readString(temporaryDirectory.resolve("bundles.txt")));
@@ -94,8 +94,11 @@ class EqmManagerTest {
         manager.executeInput("add i/Tripod id/001 type/tripod cond/5");
         manager.executeInput("add i/Tripod id/002 type/tripod cond/5");
 
-        assertEquals("Item ID 001 already exists." + System.lineSeparator()
-                + "Equipment added successfully." + System.lineSeparator(), output.toString(StandardCharsets.UTF_8));
+        assertEquals("[ERROR] Item ID 001 already exists." + System.lineSeparator()
+                + "[OK] Equipment 002 added." + System.lineSeparator()
+                + "  Name: \"Tripod\"" + System.lineSeparator()
+                + "  Type: tripod | Condition: 5 | Status: Available" + System.lineSeparator(),
+                output.toString(StandardCharsets.UTF_8));
     }
 
     @Test
@@ -118,11 +121,15 @@ class EqmManagerTest {
         };
         for (int i = 0; i < commands.length; i++) {
             manager.executeInput(commands[i]);
-            assertEquals(errors[i] + System.lineSeparator(), output.toString(StandardCharsets.UTF_8), commands[i]);
+            assertEquals("[ERROR] " + errors[i] + System.lineSeparator(),
+                    output.toString(StandardCharsets.UTF_8), commands[i]);
             output.reset();
         }
         manager.executeInput("add i/Tripod id/002 type/tripod cond/5");
-        assertEquals("Equipment added successfully." + System.lineSeparator(), output.toString(StandardCharsets.UTF_8));
+        assertEquals("[OK] Equipment 002 added." + System.lineSeparator()
+                + "  Name: \"Tripod\"" + System.lineSeparator()
+                + "  Type: tripod | Condition: 5 | Status: Available" + System.lineSeparator(),
+                output.toString(StandardCharsets.UTF_8));
         output.reset();
 
         manager.executeInput("list");
@@ -185,7 +192,7 @@ class EqmManagerTest {
 
         manager.executeInput("delete item/001");
 
-        assertEquals("Equipment with item ID 001 deleted successfully." + System.lineSeparator(),
+        assertEquals("[OK] Equipment 001 \"Canon EOS R10\" deleted." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
     }
 
@@ -207,7 +214,7 @@ class EqmManagerTest {
 
         for (String command : invalidCommands) {
             manager.executeInput(command);
-            assertEquals(expectedMessage + System.lineSeparator(),
+            assertEquals("[ERROR] " + expectedMessage + System.lineSeparator(),
                     output.toString(StandardCharsets.UTF_8), command);
             output.reset();
         }
@@ -221,7 +228,7 @@ class EqmManagerTest {
 
         manager.executeInput("delete item/999");
 
-        assertEquals("Equipment ID 999 does not exist." + System.lineSeparator(),
+        assertEquals("[ERROR] Equipment ID 999 does not exist." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
     }
 
@@ -234,7 +241,7 @@ class EqmManagerTest {
 
         manager.executeInput("delete item/001");
 
-        assertEquals("Equipment ID 001 does not exist." + System.lineSeparator(),
+        assertEquals("[ERROR] Equipment ID 001 does not exist." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
     }
 
@@ -248,7 +255,7 @@ class EqmManagerTest {
 
         manager.executeInput("delete item/001");
 
-        assertEquals("Equipment with item ID 001 deleted successfully." + System.lineSeparator(),
+        assertEquals("[OK] Equipment 001 \"Canon EOS R10\" deleted." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
     }
 
@@ -263,9 +270,9 @@ class EqmManagerTest {
         manager.executeInput("delete item/001");
         manager.executeInput("delete item/002");
 
-        assertEquals("Equipment with item ID 001 deleted successfully." + System.lineSeparator()
-                + "Equipment ID 001 does not exist." + System.lineSeparator()
-                + "Equipment with item ID 002 deleted successfully." + System.lineSeparator(),
+        assertEquals("[OK] Equipment 001 \"Canon EOS R10\" deleted." + System.lineSeparator()
+                + "[ERROR] Equipment ID 001 does not exist." + System.lineSeparator()
+                + "[OK] Equipment 002 \"Canon EOS R10\" deleted." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
     }
 
@@ -276,7 +283,7 @@ class EqmManagerTest {
         manager.executeInput("gibberish");
 
         assertEquals(
-                "Command not recognised. Type help for available commands." + System.lineSeparator(),
+                "[ERROR] Command not recognised. Type help for available commands." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8)
         );
     }
@@ -316,7 +323,7 @@ class EqmManagerTest {
         String rejected = output.toString(StandardCharsets.UTF_8);
         assertTrue(rejected.contains("Could not save loan deletion:"));
         assertTrue(rejected.contains("Cannot delete item ID 001 while it has an active loan."));
-        assertFalse(rejected.contains("deleted successfully."));
+        assertFalse(rejected.contains("[OK]"));
         assertEquals("keep loan data", Files.readString(sentinel));
         Files.delete(sentinel);
         Files.delete(loansFile);
@@ -326,7 +333,7 @@ class EqmManagerTest {
         manager.executeInput("filter id/001 status/available");
 
         String recovered = output.toString(StandardCharsets.UTF_8);
-        assertTrue(recovered.contains("Loan 001 for item ID 001 deleted successfully."));
+        assertTrue(recovered.contains("[OK] Loan 001 deleted."));
         assertTrue(recovered.contains("Canon EOS R10"));
         assertEquals("", Files.readString(loansFile));
         output.reset();
@@ -368,7 +375,8 @@ class EqmManagerTest {
         manager.executeInput("list overdue");
 
         assertEquals(
-                "No overdue loans found." + System.lineSeparator(),
+                "Overdue loans" + System.lineSeparator() + "-------------" + System.lineSeparator()
+                        + "No overdue loans found." + System.lineSeparator() + "0 loans." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
     }
 
@@ -390,10 +398,10 @@ class EqmManagerTest {
         String actual = output.toString(StandardCharsets.UTF_8);
         assertTrue(actual.contains("ITEM ID"));
         assertTrue(actual.contains("BORROWER ID"));
-        assertTrue(actual.contains("DUE DATE"));
+        assertTrue(actual.contains("DUE"));
         assertTrue(actual.contains("001"));
         assertTrue(actual.contains("002"));
-        assertTrue(actual.contains("2020-01-02T00:00"));
+        assertTrue(actual.contains("02-01-20"));
         assertEquals(
                 savedEquipment,
                 Files.readString(temporaryDirectory.resolve("equipment.txt")));
@@ -420,7 +428,8 @@ class EqmManagerTest {
         manager.executeInput("list overdue");
 
         assertEquals(
-                "No overdue loans found." + System.lineSeparator(),
+                "Overdue loans" + System.lineSeparator() + "-------------" + System.lineSeparator()
+                        + "No overdue loans found." + System.lineSeparator() + "0 loans." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
     }
 
@@ -440,8 +449,8 @@ class EqmManagerTest {
         manager.executeInput("list overdue");
 
         assertEquals(
-                "No overdue loans found."
-                        + System.lineSeparator(),
+                "Overdue loans" + System.lineSeparator() + "-------------" + System.lineSeparator()
+                        + "No overdue loans found." + System.lineSeparator() + "0 loans." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
     }
 

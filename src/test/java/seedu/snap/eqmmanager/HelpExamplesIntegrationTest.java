@@ -89,6 +89,9 @@ class HelpExamplesIntegrationTest {
 
         assertFalse(printed().contains("Command not recognised"), example);
         assertFalse(printed().contains("Invalid format"), example);
+        // Help prose describes the error label; only a line starting with it is a rejected command.
+        assertFalse(printed().lines().anyMatch(line -> line.startsWith("[ERROR]")),
+                example + System.lineSeparator() + printed());
         if (command.equals("bye")) {
             assertFalse(field(manager, "isRunning", Boolean.class));
             assertTrue(Files.isRegularFile(temporaryDirectory.resolve("data").resolve("equipment.txt")));
@@ -156,27 +159,27 @@ class HelpExamplesIntegrationTest {
     /** Checks successful results instead of merely accepting any response from the router. */
     private static String expectedResult(String command) {
         return switch (command) {
-        case "add" -> "Equipment added successfully.";
-        case "delete item" -> "Equipment with item ID 001 deleted successfully.";
-        case "loan" -> "Loan 001 added successfully.";
-        case "return" -> "returned successfully";
-        case "delete loan" -> "Loan 001 for item ID 001 deleted successfully.";
-        case "update loan" -> "Loan 001 updated successfully.";
+        case "add" -> "[OK] Equipment 001 added.";
+        case "delete item" -> "[OK] Equipment 001 \"Camera\" deleted.";
+        case "loan" -> "[OK] Loan 001 issued.";
+        case "return" -> "[OK] Loan 001 returned.";
+        case "delete loan" -> "[OK] Loan 001 deleted.";
+        case "update loan" -> "[OK] Loan 001 updated.";
         case "list" -> "3 equipment items.";
         case "filter" -> "1 equipment item.";
         case "show" -> "Equipment 001";
         case "list loans" -> "LOAN ID";
         case "view loan" -> "Loan 001 issue-time condition:";
         case "list borrower", "list member" -> "Equipment currently held by borrower ID 002:";
-        case "list overdue" -> "DUE DATE";
-        case "history" -> "Loan history for item ID 001:";
-        case "update" -> "Equipment with item ID 001 updated successfully.";
+        case "list overdue" -> "Overdue";
+        case "history" -> "Loan history for item ID 001";
+        case "update" -> "[OK] Equipment 001 updated.";
         case "maintain" -> "Maintenance recorded successfully.";
-        case "add-bundle" -> "Bundle 001 added successfully.";
+        case "add-bundle" -> "[OK] Bundle 001 \"Studio kit\" created.";
         case "add-to-bundle" -> "Equipment ID 003 added to bundle 001 successfully.";
         case "remove-from-bundle" -> "Equipment ID 001 removed from bundle 001 successfully.";
         case "list bundles" -> "Studio kit";
-        case "history bundle" -> "Loan history for bundle 001 (Studio kit):";
+        case "history bundle" -> "Loan history for bundle 001 (Studio kit)";
         case "backup" -> "Backup created successfully";
         case "restore" -> "Backup restored successfully";
         case "help" -> "snAp command";
@@ -201,6 +204,11 @@ class HelpExamplesIntegrationTest {
             assertTrue(printed().contains("Camera"));
             assertFalse(printed().contains("Battery"));
             assertFalse(printed().contains("Lens"));
+        }
+        case "list loans", "list borrower", "list member", "list overdue", "history", "history bundle" -> {
+            assertTrue(printed().contains("| LOAN ID | ITEM ID | BORROWER ID | ISSUED   | DUE      | STATE"));
+            assertTrue(printed().contains("| 001     | 001     | 002         | 24-10-26 | 27-10-26 | Overdue"));
+            assertTrue(printed().contains("1 loan."));
         }
         case "loan" -> assertTrue(equipment.getEquipmentById("001").isLoaned());
         case "return" -> assertTrue(loans.getLoanList().getFirst().isReturned());

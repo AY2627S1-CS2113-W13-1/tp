@@ -53,7 +53,7 @@ class EquipmentReturnIntegrationTest {
     void returnCommand_serviceableReturn_preservesHistoryAndAllowsNextLoanAfterRestart() throws Exception {
         manager.executeInput(RETURN_COMMAND);
 
-        assertTrue(printed().contains("returned successfully"));
+        assertTrue(printed().contains("[OK] Loan 001 returned."));
         assertTrue(Files.readString(temporaryDirectory.resolve("loans.txt")).contains("returned/true"));
         output.reset();
         manager.executeInput("filter id/001 status/available");
@@ -62,7 +62,7 @@ class EquipmentReturnIntegrationTest {
         EqmManager restarted = new EqmManager(temporaryDirectory);
         output.reset();
         restarted.executeInput(LOAN_COMMAND);
-        assertTrue(printed().contains("Loan 002 added successfully."));
+        assertTrue(printed().contains("[OK] Loan 002 issued."));
         List<String> records = Files.readAllLines(temporaryDirectory.resolve("loans.txt"));
         assertEquals(2, records.size());
         assertTrue(records.getFirst().contains("loanId/001") && records.getFirst().contains("returned/true"));
@@ -80,7 +80,7 @@ class EquipmentReturnIntegrationTest {
         assertTrue(printed().contains("No equipment matches the filters."));
         output.reset();
         restarted.executeInput(LOAN_COMMAND);
-        assertFalse(printed().contains("added successfully"));
+        assertFalse(printed().contains("[OK]"));
         restarted.executeInput("update id/001 i/Workshop Camera cond/5");
         restarted.executeInput("bye");
 
@@ -110,15 +110,15 @@ class EquipmentReturnIntegrationTest {
         manager.executeInput("return loan/999 serviceable/yes damage/NONE remarks/Unknown");
         manager.executeInput("return loan/001 serviceable/yes");
 
-        assertFalse(printed().contains("returned successfully"));
+        assertFalse(printed().contains("[OK] Loan 001 returned."));
         assertEquals(equipmentBefore, Files.readString(temporaryDirectory.resolve("equipment.txt")));
         assertEquals(loansBefore, Files.readString(temporaryDirectory.resolve("loans.txt")));
         output.reset();
         manager.executeInput(RETURN_COMMAND);
-        assertTrue(printed().contains("returned successfully"));
+        assertTrue(printed().contains("[OK] Loan 001 returned."));
         output.reset();
         manager.executeInput("return loan/001 serviceable/no damage/SHUTTER_FAULT remarks/Second attempt");
-        assertFalse(printed().contains("returned successfully"));
+        assertFalse(printed().contains("[OK] Loan 001 returned."));
         EquipmentHandler inventory = new EquipmentHandler(temporaryDirectory.resolve("equipment.txt"));
         inventory.loadFromStorage();
         assertTrue(inventory.getEquipmentList().getFirst().isServiceable());
@@ -141,7 +141,7 @@ class EquipmentReturnIntegrationTest {
         manager.executeInput(RETURN_COMMAND);
 
         assertTrue(printed().contains("Could not save"));
-        assertFalse(printed().contains("returned successfully"));
+        assertFalse(printed().contains("[OK] Loan 001 returned."));
         assertEquals(originalEquipment, Files.readString(equipmentFile));
         assertEquals(originalSequence, Files.readString(sequenceFile));
         assertEquals("keep", Files.readString(sentinel));
@@ -155,7 +155,7 @@ class EquipmentReturnIntegrationTest {
 
         manager.executeInput(RETURN_COMMAND);
 
-        assertTrue(printed().contains("returned successfully"));
+        assertTrue(printed().contains("[OK] Loan 001 returned."));
         EquipmentHandler inventory = new EquipmentHandler(equipmentFile);
         inventory.loadFromStorage();
         LoanHandler loans = new LoanHandler(inventory, loanFile);

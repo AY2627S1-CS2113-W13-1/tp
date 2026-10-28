@@ -34,11 +34,11 @@ class EquipmentUpdateStressTest {
             for (String space : new String[]{" ", "\t", "\u2003", "\u00a0", "\u2007", "\u202f"}) {
                 output.reset();
                 manager.executeInput(space + "update" + space + "id/001" + space + "cond/5" + space);
-                assertTrue(output.toString(StandardCharsets.UTF_8).contains("updated successfully."));
+                assertTrue(output.toString(StandardCharsets.UTF_8).contains("[OK] Equipment 001 updated."));
             }
             output.reset();
             manager.executeInput("delete item/001");
-            assertTrue(output.toString(StandardCharsets.UTF_8).contains("deleted successfully."));
+            assertTrue(output.toString(StandardCharsets.UTF_8).contains("[OK] Equipment 001 \"Camera\" deleted."));
         } finally {
             System.setOut(original);
         }

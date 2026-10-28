@@ -4,7 +4,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -49,13 +51,15 @@ class RestoreIntegrationTest {
 
         manager.executeInput("restore path/" + backupDirectory);
 
-        assertTrue(printed().contains("Backup restored successfully"));
+        assertTrue(printed().contains("[OK] Backup restored successfully"));
         output.reset();
         manager.executeInput("list loans");
         String loans = printed();
         assertTrue(loans.contains("001"));
         assertTrue(loans.contains("111"));
-        assertTrue(loans.contains("false"));
+        assertTrue(loans.contains("02-10-26"));
+        assertTrue(loans.contains("1 loan."));
+        assertFalse(loans.contains("Returned"));
         assertFalse(loans.contains("002"));
         output.reset();
         manager.executeInput("list");
@@ -75,7 +79,8 @@ class RestoreIntegrationTest {
 
         assertTrue(printed().contains("001"));
         assertTrue(printed().contains("111"));
-        assertTrue(printed().contains("false"));
+        assertTrue(printed().contains("02-10-26"));
+        assertFalse(printed().contains("Returned"));
         assertEquals("nextLoanId/002" + System.lineSeparator(),
                 Files.readString(temporaryDirectory.resolve("data/loan-sequence.txt")));
     }
@@ -138,6 +143,34 @@ class RestoreIntegrationTest {
     }
 
     @Test
+    void run_startupLoadFailure_acceptsRestoreAndContinuesThroughThePrompt() throws Exception {
+        Path dataDirectory = temporaryDirectory.resolve("data");
+        Path backupDirectory = temporaryDirectory.resolve("interactive-backup");
+        manager.executeInput("backup path/" + backupDirectory);
+        Files.writeString(dataDirectory.resolve("equipment.txt"), "not an equipment record\n");
+        InputStream originalInput = System.in;
+        try {
+            String commands = "restore path/" + backupDirectory + "\nlist loans\nbye\n";
+            System.setIn(new ByteArrayInputStream(commands.getBytes(StandardCharsets.UTF_8)));
+            EqmManager broken = new EqmManager(dataDirectory);
+            output.reset();
+
+            broken.run();
+
+            String printed = printed();
+            assertTrue(printed.contains("[ERROR] Could not load saved data:"));
+            assertTrue(printed.contains("snAp > "));
+            assertTrue(printed.contains("[OK] Backup restored successfully"));
+            assertTrue(printed.contains("02-10-26"));
+            assertTrue(printed.contains("1 loan."));
+            assertTrue(printed.contains("[OK] Goodbye."));
+            assertTrue(Files.readString(dataDirectory.resolve("equipment.txt")).contains("add i/Camera"));
+        } finally {
+            System.setIn(originalInput);
+        }
+    }
+
+    @Test
     void restoreCommand_invalidBackup_reportsFailureAndPreservesCurrentState() throws Exception {
         Path backupDirectory = temporaryDirectory.resolve("backup");
         manager.executeInput("backup path/" + backupDirectory);
@@ -149,12 +182,12 @@ class RestoreIntegrationTest {
 
         manager.executeInput("restore path/" + backupDirectory);
 
-        assertTrue(printed().contains("Could not restore backup"));
+        assertTrue(printed().contains("[ERROR] Could not restore backup"));
         assertEquals(equipmentBefore, Files.readString(temporaryDirectory.resolve("data/equipment.txt")));
         assertEquals(loansBefore, Files.readString(temporaryDirectory.resolve("data/loans.txt")));
         output.reset();
         manager.executeInput("list loans");
-        assertTrue(printed().contains("true"));
+        assertTrue(printed().contains("Returned"));
     }
 
     /** Returns captured command output without relying on table spacing. */

@@ -6,7 +6,7 @@ title: Help audit
 # Help audit
 
 This records the draft audit for [issue #104](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/104),
-checked against `master` at `bfd0e3a` on 28 October 2026. It is not the final v2.0 release sign-off.
+checked against `master` at `9c3b2bf` on 28 October 2026. It is not the final v2.0 release sign-off.
 
 ## Included changes
 
@@ -18,6 +18,7 @@ The audit covers the combined command routing and handlers, including these merg
 | Help menu and topics, compact equipment lists and item details | [#114](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/114), [#137](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/137) |
 | Bundle history, loan updates and borrower views | [#115](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/115), [#116](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/116), [#119](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/119) |
 | Backup and restore, maintenance and bundle compatibility | [#118](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/118), [#127](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/127), [#136](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/136) |
+| Loan and bundle output, result counts and command feedback | [#140](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/140) |
 
 The existing documentation layout from [#113](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/113)
 is retained. The [User Guide](UserGuide.md) describes the executable development build.
@@ -42,7 +43,8 @@ equipment subtype enums. Examples require suitable existing records; they are no
 The automated checks cover:
 
 * Help content, menu completeness, the borrower alias, wrapping and subtype-specific damage lists.
-* Execution of every displayed help example through `EqmManager` with isolated records and a fixed clock.
+* Execution of every displayed help example through `EqmManager` with isolated records and a fixed clock,
+  including the updated success messages, shared loan columns, dates, states and result counts from #140.
 * Repeated help requests against populated, empty and blocked storage, comparing equipment, loans,
   bundles, maintenance, identifiers, file contents and modification times.
 
@@ -51,8 +53,6 @@ Run `.\gradlew.bat clean check --no-daemon` with Java 25 on Windows, or
 
 ## Remaining release checks
 
-* [PR #140](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/140), for issue #112, is still open at this
-  audit's baseline. Recheck loan and bundle output, feedback and prompt wording after it merges.
 * Confirm the remaining v2.0 feature set. Unmerged proposals, including issues #64 and #98 and the
   maintenance, location, missing-equipment and summary drafts, are excluded from this audit.
 * After the selected changes merge, repeat the command comparison, executable examples, Java 25 checks

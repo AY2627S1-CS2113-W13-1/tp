@@ -14,7 +14,7 @@ public class Parser {
     public String getInput() {
         System.out.println();
         System.out.println(INPUT_DIVIDER);
-        System.out.print(">>> ");
+        System.out.print("snAp > ");
         System.out.flush();
         String input = scanner.nextLine();
         // Start a fresh line even when redirected input is not echoed by a terminal.

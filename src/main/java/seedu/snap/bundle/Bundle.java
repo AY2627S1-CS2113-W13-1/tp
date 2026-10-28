@@ -53,6 +53,17 @@ public class Bundle {
         return isComplete;
     }
 
+    /** Names missing required types using the same type counts as the composition check. A tripod is optional. */
+    public List<String> getMissingEquipmentTypes() {
+        List<String> missing = new ArrayList<>();
+        for (String type : List.of(CAMERA_TYPE, LENS_TYPE, BATTERY_TYPE)) {
+            if (countType(type) == 0) {
+                missing.add(type);
+            }
+        }
+        return List.copyOf(missing);
+    }
+
     /**
      * Returns the equipment currently contained in this bundle.
      *
