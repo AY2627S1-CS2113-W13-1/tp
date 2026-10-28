@@ -47,13 +47,14 @@ class HelpTest {
                         "return loan/001 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair"),
                 Arguments.of("delete loan", "delete loan/<LOAN ID>", "delete loan/001"),
                 Arguments.of("update loan", "update loan/<LOAN ID> [id/<ITEM ID>] [b/<BORROWER ID>]"
-                                + " [issued/DD-MM-YY] [due/DD-MM-YY]",
-                        "update loan/001 id/002 b/007 due/15-10-26"),
+                                + " [issued/<DD-MM-YY>] [due/<DD-MM-YY>]",
+                        "update loan/001 id/002 b/007 due/07-11-26"),
                 Arguments.of("list loans", "list loans", "list loans"),
                 Arguments.of("view loan", "view loan/<LOAN ID>", "view loan/001"),
                 Arguments.of("backup", "backup path/<DIRECTORY>", "backup path/backups/session-1"),
                 Arguments.of("restore", "restore path/<DIRECTORY>", "restore path/backups/session-1"),
                 Arguments.of("list borrower", "list borrower/<BORROWER ID>", "list borrower/002"),
+                Arguments.of("list borrower", "list member/<MEMBER ID>", "list member/002"),
                 Arguments.of("list overdue", "list overdue", "list overdue"),
                 Arguments.of("history", "history id/<ITEM ID>", "history id/001"),
                 Arguments.of("filter", "filter [id/<ID>] [i/<NAME>] [type/<TYPE>] [cond/<N|MIN-MAX>] [status/<STATUS>]",
@@ -228,6 +229,7 @@ class HelpTest {
         assertEquals(Help.getText("list overdue"), Help.getText("list\u00a0overdue"));
         assertEquals(Help.getText("list bundles"), Help.getText("list\u2009\u202fbundles"));
         assertEquals(Help.getText("history bundle"), Help.getText(" \thistory\u2003bundle\u00a0 "));
+        assertEquals(Help.getText("list borrower"), Help.getText(" \tlist\u2003member\u00a0 "));
         assertFalse(labelledValues(Help.getText("list"), "Format:").contains("list loans"));
         assertFalse(labelledValues(Help.getText("delete item"), "Format:").contains("delete loan/<LOAN ID>"));
         assertFalse(labelledValues(Help.getText("history"), "Format:").contains("history bundle/id/<BUNDLE ID>"));
@@ -273,13 +275,24 @@ class HelpTest {
         assertTrue(proseFor("bye").contains("A save failure keeps the application running;"));
     }
 
-    @Test
-    void getText_addAndReturnTopics_showAllCurrentSubtypeDamageValues() {
-        Stream.of(Camera.CameraDamage.values(), Lens.LensDamage.values(), Battery.BatteryDamage.values(),
-                Tripod.TripodDamage.values()).flatMap(Stream::of).forEach(damage -> {
-                    assertTrue(Help.getText("add").contains(damage.name()), damage.name());
-                    assertTrue(Help.getText("return").contains(damage.name()), damage.name());
-                });
+    @ParameterizedTest
+    @MethodSource("subtypeDamageChoices")
+    void getText_addAndReturnTopics_showDamageValuesUnderTheCorrectType(
+            String type, String fields, Enum<?>[] damages) {
+        String choices = String.join(", ", Arrays.stream(damages).map(Enum::name).toList());
+
+        assertTrue(proseFor("add").contains(type + ": " + fields + "; damage: " + choices), type);
+        assertTrue(proseFor("return").contains(type + ": " + choices), type);
+    }
+
+    /** Checks each subtype separately so damage listed under the wrong type cannot satisfy the test. */
+    private static Stream<Arguments> subtypeDamageChoices() {
+        return Stream.of(
+                Arguments.of("camera", "sensor/<TEXT> mount/<TEXT> thread/<TEXT> battery/<TEXT>",
+                        Camera.CameraDamage.values()),
+                Arguments.of("lens", "zoom/<TEXT> mount/<TEXT> sensor/<TEXT>", Lens.LensDamage.values()),
+                Arguments.of("battery", "capacity/<TEXT> battery/<TEXT>", Battery.BatteryDamage.values()),
+                Arguments.of("tripod", "thread/<TEXT>", Tripod.TripodDamage.values()));
     }
 
     @Test
@@ -344,6 +357,10 @@ class HelpTest {
         assertTrue(text.contains("Changing its numeric condition does not repair it."));
         assertTrue(text.contains("Successful updates are saved to data/loans.txt before live records change."));
         assertTrue(text.contains("Returned loans cannot be edited."));
+        assertTrue(proseFor("update loan").contains(
+                "Reassigning to another item releases the old item and captures the replacement's condition."));
+        assertTrue(proseFor("update loan").contains(
+                "Changing only the borrower or dates preserves the recorded issue condition."));
     }
 
     @Test
@@ -354,6 +371,7 @@ class HelpTest {
                 "Shows the equipment type, condition, damage and remarks recorded when the loan was issued."));
         assertTrue(text.contains(
                 "Legacy loans without a saved snapshot report that the issue condition was not recorded."));
+        assertTrue(text.contains("this shows the replacement's condition at reassignment."));
         assertTrue(text.contains("This read-only command does not change equipment, loans or saved records."));
     }
 
@@ -364,6 +382,10 @@ class HelpTest {
         assertTrue(text.contains("Requires an existing Item ID, a valid maintenance date"));
         assertTrue(text.contains("Maintenance records are saved to maintenance.txt"));
         assertTrue(text.contains("Maintenance work: 1-200 characters; outcomes: 1-100 characters."));
+        assertTrue(proseFor("maintain").contains("in the displayed field order."));
+        assertTrue(proseFor("maintain").contains("cannot contain tabs or line breaks."));
+        assertTrue(proseFor("maintain").contains(
+                "Recording maintenance does not change condition, damage, remarks or serviceability."));
     }
 
     @Test
@@ -391,7 +413,7 @@ class HelpTest {
         assertTrue(text.contains("Available excludes active loans and unserviceable items."));
         assertTrue(text.contains("Requires an existing Item ID and at least one update field, in any order"));
         assertTrue(text.contains("Omitted fields retain their current values."));
-        assertTrue(text.contains("Type is fixed; type/ must match the current type."));
+        assertTrue(text.contains("Type is fixed; type/ must match the current type, ignoring letter case."));
         assertTrue(text.contains("damage, remarks, serviceability, loans and bundle membership."));
     }
 
@@ -405,6 +427,7 @@ class HelpTest {
         assertTrue(text.contains("An item may appear only once per bundle."));
         assertTrue(text.contains("exactly one camera, at least one lens and at least one battery."));
         assertTrue(text.contains("A tripod is optional, with at most one."));
+        assertTrue(text.contains("Names must be unique; name comparisons are case-sensitive."));
         assertTrue(text.contains("Known compatibility mismatches are rejected."));
         assertTrue(text.contains(
                 "Missing compatibility details or unrelated equipment types do not block addition."));
@@ -412,6 +435,11 @@ class HelpTest {
         assertTrue(text.contains("eligible for deletion after it has been removed from every bundle."));
         assertTrue(proseFor("remove-from-bundle").contains(
                 "Successful removals are saved immediately; a save failure restores the previous memberships."));
+        assertTrue(proseFor("add-to-bundle").contains(
+                "A rejected item does not undo earlier additions."));
+        assertTrue(proseFor("add-to-bundle").contains("Save additions with bye before exiting."));
+        assertTrue(proseFor("remove-from-bundle").contains(
+                "Loaned and unserviceable items may be removed from a bundle."));
         assertFalse(text.contains("Bundles exist only for the current session"));
         assertFalse(text.contains("Shows current-session bundles"));
     }
@@ -426,6 +454,9 @@ class HelpTest {
                 "Includes active and returned loans for every equipment item in the selected bundle."));
         assertTrue(text.contains("Results are sorted by issue date, earliest first, then Loan ID."));
         assertTrue(text.contains("An empty bundle history and unknown bundle are reported clearly."));
+        assertTrue(text.contains("Uses current bundle membership, including loans issued before an item joined"));
+        assertTrue(text.contains("Removing an item excludes its loans from this view."));
+        assertTrue(text.contains("Names must match exactly, including case."));
     }
 
     @Test
@@ -442,15 +473,20 @@ class HelpTest {
     }
 
     @Test
-    void getText_backupAndRestore_explainConsistencyValidationAndNonDestructiveFailure() {
+    void getText_backupAndRestore_explainSavedFilesExclusionsAndReplacement() {
         String text = normaliseWhitespace(Help.getText());
 
-        assertTrue(text.contains("Creates a complete backup containing equipment.txt, loans.txt,"
-                + " loan-sequence.txt and a manifest."));
+        assertTrue(text.contains("Copies saved equipment.txt, loans.txt and loan-sequence.txt,"
+                + " plus backup-manifest.txt."));
+        assertTrue(proseFor("backup").contains("Bundles and maintenance records are not included."));
+        assertTrue(proseFor("backup").contains("Backup does not save unsaved changes."));
         assertTrue(text.contains("The destination must be outside the live data directory"));
         assertTrue(text.contains("Validates the manifest and every equipment, loan and sequence record"));
-        assertTrue(text.contains("A failed restore leaves the current records unchanged."));
-        assertTrue(text.contains("clear session-only"));
+        assertTrue(proseFor("restore").contains("All bundles and their saved memberships are cleared."));
+        assertTrue(proseFor("restore").contains("Maintenance records remain unchanged."));
+        assertTrue(proseFor("restore").contains("A failed restore attempts to restore the previous saved records"));
+        assertTrue(proseFor("restore").contains("Restore is available after a startup loading error."));
+        assertFalse(text.contains("session-only"));
     }
 
     @Test
@@ -462,6 +498,8 @@ class HelpTest {
         assertTrue(text.contains("Shows only active equipment held by the selected borrower"));
         assertTrue(text.contains("Returned loans and loans held by other borrowers are excluded."));
         assertTrue(text.contains("An unknown borrower ID and a known borrower with no active loans"));
+        assertTrue(proseFor("list borrower").contains(
+                "A borrower is known when at least one active or returned loan uses that ID."));
         assertTrue(text.contains("This read-only query does not change equipment, loans or saved files."));
     }
 
@@ -475,6 +513,9 @@ class HelpTest {
         assertTrue(text.contains("Saves equipment, loans, maintenance records and bundles before exiting."));
         assertTrue(text.contains("A save failure keeps the application running;"));
         assertTrue(text.contains("fix the reported file problem and retry bye."));
+        assertTrue(proseFor("help").contains("help list member is an alias for help list borrower."));
+        assertTrue(proseFor("bye").contains(
+                "After a startup loading error, bye exits without saving the failed data set."));
         assertFalse(text.contains("Format: repair"));
         assertFalse(text.contains("No arguments are accepted."));
     }
@@ -497,7 +538,8 @@ class HelpTest {
 
     /** Covers printed menu, reference, every command topic and representative invalid input. */
     private static Stream<String> printTopics() {
-        return Stream.concat(Stream.of(null, "", " \t\u2003 ", "all", "unknown", "HELP", "list\u00a0loans"),
+        return Stream.concat(Stream.of(null, "", " \t\u2003 ", "all", "unknown", "HELP", "list\u00a0loans",
+                "list member"),
                 TOPICS.stream());
     }
 

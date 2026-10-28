@@ -47,30 +47,6 @@ java -jar snAp.jar
 Use the documentation from the same version as the JAR. No internet connection is needed for normal commands
 once a build is installed.
 
-The welcome screen displays the snAp logo. It uses green on supported
-interactive terminals and plain text when output is redirected. Gradle pipes the application's output, so you
-can request colour in PowerShell with `$env:SNAP_COLOUR = 'always'` before running the application. On
-macOS/Linux, use `SNAP_COLOUR=always ./gradlew run`. Set `SNAP_COLOUR=never` to disable colour, or remove the
-variable to restore automatic detection. A non-empty `NO_COLOR` variable or `TERM=dumb` also disables colour.
-
-The logo uses `#` by default, preserving every space and line break in the original artwork.
-Use `$env:SNAP_LOGO = 'ascii'` in PowerShell to force `#`, or `$env:SNAP_LOGO = 'unicode'` to request `█`.
-On macOS/Linux, use `SNAP_LOGO=ascii ./gradlew run` or `SNAP_LOGO=unicode ./gradlew run`.
-Even with `SNAP_LOGO=unicode`, an output encoding that cannot represent `█` falls back to `#`.
-The optional `SNAP_LOGO=auto` mode uses blocks only on an attached terminal with a suitable output encoding;
-redirected output, including Gradle runs, and `TERM=dumb` terminals use `#`. Font support cannot be detected.
-Remove `SNAP_LOGO` to restore the ASCII default. Colour works with either version.
-
-After the logo and loaded-record counts, snAp displays a boxed command menu automatically. The menu groups
-commands by Equipment, Loans, Bundles and General, and shows how to request more help.
-The `snAp > ` input prompt is separated from the previous output and the next response by horizontal lines
-and blank lines.
-
-Successful changes start with `[OK]`; rejected commands and save failures start with `[ERROR]`.
-Loan and bundle headings use cyan, success labels use green and error labels use red when colour is enabled.
-These use the same colour settings as the logo. With colour disabled, headings, labels and all result details
-remain readable.
-
 ## Getting help: `help`
 
 | Format | What it displays | Example |
@@ -81,7 +57,7 @@ remain readable.
 
 Replace `<command>` with one of these exact lowercase topics:
 
-* Equipment: `add`, `list`, `show`, `delete item`, `filter`, `update`.
+* Equipment: `add`, `list`, `show`, `delete item`, `filter`, `update`, `maintain`.
 * Loans: `loan`, `return`, `delete loan`, `update loan`, `list loans`, `list borrower`, `view loan`, `list overdue`, `history`.
 * Bundles: `add-bundle`, `add-to-bundle`, `remove-from-bundle`, `list bundles`, `history bundle`.
 * General: `backup`, `restore`, `help`, `bye`.
@@ -90,6 +66,7 @@ Include the whole topic for commands with more than one word, for example `help 
 `help delete loan`. Extra whitespace around or between words is accepted. The group names are menu labels;
 they are not help topics. An unknown topic, such as `help loans`, displays an error followed by the compact
 menu so that you can choose a supported topic.
+`help list member` is an alias for `help list borrower`; both describe the same borrower query.
 
 Help uses `<VALUE>` for a value you must replace and `[field/<VALUE>]` for a field you can omit.
 Command details have separate headings, formats, examples and notes, with blank lines between them.
@@ -98,8 +75,9 @@ each command from the previous section.
 Help text wraps at 100 columns. A long displayed format or example can span several rows; enter each command
 on one line. Unrecognised-command errors point to `help`.
 
-Every help request, including an unknown topic, leaves equipment, loans, bundles, availability, identifiers and
+Every help request, including an unknown topic, leaves equipment, loans, bundles, maintenance, availability, identifiers and
 saved records unchanged. You can then enter another command normally. Help does not save data or end the session.
+If saved data fails to load at startup, only `restore` and `bye` are available until recovery succeeds.
 
 ## Optional fields and defaults
 
@@ -116,6 +94,7 @@ except that empty remarks are valid unless damage is `OTHER`.
 | `loan` | `issued/` | Today's date in the application's local time zone, at midnight |
 | `return` | `remarks/` | Empty text, replacing previous remarks; rejected if damage is `OTHER` |
 | `update` | Name, type or condition | Keep the existing value; supply an ID and at least one field |
+| `update loan` | Item, borrower, issue date or due date | Keep the existing value; supply a loan ID and at least one field |
 | `filter` | Any individual criterion | No restriction for that criterion; supply at least one criterion |
 
 Equipment name, Item ID, type and numeric condition remain required when adding equipment.
@@ -147,8 +126,10 @@ Example: `maintain id/001 date/27-10-26 work/Replaced battery outcome/Completed`
 
 This records completed maintenance work for an existing equipment item. The `ITEM ID` must identify an item in the
 current inventory. The date must use `DD-MM-YY` and cannot be later than today's date. Both `DESCRIPTION` and
-`OUTCOME` must be non-empty single-line values. Work descriptions may contain up to 200 characters and outcomes may contain up to 100 characters after
-trimming.
+`OUTCOME` must be non-empty single-line values without tabs. Work descriptions may contain up to 200 characters
+and outcomes may contain up to 100 characters after trimming. All four fields are required in the displayed order.
+The outcome is free text, not a fixed list of values. Recording maintenance leaves the item's condition,
+damage, remarks and serviceability unchanged, so it does not make unserviceable equipment available again.
 
 The record is associated with the physical equipment identity rather than only the visible Item ID. This prevents
 maintenance records from being attached to a replacement item if an Item ID is reused later. Records are saved in
@@ -211,12 +192,10 @@ After `cond/`, you can add the fields for the equipment type, followed by
 * Fields belonging to another equipment type, invalid damage values,
   repeated fields and fields in the wrong order are rejected.
 * Compatibility comparisons ignore letter case.
-* Compatibility comparison is currently provided as an internal API for
-  follow-up features such as bundle construction. This version does not
-  provide a CLI command that displays compatibility results.
-* The internal comparison returns `UNKNOWN` when a required attribute was
-  omitted. A known conflicting attribute takes precedence and returns
-  `INCOMPATIBLE`.
+* `add-to-bundle` checks these attributes against existing bundle members and rejects known mismatches.
+  There is no separate command that displays compatibility results.
+* Missing comparison data does not block bundle addition. A known conflicting attribute still causes rejection,
+  even when another comparison field was omitted. See [Adding equipment to a bundle](#adding-equipment-to-a-bundle-add-to-bundle).
 * Compatibility attributes are saved, restored and preserved when the
   equipment name or condition is updated.
 
@@ -252,6 +231,8 @@ literal remarks field. There is no quoting or escaping syntax.
 
 Format: `list`
 
+Example: `list`
+
 This displays equipment in inventory order using a 96-column table with `ID`, `NAME`, `TYPE`, `CONDITION`
 and `STATUS`. Status is `Available`, `Loaned` or `Unserviceable`, using the existing loan and return-assessment
 rules. The result count appears below the table.
@@ -262,7 +243,7 @@ Vertical bars in table values appear as `\u007c` to keep the columns separate. U
 
 ## Viewing full equipment details: `show`
 
-Format: `show id/[ITEM ID]`
+Format: `show id/<ITEM ID>`
 
 Example: `show id/001`
 
@@ -275,7 +256,7 @@ Tabs and control characters appear as visible escapes, such as `\t`, so that sto
 layout. The stored values are preserved. Extra fields, repeated IDs, invalid IDs and unknown items produce a
 clear error. Equipment listings, filters and detail requests leave records, identifiers and saved data unchanged.
 
-`show` describes the equipment's current state. Use `view loan/[LOAN ID]` for its condition when a particular
+`show` describes the equipment's current state. Use `view loan/<LOAN ID>` for its condition when a particular
 loan was issued, and `list loans` to see borrower IDs and loan dates.
 
 ## Deleting equipment: `delete`
@@ -320,7 +301,8 @@ Format: `loan id/<ITEM ID> b/<BORROWER ID> [issued/<DD-MM-YY>] due/<DD-MM-YY>`
 
 Example: `loan id/001 b/002 issued/01-10-26 due/08-10-26`
 
-Example with the issue date omitted: `loan id/001 b/002 due/28-10-26`
+Example with the issue date omitted: `loan id/001 b/002 due/31-12-99`. Replace the due date with the intended
+deadline on or after today.
 
 * `ITEM ID` is the three-digit identifier of existing equipment, from `001` to `999`. The item must be `Available`.
 * `BORROWER ID` is the three-digit identifier of the borrower, from `000` to `999`.
@@ -342,6 +324,8 @@ Invalid loan commands leave both the loan records and equipment availability unc
 ## Viewing loans: `list loans`
 
 Format: `list loans`
+
+Example: `list loans`
 
 This displays all recorded loans with these columns: `LOAN ID`, `ITEM ID`, `BORROWER ID`, `ISSUED`, `DUE`
 and `STATE`. Dates use `DD-MM-YY`, without a time. `STATE` is `Returned` for returned loans, `Overdue` for
@@ -377,7 +361,10 @@ Example: `view loan/001`
 
 Use an existing loan ID from `001` to `999`. This displays the equipment type, numeric condition, damage and remarks captured when that loan was issued. The snapshot describes the equipment at issue time, not its current condition.
 
-Later equipment updates and return assessments do not change the saved snapshot. Returned loans retain their snapshots. Older loan records created before this feature report that the issue condition was not recorded.
+Later equipment updates and return assessments do not change the saved snapshot. Reassigning an active loan to
+another item with `update loan` replaces the snapshot with that item's current assessment. Changing only the borrower
+or dates keeps the snapshot. Returned loans retain their snapshots. Older loan records created before this feature
+report that the issue condition was not recorded.
 
 This is a read-only command. It does not change equipment, loans, availability or saved records. An invalid command or unknown loan ID produces an error without modifying any data.
 
@@ -407,6 +394,8 @@ explains this and points to `list loans`. Existing active loans can be associate
 ## Viewing overdue loans: `list overdue`
 
 Format: `list overdue`
+
+Example: `list overdue`
 
 This displays every active loan whose due date is earlier than the current local date. The results show the
 same columns, dates, state and count as `list loans`, in the same order as the stored loans.
@@ -483,15 +472,16 @@ Format: `update loan/<LOAN ID> [id/<ITEM ID>] [b/<BORROWER ID>] [issued/<DD-MM-Y
 Example:
 
 ```text
-update loan/001 b/007 due/15-10-26
-update loan/001 id/002 b/007 issued/03-10-26 due/15-10-26
+update loan/001 b/007 due/07-11-26
+update loan/001 id/002 b/007 issued/03-10-26 due/07-11-26
 ```
 
 Use the unique loan ID shown by `list loans`. Supply at least one field to update, in any order, once each.
 The loan ID remains unchanged, and omitted fields retain their current values. The supported fields are:
 
 * `id/` changes the equipment assigned to the active loan. The replacement must exist, be serviceable and have
-  no active loan. Its equipment record identity is retained so availability remains correct after a restart.
+  no active loan. The previous item is released, and the snapshot is replaced with the replacement item's current
+  assessment. Supplying the current Item ID keeps the existing assignment and snapshot.
 * `b/` changes the three-digit borrower ID.
 * `issued/` changes the issue date.
 * `due/` changes the due date.
@@ -534,7 +524,7 @@ An unrecognised type, such as `type/microphone`, produces no matches.
 The [name and field-marker rules](#names-and-field-markers) also apply here. Empty or repeated fields are rejected. Filtering leaves equipment
 unchanged and prints matches in inventory order, or `No equipment matches the filters.` when none match.
 Matching rows use the same compact columns and truncation rules as `list`, followed by a result count.
-Use `show id/[ITEM ID]` for full values. A filter with no matches shows a count of zero and a clear message.
+Use `show id/<ITEM ID>` for full values. A filter with no matches shows a count of zero and a clear message.
 An invalid filter also leaves equipment and loan records unchanged; correct the filter and try again.
 See the [worked example](#equipment-worked-example) for a query with known results.
 
@@ -576,7 +566,8 @@ Format: `add-bundle name/<NAME>`
 
 Example: `add-bundle name/Travel Kit`
 
-The name must contain 1 to 100 characters. A bundle starts empty and incomplete. The application assigns
+The name must contain 1 to 100 characters and must be unique. Names are compared case-sensitively,
+so `Travel Kit` and `travel kit` are different names. A bundle starts empty and incomplete. The application assigns
 three-digit bundle IDs in creation order, starting at `001`, with at most 999 bundles in the saved collection.
 Bundle IDs are separate from equipment IDs.
 
@@ -613,7 +604,8 @@ The following fields are compared:
 | Camera and tripod | Tripod thread |
 
 For a camera and lens, a known mismatch in either field causes rejection, even if the other field is missing.
-Lens-battery, lens-tripod, battery-tripod and same-type pairs have no compatibility relationship and are allowed.
+Lens-battery, lens-tripod, battery-tripod and same-type pairs do not fail the compatibility check.
+The limits of one camera and one tripod still apply.
 
 Returning a serviceable item or deleting its active loan makes it available for a later `add-to-bundle` command.
 Unserviceable equipment cannot be added to a bundle. Existing bundle memberships are retained on return.
@@ -633,6 +625,8 @@ saved immediately; a save failure restores the previous membership.
 
 Format: `list bundles`
 
+Example: `list bundles`
+
 This displays each bundle's ID, full name, contained equipment and member count, followed by the total bundle
 count. `Composition: Complete` means the existing equipment-count requirements are met. An incomplete bundle
 names its missing required types, for example `Incomplete (missing lens, battery)`.
@@ -649,7 +643,9 @@ Format: `history bundle/id/<BUNDLE ID>` or `history bundle/name/<NAME>`
 
 Examples: `history bundle/id/001` and `history bundle/name/Travel Kit`
 
-This displays all active and returned loans for every physical equipment item in the selected bundle.
+Select a bundle by ID, or by its exact case-sensitive name. If several bundles share that name, use the ID.
+This displays all active and returned loans for every physical equipment item currently in the selected bundle,
+including loans issued before the item joined. Removing an item removes its loans from this bundle's history view.
 Results are ordered by issue date from earliest to latest, then by loan ID. An empty history and an unknown
 bundle are reported clearly. Bundle memberships are matched using each equipment record's permanent identity,
 so a reused visible Item ID cannot inherit the wrong historical membership.
@@ -679,7 +675,7 @@ Saved equipment records use the four supported types and retain their type-speci
 Existing records of supported types without optional fields are also accepted, using `unspecified` and `NONE`.
 Records created before remarks were supported may omit the `remarks/` field; they load with empty remarks.
 Records with `damage/OTHER` require non-empty remarks; invalid saved records are reported when loaded.
-Remarks are shown by `show id/[ITEM ID]` and are restored when the application starts again.
+Remarks are shown by `show id/<ITEM ID>` and are restored when the application starts again.
 Saved records may start with `serviceable/yes` or `serviceable/no`, followed by a tab and the add record.
 This prefix is storage metadata, not an add-command field. Older records without the prefix are serviceable.
 New records also start with `recordId/` and a permanent equipment identifier, followed by a tab before
@@ -705,10 +701,11 @@ Existing loan records without loan IDs are assigned IDs in file order on first l
 These IDs remain stable on later restarts. The sequence file preserves the next unused ID even when loan records
 are deleted. Equipment records retain their details and remarks; loan associations are restored from the loan records.
 
-To transfer your records, copy `data/equipment.txt`, `data/loans.txt`, `data/loan-sequence.txt`,
-`data/bundles.txt` and `data/maintenance.txt` to the same location on the other computer. If a file cannot be read or contains invalid or
-duplicate records, the application reports the problem and blocks ordinary commands. Use `restore` to recover from
-a valid backup, or `bye` to exit before correcting the saved files.
+To transfer your records, save with `bye`, then copy `data/equipment.txt`, `data/loans.txt`, `data/loan-sequence.txt`,
+`data/bundles.txt` and `data/maintenance.txt` to the same location on the other computer. If a file cannot be read
+or contains invalid or duplicate records, the application reports the problem and accepts only `restore` or `bye`.
+Use `restore` to recover from a valid backup, or `bye` to exit before correcting the saved files. In this state,
+`bye` exits without saving over the damaged files.
 
 ## Backing up and restoring records
 
@@ -716,11 +713,12 @@ Format: `backup path/<DIRECTORY>`
 
 Example: `backup path/backups/session-1`
 
-The `backup` command creates a new directory containing `equipment.txt`, `loans.txt`, `loan-sequence.txt` and a
-checksum manifest. The three records are captured as one logical snapshot. The destination must be outside the live
+The `backup` command creates a new directory containing saved `equipment.txt`, `loans.txt`, `loan-sequence.txt` and a
+checksum manifest. It does not save unsaved changes or include bundles and maintenance. The destination must be outside the live
 data directory and must not already exist, so an existing backup cannot be silently overwritten. Empty equipment and
 loan records are represented by valid empty files, while the sequence file records the next available loan ID.
-Backup creation is read-only with respect to the live records.
+Backup creation leaves live records unchanged. Supply one non-empty path; relative paths use the application's
+working folder, and paths may contain spaces. Do not add quotation marks around a path entered at the snAp prompt.
 
 Format: `restore path/<DIRECTORY>`
 
@@ -730,8 +728,12 @@ The `restore` command verifies the manifest and loads all three records in an is
 replacing the live files. Equipment, loans and the loan sequence are restored together; active loans mark their
 equipment as `Loaned`, returned loans remain in history, and the next loan ID is preserved. If the backup is missing,
 tampered with, malformed, incomplete, duplicated or inconsistent, the restore is rejected and the current live files
-and in-memory state remain unchanged. Successful restores clear current bundles because bundles are not included
-in the backup.
+and in-memory state remain unchanged. Successful restores clear all current bundles and saved bundle memberships
+because bundles are not included in the backup. Maintenance records are left unchanged.
+
+`restore` is also available after a startup loading error. A valid equipment-and-loan backup can repair those records.
+It does not repair or reload maintenance. If startup reports damaged maintenance data, exit with `bye`, preserve a
+copy of the damaged file, and repair or recover `data/maintenance.txt` separately before restarting.
 
 ## Diagnostic logs
 
@@ -743,13 +745,15 @@ permission problem, then restart snAp. File logging is configured only at startu
 
 ## Errors
 
+Successful changes start with `[OK]`; rejected commands and save failures start with `[ERROR]`.
+
 * Empty or unknown commands show an error and direct you to `help`. You can then enter another command.
 * Invalid add or delete commands show the correct syntax. Invalid fields, duplicate IDs and missing IDs are rejected.
 * File errors show the reason and ask you to check the file or directory permissions.
 * Saves are written to temporary files before replacing the saved records, preserving previous records if writing fails.
-* Command validation errors show an `[ERROR]` message and return to the `snAp > ` prompt for another command.
-* If saved records cannot be loaded, only `restore` and `bye` are available. The application stops when console input
-  is no longer available.
+* Command validation errors show an `[ERROR]` message and let you enter another command at the command prompt.
+* If saved records cannot be loaded, only `restore` and `bye` are available. `bye` exits without saving in this state.
+  The application stops if console input is no longer available.
 
 ## Command Summary
 
@@ -765,7 +769,7 @@ permission problem, then restart snAp. File logging is configured only at startu
 | Delete loan | `delete loan/<LOAN ID>` |
 | Update loan | `update loan/<LOAN ID> [id/<ITEM ID>] [b/<BORROWER ID>] [issued/<DD-MM-YY>] [due/<DD-MM-YY>]` |
 | List equipment | `list` |
-| Show full equipment details | `show id/[ITEM ID]` |
+| Show full equipment details | `show id/<ITEM ID>` |
 | List loans | `list loans` |
 | View a borrower's current equipment | `list borrower/<BORROWER ID>` (alias `list member/<BORROWER ID>`) |
 | View issue-time equipment condition | `view loan/<LOAN ID>` |
