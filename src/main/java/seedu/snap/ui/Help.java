@@ -35,9 +35,14 @@ public final class Help {
      * Selects the menu, complete reference or an exact command's reference.
      *
      * @param topic command name, all, or an empty value for the compact menu
-     * @return help text, or an error followed by the menu for an unknown topic
+     * @return plain help text, or an error followed by the menu for an unknown topic
      */
     public static String getText(String topic) {
+        return getText(topic, false);
+    }
+
+    /** Applies colour only to unknown-topic errors when building text for terminal output. */
+    private static String getText(String topic, boolean colourErrors) {
         String normalised = topic == null ? "" : topic.replaceAll("(?U)^\\s+|\\s+$", "")
                 .replaceAll("(?U)\\s+", " ");
         if (normalised.isEmpty()) {
@@ -51,7 +56,7 @@ public final class Help {
                 return formatReference(command.text(), true) + LINE_SEPARATOR + OVERVIEW;
             }
         }
-        return "[ERROR] Unknown help topic. Choose a command from the menu."
+        return ConsoleOutput.formatError("Unknown help topic. Choose a command from the menu.", colourErrors)
                 + LINE_SEPARATOR + LINE_SEPARATOR + MENU;
     }
 
@@ -62,7 +67,7 @@ public final class Help {
 
     /** Prints the selected reference or a useful response for an unknown topic. */
     public static void print(String topic) {
-        System.out.print(getText(topic));
+        System.out.print(getText(topic, ConsoleOutput.usesColour()));
     }
 
     /** Builds common notation and limits from the equipment model. */

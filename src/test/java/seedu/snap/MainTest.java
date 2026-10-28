@@ -8,10 +8,13 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 /** Tests shared application logging and equipment diagnostics in separate JVM processes. */
 class MainTest {
@@ -177,6 +180,26 @@ class MainTest {
         assertTrue(logs.contains("Could not load saved loan data"));
     }
 
+    @ParameterizedTest
+    @CsvSource({"always,,,true", "never,,,false", "auto,,,false", "always,1,,false", "always,,dumb,false"})
+    void main_unknownHelp_usesConfiguredErrorColourAndKeepsTheSessionUsable(
+            String colourMode, String noColour, String term, boolean colourExpected) throws Exception {
+        Map<String, String> environment = Map.of("SNAP_COLOUR", colourMode,
+                "NO_COLOR", noColour == null ? "" : noColour, "TERM", term == null ? "" : term);
+
+        String output = runApplication("help unknown\nbye\n", true, null, environment);
+
+        String label = colourExpected ? "\u001b[31m[ERROR]\u001b[0m" : "[ERROR]";
+        String error = label + " Unknown help topic. Choose a command from the menu.";
+        assertTrue(output.lines().anyMatch(error::equals), "Unknown help must use the configured error label.");
+        if (!colourExpected) {
+            assertFalse(output.contains("\u001b"), "Plain output must not contain colour escape codes.");
+        }
+        int errorPosition = output.indexOf(error);
+        assertTrue(output.indexOf("snAp command menu", errorPosition) > errorPosition);
+        assertTrue(output.indexOf("Goodbye.", errorPosition) > errorPosition);
+    }
+
     /** Runs the application with isolated files and a timeout so tests cannot hang on console I/O. */
     private String runApplication(String commands, boolean areAssertionsEnabled) throws Exception {
         return runApplication(commands, areAssertionsEnabled, null);
@@ -184,6 +207,12 @@ class MainTest {
 
     /** Runs with a selected logo mode while removing inherited terminal settings for repeatable output. */
     private String runApplication(String commands, boolean areAssertionsEnabled, String logoMode) throws Exception {
+        return runApplication(commands, areAssertionsEnabled, logoMode, Map.of());
+    }
+
+    /** Applies explicit terminal settings to a separate JVM without changing the test process environment. */
+    private String runApplication(String commands, boolean areAssertionsEnabled, String logoMode,
+            Map<String, String> environment) throws Exception {
         Path inputFile = temporaryDirectory.resolve("input.txt");
         Path outputFile = temporaryDirectory.resolve("output.txt");
         Files.writeString(inputFile, commands, StandardCharsets.UTF_8);
@@ -199,9 +228,11 @@ class MainTest {
         processBuilder.environment().remove("SNAP_COLOUR");
         processBuilder.environment().remove("SNAP_LOGO");
         processBuilder.environment().remove("TERM");
+        processBuilder.environment().remove("NO_COLOR");
         if (logoMode != null) {
             processBuilder.environment().put("SNAP_LOGO", logoMode);
         }
+        processBuilder.environment().putAll(environment);
         Process process = processBuilder.start();
         try {
             assertTrue(process.waitFor(15, TimeUnit.SECONDS), "The application should exit after bye");

@@ -24,7 +24,7 @@ public final class ConsoleOutput {
 
     /** Reports a validation or persistence failure while retaining the full explanation. */
     public static void error(String message) {
-        System.out.println(formatOutcome("[ERROR]", message, true, usesColour()));
+        System.out.println(formatError(message, usesColour()));
     }
 
     /** Escapes control characters in record names so they cannot add terminal commands or new output rows. */
@@ -45,13 +45,18 @@ public final class ConsoleOutput {
         return coloured(label, error ? "31" : "32", colour) + " " + message;
     }
 
+    /** Shares the error label and colour reset with renderers that return a complete response as text. */
+    static String formatError(String message, boolean colour) {
+        return formatOutcome("[ERROR]", message, true, colour);
+    }
+
     /** Resets colour immediately so ordinary output and subsequent prompts keep their normal appearance. */
     private static String coloured(String text, String code, boolean enabled) {
         return enabled ? "\u001b[" + code + "m" + text + RESET : text;
     }
 
     /** Reuses the same environment settings as the welcome logo, including NO_COLOR and TERM=dumb. */
-    private static boolean usesColour() {
+    static boolean usesColour() {
         Console console = System.console();
         boolean terminal = console != null && console.isTerminal();
         boolean windows = System.getProperty("os.name", "").startsWith("Windows");
