@@ -46,8 +46,12 @@ class MaintenanceIntegrationTest {
 
         manager.executeInput("maintain id/001 date/27-10-26 work/Replaced battery outcome/Completed");
 
-        assertEquals("Maintenance recorded successfully." + System.lineSeparator(),
-                output.toString(StandardCharsets.UTF_8));
+        String printed = output.toString(StandardCharsets.UTF_8);
+        assertTrue(printed.contains("[OK] Maintenance recorded successfully."));
+        assertTrue(printed.contains("Item: 001 \"Camera\""));
+        assertTrue(printed.contains("Date: 27-10-26"));
+        assertTrue(printed.contains("Work: Replaced battery"));
+        assertTrue(printed.contains("Outcome: Completed"));
         Path file = temporaryDirectory.resolve("maintenance.txt");
         assertTrue(Files.isRegularFile(file));
         String saved = Files.readString(file);
@@ -64,9 +68,10 @@ class MaintenanceIntegrationTest {
         manager.executeInput("maintain id/001 date/31-02-26 work/Repair outcome/Completed");
         manager.executeInput("maintain id/001 date/27-10-26 work/Repair outcome/Completed");
 
-        assertEquals("Maintenance date must use DD-MM-YY." + System.lineSeparator()
-                        + "Maintenance recorded successfully." + System.lineSeparator(),
-                output.toString(StandardCharsets.UTF_8));
+        String printed = output.toString(StandardCharsets.UTF_8);
+        assertTrue(printed.contains("[ERROR] Maintenance date must use DD-MM-YY."));
+        assertTrue(printed.contains("[OK] Maintenance recorded successfully."));
+        assertTrue(printed.contains("Item: 001 \"Camera\""));
         assertEquals(1, Files.readAllLines(temporaryDirectory.resolve("maintenance.txt")).size());
     }
 

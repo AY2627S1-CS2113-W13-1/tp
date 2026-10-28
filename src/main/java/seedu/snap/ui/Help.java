@@ -35,9 +35,14 @@ public final class Help {
      * Selects the menu, complete reference or an exact command's reference.
      *
      * @param topic command name, all, or an empty value for the compact menu
-     * @return help text, or an error followed by the menu for an unknown topic
+     * @return plain help text, or an error followed by the menu for an unknown topic
      */
     public static String getText(String topic) {
+        return getText(topic, false);
+    }
+
+    /** Applies colour only to unknown-topic errors when building text for terminal output. */
+    private static String getText(String topic, boolean colourErrors) {
         String normalised = topic == null ? "" : topic.replaceAll("(?U)^\\s+|\\s+$", "")
                 .replaceAll("(?U)\\s+", " ");
         if (normalised.isEmpty()) {
@@ -51,7 +56,7 @@ public final class Help {
                 return formatReference(command.text(), true) + LINE_SEPARATOR + OVERVIEW;
             }
         }
-        return "Unknown help topic. Choose a command from the menu."
+        return ConsoleOutput.formatError("Unknown help topic. Choose a command from the menu.", colourErrors)
                 + LINE_SEPARATOR + LINE_SEPARATOR + MENU;
     }
 
@@ -62,7 +67,7 @@ public final class Help {
 
     /** Prints the selected reference or a useful response for an unknown topic. */
     public static void print(String topic) {
-        System.out.print(getText(topic));
+        System.out.print(getText(topic, ConsoleOutput.usesColour()));
     }
 
     /** Builds common notation and limits from the equipment model. */
@@ -155,6 +160,7 @@ public final class Help {
                         Equipment must exist, be serviceable and have no active loan.
 
                         Loan IDs are assigned automatically from 001 to 999 and are never reused after deletion.
+                        Success shows the assigned Loan ID, item ID and name, borrower, issue date and due date.
                         """)),
                 new CommandHelp("return", "Loans", lineEndings(String.format(Locale.ROOT, """
                         RETURN EQUIPMENT
@@ -172,6 +178,7 @@ public final class Help {
 
                         Return permanently marks the retained loan returned; it cannot be returned twice or reactivated.
                         Unserviceable equipment remains unavailable. Changing its numeric condition does not repair it.
+                        Success shows the Loan ID, item ID and name, and resulting Available or Unserviceable status.
 
                         Damage choices by equipment type:
                           camera: %s
@@ -206,7 +213,8 @@ public final class Help {
                         LIST LOANS
                         Format: list loans
                         Example: list loans
-                        Shows active and returned loans with Loan ID, Item ID, borrower, dates and returned status.
+                        Shows Loan ID, Item ID, borrower, DD-MM-YY dates and Active, Returned or Overdue state.
+                        Includes a result count and guidance when no loans are recorded.
                         """)),
                 new CommandHelp("view loan", "Loans", lineEndings("""
                         VIEW LOAN ISSUE CONDITION
@@ -224,6 +232,7 @@ public final class Help {
                         Shows only active equipment held by the selected borrower, with loan details.
                         Returned loans and loans held by other borrowers are excluded.
                         An unknown borrower ID and a known borrower with no active loans receive clear messages.
+                        Uses the same dates, states, columns and result counts as list loans.
                         This read-only query does not change equipment, loans or saved files.
                         """)),
                 new CommandHelp("list overdue", "Loans", lineEndings("""
@@ -232,7 +241,8 @@ public final class Help {
                         Example: list overdue
                         Shows active loans with due dates earlier than today's local date.
                         Returned loans and loans due today or later are excluded.
-                        Displays Item ID, borrower ID and due date without changing any records.
+                        Uses the same columns and DD-MM-YY dates as list loans, with Overdue state and a count.
+                        This read-only command does not change any records.
                         """)),
                 new CommandHelp("history", "Loans", lineEndings("""
                         ITEM LOAN HISTORY
@@ -240,6 +250,7 @@ public final class Help {
                         Example: history id/001
                         Requires an existing Item ID. Includes its physical item's active and returned loans.
                         Sorted by issue date, earliest first, then Loan ID. Reused Item IDs keep separate histories.
+                        Uses the same dates, states, columns and result counts as list loans.
 
                         Older returned records without a proven item association remain available in list loans.
                         """)),
@@ -273,6 +284,7 @@ public final class Help {
                         outcome. Work descriptions and outcomes are trimmed, remain on one line and have documented
                         length limits.
                         Maintenance records are saved to maintenance.txt and remain associated with the physical item.
+                        Success shows the Item ID, name, maintenance date, work description and outcome.
                         Maintenance work: 1-%d characters; outcomes: 1-%d characters.
                         """, MaintenanceRecord.MAX_WORK_LENGTH, MaintenanceRecord.MAX_OUTCOME_LENGTH))),
                 new CommandHelp("add-bundle", "Bundles", lineEndings("""
@@ -289,6 +301,7 @@ public final class Help {
                         Example: add-to-bundle id/001 001 002 003
                         Requires an existing bundle and at least one existing, serviceable, unloaned equipment item.
                         An item may appear only once per bundle. Each requested Item ID receives its own result.
+                        Results use [OK] or [ERROR], followed by totals and the resulting bundle composition.
 
                         A complete bundle has exactly one camera, at least one lens and at least one battery.
                         A tripod is optional, with at most one. Additional cameras and tripods are rejected.
@@ -308,6 +321,8 @@ public final class Help {
                         Format: list bundles
                         Example: list bundles
                         Shows saved and current bundles, their equipment and whether their composition is complete.
+                        Incomplete bundles list missing required types. Includes bundle and member counts.
+                        Save new bundles and additions with bye; successful removals are saved immediately.
                         """)),
                 new CommandHelp("history bundle", "Bundles", lineEndings("""
                         BUNDLE LOAN HISTORY
@@ -317,6 +332,7 @@ public final class Help {
                         Example: history bundle/name/Studio kit
                         Includes active and returned loans for every equipment item in the selected bundle.
                         Results are sorted by issue date, earliest first, then Loan ID.
+                        Uses the same DD-MM-YY dates, states, columns and result counts as list loans.
                         An empty bundle history and unknown bundle are reported clearly.
                         """)),
                 new CommandHelp("backup", "General", lineEndings("""

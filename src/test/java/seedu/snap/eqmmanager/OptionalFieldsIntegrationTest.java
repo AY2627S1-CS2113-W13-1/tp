@@ -53,20 +53,20 @@ class OptionalFieldsIntegrationTest {
     @Test
     void optionalCommands_defaultLocalDateAndEmptyRemarks_areSavedAndRestored() throws Exception {
         manager.executeInput("loan id/001 b/111 due/25-10-26");
-        assertTrue(printed().contains("Loan 001 added successfully."));
+        assertTrue(printed().contains("[OK] Loan 001 issued."));
         assertTrue(Files.readString(temporaryDirectory.resolve("loans.txt"))
                 .contains("issued/25-10-26 due/25-10-26"));
         output.reset();
 
         manager.executeInput("return loan/001 serviceable/yes damage/NONE");
 
-        assertTrue(printed().contains("returned successfully"));
+        assertTrue(printed().contains("[OK] Loan 001 returned."));
         Clock later = Clock.fixed(Instant.parse("2030-01-01T00:00:00Z"), ZoneOffset.UTC);
         EqmManager restarted = new EqmManager(temporaryDirectory, later);
         output.reset();
         restarted.executeInput("list loans");
-        assertTrue(printed().contains("2026-10-25"));
-        assertTrue(printed().contains("true"));
+        assertTrue(printed().contains("25-10-26"));
+        assertTrue(printed().contains("Returned"));
         EquipmentHandler inventory = new EquipmentHandler(temporaryDirectory.resolve("equipment.txt"));
         inventory.loadFromStorage();
         Equipment camera = inventory.getEquipmentById("001");
@@ -87,11 +87,11 @@ class OptionalFieldsIntegrationTest {
         manager.executeInput("loan id/001 b/111 issued/ due/25-10-26");
         manager.executeInput("loan id/001 b/111 due/24-10-26");
         manager.executeInput("loan id/001 b/111");
-        assertFalse(printed().contains("added successfully"));
+        assertFalse(printed().contains("[OK]"));
         assertFalse(Files.exists(temporaryDirectory.resolve("loans.txt")));
         output.reset();
         manager.executeInput("loan id/001 b/111 due/25-10-26");
-        assertTrue(printed().contains("Loan 001 added successfully."));
+        assertTrue(printed().contains("[OK] Loan 001 issued."));
         String savedLoans = Files.readString(temporaryDirectory.resolve("loans.txt"));
         String savedEquipment = Files.readString(temporaryDirectory.resolve("equipment.txt"));
         output.reset();
@@ -100,15 +100,15 @@ class OptionalFieldsIntegrationTest {
         manager.executeInput("return loan/001 serviceable/yes");
         manager.executeInput("return loan/001 serviceable/maybe damage/NONE");
 
-        assertFalse(printed().contains("returned successfully"));
+        assertFalse(printed().contains("[OK] Loan 001 returned."));
         assertEquals(savedLoans, Files.readString(temporaryDirectory.resolve("loans.txt")));
         assertEquals(savedEquipment, Files.readString(temporaryDirectory.resolve("equipment.txt")));
         output.reset();
         manager.executeInput("return loan/001 serviceable/no damage/SENSOR_DAMAGE");
-        assertTrue(printed().contains("returned successfully"));
+        assertTrue(printed().contains("[OK] Loan 001 returned."));
         output.reset();
         manager.executeInput("loan id/001 b/222 due/25-10-26");
-        assertFalse(printed().contains("added successfully"));
+        assertFalse(printed().contains("[OK]"));
         assertTrue(printed().contains("unserviceable"));
         assertEquals("nextLoanId/002", Files.readString(temporaryDirectory.resolve("loan-sequence.txt")).trim());
     }
@@ -144,7 +144,7 @@ class OptionalFieldsIntegrationTest {
         manager.executeInput("return loan/001 serviceable/yes damage/NONE");
 
         assertTrue(printed().contains("Could not save"));
-        assertFalse(printed().contains("returned successfully"));
+        assertFalse(printed().contains("[OK] Loan 001 returned."));
         assertEquals(savedEquipment, Files.readString(equipmentFile));
         assertEquals("keep", Files.readString(sentinel));
         Files.delete(sentinel);
@@ -152,7 +152,7 @@ class OptionalFieldsIntegrationTest {
         Files.writeString(loanFile, savedLoans);
         output.reset();
         manager.executeInput("return loan/001 serviceable/yes damage/NONE");
-        assertTrue(printed().contains("returned successfully"));
+        assertTrue(printed().contains("[OK] Loan 001 returned."));
         EquipmentHandler restarted = new EquipmentHandler(equipmentFile);
         restarted.loadFromStorage();
         assertEquals("", restarted.getEquipmentById("001").getRemarks());

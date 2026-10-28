@@ -19,6 +19,7 @@ import seedu.snap.exceptions.BundleAdditionUnsuccessful;
 import seedu.snap.exceptions.BundleHistoryUnsuccessful;
 import seedu.snap.loan.Loan;
 import seedu.snap.loan.LoanHandler;
+import seedu.snap.ui.BundleView;
 
 /** Parses bundle commands and stores bundles for the current session and saved data. */
 public class BundleHandler {
@@ -173,6 +174,11 @@ public class BundleHandler {
      * @throws BundleAdditionUnsuccessful when the command syntax is invalid
      */
     public List<String> addItemsToBundle(String input) throws BundleAdditionUnsuccessful {
+        return addItemsToBundleWithResults(input).stream().map(ItemResult::message).toList();
+    }
+
+    /** Retains the validated outcome and item identity for each requested membership addition. */
+    public List<ItemResult> addItemsToBundleWithResults(String input) throws BundleAdditionUnsuccessful {
         String[] arguments = input == null ? new String[0] : input.trim().split("\\s+");
         if (arguments.length < 3 || !arguments[0].equals(ADD_TO_BUNDLE_COMMAND)) {
             throw new BundleAdditionUnsuccessful(
@@ -186,7 +192,7 @@ public class BundleHandler {
             throw new BundleAdditionUnsuccessful("Bundle ID " + bundleId + " does not exist.");
         }
 
-        ArrayList<String> messages = new ArrayList<>();
+        ArrayList<ItemResult> messages = new ArrayList<>();
         for (int i = 2; i < arguments.length; i++) {
             messages.add(addItemToBundle(bundle, arguments[i]));
         }
@@ -202,6 +208,11 @@ public class BundleHandler {
      * @throws BundleAdditionUnsuccessful when the command syntax or bundle ID is invalid
      */
     public List<String> removeItemsFromBundle(String input) throws BundleAdditionUnsuccessful {
+        return removeItemsFromBundleWithResults(input).stream().map(ItemResult::message).toList();
+    }
+
+    /** Returns outcomes only after changed memberships are saved, preserving rollback on failure. */
+    public List<ItemResult> removeItemsFromBundleWithResults(String input) throws BundleAdditionUnsuccessful {
         String[] arguments = input == null ? new String[0] : input.trim().split("\\s+");
         if (arguments.length < 3 || !arguments[0].equals(REMOVE_FROM_BUNDLE_COMMAND)) {
             throw new BundleAdditionUnsuccessful(
@@ -216,7 +227,7 @@ public class BundleHandler {
         }
 
         List<Equipment> previousEquipment = List.copyOf(bundle.getEquipmentList());
-        ArrayList<String> messages = new ArrayList<>();
+        ArrayList<ItemResult> messages = new ArrayList<>();
         boolean membershipChanged = false;
         for (int index = 2; index < arguments.length; index++) {
             String itemId = arguments[index];
@@ -248,16 +259,7 @@ public class BundleHandler {
             throw new BundleAdditionUnsuccessful("Invalid format. Use: list bundles");
         }
 
-        System.out.printf("%-4s %-6s %-24s | %-10s%n", "No.", "ID", "NAME", "COMPLETE");
-        for (int i = 0; i < bundles.size(); i++) {
-            Bundle bundle = bundles.get(i);
-            System.out.printf("%-4s %-6s %-24s | %-10s%n",
-                    (i + 1) + ")", bundle.getBundleId(), bundle.getBundleName(), bundle.isComplete());
-            for (Equipment item : bundle.getEquipmentList()) {
-                System.out.printf("     - %-6s %-24s | %-15s%n",
-                        item.getItemId(), item.getItemName(), item.getType());
-            }
-        }
+        BundleView.print(getBundleList());
     }
 
     /**
@@ -296,60 +298,68 @@ public class BundleHandler {
             throws BundleHistoryUnsuccessful {
         Bundle bundle = findBundleForHistory(parseBundleSelector(input));
         List<Loan> history = getBundleLoanHistory(input, loans);
-        if (history.isEmpty()) {
-            System.out.println("No loan history for bundle " + bundle.getBundleId()
-                    + " (" + bundle.getBundleName() + ").");
-            return;
-        }
-        System.out.println("Loan history for bundle " + bundle.getBundleId()
-                + " (" + bundle.getBundleName() + "):");
-        loans.printLoans(history);
+        String subject = "bundle " + bundle.getBundleId() + " (" + bundle.getBundleName() + ")";
+        loans.printLoans(history, "Loan history for " + subject, "No loan history for " + subject + ".");
     }
 
     /**
      * Validates and adds one equipment ID to a bundle.
      */
-    private String addItemToBundle(Bundle bundle, String itemId) {
+    private ItemResult addItemToBundle(Bundle bundle, String itemId) {
         Equipment item = equipmentHandler.getEquipmentById(itemId);
         if (item == null) {
-            return failureMessage(itemId, "equipment does not exist");
+            return itemResult(bundle, itemId, false, failureMessage(itemId, "equipment does not exist"));
         }
         if (item.isLoaned()) {
-            return failureMessage(itemId, "equipment is currently loaned");
+            return itemResult(bundle, itemId, false, failureMessage(itemId, "equipment is currently loaned"));
         }
         if (!item.isServiceable()) {
-            return failureMessage(itemId, "equipment is unserviceable");
+            return itemResult(bundle, itemId, false, failureMessage(itemId, "equipment is unserviceable"));
         }
         if (bundle.containsEquipmentId(itemId)) {
-            return failureMessage(itemId, "equipment is already in this bundle");
+            return itemResult(bundle, itemId, false, failureMessage(itemId, "equipment is already in this bundle"));
         }
         if (item.getType().equals("camera") && bundle.countType("camera") >= 1) {
-            return failureMessage(itemId, "a bundle can contain only one camera");
+            return itemResult(bundle, itemId, false, failureMessage(itemId, "a bundle can contain only one camera"));
         }
         if (item.getType().equals("tripod") && bundle.countType("tripod") >= 1) {
-            return failureMessage(itemId, "a bundle can contain at most one tripod");
+            return itemResult(bundle, itemId, false,
+                    failureMessage(itemId, "a bundle can contain at most one tripod"));
         }
         Equipment incompatibleItem = findIncompatibleEquipment(bundle, item);
         if (incompatibleItem != null) {
-            return failureMessage(itemId,
-                    "equipment is incompatible with equipment ID " + incompatibleItem.getItemId());
+            return itemResult(bundle, itemId, false, failureMessage(itemId,
+                    "equipment is incompatible with equipment ID " + incompatibleItem.getItemId()));
         }
 
         bundle.addEquipment(item);
         LOGGER.log(Level.INFO, "Added equipment {0} to bundle {1}.",
                 new Object[] {itemId, bundle.getBundleId()});
-        return "Equipment ID " + itemId + " added to bundle " + bundle.getBundleId() + " successfully.";
+        return itemResult(bundle, itemId, true,
+                "Equipment ID " + itemId + " added to bundle " + bundle.getBundleId() + " successfully.");
     }
 
     /** Removes one equipment ID from a bundle without affecting the inventory record. */
-    private String removeItemFromBundle(Bundle bundle, String itemId) {
+    private ItemResult removeItemFromBundle(Bundle bundle, String itemId) {
         if (!bundle.removeEquipmentById(itemId)) {
             LOGGER.log(Level.WARNING, "Could not remove equipment {0} from bundle {1}: not a member.",
                     new Object[] {itemId, bundle.getBundleId()});
-            return "Equipment ID " + itemId + " was not removed: it is not in bundle "
-                    + bundle.getBundleId() + ".";
+            return itemResult(bundle, itemId, false,
+                    "Equipment ID " + itemId + " was not removed: it is not in bundle " + bundle.getBundleId() + ".");
         }
-        return "Equipment ID " + itemId + " removed from bundle " + bundle.getBundleId() + " successfully.";
+        return itemResult(bundle, itemId, true,
+                "Equipment ID " + itemId + " removed from bundle " + bundle.getBundleId() + " successfully.");
+    }
+
+    /** Adds display metadata without making the UI infer success by parsing a human-readable sentence. */
+    private ItemResult itemResult(Bundle bundle, String itemId, boolean successful, String message) {
+        Equipment item = equipmentHandler.getEquipmentById(itemId);
+        return new ItemResult(bundle.getBundleId(), itemId, item == null ? null : item.getItemName(),
+                successful, message);
+    }
+
+    /** Carries a membership result while retaining the original message API for existing callers. */
+    public record ItemResult(String bundleId, String itemId, String itemName, boolean successful, String message) {
     }
 
     // @@author Rohita-29

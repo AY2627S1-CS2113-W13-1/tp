@@ -50,12 +50,15 @@ class BundleCompatibilityCommandTest {
 
         manager.executeInput("add-to-bundle id/001 002 003");
 
-        String expected =
-                "Equipment ID 002 was not added: equipment is incompatible with equipment ID 001."
-                        + System.lineSeparator()
-                        + "Equipment ID 003 added to bundle 001 successfully."
-                        + System.lineSeparator();
-        assertEquals(expected, output.toString(StandardCharsets.UTF_8));
+        String printed = output.toString(StandardCharsets.UTF_8);
+        assertTrue(printed.contains("[ERROR] Equipment ID 002 was not added:"
+                + " equipment is incompatible with equipment ID 001."));
+        assertTrue(printed.contains("[OK] Equipment ID 003 added to bundle 001 successfully."
+                + " Name: \"Compatible Battery\"."));
+        assertEquals(1, printed.lines().filter(line -> line.startsWith("[OK]")).count());
+        assertEquals(1, printed.lines().filter(line -> line.startsWith("[ERROR]")).count());
+        assertTrue(printed.contains("1 membership added; 1 failed."));
+        assertTrue(printed.contains("Composition: Incomplete (missing lens)"));
 
         output.reset();
         manager.executeInput("list bundles");

@@ -221,13 +221,13 @@ class EquipmentLoanHistoryTest {
         String printed = captureHistory("history id/001");
 
         assertTrue(printed.contains("BORROWER ID"));
-        assertTrue(printed.contains("ISSUE DATE"));
-        assertTrue(printed.contains("DUE DATE"));
-        assertTrue(printed.contains("RETURNED"));
-        assertTrue(printed.lines().anyMatch(line -> line.contains("111") && line.contains("true")
-                && line.contains("2026-10-01") && line.contains("2026-10-02")));
-        assertTrue(printed.lines().anyMatch(line -> line.contains("222") && line.contains("false")
-                && line.contains("2026-10-03") && line.contains("2026-10-04")));
+        assertTrue(printed.contains("ISSUED"));
+        assertTrue(printed.contains("DUE"));
+        assertTrue(printed.contains("STATE"));
+        assertTrue(printed.lines().anyMatch(line -> line.contains("111") && line.contains("Returned")
+                && line.contains("01-10-26") && line.contains("02-10-26")));
+        assertTrue(printed.lines().anyMatch(line -> line.contains("222") && line.contains("Overdue")
+                && line.contains("03-10-26") && line.contains("04-10-26")));
     }
 
     /** Supplies malformed history commands and unsupported item ID formats. */

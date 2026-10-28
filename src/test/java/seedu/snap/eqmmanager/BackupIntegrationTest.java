@@ -49,7 +49,7 @@ class BackupIntegrationTest {
 
         manager.executeInput("backup path/" + backupDirectory);
 
-        assertTrue(printed().contains("Backup created successfully"));
+        assertTrue(printed().contains("[OK] Backup created successfully"));
         assertEquals(equipmentBefore, Files.readString(backupDirectory.resolve("equipment.txt")));
         assertEquals(loansBefore, Files.readString(backupDirectory.resolve("loans.txt")));
         assertEquals(sequenceBefore, Files.readString(backupDirectory.resolve("loan-sequence.txt")));
@@ -68,6 +68,7 @@ class BackupIntegrationTest {
         manager.executeInput("backup path/" + backupDirectory);
 
         assertTrue(printed().contains("already exists"));
+        assertTrue(printed().startsWith("[ERROR]"));
         assertEquals("original backup", Files.readString(marker));
         assertFalse(Files.exists(backupDirectory.resolve("backup-manifest.txt")));
     }

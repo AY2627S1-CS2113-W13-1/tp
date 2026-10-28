@@ -318,8 +318,8 @@ class HelpIntegrationTest {
         manager.executeInput("loan id/006 b/333 due/25-10-26");
         manager.executeInput("add-bundle name/Next kit");
 
-        assertTrue(printedContent().contains("Loan 003 added successfully."));
-        assertTrue(printedContent().contains("Bundle 002 added successfully."));
+        assertTrue(printedContent().contains("[OK] Loan 003 issued."));
+        assertTrue(printedContent().contains("[OK] Bundle 002 \"Next kit\" created."));
         assertEquals("004", readField(manager, "loans", LoanHandler.class).getNextLoanId());
         assertEquals(3, readField(manager, "loans", LoanHandler.class).getLoanCount());
         assertEquals("003", readField(manager, "equipment", EquipmentHandler.class)
@@ -335,7 +335,7 @@ class HelpIntegrationTest {
         manager.executeInput("list loans");
         manager.executeInput("history id/001");
 
-        assertTrue(printedContent().contains("updated successfully"));
+        assertTrue(printedContent().contains(" updated."));
         assertTrue(printedContent().contains("BORROWER ID"));
         assertTrue(printedContent().contains("222"));
         assertEquals("Updated spare battery", readField(manager, "equipment", EquipmentHandler.class)
@@ -363,7 +363,7 @@ class HelpIntegrationTest {
 
         String newline = System.lineSeparator();
         String divider = "-".repeat(100);
-        String inputBoundary = newline + divider + newline + ">>> " + newline + divider + newline + newline;
+        String inputBoundary = newline + divider + newline + "snAp > " + newline + divider + newline + newline;
         String[] responses = printed().split(Pattern.quote(inputBoundary), -1);
         assertEquals(7, responses.length, "Each of the six input prompts must have dividers and surrounding spacing.");
         assertTrue(responses[0].contains("Welcome to snAp."));
@@ -372,7 +372,7 @@ class HelpIntegrationTest {
         assertTrue(responses[3].contains("Unknown help topic"));
         assertTrue(responses[4].contains("ADD EQUIPMENT"));
         assertTrue(responses[5].contains("EXIT"));
-        assertEquals("Goodbye." + newline, responses[6]);
+        assertEquals("[OK] Goodbye." + newline, responses[6]);
     }
 
     @Test
@@ -387,7 +387,7 @@ class HelpIntegrationTest {
         String border = text.lines().filter(line -> line.matches("\\+-+\\+")).findFirst().orElseThrow();
         int welcome = text.indexOf("Welcome to snAp.");
         int menu = text.indexOf(border);
-        int prompt = text.indexOf(">>>");
+        int prompt = text.indexOf("snAp >");
         assertTrue(welcome >= 0 && welcome < menu);
         assertTrue(menu < text.indexOf("snAp command menu"));
         assertTrue(text.indexOf("snAp command menu") < prompt);
@@ -534,12 +534,15 @@ class HelpIntegrationTest {
                 dataDirectory.resolve("loan-sequence.txt"), dataDirectory.resolve("bundles.txt"));
     }
 
-    /** Repeats help and equipment requests so reading records cannot save data or consume identifiers. */
+    /** Repeats help, lists and histories so viewing records cannot save data or consume identifiers. */
     private void executeAllReadOnlyForms(EqmManager target, ApplicationState expected) throws Exception {
         List<String> requests = new ArrayList<>(HELP_COMMANDS);
         requests.addAll(List.of("list", "filter cond/1-10", "filter id/999", "show id/001", "show id/002",
                 "show id/003", "show id/004", "show id/005", "show id/006", "show id/999", "show",
                 "show id/000", "show id/001 id/002", "show id/001 remarks/Unexpected"));
+        requests.addAll(List.of("list loans", "list overdue", "history id/001", "history id/005",
+                "history bundle/id/001", "history bundle/name/Camera kit", "list bundles",
+                "list borrower/222", "list member/111", "list borrower/999"));
         for (int repetition = 0; repetition < 2; repetition++) {
             for (String command : requests) {
                 output.reset();

@@ -13,6 +13,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.time.LocalDate;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.AfterEach;
@@ -174,9 +177,9 @@ public class LoanHandlerTest {
         manager.executeInput("add i/Replacement id/001 type/battery cond/3");
         manager.executeInput("delete item/002");
 
-        assertEquals("Cannot delete item ID 001 while it has an active loan." + System.lineSeparator()
-                + "Item ID 001 already exists." + System.lineSeparator()
-                + "Equipment with item ID 002 deleted successfully." + System.lineSeparator(),
+        assertEquals("[ERROR] Cannot delete item ID 001 while it has an active loan." + System.lineSeparator()
+                + "[ERROR] Item ID 001 already exists." + System.lineSeparator()
+                + "[OK] Equipment 002 \"Tripod\" deleted." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
         assertTrue(Files.readString(temporaryDirectory.resolve("loans.txt"))
                 .contains("loan loanId/001 id/001 b/002 issued/01-10-26 due/02-10-26 returned/false"));
@@ -192,8 +195,11 @@ public class LoanHandlerTest {
         manager.executeInput("delete item/001");
         manager.executeInput("add i/Replacement id/001 type/battery cond/3");
 
-        assertEquals("Equipment with item ID 001 deleted successfully." + System.lineSeparator()
-                + "Equipment added successfully." + System.lineSeparator(), output.toString(StandardCharsets.UTF_8));
+        assertEquals("[OK] Equipment 001 \"Camera\" deleted." + System.lineSeparator()
+                + "[OK] Equipment 001 added." + System.lineSeparator()
+                + "  Name: \"Replacement\"" + System.lineSeparator()
+                + "  Type: battery | Condition: 3 | Status: Available" + System.lineSeparator(),
+                output.toString(StandardCharsets.UTF_8));
         assertTrue(Files.readString(temporaryDirectory.resolve("loans.txt"))
                 .contains("loan loanId/001 id/001 b/002 issued/01-10-26 due/02-10-26 returned/true"));
     }
@@ -210,7 +216,7 @@ public class LoanHandlerTest {
 
         manager.executeInput("delete item/001");
 
-        assertEquals("Cannot delete item ID 001 while it has an active loan." + System.lineSeparator(),
+        assertEquals("[ERROR] Cannot delete item ID 001 while it has an active loan." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
         assertEquals(2, Files.readAllLines(temporaryDirectory.resolve("loans.txt")).size());
     }
@@ -226,9 +232,14 @@ public class LoanHandlerTest {
         manager.executeInput("delete item/001");
         manager.executeInput("add i/Replacement id/001 type/battery cond/3");
 
-        assertEquals("Loan 001 for item ID 001 deleted successfully." + System.lineSeparator()
-                + "Equipment with item ID 001 deleted successfully." + System.lineSeparator()
-                + "Equipment added successfully." + System.lineSeparator(), output.toString(StandardCharsets.UTF_8));
+        assertEquals("[OK] Loan 001 deleted." + System.lineSeparator()
+                + "  Item: 001 \"Camera\"" + System.lineSeparator()
+                + "  Status: Available" + System.lineSeparator()
+                + "[OK] Equipment 001 \"Camera\" deleted." + System.lineSeparator()
+                + "[OK] Equipment 001 added." + System.lineSeparator()
+                + "  Name: \"Replacement\"" + System.lineSeparator()
+                + "  Type: battery | Condition: 3 | Status: Available" + System.lineSeparator(),
+                output.toString(StandardCharsets.UTF_8));
         assertTrue(Files.readString(temporaryDirectory.resolve("loans.txt")).isBlank());
     }
 
@@ -437,7 +448,8 @@ public class LoanHandlerTest {
         loanHandler.viewOverdueLoans(LocalDate.of(2026, 10, 1));
 
         assertEquals(
-                "No overdue loans found." + System.lineSeparator(),
+                "Overdue loans" + System.lineSeparator() + "-------------" + System.lineSeparator()
+                        + "No overdue loans found." + System.lineSeparator() + "0 loans." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
     }
 
@@ -449,46 +461,40 @@ public class LoanHandlerTest {
 
         loanHandler.viewOverdueLoans(LocalDate.of(2026, 10, 3));
 
-        String expected = String.format(
-                "%-4s %-12s | %-12s | %-16s%n",
-                "No.", "ITEM ID", "BORROWER ID", "DUE DATE");
-        expected += String.format(
-                "%-4s %-12s | %-12s | %-16s%n",
-                "1)", "001", "002", "2026-10-02T00:00");
-        assertEquals(expected, output.toString(StandardCharsets.UTF_8));
+        String actual = output.toString(StandardCharsets.UTF_8);
+        assertTrue(actual.contains("LOAN ID"));
+        assertTrue(actual.contains("BORROWER ID"));
+        assertTrue(actual.contains("| 001     | 001     | 002         | 01-10-26 | 02-10-26 | Overdue  |"));
+        assertTrue(actual.endsWith("1 loan." + System.lineSeparator()));
     }
 
     // @@author
 
     @Test
-    void viewAllLoans_noLoans_printsHeaderOnly() {
+    void viewAllLoans_noLoans_printsGuidanceAndZeroCount() {
         new LoanHandler(equipment).viewAllLoans();
 
-        String expected = String.format(
-                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s | %-8s%n",
-                "No.", "LOAN ID", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE", "RETURNED");
-        assertEquals(expected, output.toString(StandardCharsets.UTF_8));
+        String actual = output.toString(StandardCharsets.UTF_8);
+        assertTrue(actual.contains("No loans recorded. Type help loan for the command format."));
+        assertTrue(actual.endsWith("0 loans." + System.lineSeparator()));
     }
 
     @Test
     void viewAllLoans_existingLoans_printsHeaderAndRows()
             throws LoanAdditionUnsuccessful {
-        LoanHandler loanHandler = new LoanHandler(equipment);
+        Clock clock = Clock.fixed(Instant.parse("2026-10-27T00:00:00Z"), ZoneOffset.UTC);
+        LoanHandler loanHandler = new LoanHandler(equipment, null, null, clock);
         loanHandler.addLoan(FIRST_LOAN);
         loanHandler.addLoan(SECOND_LOAN);
 
         loanHandler.viewAllLoans();
 
-        String expected = String.format(
-                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s | %-8s%n",
-                "No.", "LOAN ID", "ITEM ID", "BORROWER ID", "ISSUE DATE", "DUE DATE", "RETURNED");
-        expected += String.format(
-                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s | %-8s%n",
-                "1)", "001", "001", "002", "2026-10-01T00:00", "2026-10-02T00:00", false);
-        expected += String.format(
-                "%-4s %-12s | %-12s | %-12s | %-16s | %-16s | %-8s%n",
-                "2)", "002", "003", "004", "2026-10-03T00:00", "2026-10-04T00:00", false);
-
-        assertEquals(expected, output.toString(StandardCharsets.UTF_8));
+        String actual = output.toString(StandardCharsets.UTF_8);
+        String first = "| 001     | 001     | 002         | 01-10-26 | 02-10-26 | Overdue  |";
+        String second = "| 002     | 003     | 004         | 03-10-26 | 04-10-26 | Overdue  |";
+        assertTrue(actual.contains(first));
+        assertTrue(actual.contains(second));
+        assertTrue(actual.indexOf(first) < actual.indexOf(second));
+        assertTrue(actual.endsWith("2 loans." + System.lineSeparator()));
     }
 }

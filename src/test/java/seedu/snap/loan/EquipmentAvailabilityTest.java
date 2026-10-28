@@ -233,7 +233,7 @@ class EquipmentAvailabilityTest {
             manager.executeInput("list");
             manager.executeInput("delete item/001");
             assertTrue(output.toString(StandardCharsets.UTF_8).contains("Item ID 001 does not exist."));
-            assertTrue(output.toString(StandardCharsets.UTF_8).contains("Loan 001 added successfully."));
+            assertTrue(output.toString(StandardCharsets.UTF_8).contains("[OK] Loan 001 issued."));
             assertTrue(output.toString(StandardCharsets.UTF_8).contains("Loaned"));
             assertTrue(output.toString(StandardCharsets.UTF_8)
                     .contains("Cannot delete item ID 001 while it has an active loan."));

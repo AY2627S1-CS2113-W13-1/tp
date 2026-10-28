@@ -63,8 +63,13 @@ Remove `SNAP_LOGO` to restore the ASCII default. Colour works with either versio
 
 After the logo and loaded-record counts, snAp displays a boxed command menu automatically. The menu groups
 commands by Equipment, Loans, Bundles and General, and shows how to request more help.
-The `>>>` input prompt is separated from the previous output and the next response by horizontal lines
+The `snAp > ` input prompt is separated from the previous output and the next response by horizontal lines
 and blank lines.
+
+Successful changes start with `[OK]`; rejected commands and save failures start with `[ERROR]`.
+Loan and bundle headings use cyan, success labels use green and error labels use red when colour is enabled.
+These use the same colour settings as the logo. With colour disabled, headings, labels and all result details
+remain readable.
 
 ## Getting help: `help`
 
@@ -150,6 +155,7 @@ maintenance records from being attached to a replacement item if an Item ID is r
 `data/maintenance.txt` and are loaded when the application starts again.
 
 Invalid commands, unknown Item IDs, invalid dates and failed saves leave existing maintenance records unchanged.
+A successful command shows an `[OK]` label, the Item ID and name, maintenance date, work description and outcome.
 
 ## Adding equipment: `add`
 
@@ -326,7 +332,8 @@ Example with the issue date omitted: `loan id/001 b/002 due/28-10-26`
   `issued/` without a value does not use the default.
 * An item cannot have more than one active loan at the same time.
 
-Each successful loan receives a unique three-digit loan ID, which is printed in the success message.
+Each successful loan receives a unique three-digit loan ID. The success message shows this ID, the item ID
+and name, borrower ID, issue date and due date, so a separate listing is not needed to confirm the result.
 Loan IDs start at `001` and increase through `999`. Deleted IDs are never reused, including after a restart.
 Once `999` has been assigned, further new loans are rejected.
 
@@ -336,9 +343,20 @@ Invalid loan commands leave both the loan records and equipment availability unc
 
 Format: `list loans`
 
-This displays all recorded loans with their unique loan ID, item ID, borrower ID, issue date and due date.
-The `LOAN ID` column comes before `ITEM ID`. The final `RETURNED` column is `true` for returned loans
-and `false` for active loans.
+This displays all recorded loans with these columns: `LOAN ID`, `ITEM ID`, `BORROWER ID`, `ISSUED`, `DUE`
+and `STATE`. Dates use `DD-MM-YY`, without a time. `STATE` is `Returned` for returned loans, `Overdue` for
+unreturned loans due before today's local date, and `Active` for other unreturned loans. A loan due today is
+still `Active`.
+
+Every loan list and item or bundle history uses the same columns and ends with its result count.
+For example:
+
+```text
+| LOAN ID | ITEM ID | BORROWER ID | ISSUED   | DUE      | STATE    |
+| 001     | 001     | 002         | 01-10-26 | 08-10-26 | Returned |
+```
+
+An empty list displays `No loans recorded. Type help loan for the command format.` and `0 loans.`.
 
 ## Viewing equipment held by a borrower: `list borrower`
 
@@ -349,6 +367,7 @@ Example: `list borrower/002`. The equivalent alias `list member/002` is also acc
 Use exactly three digits from `000` to `999`. The result shows only equipment currently held by that borrower,
 with its loan details. Returned loans are excluded. An unknown borrower or one with no active loans produces
 a clear message. The query leaves records unchanged.
+Dates, states and columns match `list loans`. Results end with a loan count, including `0 loans.` for an empty result.
 
 ## Viewing the issue-time equipment condition: `view loan`
 
@@ -370,7 +389,8 @@ Example: `history id/001`
 
 Use an existing Item ID from `001` to `999`. The history includes both active and returned loans for the
 equipment currently registered under that ID. Each row shows the loan ID, borrower, issue date, due date and
-return status. Rows are ordered by issue date from earliest to latest, then by loan ID for equal issue dates.
+state, using the same display as `list loans`. Rows are ordered by issue date from earliest to latest,
+then by loan ID for equal issue dates.
 This command does not change equipment, loans, availability or saved records.
 
 If the item has no recorded loans, the application prints `No loan history for item ID 001.`
@@ -389,7 +409,7 @@ explains this and points to `list loans`. Existing active loans can be associate
 Format: `list overdue`
 
 This displays every active loan whose due date is earlier than the current local date. The results show the
-item ID, borrower ID and due date in the same order as the stored loans.
+same columns, dates, state and count as `list loans`, in the same order as the stored loans.
 
 Returned loans are excluded. A loan due today is not overdue, regardless of its time, and becomes overdue only
 on the following date if it remains active. If no loans are overdue, the application displays
@@ -423,7 +443,9 @@ return loan/004 serviceable/no damage/OTHER remarks/Mounting plate damaged
 * The assessment replaces the item's previous damage and remarks. Its name, numeric condition, type-specific
   attributes and existing bundle memberships are retained. The numeric condition can be changed separately with `update`.
 
-A successful return keeps the loan record and its ID, sets `RETURNED` to `true`, and clears its active equipment link.
+A successful return keeps the loan record and its ID, displays its state as `Returned`, and clears its active
+equipment link. The success message shows the Loan ID, item ID and name, and the item's resulting `Available`
+or `Unserviceable` status.
 An already returned loan cannot be returned again or reactivated. Borrowing the same serviceable equipment later
 creates a new loan with a new ID. Returning equipment does not consume a loan ID.
 
@@ -569,6 +591,8 @@ Example: `add-to-bundle id/001 001 002 003`
 
 The bundle must exist. Supply one or more equipment IDs, separated by spaces. Each requested item gets
 its own success or error message. Valid items are added even if another requested item is rejected.
+Successful results include the equipment name. A mixed request shows `[OK]` or `[ERROR]` for each item,
+then totals such as `2 memberships added; 1 failed.` and the resulting bundle composition.
 
 * Equipment must exist in the inventory and be `Available` when added.
 * An item cannot appear twice in the same bundle. It can appear in different bundles.
@@ -609,8 +633,15 @@ saved immediately; a save failure restores the previous membership.
 
 Format: `list bundles`
 
-This displays each bundle's ID, name, completion status and contained equipment. The `COMPLETE` column
-checks the required equipment counts. Borrowing an item later does not remove it from its bundle.
+This displays each bundle's ID, full name, contained equipment and member count, followed by the total bundle
+count. `Composition: Complete` means the existing equipment-count requirements are met. An incomplete bundle
+names its missing required types, for example `Incomplete (missing lens, battery)`.
+These descriptions concern composition; they do not promise equipment compatibility or availability.
+Borrowing an item later does not remove it from its bundle.
+
+An empty list suggests `add-bundle name/Camera kit` and displays `0 bundles.`. The display reminds you to save
+new bundles and additions with `bye`; successful removals are saved immediately. Saved bundles are restored
+at startup.
 
 ## Viewing a bundle's loan history: `history bundle`
 
@@ -622,6 +653,7 @@ This displays all active and returned loans for every physical equipment item in
 Results are ordered by issue date from earliest to latest, then by loan ID. An empty history and an unknown
 bundle are reported clearly. Bundle memberships are matched using each equipment record's permanent identity,
 so a reused visible Item ID cannot inherit the wrong historical membership.
+Dates, states, columns and result counts use the same format as `list loans` and item histories.
 
 ## Saving application data
 
@@ -675,7 +707,8 @@ are deleted. Equipment records retain their details and remarks; loan associatio
 
 To transfer your records, copy `data/equipment.txt`, `data/loans.txt`, `data/loan-sequence.txt`,
 `data/bundles.txt` and `data/maintenance.txt` to the same location on the other computer. If a file cannot be read or contains invalid or
-duplicate records, the application reports the problem and stops.
+duplicate records, the application reports the problem and blocks ordinary commands. Use `restore` to recover from
+a valid backup, or `bye` to exit before correcting the saved files.
 
 ## Backing up and restoring records
 
@@ -714,8 +747,9 @@ permission problem, then restart snAp. File logging is configured only at startu
 * Invalid add or delete commands show the correct syntax. Invalid fields, duplicate IDs and missing IDs are rejected.
 * File errors show the reason and ask you to check the file or directory permissions.
 * Saves are written to temporary files before replacing the saved records, preserving previous records if writing fails.
-* Command validation errors show a message and let you enter another command at the command prompt.
-* The application stops if saved records cannot be loaded or console input is no longer available.
+* Command validation errors show an `[ERROR]` message and return to the `snAp > ` prompt for another command.
+* If saved records cannot be loaded, only `restore` and `bye` are available. The application stops when console input
+  is no longer available.
 
 ## Command Summary
 
