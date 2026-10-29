@@ -10,7 +10,7 @@ The Developer Guide embeds SVG files from `docs/images/` and links to their edit
 These diagrams use the shared `style.puml`. Keep each diagram beside the design explanation that it supports.
 
 [AppArchitecture.puml](AppArchitecture.puml) gives the application overview: startup, console input,
-command coordination, the three feature areas and local storage. Related classes are grouped so the
+command coordination, the four feature areas and local storage. Related classes are grouped so the
 shared equipment inventory is visible without showing every helper.
 
 The equipment-management designs also include:

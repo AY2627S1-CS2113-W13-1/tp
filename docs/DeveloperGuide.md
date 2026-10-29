@@ -77,6 +77,44 @@ The implementation sections explain the command flows and the reasons for their 
 
 ## Implementation
 
+### Shared equipment model
+
+Equipment addition, filtering, updates, loans and bundles use the same inventory. `EquipmentHandler` owns its
+ordered equipment objects; loans and bundles retain references to those objects so they observe the same details
+and availability. `getEquipmentList()` provides an unmodifiable view for queries and display, while additions and
+updates go through validation and persistence.
+
+[![Shared equipment classes: inventory ownership, filtering, field parsing, storage and a representative subtype](images/EquipmentClasses.svg)](images/EquipmentClasses.svg)
+
+*Figure 2. Equipment classes and their roles in inventory management.*
+
+[PlantUML source](diagrams/EquipmentClasses.puml)
+
+`Equipment` holds common identity, name, condition and availability state. `Camera` represents one concrete
+subtype; `Lens`, `Battery` and `Tripod` use the same inheritance relationship. `EquipmentFields` parses filter
+and update fields, `EquipmentStorage` handles file access, and the add command uses its own ordered parser.
+
+Solid arrows show stored references; dashed arrows show dependencies. `+`, `-` and `~` mean public, private and
+package-private; underlined operations are static and italic names are abstract. Minor fields, getters and the
+loan/bundle classes are omitted.
+
+#### Availability and loan ownership
+
+An active `Loan` refers to the original equipment object. The equipment records its loan ID and loaned flag together
+through `setLoanId(...)`. `LoanHandler.addLoan(...)` checks for one available, serviceable item and saves before
+`Loan.attachEquipment(...)` publishes the association.
+
+[![Equipment availability: saved borrowing and return operations change the shared item's status](images/EquipmentAvailability.svg)](images/EquipmentAvailability.svg)
+
+*Figure 3. Equipment availability changes after successful borrowing and return operations.*
+
+[PlantUML source](diagrams/EquipmentAvailability.puml)
+
+With no active loan, serviceability decides between `Available` and `Unserviceable`. The integrated
+[return assessment](#returning-equipment-with-an-assessment) sets serviceability separately from numeric
+condition and damage. Loan reassignment saves proposed records before releasing the old item and reserving the
+replacement. Returns and deletions likewise save before detaching; loading rebuilds active associations from loans.
+
 ### Equipment compatibility attributes
 
 #### Purpose and representation
@@ -193,7 +231,7 @@ and changing records.
 
 [![Return sequence: prepare detached proposals, save them, then change the original equipment and loan.](images/ReturnSequence.svg)](images/ReturnSequence.svg)
 
-*Figure 2. A successful return changes the original records only after saving succeeds.*
+*Figure 4. A successful return changes the original records only after saving succeeds.*
 
 [PlantUML source](diagrams/ReturnSequence.puml)
 
@@ -228,13 +266,13 @@ assessment defaults to serviceable.
 
 #### Save failures and recovery
 
-The next diagram expands the storage step in Figure 2. It shows a loan or sequence save failing after the
+The next diagram expands the storage step in Figure 4. It shows a loan or sequence save failing after the
 equipment proposal was written. An equipment-save failure enters the same restoration loop. Only configured
 files are captured. A snapshot records regular-file bytes, absence or a pre-existing non-regular path.
 
 [![Failed return save: capture configured files, attempt writes, restore every snapshot, then report the failure.](images/ReturnSaveFailure.svg)](images/ReturnSaveFailure.svg)
 
-*Figure 3. A reported write failure triggers restoration before the return is rejected.*
+*Figure 5. A reported write failure triggers restoration before the return is rejected.*
 
 [PlantUML source](diagrams/ReturnSaveFailure.puml)
 
@@ -280,7 +318,7 @@ are omitted.
 
 [![History class diagram: handlers manage records; loans store the permanent equipment identity and an optional active reference.](images/EquipmentIdentity.svg)](images/EquipmentIdentity.svg)
 
-*Figure 4. History uses stored identity values, while an active loan also refers to an equipment object.*
+*Figure 6. History uses stored identity values, while an active loan also refers to an equipment object.*
 
 [PlantUML source](diagrams/EquipmentIdentity.puml)
 
@@ -301,7 +339,7 @@ Item ID produces `LoanHistoryUnsuccessful` before selection.
 
 [![History query sequence: find the current item, match both identifiers, sort a separate list and display it without saving.](images/HistorySequence.svg)](images/HistorySequence.svg)
 
-*Figure 5. A history query sorts a selected copy and leaves the managed records unchanged.*
+*Figure 7. A history query sorts a selected copy and leaves the managed records unchanged.*
 
 [PlantUML source](diagrams/HistorySequence.puml)
 
@@ -373,7 +411,7 @@ The diagram omits model construction and ordinary availability checks to focus o
 
 [![Optional issue-date sequence: validate required input, read the local date once, save explicit dates and then publish the loan.](images/LoanDateDefault.svg)](images/LoanDateDefault.svg)
 
-*Figure 6. The optional date is resolved during command parsing and stored as an ordinary explicit date.*
+*Figure 8. The optional date is resolved during command parsing and stored as an ordinary explicit date.*
 
 [PlantUML source](diagrams/LoanDateDefault.puml)
 
@@ -455,7 +493,7 @@ words before lookup. This does not make other command names or fields case-insen
 
 [![Help sequence: EqmManager calls Help with a topic, which prints the menu, one command or the full reference without using record or storage handlers.](images/HelpSequence.svg)](images/HelpSequence.svg)
 
-*Figure 7. Help selects the requested text and returns control to the command loop.*
+*Figure 9. Help selects the requested text and returns control to the command loop.*
 
 [PlantUML source](diagrams/HelpSequence.puml)
 
@@ -661,68 +699,11 @@ Legacy snapshots are left absent rather than inferred from present equipment. In
 
 ### Equipment management
 
-Equipment addition, filtering and updates use the same inventory. The shared model also tracks
-availability so borrowing and queries agree about which equipment can be used.
-Start with the shared model, then see [addition](#adding-equipment-and-rejecting-duplicate-item-ids),
-[filtering](#filtering-equipment-without-changing-records) or [updates](#updating-equipment-details).
-
-#### Shared equipment model
-
-`EquipmentHandler` owns the ordered inventory. Loans and bundles share its equipment objects, so they see
-the same details and availability. `getEquipmentList()` provides an unmodifiable view for queries and display;
-additions must go through validation and duplicate checks.
-
-[![Shared equipment classes: inventory ownership, filtering, field parsing, storage and a representative subtype](images/EquipmentClasses.svg)](images/EquipmentClasses.svg)
-
-*Figure 8. Equipment classes and their roles in inventory management.*
-
-[PlantUML source](diagrams/EquipmentClasses.puml)
-
-`Equipment` holds common identity, name, condition and availability state. `Camera` represents one
-concrete subtype; `Lens`, `Battery` and `Tripod` have the same inheritance relationship.
-`EquipmentFields` parses filter and update fields, while `EquipmentStorage` handles file access.
-The add command has its own ordered parser in `EquipmentHandler`.
-
-Solid arrows show stored references; dashed arrows show dependencies. `+`, `-` and `~` mean public,
-private and package-private; underlined operations are static and italic names are abstract.
-Minor fields, getters and the loan/bundle classes are omitted.
-
-##### Availability and loan ownership
-
-An active `Loan` refers to the original equipment object. The equipment records its loan ID and loaned
-flag together through `setLoanId(...)`. Constructing a proposed loan does not reserve the item:
-`LoanHandler.addLoan(...)` checks for an existing active loan, finds one available, serviceable item
-and saves before `Loan.attachEquipment(...)` publishes the association.
-
-[![Equipment availability: saved borrowing and return operations change the shared item's status](images/EquipmentAvailability.svg)](images/EquipmentAvailability.svg)
-
-*Figure 9. Equipment availability changes after successful borrowing and return operations.*
-
-[PlantUML source](diagrams/EquipmentAvailability.puml)
-
-The state diagram shows successful commands; loading and equipment deletion are omitted. With no active
-loan, serviceability decides between `Available` and `Unserviceable`. The integrated
-[return assessment](#returning-equipment-with-an-assessment) sets serviceability separately from numeric
-condition and damage. A name or condition update does not change it.
-
-A saved loan reassignment releases the old item and reserves the replacement through `Loan.applyUpdate(...)`.
-Both effects occur after the proposed loan records are saved. This also explains the reassignment transitions
-in the state diagram.
-
-`Loan.detachEquipment()` clears the item's loan ID only if that loan still owns it, then drops its
-reference. This stops an older loan from releasing an item borrowed under a newer loan. Returns and loan
-deletions save before detaching. Equipment deletion is blocked by the CLI's active-loan check and the
-handler's loaned-flag check; the CLI also checks bundle membership.
-
-Equipment loads before loans at startup. The loan loader validates active associations, clears old
-runtime links and reattaches accepted active loans. Rebuilding links avoids persisting a second loaned
-flag that could disagree with the loan records. `EquipmentAvailabilityTest` covers double borrowing,
-failed reservations, ownership guards, deletion and reborrowing; `MainTest` checks restart and loan-deletion
-behaviour. Return integration tests cover serviceability and save failures.
-
-Visible Item IDs range from `001` to `999` and may be reused after valid deletion. Loan IDs use the same
-range but are never reused within a data set: after 999 assignments, new borrowing requires a new data set.
-This identifier limit is separate from the inventory-capacity NFR.
+The shared model above supplies the inventory and availability rules for
+[addition](#adding-equipment-and-rejecting-duplicate-item-ids),
+[filtering](#filtering-equipment-without-changing-records) and
+[updates](#updating-equipment-details). Visible Item IDs range from `001` to `999` and may be reused after
+valid deletion. Loan IDs use the same range but are never reused within a data set.
 
 #### Adding equipment and rejecting duplicate Item IDs
 
@@ -942,11 +923,11 @@ duplicate command records. `AppLoggingTest` checks cleanup after an application 
 settings, flushed output and lock release. The suite does not force rotation or explicitly test appending
 to an existing log after restart; these are configured `FileHandler` behaviours.
 
-### Overdue loan identification
+### Identifying overdue loans
 
-#### Overview
+#### Purpose and responsibilities
 
-The overdue-loan feature allows equipment managers to identify active loans whose due dates have passed. Users access the feature with the `list overdue` command. The command displays the item ID, borrower ID, and due date of every overdue loan. If there are no overdue loans, the application displays a clear message instead of an empty table.
+The overdue-loan feature allows equipment managers to identify active loans whose due dates have passed. Users access the feature with the `list overdue` command. The command uses the same Loan ID, Item ID, Borrower ID, issue date, due date and state columns as `list loans`. If there are no overdue loans, the application displays a clear message instead of an empty table.
 
 A loan is overdue only when both conditions are satisfied:
 
@@ -1009,13 +990,8 @@ A third alternative was to compare complete `LocalDateTime` values. This was rej
 
 #### Verification
 
-`LoanTest` covers active loans with past, current, and future due dates; loans due at different times on the reference date; returned loans; and null reference dates.
-
-`LoanHandlerTest` covers mixed loan collections, preserved ordering, unmodifiable results, null reference dates,
-empty results, formatted output and unchanged managed records. The overdue-listing code logs the number of
-matches, but these tests do not explicitly assert its diagnostic log records or inject null loan entries.
-
-`EqmManagerTest` verifies command routing using a fixed `Clock`. It also confirms that `list overdue` does not modify equipment availability, loan records, or persisted files.
+`LoanTest` covers date boundaries and returned loans. `LoanHandlerTest` covers ordering, formatting and unchanged
+records, while `EqmManagerTest` verifies routing with a fixed `Clock` and no persistence changes.
 
 <a id="product-scope"></a>
 
@@ -1085,6 +1061,7 @@ These requirements apply to a single user running one local instance of snAp.
 | Condition | The descriptive numeric rating from `1` to `10`; it does not itself determine availability. |
 | Serviceability | The return assessment deciding whether an item may be borrowed when it has no active loan. |
 | Issue-time snapshot | The equipment type, condition, damage and remarks recorded for a loan when issued. |
+| Proposal | A detached record copy validated and saved before its corresponding live record is changed. |
 | Bundle | A named, saved group that refers to existing equipment items rather than copying their details. |
 
 <a id="instructions-for-manual-testing"></a>
