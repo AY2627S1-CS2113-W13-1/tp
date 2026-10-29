@@ -158,7 +158,8 @@ Example: `add i/Canon EOS R10 id/001 type/camera cond/1 remarks/Handle with care
 **Condition and availability are separate:** even an item added with `cond/10` starts as `Available`.
 Borrowing is controlled by its [availability status](#equipment-availability), not a numeric threshold.
 
-Success prints `Equipment added successfully.` The item appears at the end of `list` and is saved automatically.
+Success prints `[OK] Equipment <ITEM ID> added.` followed by the item's name, type, condition and status.
+The item appears at the end of `list` and is saved automatically.
 Adding an existing Item ID does not replace its equipment; use `update` to correct the existing item's details.
 
 For example, with Item ID `001` already present:
@@ -547,7 +548,8 @@ ignoring case. A matching `type/` on its own is accepted without changing any de
 Updates keep the item in its current list position and retain its subtype details, damage, remarks,
 availability, loan history and bundle memberships. These other details cannot be edited with `update`.
 
-Success prints `Equipment with item ID 001 updated successfully.` for Item ID `001` and saves the changes.
+Success prints `[OK] Equipment 001 updated.` for Item ID `001`, followed by the item's name, type, condition and
+status, and saves the changes.
 With `001` registered as a camera, these commands are rejected:
 
 | Command | Error |
@@ -659,7 +661,9 @@ Successful loan additions, updates, returns and deletions are saved in
 `data/loans.txt`, the next unused loan ID is saved in `data/loan-sequence.txt`, and bundle memberships are saved
 in `data/bundles.txt`. Records are loaded when the application starts again. A final save is also attempted when
 `bye` is entered; if it fails, the application reports the affected file and lets you retry.
-The directory and saved files are created on the first save, including the final save performed by `bye`.
+The data directory and the equipment, loan, sequence and maintenance files are created when they are first saved,
+including during the final save performed by `bye`. `bundles.txt` is created when bundle data is first saved and may
+be absent if no bundles have been created.
 Each item's availability and associated loan ID are rebuilt from active loans at startup, so loaned items
 remain `Loaned` after restarting the application.
 
@@ -701,8 +705,9 @@ Existing loan records without loan IDs are assigned IDs in file order on first l
 These IDs remain stable on later restarts. The sequence file preserves the next unused ID even when loan records
 are deleted. Equipment records retain their details and remarks; loan associations are restored from the loan records.
 
-To transfer your records, save with `bye`, then copy `data/equipment.txt`, `data/loans.txt`, `data/loan-sequence.txt`,
-`data/bundles.txt` and `data/maintenance.txt` to the same location on the other computer. If a file cannot be read
+To transfer your records, save with `bye`, then copy `data/equipment.txt`, `data/loans.txt`,
+`data/loan-sequence.txt` and `data/maintenance.txt` to the same location on the other computer. Copy
+`data/bundles.txt` as well when bundles have been created. If a file cannot be read
 or contains invalid or duplicate records, the application reports the problem and accepts only `restore` or `bye`.
 Use `restore` to recover from a valid backup, or `bye` to exit before correcting the saved files. In this state,
 `bye` exits without saving over the damaged files.
