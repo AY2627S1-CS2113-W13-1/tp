@@ -16,9 +16,9 @@ title: Developer Guide
 - Image and icon sources, including the snAp logo and GitHub mark, are recorded in
   [asset sources](assets/SOURCES.txt) with the accompanying icon licence.
 
-**Version:** This guide describes the implementation prepared for snAp v2.0. Use source and an executable
+**Version:** This guide describes the implementation prepared for snAp v2.1. Use source and an executable
 from the same version when following the design and manual tests. Published JARs and their source archives
-are listed under [releases](https://github.com/AY2627S1-CS2113-W13-1/tp/releases); `v2.0` becomes available
+are listed under [releases](https://github.com/AY2627S1-CS2113-W13-1/tp/releases); `v2.1` becomes available
 there when the release is published. The [README setup instructions](https://github.com/AY2627S1-CS2113-W13-1/tp/blob/master/README.md#setup)
 cover building and testing the source with JDK 25.
 
@@ -1070,7 +1070,7 @@ These requirements apply to a single user running one local instance of snAp.
 
 ### Setup
 
-Use Java 25 and the v2.0 release JAR, or a v2.0 candidate built from source. Copy it to a separate test folder with no
+Use Java 25 and the v2.1 release JAR, or a v2.1 candidate built from source. Copy it to a separate test folder with no
 `data/` directory, then start it there with `java -jar snAp.jar`. Each command below is one line.
 The examples form one test path; IDs assume this fresh data set. Keep real club records in a different folder.
 

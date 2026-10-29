@@ -10,14 +10,14 @@ title: User Guide
 snAp helps photography-club equipment officers track shared gear, maintenance and borrowing through typed commands.
 It helps you find available items, avoid double borrowing and retain equipment, maintenance, loan and bundle records between sessions.
 
-**Version:** This guide describes snAp v2.0. Use it with the `v2.0` JAR; earlier releases do not support
+**Version:** This guide describes snAp v2.1. Use it with the `v2.1` JAR; earlier releases do not support
 every command below.
 
 ## Quick Start
 
 1. Install Java 25 and check that `java -version` reports version 25.
-2. Open the [release downloads](https://github.com/AY2627S1-CS2113-W13-1/tp/releases), select `v2.0`,
-   and download `snAp.jar` under **Assets**. If `v2.0` is not listed, that release has not been published yet.
+2. Open the [release downloads](https://github.com/AY2627S1-CS2113-W13-1/tp/releases), select `v2.1`,
+   and download `snAp.jar` under **Assets**. If `v2.1` is not listed, that release has not been published yet.
 3. Put `snAp.jar` in a folder where you can create and update files. Open a terminal in that folder.
    Use the same working folder each time to load the same saved records.
 4. Run this command in Windows PowerShell, macOS Terminal or a Linux terminal:
