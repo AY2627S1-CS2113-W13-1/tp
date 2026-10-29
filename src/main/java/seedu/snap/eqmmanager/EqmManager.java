@@ -53,6 +53,8 @@ public class EqmManager {
     private final Path dataDirectory;
     private final Clock clock;
     private String startupError;
+    /** Equipment-and-loan backups cannot recover maintenance that failed to load at startup. */
+    private boolean maintenanceLoadFailed;
     private boolean isRunning;
 
     /** Creates an equipment manager ready to accept commands. */
@@ -106,6 +108,7 @@ public class EqmManager {
         try {
             maintenance.loadFromStorage();
         } catch (IOException e) {
+            maintenanceLoadFailed = true;
             loadErrors.add("maintenance.txt: " + e.getMessage());
             logger.log(Level.SEVERE, "Could not load saved maintenance data", e);
         }
@@ -284,6 +287,11 @@ public class EqmManager {
 
     /** Restores a validated backup and reports either the restored source or the safe failure message. */
     private void restoreBackup(String input) {
+        if (maintenanceLoadFailed) {
+            ConsoleOutput.error("Cannot restore because maintenance data could not be loaded. "
+                    + "Exit with bye, preserve and repair or recover data/maintenance.txt, then restart.");
+            return;
+        }
         try {
             Path source = backups.restoreBackup(input);
             startupError = null;
