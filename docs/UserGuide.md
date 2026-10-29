@@ -661,7 +661,9 @@ Successful loan additions, updates, returns and deletions are saved in
 `data/loans.txt`, the next unused loan ID is saved in `data/loan-sequence.txt`, and bundle memberships are saved
 in `data/bundles.txt`. Records are loaded when the application starts again. A final save is also attempted when
 `bye` is entered; if it fails, the application reports the affected file and lets you retry.
-The directory and saved files are created on the first save, including the final save performed by `bye`.
+The data directory and the equipment, loan, sequence and maintenance files are created when they are first saved,
+including during the final save performed by `bye`. `bundles.txt` is created when bundle data is first saved and may
+be absent if no bundles have been created.
 Each item's availability and associated loan ID are rebuilt from active loans at startup, so loaned items
 remain `Loaned` after restarting the application.
 
