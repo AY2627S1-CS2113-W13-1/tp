@@ -632,6 +632,11 @@ directory is then moved into place, so a failed write does not leave a partial b
 
 #### Restore validation and rollback
 
+`EqmManager` retains a separate flag when maintenance fails to load at startup. In that state it rejects
+`restore` before calling `BackupHandler`, preserving the startup guard and every live file. Equipment-and-loan
+backups cannot recover maintenance, so the user must exit without saving, repair the maintenance file separately
+and restart. Loading errors in equipment, loans or bundles can still be recovered when maintenance loaded successfully.
+
 For `restore path/<DIRECTORY>`, the handler requires an external directory, reads every required file and verifies
 the manifest against the file bytes. It then loads the equipment and loans in an isolated temporary directory,
 which detects malformed records, duplicate IDs and inconsistent active-loan relationships before touching live data.

@@ -1,5 +1,6 @@
 package seedu.snap.eqmmanager;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -16,6 +17,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /** Exercises backup restoration through the public application command interface. */
 class RestoreIntegrationTest {
@@ -188,6 +191,120 @@ class RestoreIntegrationTest {
         output.reset();
         manager.executeInput("list loans");
         assertTrue(printed().contains("Returned"));
+    }
+
+    @Test
+    void restoreCommand_malformedMaintenance_preservesEveryLiveFileAndStartupGuard() throws Exception {
+        Path dataDirectory = temporaryDirectory.resolve("data");
+        Path maintenanceFile = dataDirectory.resolve("maintenance.txt");
+        manager.executeInput("maintain id/001 date/01-01-20 work/Checked camera outcome/Completed");
+        Path backupDirectory = temporaryDirectory.resolve("maintenance-backup");
+        manager.executeInput("backup path/" + backupDirectory);
+        manager.executeInput("update id/001 cond/7");
+        manager.executeInput("add-bundle name/Keep this bundle");
+        manager.executeInput("bye");
+        Files.writeString(maintenanceFile, Files.readString(maintenanceFile) + "broken record\n");
+        byte[] maintenanceBefore = Files.readAllBytes(maintenanceFile);
+        byte[] equipmentBefore = Files.readAllBytes(dataDirectory.resolve("equipment.txt"));
+        byte[] loansBefore = Files.readAllBytes(dataDirectory.resolve("loans.txt"));
+        byte[] sequenceBefore = Files.readAllBytes(dataDirectory.resolve("loan-sequence.txt"));
+        byte[] bundlesBefore = Files.readAllBytes(dataDirectory.resolve("bundles.txt"));
+        EqmManager broken = new EqmManager(dataDirectory);
+        output.reset();
+
+        broken.executeInput("restore path/" + backupDirectory);
+
+        assertTrue(printed().contains("maintenance data could not be loaded"));
+        assertFalse(printed().contains("[OK] Backup restored successfully"));
+        output.reset();
+        broken.executeInput("maintain id/001 date/01-01-20 work/Another check outcome/Completed");
+        broken.executeInput("list");
+        assertTrue(printed().contains("Could not load saved data: maintenance.txt:"));
+        assertFalse(printed().contains("Maintenance recorded successfully"));
+        broken.executeInput("bye");
+
+        assertArrayEquals(maintenanceBefore, Files.readAllBytes(maintenanceFile));
+        assertArrayEquals(equipmentBefore, Files.readAllBytes(dataDirectory.resolve("equipment.txt")));
+        assertArrayEquals(loansBefore, Files.readAllBytes(dataDirectory.resolve("loans.txt")));
+        assertArrayEquals(sequenceBefore, Files.readAllBytes(dataDirectory.resolve("loan-sequence.txt")));
+        assertArrayEquals(bundlesBefore, Files.readAllBytes(dataDirectory.resolve("bundles.txt")));
+    }
+
+    @Test
+    void restoreCommand_unreadableMaintenance_preservesDirectoryAndStartupGuard() throws Exception {
+        Path dataDirectory = temporaryDirectory.resolve("data");
+        Path backupDirectory = temporaryDirectory.resolve("unreadable-maintenance-backup");
+        manager.executeInput("backup path/" + backupDirectory);
+        manager.executeInput("update id/001 cond/7");
+        byte[] equipmentBefore = Files.readAllBytes(dataDirectory.resolve("equipment.txt"));
+        Path maintenanceDirectory = Files.createDirectory(dataDirectory.resolve("maintenance.txt"));
+        Path retainedFile = maintenanceDirectory.resolve("keep.txt");
+        Files.writeString(retainedFile, "Keep this file.");
+        EqmManager broken = new EqmManager(dataDirectory);
+        output.reset();
+
+        broken.executeInput("restore path/" + backupDirectory);
+
+        assertTrue(printed().contains("maintenance data could not be loaded"));
+        output.reset();
+        broken.executeInput("list");
+        assertTrue(printed().contains("Could not load saved data: maintenance.txt:"));
+        broken.executeInput("bye");
+        assertTrue(Files.isDirectory(maintenanceDirectory));
+        assertEquals("Keep this file.", Files.readString(retainedFile));
+        assertArrayEquals(equipmentBefore, Files.readAllBytes(dataDirectory.resolve("equipment.txt")));
+    }
+
+    @Test
+    void restoreCommand_afterMaintenanceRepairAndRestart_retainsHistoryAndAllowsFurtherRecords() throws Exception {
+        Path dataDirectory = temporaryDirectory.resolve("data");
+        Path maintenanceFile = dataDirectory.resolve("maintenance.txt");
+        manager.executeInput("maintain id/001 date/01-01-20 work/Checked camera outcome/Completed");
+        byte[] validMaintenance = Files.readAllBytes(maintenanceFile);
+        Path backupDirectory = temporaryDirectory.resolve("repaired-maintenance-backup");
+        manager.executeInput("backup path/" + backupDirectory);
+        Files.writeString(maintenanceFile, "broken record\n");
+        EqmManager broken = new EqmManager(dataDirectory);
+        broken.executeInput("restore path/" + backupDirectory);
+        broken.executeInput("bye");
+        Files.write(maintenanceFile, validMaintenance);
+        EqmManager repaired = new EqmManager(dataDirectory);
+        output.reset();
+
+        repaired.executeInput("restore path/" + backupDirectory);
+
+        assertTrue(printed().contains("[OK] Backup restored successfully"));
+        assertArrayEquals(validMaintenance, Files.readAllBytes(maintenanceFile));
+        repaired.executeInput("maintain id/001 date/02-01-20 work/Cleaned camera outcome/Completed");
+        repaired.executeInput("bye");
+        EqmManager restarted = new EqmManager(dataDirectory);
+        restarted.executeInput("bye");
+        assertEquals(2, Files.readAllLines(maintenanceFile).size());
+        assertTrue(Files.readString(maintenanceFile).contains("work/Checked camera"));
+        assertTrue(Files.readString(maintenanceFile).contains("work/Cleaned camera"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"equipment.txt", "loans.txt", "bundles.txt"})
+    void restoreCommand_otherLoadingError_recoversWithoutChangingMaintenance(String damagedFile) throws Exception {
+        Path dataDirectory = temporaryDirectory.resolve("data");
+        Path maintenanceFile = dataDirectory.resolve("maintenance.txt");
+        manager.executeInput("maintain id/001 date/01-01-20 work/Checked camera outcome/Completed");
+        byte[] maintenanceBefore = Files.readAllBytes(maintenanceFile);
+        Path backupDirectory = temporaryDirectory.resolve("other-loading-error-backup");
+        manager.executeInput("backup path/" + backupDirectory);
+        Files.writeString(dataDirectory.resolve(damagedFile), "broken record\n");
+        EqmManager broken = new EqmManager(dataDirectory);
+        output.reset();
+
+        broken.executeInput("restore path/" + backupDirectory);
+        broken.executeInput("list loans");
+        broken.executeInput("bye");
+
+        assertTrue(printed().contains("[OK] Backup restored successfully"));
+        assertTrue(printed().contains("1 loan."));
+        assertFalse(printed().contains("Could not load saved data"));
+        assertArrayEquals(maintenanceBefore, Files.readAllBytes(maintenanceFile));
     }
 
     /** Returns captured command output without relying on table spacing. */

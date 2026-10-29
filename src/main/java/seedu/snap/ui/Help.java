@@ -380,6 +380,8 @@ public final class Help {
                         All bundles and their saved memberships are cleared. Maintenance records remain unchanged.
                         A failed restore attempts to restore the previous saved records; report any rollback error.
                         Restore is available after a startup loading error. Other commands are blocked except bye.
+                        If maintenance did not load, restore is blocked too. Exit with bye, preserve and repair
+                        or recover data/maintenance.txt separately, then restart.
                         """)),
                 new CommandHelp("help", "General", lineEndings("""
                         HELP

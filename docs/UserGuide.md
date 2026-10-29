@@ -736,9 +736,10 @@ tampered with, malformed, incomplete, duplicated or inconsistent, the restore is
 and in-memory state remain unchanged. Successful restores clear all current bundles and saved bundle memberships
 because bundles are not included in the backup. Maintenance records are left unchanged.
 
-`restore` is also available after a startup loading error. A valid equipment-and-loan backup can repair those records.
-It does not repair or reload maintenance. If startup reports damaged maintenance data, exit with `bye`, preserve a
-copy of the damaged file, and repair or recover `data/maintenance.txt` separately before restarting.
+`restore` can recover equipment, loan or bundle loading errors when maintenance loaded successfully.
+If maintenance failed to load, `restore` is rejected before any live files change because the backup does not
+contain maintenance records. Other commands remain blocked, and `bye` exits without saving. Preserve a copy of
+the damaged file, then repair or recover `data/maintenance.txt` separately before restarting.
 
 ## Diagnostic logs
 
