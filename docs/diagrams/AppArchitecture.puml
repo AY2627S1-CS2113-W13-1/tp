@@ -16,9 +16,10 @@ component "Help" as Help
 component "Loans\nLoanHandler" as Loans
 component "Equipment\nEquipmentHandler" as Equipment
 component "Bundles\nBundleHandler" as Bundles
+component "Maintenance\nMaintenanceHandler" as Maintenance
 
-component "File storage\nEquipmentStorage, BundleStorage\nLoanStorage, LoanReturnStorage" as Storage
-artifact "Data files (data/)\nequipment.txt, bundles.txt\nloans.txt, loan-sequence.txt" as Files
+component "File storage\nEquipmentStorage, BundleStorage\nLoanStorage, LoanReturnStorage\nMaintenanceStorage" as Storage
+artifact "Data files (data/)\nequipment.txt, bundles.txt\nloans.txt, loan-sequence.txt\nmaintenance.txt" as Files
 
 Startup ..> Manager : starts
 Startup .right.> Logging : starts / closes
@@ -27,11 +28,14 @@ Manager .right.> Help : displays help
 Manager ..> Loans
 Manager ..> Equipment
 Manager ..> Bundles
+Manager ..> Maintenance
 Loans .right.> Equipment : inventory
 Bundles .left.> Equipment : inventory
+Maintenance ..> Equipment : identity lookup
 Equipment ..> Storage : loads / saves
 Loans ..> Storage : loads / saves
 Bundles ..> Storage : loads / saves
+Maintenance ..> Storage : loads / saves
 Storage ..> Files : reads / writes
 
 legend bottom left
