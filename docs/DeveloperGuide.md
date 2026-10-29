@@ -497,6 +497,9 @@ words before lookup. This does not make other command names or fields case-insen
 
 [PlantUML source](diagrams/HelpSequence.puml)
 
+The `out:PrintStream` lifeline represents the instance referenced by `System.out`. The note records the visible
+console output; dashed return arrows show control returning from `Help.print(...)` and `EqmManager.executeInput(...)`.
+
 `Help` is a utility class containing an immutable list of command descriptions. The compact menu, command-specific
 help and complete reference use this list, so changes to a command remain consistent in all three views. It uses immutable
 equipment limits and damage enums when constructing the text, so those values come from the model. Printing help

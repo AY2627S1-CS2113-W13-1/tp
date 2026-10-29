@@ -7,7 +7,11 @@ skinparam maxMessageSize 210
 actor User
 participant ":EqmManager" as Manager
 participant "Help" as Help <<utility>>
-participant "System.out" as Output
+participant "out:PrintStream" as Output
+note over Output
+System.out refers to this
+PrintStream instance.
+end note
 
 User -> Manager: executeInput("help list overdue")
 activate Manager
@@ -30,7 +34,11 @@ Help -> Output: print(command description)
 else unknown topic
 Help -> Output: print(error and compact menu)
 end
-Output --> User: requested help or topic error
+note over Output
+The printed help or topic error
+appears in the console.
+end note
+Help --> Manager: printing complete
 deactivate Help
 Manager --> User: ready for the next command
 deactivate Manager
