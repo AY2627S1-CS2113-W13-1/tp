@@ -3,8 +3,9 @@
 snAp is a command-line application for photography-club equipment officers. It tracks equipment,
 loans, returns, bundles and maintenance records.
 
-This repository contains the development build. Use documentation from the same version as your JAR;
-older releases may not support every command described here.
+The [User Guide Quick Start](docs/UserGuide.md#quick-start) explains how to run the v2.0 JAR.
+The setup below is for building and testing from source. Use documentation from the same version as your JAR;
+older releases may not support every command described in the guides.
 
 ## Setup
 
