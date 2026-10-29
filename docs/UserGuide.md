@@ -158,7 +158,8 @@ Example: `add i/Canon EOS R10 id/001 type/camera cond/1 remarks/Handle with care
 **Condition and availability are separate:** even an item added with `cond/10` starts as `Available`.
 Borrowing is controlled by its [availability status](#equipment-availability), not a numeric threshold.
 
-Success prints `Equipment added successfully.` The item appears at the end of `list` and is saved automatically.
+Success prints `[OK] Equipment <ITEM ID> added.` followed by the item's name, type, condition and status.
+The item appears at the end of `list` and is saved automatically.
 Adding an existing Item ID does not replace its equipment; use `update` to correct the existing item's details.
 
 For example, with Item ID `001` already present:
