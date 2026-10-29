@@ -548,7 +548,8 @@ ignoring case. A matching `type/` on its own is accepted without changing any de
 Updates keep the item in its current list position and retain its subtype details, damage, remarks,
 availability, loan history and bundle memberships. These other details cannot be edited with `update`.
 
-Success prints `Equipment with item ID 001 updated successfully.` for Item ID `001` and saves the changes.
+Success prints `[OK] Equipment 001 updated.` for Item ID `001`, followed by the item's name, type, condition and
+status, and saves the changes.
 With `001` registered as a camera, these commands are rejected:
 
 | Command | Error |
