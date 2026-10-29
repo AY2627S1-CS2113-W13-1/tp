@@ -10,42 +10,33 @@ title: User Guide
 snAp helps photography-club equipment officers track shared gear, maintenance and borrowing through typed commands.
 It helps you find available items, avoid double borrowing and retain equipment, maintenance, loan and bundle records between sessions.
 
-**Version:** This guide describes the development build on `master`, including features added after
-[v1.0](https://github.com/AY2627S1-CS2113-W13-1/tp/releases/tag/v1.0). The v1.0 JAR does not support every command
-below. Use the matching development build for these examples.
+**Version:** This guide describes snAp v2.1. Use it with the `v2.1` JAR; earlier releases do not support
+every command below.
 
 ## Quick Start
 
 1. Install Java 25 and check that `java -version` reports version 25.
-2. Download the [development source ZIP](https://github.com/AY2627S1-CS2113-W13-1/tp/archive/refs/heads/master.zip)
-   and extract it. The first Gradle run needs internet access to download build dependencies.
-3. Open a terminal in the extracted project folder and run the command for your shell.
-
-   **macOS/Linux:**
+2. Open the [release downloads](https://github.com/AY2627S1-CS2113-W13-1/tp/releases), select `v2.1`,
+   and download `snAp.jar` under **Assets**. If `v2.1` is not listed, that release has not been published yet.
+3. Put `snAp.jar` in a folder where you can create and update files. Open a terminal in that folder.
+   Use the same working folder each time to load the same saved records.
+4. Run this command in Windows PowerShell, macOS Terminal or a Linux terminal:
 
    ```sh
-   ./gradlew run --console=plain --quiet
+   java -jar snAp.jar
    ```
 
-   **Windows PowerShell:**
+   Start snAp from the terminal so that you can enter commands and read the results; double-clicking the
+   JAR may not open a usable command window.
+5. Enter one command per line. Use `help` for the menu, `help loan` for a command's details, and `bye`
+   to save and exit.
 
-   ```powershell
-   .\gradlew.bat run --console=plain --quiet
-   ```
+snAp creates `data/` and `logs/` relative to the terminal's working folder. Keep that folder writable and
+retain `data/` between runs. Use a separate folder with no `data/` directory when trying the examples with
+an empty inventory. No internet connection is needed for normal commands after downloading the JAR.
 
-   The plain, quiet console hides Gradle progress messages while keeping application prompts, results and errors.
-4. Enter one command per line. Use `help` for the menu and `bye` to save and exit.
-
-To run a packaged build, use `./gradlew shadowJar` on macOS/Linux or `.\gradlew.bat shadowJar` in PowerShell.
-This produces `build/libs/snAp.jar`. Copy it to your chosen working folder and run:
-
-```sh
-java -jar snAp.jar
-```
-
-[Published release downloads](https://github.com/AY2627S1-CS2113-W13-1/tp/releases) contain versioned JARs.
-Use the documentation from the same version as the JAR. No internet connection is needed for normal commands
-once a build is installed.
+For a development build, follow the [source setup and build instructions in the README](https://github.com/AY2627S1-CS2113-W13-1/tp/blob/master/README.md#setup).
+Building from source requires JDK 25 and internet access on the first Gradle run.
 
 ## Getting help: `help`
 
