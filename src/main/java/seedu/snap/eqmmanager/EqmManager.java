@@ -180,7 +180,7 @@ public class EqmManager {
             } catch (BundleAdditionUnsuccessful e) {
                 ConsoleOutput.error(e.getMessage());
             }
-        } else if (normalizedInput.equals("list") || normalizedInput.startsWith("list ")) {
+        } else if (normalizedInput.equals("list")) {
             equipment.viewAllEquipment();
         } else {
             ConsoleOutput.error("Command not recognised. Type help for available commands.");
