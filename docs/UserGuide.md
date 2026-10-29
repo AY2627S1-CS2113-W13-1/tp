@@ -705,8 +705,9 @@ Existing loan records without loan IDs are assigned IDs in file order on first l
 These IDs remain stable on later restarts. The sequence file preserves the next unused ID even when loan records
 are deleted. Equipment records retain their details and remarks; loan associations are restored from the loan records.
 
-To transfer your records, save with `bye`, then copy `data/equipment.txt`, `data/loans.txt`, `data/loan-sequence.txt`,
-`data/bundles.txt` and `data/maintenance.txt` to the same location on the other computer. If a file cannot be read
+To transfer your records, save with `bye`, then copy `data/equipment.txt`, `data/loans.txt`,
+`data/loan-sequence.txt` and `data/maintenance.txt` to the same location on the other computer. Copy
+`data/bundles.txt` as well when bundles have been created. If a file cannot be read
 or contains invalid or duplicate records, the application reports the problem and accepts only `restore` or `bye`.
 Use `restore` to recover from a valid backup, or `bye` to exit before correcting the saved files. In this state,
 `bye` exits without saving over the damaged files.
