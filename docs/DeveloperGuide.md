@@ -1072,7 +1072,9 @@ These requirements apply to a single user running one local instance of snAp.
 
 Use Java 25 and a build matching this development guide. Copy the JAR to a separate test folder with no
 `data/` directory, then start it there with `java -jar snAp.jar`. Each command below is one line.
-The examples form one test path; IDs assume this fresh data set. Keep real club records in a different folder.
+The examples from **Help and sample equipment** through **Backup and restore** form one test path;
+IDs assume this fresh data set. The full-detail and compatibility checks each use their own separate folder.
+Keep real club records in a different folder.
 
 The [User Guide](UserGuide.md) supplies field rules and further input examples. This path focuses on state
 changes, interactions and restart behaviour rather than repeating the command reference.
@@ -1183,6 +1185,48 @@ The first backup succeeds. Restoration resets item `003` to condition `3` and re
 It clears current bundles because they are outside this backup format. The repeated backup and missing
 restore path are rejected without changing the restored data. Restart once more and use `list bundles`
 to confirm that the cleared bundle state was saved.
+
+### Full equipment details in a separate folder
+
+Start the JAR in a new folder with no `data/` directory. This check does not use or change the records from
+the main test path above.
+
+```text
+add i/Photography club camera reserved for outdoor event assignments id/001 type/camera cond/2 sensor/APS-C mount/Canon RF thread/1/4 inch battery/Li-ion remarks/Keep the lens cap and labelled shoulder strap with this camera when it is returned to the equipment cupboard.
+list
+show id/001
+bye
+```
+
+The addition succeeds. `list` shows one available camera and shortens its name with `...`.
+`show id/001` displays the complete name and remarks, wrapping long text without removing any characters.
+It also shows condition `2`, status `Available`, serviceability `yes`, active Loan ID `(none)`, sensor format
+`APS-C`, lens mount `Canon RF`, tripod thread `1/4 inch`, battery type `Li-ion` and damage `NONE`.
+Neither query changes the item. Restart in this same folder and repeat `show id/001`; all values must match.
+
+### Bundle compatibility in a separate folder
+
+Start the JAR in another new folder with no `data/` directory. This check has four equipment items and one
+bundle of its own, so its IDs do not affect either earlier test folder.
+
+```text
+add i/RF camera id/001 type/camera cond/1 sensor/APS-C mount/Canon RF battery/Li-ion
+add i/F mount lens id/002 type/lens cond/2 mount/Nikon F sensor/APS-C
+add i/RF lens id/003 type/lens cond/2 mount/Canon RF sensor/APS-C
+add i/Spare battery id/004 type/battery cond/3 battery/Li-ion
+add-bundle name/Compatibility kit
+add-to-bundle id/001 001 002 003 004
+list bundles
+show id/002
+bye
+```
+
+All four additions and bundle creation succeed. Adding the items produces three successful memberships
+and one failure: lens `002` is rejected because its `Nikon F` mount conflicts with camera `001`'s `Canon RF`
+mount. The compatible lens and battery are still accepted after that rejection.
+`list bundles` shows one complete bundle containing exactly `001`, `003` and `004`. `show id/002` confirms
+that the rejected lens remains in the inventory and is still `Available`. After `bye`, restart in this
+same folder and run `list bundles` again; the same three memberships and complete composition must remain.
 
 ### Logging and input recovery
 
