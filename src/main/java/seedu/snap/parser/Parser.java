@@ -9,14 +9,14 @@ public class Parser {
 
     /**
      * Reads one command, separating the input prompt from the surrounding application output.
-     * @return the next line entered by the user
+     * @return the next line entered by the user, or null when the input stream has ended
      */
     public String getInput() {
         System.out.println();
         System.out.println(INPUT_DIVIDER);
         System.out.print("snAp > ");
         System.out.flush();
-        String input = scanner.nextLine();
+        String input = scanner.hasNextLine() ? scanner.nextLine() : null;
         // Start a fresh line even when redirected input is not echoed by a terminal.
         System.out.println();
         System.out.println(INPUT_DIVIDER);

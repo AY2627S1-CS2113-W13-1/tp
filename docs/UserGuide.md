@@ -661,6 +661,9 @@ Successful loan additions, updates, returns and deletions are saved in
 `data/loans.txt`, the next unused loan ID is saved in `data/loan-sequence.txt`, and bundle memberships are saved
 in `data/bundles.txt`. Records are loaded when the application starts again. A final save is also attempted when
 `bye` is entered; if it fails, the application reports the affected file and lets you retry.
+If console input ends, the application attempts the same final save once and exits. If that save fails,
+it reports the affected files and warns about unsaved changes before stopping; it cannot accept a retry
+without input. Resolve the storage problem and check the saved records before restarting.
 The data directory and the equipment, loan, sequence and maintenance files are created when they are first saved,
 including during the final save performed by `bye`. `bundles.txt` is created when bundle data is first saved and may
 be absent if no bundles have been created.
@@ -758,7 +761,7 @@ Successful changes start with `[OK]`; rejected commands and save failures start 
 * Saves are written to temporary files before replacing the saved records, preserving previous records if writing fails.
 * Command validation errors show an `[ERROR]` message and let you enter another command at the command prompt.
 * If saved records cannot be loaded, only `restore` and `bye` are available. `bye` exits without saving in this state.
-  The application stops if console input is no longer available.
+  If console input ends in this state, the application also exits without saving.
 
 ## Command Summary
 
