@@ -405,6 +405,9 @@ public final class Help {
                         Saves equipment, loans, maintenance records and bundles before exiting. A save failure keeps
                         the application running; fix the reported file problem and retry bye.
                         After a startup loading error, bye exits without saving the failed data set.
+                        If input ends, the same final save is attempted once. A failed save is reported and the
+                        application exits with unsaved changes instead of retrying without input.
+                        After a startup loading error, the end of input also exits without saving.
                         """)));
     }
 

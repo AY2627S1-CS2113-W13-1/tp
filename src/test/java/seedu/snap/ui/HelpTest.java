@@ -516,6 +516,9 @@ class HelpTest {
         assertTrue(proseFor("help").contains("help list member is an alias for help list borrower."));
         assertTrue(proseFor("bye").contains(
                 "After a startup loading error, bye exits without saving the failed data set."));
+        assertTrue(proseFor("bye").contains("If input ends, the same final save is attempted once."));
+        assertTrue(proseFor("bye").contains(
+                "After a startup loading error, the end of input also exits without saving."));
         assertFalse(text.contains("Format: repair"));
         assertFalse(text.contains("No arguments are accepted."));
     }

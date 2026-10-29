@@ -882,6 +882,12 @@ after `run()` finishes or throws. Feature classes obtain loggers by full class n
 `Logger.getLogger(EquipmentHandler.class.getName())`; their names inherit the shared `seedu.snap`
 configuration.
 
+`Parser.getInput()` returns `null` when the console input stream ends. `EqmManager.run()` stops the loop
+and attempts the normal final save once, unless a startup loading error requires the saved files to remain
+untouched. A failed end-of-input save reports unsaved changes and returns without a successful goodbye;
+the manager cannot retry when there is no input. An explicit `bye` still keeps the loop running after a
+save failure so the user can resolve the problem and retry.
+
 The package logger and its `FileHandler` accept `FINER` and higher levels. `SimpleFormatter` writes
 under the working directory's `logs/` folder, with two rotating files, normally `snap.log.0` and
 `snap.log.1`, at approximately 1,000,000 bytes each. Append mode retains existing records across runs;

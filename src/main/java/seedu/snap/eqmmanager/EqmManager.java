@@ -196,7 +196,7 @@ public class EqmManager {
         }
     }
 
-    /** Runs the main input and execution loop until the user exits. */
+    /** Runs commands until bye or the end of input, preserving final saves and startup error protection. */
     public void run() {
         if (startupError != null) {
             ConsoleOutput.error("Could not load saved data: " + startupError);
@@ -212,7 +212,16 @@ public class EqmManager {
         String input;
         while (isRunning) {
             input = parser.getInput();
-            executeInput(input);
+            if (input == null) {
+                isRunning = false;
+                if (startupError == null && !saveBeforeExit()) {
+                    ConsoleOutput.error("Input has ended. Exiting with unsaved changes. "
+                            + "Check the saved files and resolve the reported storage problem before restarting.");
+                    return;
+                }
+            } else {
+                executeInput(input);
+            }
         }
 
         ConsoleOutput.success("Goodbye.");
