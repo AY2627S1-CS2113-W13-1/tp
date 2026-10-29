@@ -79,8 +79,10 @@ class BackupIntegrationTest {
 
         assertTrue(printed().contains("Invalid format"));
         output.reset();
-        manager.executeInput("list loans b/111");
+        manager.executeInput("list borrower/111");
+        assertTrue(printed().contains("Equipment currently held by borrower ID 111:"));
         assertTrue(printed().contains("001"));
+        assertTrue(printed().contains("1 loan."));
     }
 
     /** Returns captured command output without relying on table spacing. */
