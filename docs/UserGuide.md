@@ -392,6 +392,20 @@ Older saved returned loans may lack enough information to prove which item they 
 in `list loans` and are excluded from item-specific histories. If they use the queried Item ID, the history view
 explains this and points to `list loans`. Existing active loans can be associated with the current item when loaded.
 
+## Viewing an equipment summary: `summary`
+
+Format: `summary id/[ITEM ID]`
+
+Example: `summary id/001`
+
+The summary displays exactly one equipment item's permanent identity, name, type, condition, current status,
+serviceability, remarks, subtype details and associated loan history. It also includes sections for maintenance,
+status and storage-location information when those records exist. When optional information is unavailable, the
+summary prints a clear empty-section message instead of failing.
+
+The command is read-only. It does not change equipment, loan records, histories or saved files, and the summary
+remains correct after restarting the application. Unknown or invalid Item IDs are rejected.
+
 ## Viewing overdue loans: `list overdue`
 
 Format: `list overdue`
@@ -776,6 +790,10 @@ Successful changes start with `[OK]`; rejected commands and save failures start 
 | List equipment | `list` |
 | Show full equipment details | `show id/<ITEM ID>` |
 | List loans | `list loans` |
+| View issue-time equipment condition | `view loan/[LOAN ID]` |
+| View item loan history | `history id/[ITEM ID]` |
+| View bundle loan history | `history bundle/id/[BUNDLE ID]` or `history bundle/name/[NAME]` |
+| View equipment summary | `summary id/[ITEM ID]` |
 | View a borrower's current equipment | `list borrower/<BORROWER ID>` (alias `list member/<BORROWER ID>`) |
 | View issue-time equipment condition | `view loan/<LOAN ID>` |
 | Back up equipment and loan records | `backup path/<DIRECTORY>` |

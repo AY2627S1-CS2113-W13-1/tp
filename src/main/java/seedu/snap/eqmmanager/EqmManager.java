@@ -17,9 +17,11 @@ import seedu.snap.exceptions.BundleHistoryUnsuccessful;
 import seedu.snap.exceptions.BackupUnsuccessful;
 import seedu.snap.equipment.EquipmentFilter;
 import seedu.snap.equipment.EquipmentHandler;
+import seedu.snap.equipment.EquipmentSummary;
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
 import seedu.snap.exceptions.EquipmentFilteringUnsuccessful;
+import seedu.snap.exceptions.EquipmentSummaryUnsuccessful;
 import seedu.snap.exceptions.EquipmentUpdateUnsuccessful;
 import seedu.snap.exceptions.EquipmentViewingUnsuccessful;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
@@ -150,6 +152,8 @@ public class EqmManager {
             recordMaintenance(normalizedInput);
         } else if (normalizedInput.startsWith("history bundle/")) {
             viewBundleLoanHistory(normalizedInput);
+        } else if (normalizedInput.matches("(?sU)summary(?:\\s.*)?")) {
+            viewEquipmentSummary(normalizedInput);
         } else if (normalizedInput.matches("(?sU)history(?:\\s.*)?")) {
             viewLoanHistory(normalizedInput);
         } else if (normalizedInput.matches("(?U)view(?:\\s.*)?")) {
@@ -426,6 +430,20 @@ public class EqmManager {
             bundles.viewBundleLoanHistory(input, loans);
         } catch (BundleHistoryUnsuccessful exception) {
             ConsoleOutput.error(exception.getMessage());
+        }
+    }
+
+    /** Displays a complete read-only summary for one physical equipment item. */
+    private void viewEquipmentSummary(String input) {
+        try {
+            Equipment selected = equipment.getEquipmentForSummary(input);
+            List<Loan> history = loans.getLoanHistory("history id/" + selected.getItemId());
+            EquipmentSummary summary = new EquipmentSummary(selected, history);
+            System.out.print(summary.format());
+            logger.log(Level.INFO, "Viewed equipment summary for item ID {0}.", selected.getItemId());
+        } catch (EquipmentSummaryUnsuccessful | LoanHistoryUnsuccessful | IllegalArgumentException exception) {
+            logger.log(Level.FINE, "Equipment summary could not be displayed: {0}", exception.getMessage());
+            System.out.println(exception.getMessage());
         }
     }
 

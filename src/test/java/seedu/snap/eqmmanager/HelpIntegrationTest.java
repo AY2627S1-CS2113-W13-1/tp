@@ -177,6 +177,7 @@ class HelpIntegrationTest {
         "list borrower | Format: list borrower/<BORROWER ID>",
         "list overdue | Format: list overdue",
         "history | Format: history id/<ITEM ID>",
+        "summary | Format: summary id/<ITEM ID>",
         "filter | Format: filter [id/<ID>]",
         "update | Format: update id/<ID>",
         "maintain | Format: maintain id/<ITEM ID>",
