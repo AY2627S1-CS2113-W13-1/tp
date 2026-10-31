@@ -354,20 +354,29 @@ with its loan details. Returned loans are excluded. An unknown borrower or one w
 a clear message. The query leaves records unchanged.
 Dates, states and columns match `list loans`. Results end with a loan count, including `0 loans.` for an empty result.
 
-## Viewing the issue-time equipment condition: `view loan`
+<a id="viewing-the-issue-time-equipment-condition-view-loan"></a>
+
+## Comparing a loan's condition assessments: `view loan`
 
 Format: `view loan/<LOAN ID>`
 
 Example: `view loan/001`
 
-Use an existing loan ID from `001` to `999`. This displays the equipment type, numeric condition, damage and remarks captured when that loan was issued. The snapshot describes the equipment at issue time, not its current condition.
+Use the Loan ID shown by `list loans`. The command compares the equipment type, numeric condition and damage
+recorded when that loan was issued and returned, including saved serviceability. The two remarks are printed
+below the columns so long notes remain readable.
 
-Later equipment updates and return assessments do not change the saved snapshot. Reassigning an active loan to
-another item with `update loan` replaces the snapshot with that item's current assessment. Changing only the borrower
-or dates keeps the snapshot. Returned loans retain their snapshots. Older loan records created before this feature
-report that the issue condition was not recorded.
+* An active loan shows `Not returned` in the return column.
+* A returned loan shows its saved return assessment. Older loans without an assessment show `Not recorded`.
+* New loans record issue-time serviceability. Older records without that field show `Not recorded`, even if
+  their other issue-condition fields are present; the application does not infer historical values from current equipment.
 
-This is a read-only command. It does not change equipment, loans, availability or saved records. An invalid command or unknown loan ID produces an error without modifying any data.
+Reassigning an active loan to another item with `update loan` replaces its issue assessment with that item's current
+assessment. Changing only the borrower or dates keeps the existing assessment.
+
+Later equipment updates, returns and Item ID reuse do not change these saved assessments. Deleting the loan
+removes its history. This read-only command does not change records or saved files. Invalid commands and unknown
+Loan IDs produce an error.
 
 ## Viewing an item's loan history: `history`
 
@@ -409,13 +418,13 @@ This is a read-only command. It does not modify loan records, equipment availabi
 
 ## Returning equipment: `return`
 
-Format: `return loan/<LOAN ID> serviceable/<yes|no> damage/<DAMAGE> [remarks/<REMARKS>]`
+Format: `return loan/<LOAN ID> serviceable/<yes|no> damage/<DAMAGE> [cond/<CONDITION>] [remarks/<REMARKS>]`
 
 Examples:
 
 ```text
 return loan/001 serviceable/yes damage/none remarks/Checked on return
-return loan/002 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair
+return loan/002 serviceable/no damage/SENSOR_DAMAGE cond/8 remarks/Sensor needs repair
 return loan/003 serviceable/yes damage/none
 return loan/004 serviceable/no damage/OTHER remarks/Mounting plate damaged
 ```
@@ -427,11 +436,14 @@ return loan/004 serviceable/no damage/OTHER remarks/Mounting plate damaged
   The assessment determines whether the equipment may be borrowed again; damage alone does not decide this.
 * `damage/` must use a value from the equipment type's damage table under **Adding equipment**.
   Values are case-insensitive. Use `none` when no damage is found.
+* Optional `cond/` follows `damage/` and accepts a whole number from `1` to `10`, once only.
+  If omitted, the item's current numeric rating is copied into the return assessment.
 * `remarks/` must be last. For `damage/OTHER`, provide non-empty text after trimming.
   For other damage values, omit it or supply empty text to clear previous remarks. Remarks may contain up to 200
   characters after trimming. All text after `remarks/`, including prefix-like text, is treated as remarks.
-* The assessment replaces the item's previous damage and remarks. Its name, numeric condition, type-specific
-  attributes and existing bundle memberships are retained. The numeric condition can be changed separately with `update`.
+* The assessment updates the item's damage, remarks and serviceability, and its numeric condition if `cond/` is given.
+  Its name, type-specific attributes and bundle memberships are retained. A separate immutable copy is stored with
+  that Loan ID, alongside the issue assessment; use `view loan/<LOAN ID>` to compare them after later changes or restarts.
 
 A successful return keeps the loan record and its ID, displays its state as `Returned`, and clears its active
 equipment link. The success message shows the Loan ID, item ID and name, and the item's resulting `Available`
@@ -770,14 +782,14 @@ Successful changes start with `[OK]`; rejected commands and save failures start 
 | Add equipment | `add i/<NAME> id/<ITEM ID> type/<TYPE> cond/<CONDITION>` with optional details, damage and remarks |
 | Delete equipment | `delete item/<ITEM ID>` |
 | Add loan | `loan id/<ITEM ID> b/<BORROWER ID> [issued/<DD-MM-YY>] due/<DD-MM-YY>` |
-| Return equipment | `return loan/<LOAN ID> serviceable/<VALUE> damage/<DAMAGE> [remarks/<REMARKS>]` |
+| Return equipment | `return loan/<LOAN ID> serviceable/<yes\|no> damage/<DAMAGE> [cond/<CONDITION>] [remarks/<REMARKS>]` |
 | Delete loan | `delete loan/<LOAN ID>` |
 | Update loan | `update loan/<LOAN ID> [id/<ITEM ID>] [b/<BORROWER ID>] [issued/<DD-MM-YY>] [due/<DD-MM-YY>]` |
 | List equipment | `list` |
 | Show full equipment details | `show id/<ITEM ID>` |
 | List loans | `list loans` |
 | View a borrower's current equipment | `list borrower/<BORROWER ID>` (alias `list member/<BORROWER ID>`) |
-| View issue-time equipment condition | `view loan/<LOAN ID>` |
+| Compare loan condition assessments | `view loan/<LOAN ID>` |
 | Back up equipment and loan records | `backup path/<DIRECTORY>` |
 | Restore equipment and loan records | `restore path/<DIRECTORY>` |
 | View item loan history | `history id/<ITEM ID>` |

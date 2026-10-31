@@ -134,7 +134,7 @@ public abstract class Equipment {
 
     /**
      * Commits a validated return assessment without replacing references held by loans and bundles.
-     * The assessment cannot change equipment identity, subtype attributes, name, or condition.
+     * The assessment can change condition, damage, remarks and serviceability, preserving item identity.
      *
      * @param assessed detached proposal whose persistent values have already been saved
      * @throws IllegalArgumentException if the proposal belongs to different equipment
@@ -143,12 +143,14 @@ public abstract class Equipment {
         if (assessed == null || assessed.getClass() != getClass()
                 || !itemId.equals(assessed.itemId) || !recordId.equals(assessed.recordId)
                 || !itemName.equals(assessed.itemName)
-                || condition != assessed.condition || assessed.remarks == null
+                || assessed.condition < MIN_CONDITION || assessed.condition > MAX_CONDITION
+                || assessed.remarks == null
                 || assessed.remarks.length() > MAX_REMARKS_LENGTH
                 || assessed.remarks.matches("(?s).*\\R.*")) {
             throw new IllegalArgumentException("The return assessment must belong to the same equipment.");
         }
         applyDamageAssessment(assessed);
+        condition = assessed.condition;
         remarks = assessed.remarks;
         isServiceable = assessed.isServiceable;
     }

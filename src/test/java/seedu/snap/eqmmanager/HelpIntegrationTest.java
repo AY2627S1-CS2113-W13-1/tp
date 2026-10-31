@@ -232,7 +232,7 @@ class HelpIntegrationTest {
 
         assertTrue(printedContent().contains("Format: view loan/<LOAN ID>"));
         assertTrue(printedContent().contains("Example: view loan/001"));
-        assertTrue(printedContent().contains("Legacy loans without a saved snapshot"));
+        assertTrue(printedContent().contains("Missing legacy assessments"));
         assertFalse(printedContent().contains("Unknown help topic"));
         assertFalse(printedContent().contains("Format: loan id/"));
         assertEquals(before, snapshot(manager));

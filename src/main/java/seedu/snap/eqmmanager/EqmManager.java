@@ -153,7 +153,7 @@ public class EqmManager {
         } else if (normalizedInput.matches("(?sU)history(?:\\s.*)?")) {
             viewLoanHistory(normalizedInput);
         } else if (normalizedInput.matches("(?U)view(?:\\s.*)?")) {
-            viewLoanIssueCondition(normalizedInput);
+            viewLoanAssessments(normalizedInput);
         } else if (normalizedInput.matches("(?U)update\\s+loan(?:\\s.*|/.*)?")) {
             updateLoan(normalizedInput);
         } else if (normalizedInput.matches("(?sU)list\\s+(?:borrower|member)(?:/.*|\\s.*)?")) {
@@ -260,10 +260,10 @@ public class EqmManager {
 
     // @@author Rohita-29
 
-    /** Displays a loan's issue-time equipment condition. */
-    private void viewLoanIssueCondition(String input) {
+    /** Displays a loan's saved issue and return assessments. */
+    private void viewLoanAssessments(String input) {
         try {
-            loans.viewLoanIssueCondition(input);
+            loans.viewLoanAssessments(input);
         } catch (LoanViewingUnsuccessful exception) {
             ConsoleOutput.error(exception.getMessage());
         }

@@ -43,8 +43,9 @@ class HelpTest {
                 Arguments.of("delete item", "delete item/<ID>", "delete item/001"),
                 Arguments.of("loan", "loan id/<ITEM ID> b/<BORROWER ID> [issued/<DD-MM-YY>] due/<DD-MM-YY>",
                         "loan id/001 b/002 issued/24-10-26 due/31-10-26"),
-                Arguments.of("return", "return loan/<LOAN ID> serviceable/<yes|no> damage/<DAMAGE> [remarks/<TEXT>]",
-                        "return loan/001 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair"),
+                Arguments.of("return", "return loan/<LOAN ID> serviceable/<yes|no> damage/<DAMAGE> "
+                        + "[cond/<N>] [remarks/<TEXT>]",
+                        "return loan/001 serviceable/no damage/SENSOR_DAMAGE cond/8 remarks/Sensor needs repair"),
                 Arguments.of("delete loan", "delete loan/<LOAN ID>", "delete loan/001"),
                 Arguments.of("update loan", "update loan/<LOAN ID> [id/<ITEM ID>] [b/<BORROWER ID>]"
                                 + " [issued/<DD-MM-YY>] [due/<DD-MM-YY>]",
@@ -191,7 +192,8 @@ class HelpTest {
     void getText_all_separatesEveryCommandWithSpacedFullWidthHeadingBands() {
         List<String> lines = Help.getText("all").lines().toList();
         List<String> headings = List.of("ADD EQUIPMENT", "LIST EQUIPMENT", "SHOW EQUIPMENT", "DELETE EQUIPMENT",
-                "ADD LOAN", "RETURN EQUIPMENT", "DELETE LOAN", "UPDATE LOAN", "LIST LOANS", "VIEW LOAN ISSUE CONDITION",
+                "ADD LOAN", "RETURN EQUIPMENT", "DELETE LOAN", "UPDATE LOAN", "LIST LOANS",
+                "VIEW LOAN CONDITION ASSESSMENTS",
                 "EQUIPMENT HELD BY MEMBER", "LIST OVERDUE LOANS", "ITEM LOAN HISTORY", "FILTER EQUIPMENT",
                 "UPDATE EQUIPMENT", "RECORD MAINTENANCE", "CREATE BUNDLE", "ADD EQUIPMENT TO BUNDLE",
                 "REMOVE EQUIPMENT FROM BUNDLE", "LIST BUNDLES", "BUNDLE LOAN HISTORY", "BACK UP DATA", "RESTORE DATA",
@@ -364,14 +366,13 @@ class HelpTest {
     }
 
     @Test
-    void getText_viewLoan_explainsCapturedConditionLegacyRecordsAndReadOnlyBehaviour() {
+    void getText_viewLoan_explainsAssessmentsLegacyRecordsAndReadOnlyBehaviour() {
         String text = proseFor("view loan");
 
         assertTrue(text.contains(
-                "Shows the equipment type, condition, damage and remarks recorded when the loan was issued."));
+                "Compares the saved issue and return type, condition, damage and remarks for one loan."));
         assertTrue(text.contains(
-                "Legacy loans without a saved snapshot report that the issue condition was not recorded."));
-        assertTrue(text.contains("this shows the replacement's condition at reassignment."));
+                "Active loans show Not returned. Missing legacy assessments show Not recorded."));
         assertTrue(text.contains("This read-only command does not change equipment, loans or saved records."));
     }
 

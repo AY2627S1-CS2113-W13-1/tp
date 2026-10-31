@@ -21,6 +21,10 @@ public class Loan {
     private LocalDateTime issuedDate;
     private LocalDateTime dueDate;
     private boolean isReturned;
+    /** Null for active loans and older returned loans without a recorded assessment. */
+    private LoanReturnAssessment returnAssessment;
+    /** Serviceability captured at issue; null means older records did not save this information. */
+    private Boolean issueServiceability;
 
     // @@author Rohita-29
 
@@ -94,6 +98,22 @@ public class Loan {
         this.issueConditionSnapshot = issueConditionSnapshot;
     }
 
+    /** Restores a saved assessment as returned history without attaching current equipment. */
+    Loan(String loanId, String itemId, String borrowerId, LocalDateTime issuedDate,
+            LocalDateTime dueDate, String equipmentRecordId, EquipmentConditionSnapshot issueConditionSnapshot,
+            LoanReturnAssessment returnAssessment, Boolean issueServiceability) {
+        this(loanId, itemId, borrowerId, issuedDate, dueDate, equipmentRecordId, issueConditionSnapshot);
+        if (issueServiceability != null && issueConditionSnapshot == null) {
+            throw new IllegalArgumentException("Issue serviceability requires an issue-condition snapshot.");
+        }
+        this.issueServiceability = issueServiceability;
+        if (returnAssessment != null) {
+            validateReturnAssessment(returnAssessment);
+            this.returnAssessment = returnAssessment;
+            isReturned = true;
+        }
+    }
+
     /** Creates a legacy candidate without retaining or reserving its equipment before saving. */
     public Loan(Equipment equipment, String borrowerId, LocalDateTime issuedDate, LocalDateTime dueDate) {
         this(null, equipment, borrowerId, issuedDate, dueDate);
@@ -110,7 +130,36 @@ public class Loan {
                 dueDate,
                 equipment.getRecordId(),
                 EquipmentConditionSnapshot.fromEquipment(equipment));
+        issueServiceability = equipment.isServiceable();
         logger.log(Level.FINE, "Created loan candidate {0} for item ID {1}.", new Object[]{loanId, itemId});
+    }
+
+    /** Returns saved issue-time serviceability, or null when it was not recorded. */
+    public Boolean getIssueServiceability() {
+        return issueServiceability;
+    }
+
+    /** Returns the immutable return assessment, or null when none was recorded. */
+    public LoanReturnAssessment getReturnAssessment() {
+        return returnAssessment;
+    }
+
+    /** Records a successful return once; legacy returned records cannot be reassessed. */
+    void completeReturn(LoanReturnAssessment assessment) {
+        if (isReturned || assessment == null) {
+            throw new IllegalStateException("Only an active loan can receive a return assessment.");
+        }
+        validateReturnAssessment(assessment);
+        setReturned(true);
+        returnAssessment = assessment;
+    }
+
+    /** Prevents an assessment for a different equipment subtype from being attached to this transaction. */
+    private void validateReturnAssessment(LoanReturnAssessment assessment) {
+        if (issueConditionSnapshot != null && !issueConditionSnapshot.getEquipmentType()
+                .equals(assessment.condition().getEquipmentType())) {
+            throw new IllegalArgumentException("Issue and return assessments must describe the same equipment type.");
+        }
     }
 
     public String getLoanId() {
@@ -218,7 +267,17 @@ public class Loan {
                         equipmentRecordId,
                         issueConditionSnapshot);
         returned.isReturned = true;
+        returned.issueServiceability = issueServiceability;
         return returned;
+    }
+
+    /** Creates the saved return proposal while preserving the original issue assessment. */
+    Loan returnedCopy(LoanReturnAssessment assessment) {
+        if (isReturned || assessment == null) {
+            throw new IllegalStateException("Only an active loan can receive a return assessment.");
+        }
+        return new Loan(loanId, itemId, borrowerId, issuedDate, dueDate, equipmentRecordId,
+                issueConditionSnapshot, assessment, issueServiceability);
     }
 
     /**
@@ -231,8 +290,13 @@ public class Loan {
         assert replacement != null : "A loan update requires replacement equipment";
         EquipmentConditionSnapshot updatedSnapshot = replacement == equipment
                 ? issueConditionSnapshot : EquipmentConditionSnapshot.fromEquipment(replacement);
-        return new Loan(loanId, itemId, borrowerId, issuedDate, dueDate, equipmentRecordId,
+        Loan updated = new Loan(loanId, itemId, borrowerId, issuedDate, dueDate, equipmentRecordId,
                 updatedSnapshot);
+        updated.issueServiceability = issueServiceability;
+        if (replacement != equipment) {
+            updated.issueServiceability = replacement.isServiceable();
+        }
+        return updated;
     }
 
     /** Applies a saved update and keeps equipment ownership synchronized with the loan. */
@@ -257,6 +321,7 @@ public class Loan {
         issuedDate = updated.issuedDate;
         dueDate = updated.dueDate;
         issueConditionSnapshot = updated.issueConditionSnapshot;
+        issueServiceability = updated.issueServiceability;
         equipment = replacement;
         replacement.setLoanId(loanId);
         assert equipment == replacement : "Updated loan must retain its replacement equipment";

@@ -9,11 +9,6 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.logging.Handler;
-import java.util.logging.Level;
-import java.util.logging.LogRecord;
-import java.util.logging.Logger;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -50,7 +45,7 @@ class LoanIssueConditionViewTest {
     }
 
     @Test
-    void viewLoanIssueCondition_recordedSnapshot_printsDetails()
+    void viewLoanAssessments_recordedSnapshot_printsDetails()
             throws Exception {
         EquipmentHandler equipment = new EquipmentHandler();
         equipment.addEquipment(
@@ -64,28 +59,20 @@ class LoanIssueConditionViewTest {
                         + "issued/01-10-26 due/20-10-26");
         output.reset();
 
-        handler.viewLoanIssueCondition("view loan/001");
+        handler.viewLoanAssessments("view loan/001");
 
-        String expected =
-                "Loan 001 issue-time condition:"
-                        + System.lineSeparator()
-                        + "Item ID: 001"
-                        + System.lineSeparator()
-                        + "Type: camera"
-                        + System.lineSeparator()
-                        + "Condition: 6"
-                        + System.lineSeparator()
-                        + "Damage: SENSOR_DAMAGE"
-                        + System.lineSeparator()
-                        + "Remarks: Handle carefully"
-                        + System.lineSeparator();
-        assertEquals(
-                expected,
-                output.toString(StandardCharsets.UTF_8));
+        String actual = output.toString(StandardCharsets.UTF_8).replaceAll(" +", " ");
+        assertTrue(actual.contains("Loan 001 condition assessments (Item ID: 001)"));
+        assertTrue(actual.contains("Status: Active"));
+        assertTrue(actual.contains("Type | camera | Not returned"));
+        assertTrue(actual.contains("Condition | 6 | Not returned"));
+        assertTrue(actual.contains("Damage | SENSOR_DAMAGE | Not returned"));
+        assertTrue(actual.contains("Issue remarks: Handle carefully"));
+
     }
 
     @Test
-    void viewLoanIssueCondition_emptyRemarks_printsNone()
+    void viewLoanAssessments_emptyRemarks_printsNone()
             throws Exception {
         EquipmentHandler equipment = new EquipmentHandler();
         equipment.addEquipment(
@@ -97,15 +84,15 @@ class LoanIssueConditionViewTest {
                         + "issued/01-10-26 due/20-10-26");
         output.reset();
 
-        handler.viewLoanIssueCondition("view loan/001");
+        handler.viewLoanAssessments("view loan/001");
 
         assertTrue(
                 output.toString(StandardCharsets.UTF_8)
-                        .contains("Remarks: None"));
+                        .contains("Issue remarks: None"));
     }
 
     @Test
-    void viewLoanIssueCondition_legacyLoan_printsNotRecorded()
+    void viewLoanAssessments_legacyLoan_printsNotRecorded()
             throws Exception {
         Path loanFile =
                 temporaryDirectory.resolve("loans.txt");
@@ -123,74 +110,41 @@ class LoanIssueConditionViewTest {
                 new LoanHandler(equipment, loanFile);
         handler.loadFromStorage();
         output.reset();
-        Logger loanLogger =
-                Logger.getLogger(LoanHandler.class.getName());
-        Level previousLevel = loanLogger.getLevel();
-        ArrayList<LogRecord> records = new ArrayList<>();
-        Handler recordingHandler = new Handler() {
-            @Override
-            public void publish(LogRecord record) {
-                records.add(record);
-            }
+        handler.viewLoanAssessments("view loan/001");
 
-            @Override
-            public void flush() {
-            }
+        String actual = output.toString(StandardCharsets.UTF_8).replaceAll(" +", " ");
+        assertTrue(actual.contains("Status: Active"));
+        assertTrue(actual.contains("Condition | Not recorded | Not returned"));
+        assertTrue(actual.contains("Issue remarks: Not recorded"));
 
-            @Override
-            public void close() {
-            }
-        };
-        loanLogger.setLevel(Level.INFO);
-        loanLogger.addHandler(recordingHandler);
-
-        try {
-            handler.viewLoanIssueCondition("view loan/001");
-        } finally {
-            loanLogger.removeHandler(recordingHandler);
-            loanLogger.setLevel(previousLevel);
-        }
-
-        assertEquals(
-                "Loan 001 issue-time condition: Not recorded"
-                        + System.lineSeparator(),
-                output.toString(StandardCharsets.UTF_8));
-        assertTrue(
-                records.stream().anyMatch(
-                        record ->
-                                record.getLevel() == Level.INFO
-                                        && record.getMessage()
-                                                .contains("not recorded")
-                                        && "001".equals(
-                                                record.getParameters()[0])));
     }
 
     @Test
-    void viewLoanIssueCondition_invalidFormat_throwsException() {
+    void viewLoanAssessments_invalidFormat_throwsException() {
         LoanHandler handler =
                 new LoanHandler(new EquipmentHandler());
 
         LoanViewingUnsuccessful exception =
                 assertThrows(
                         LoanViewingUnsuccessful.class,
-                        () -> handler.viewLoanIssueCondition(
+                        () -> handler.viewLoanAssessments(
                                 "view item/001"));
 
         assertEquals(
                 "Invalid command format. Expected: "
-                        + "view loan/[LOAN ID].",
+                        + "view loan/<LOAN ID>.",
                 exception.getMessage());
     }
 
     @Test
-    void viewLoanIssueCondition_invalidLoanId_throwsException() {
+    void viewLoanAssessments_invalidLoanId_throwsException() {
         LoanHandler handler =
                 new LoanHandler(new EquipmentHandler());
 
         LoanViewingUnsuccessful exception =
                 assertThrows(
                         LoanViewingUnsuccessful.class,
-                        () -> handler.viewLoanIssueCondition(
+                        () -> handler.viewLoanAssessments(
                                 "view loan/01"));
 
         assertEquals(
@@ -200,14 +154,14 @@ class LoanIssueConditionViewTest {
     }
 
     @Test
-    void viewLoanIssueCondition_unknownLoan_throwsException() {
+    void viewLoanAssessments_unknownLoan_throwsException() {
         LoanHandler handler =
                 new LoanHandler(new EquipmentHandler());
 
         LoanViewingUnsuccessful exception =
                 assertThrows(
                         LoanViewingUnsuccessful.class,
-                        () -> handler.viewLoanIssueCondition(
+                        () -> handler.viewLoanAssessments(
                                 "view loan/999"));
 
         assertEquals(

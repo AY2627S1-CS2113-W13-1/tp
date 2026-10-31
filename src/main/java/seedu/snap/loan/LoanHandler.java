@@ -362,12 +362,16 @@ public class LoanHandler {
             }
             assessed = equipment.prepareReturnAssessment(item, assessment.serviceable(),
                     assessment.damage(), assessment.remarks());
+            if (assessment.condition() != null) {
+                assessed.updateDetails(assessed.getItemName(), assessment.condition());
+            }
         } catch (LoanAdditionUnsuccessful | IllegalArgumentException exception) {
             throw new LoanReturnUnsuccessful(exception.getMessage());
         }
 
         // This detached proposal cannot release equipment or alter the live loan before saving.
-        Loan returned = loan.returnedCopy();
+        LoanReturnAssessment snapshot = LoanReturnAssessment.fromEquipment(assessed);
+        Loan returned = loan.returnedCopy(snapshot);
         ArrayList<Loan> proposedLoans = new ArrayList<>(loans);
         proposedLoans.set(proposedLoans.indexOf(loan), returned);
         try {
@@ -381,7 +385,8 @@ public class LoanHandler {
         }
 
         item.applyReturnAssessment(assessed);
-        loan.setReturned(true);
+        loan.completeReturn(snapshot);
+        assert loan.getReturnAssessment() == snapshot : "Saved return assessment must belong to this loan";
         assert !item.isLoaned() && item.getLoanId() == null : "Returned equipment must have no active loan";
         assert numLoans == loans.size() : "Returning equipment must retain its loan record";
         logger.log(Level.INFO, "Returned loan {0} for item ID {1}; serviceable: {2}.",
@@ -652,55 +657,57 @@ public class LoanHandler {
 
     // @@author
 
-    // @@author Rohita-29
+    // @@author rktheg
 
     /**
-     * Displays the issue-time equipment condition for one loan.
+     * Compares immutable issue and return assessments for one loan without reading current equipment.
+     * Active loans and missing legacy assessments are labelled explicitly.
      *
      * @param input complete view-loan command
      * @throws LoanViewingUnsuccessful if the command or loan ID is invalid
      */
-    public void viewLoanIssueCondition(String input)
-            throws LoanViewingUnsuccessful {
+    public void viewLoanAssessments(String input) throws LoanViewingUnsuccessful {
         String loanId = parseViewLoanId(input);
         Loan loan = findLoanForViewing(loanId);
-        EquipmentConditionSnapshot snapshot =
-                loan.getIssueConditionSnapshot();
+        EquipmentConditionSnapshot issued = loan.getIssueConditionSnapshot();
+        LoanReturnAssessment returned = loan.getReturnAssessment();
+        EquipmentConditionSnapshot assessed = returned == null ? null : returned.condition();
+        String returnStatus = loan.isReturned() ? "Not recorded" : "Not returned";
 
-        if (snapshot == null) {
-            logger.log(
-                    Level.INFO,
-                    "Viewed loan {0}; issue-time condition was not recorded.",
-                    loanId);
-            System.out.println(
-                    "Loan "
-                            + loanId
-                            + " issue-time condition: Not recorded");
-            return;
-        }
-
-        System.out.println(
-                "Loan "
-                        + loanId
-                        + " issue-time condition:");
-        System.out.println("Item ID: " + loan.getItemId());
-        System.out.println(
-                "Type: " + snapshot.getEquipmentType());
-        System.out.println(
-                "Condition: " + snapshot.getCondition());
-        System.out.println(
-                "Damage: " + snapshot.getDamage());
-
-        String remarks =
-                snapshot.getRemarks().isEmpty()
-                        ? "None"
-                        : snapshot.getRemarks();
-        System.out.println("Remarks: " + remarks);
-        logger.log(
-                Level.INFO,
-                "Viewed issue-time condition for loan {0}.",
-                loanId);
+        System.out.println("Loan " + loanId + " condition assessments (Item ID: " + loan.getItemId() + ")");
+        System.out.println("Status: " + (loan.isReturned() ? "Returned" : "Active"));
+        printAssessmentRow("Field", "Issued", "Returned");
+        printAssessmentRow("Type", issued == null ? "Not recorded" : issued.getEquipmentType(),
+                assessed == null ? returnStatus : assessed.getEquipmentType());
+        printAssessmentRow("Condition", issued == null ? "Not recorded" : String.valueOf(issued.getCondition()),
+                assessed == null ? returnStatus : String.valueOf(assessed.getCondition()));
+        printAssessmentRow("Damage", issued == null ? "Not recorded" : issued.getDamage(),
+                assessed == null ? returnStatus : assessed.getDamage());
+        printAssessmentRow("Serviceable", serviceabilityText(loan.getIssueServiceability()),
+                returned == null ? returnStatus : serviceabilityText(returned.serviceable()));
+        // Keep remarks outside the columns so two 200-character notes do not make a very wide table.
+        System.out.println("Issue remarks: " + assessmentRemarks(issued, "Not recorded"));
+        System.out.println("Return remarks: " + assessmentRemarks(assessed, returnStatus));
+        logger.log(Level.FINE, "Viewed condition assessments for loan {0}; issue assessment recorded: {1}; "
+                + "return assessment recorded: {2}.", new Object[]{loanId, issued != null, returned != null});
     }
+
+    /** Keeps missing legacy information distinct from an explicitly saved yes/no assessment. */
+    private static String serviceabilityText(Boolean serviceable) {
+        return serviceable == null ? "Not recorded" : serviceable ? "Yes" : "No";
+    }
+
+    /** Aligns the short assessment values while leaving longer notes on separate labelled lines. */
+    private static void printAssessmentRow(String field, String issued, String returned) {
+        System.out.printf("%-12s | %-24s | %s%n", field, issued, returned);
+    }
+
+    /** Distinguishes an empty recorded note from a missing historical assessment. */
+    private static String assessmentRemarks(EquipmentConditionSnapshot snapshot, String missing) {
+        return snapshot == null ? missing : snapshot.getRemarks().isEmpty() ? "None" : snapshot.getRemarks();
+    }
+
+    // @@author Rohita-29
 
     /** Extracts and validates a loan ID from a viewing command. */
     private static String parseViewLoanId(String input)
@@ -719,7 +726,7 @@ public class LoanHandler {
                 || !arguments[1].startsWith("loan/")) {
             throw new LoanViewingUnsuccessful(
                     "Invalid command format. Expected: "
-                            + "view loan/[LOAN ID].");
+                            + "view loan/<LOAN ID>.");
         }
 
         String loanId =
