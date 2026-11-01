@@ -127,6 +127,11 @@ class LoanModelEdgesTest {
         camera.applyReturnAssessment(inventory.prepareReturnAssessment(camera, false,
                 "SENSOR_DAMAGE", "Repair"));
 
+        assertThrows(IllegalArgumentException.class, () -> new Loan((Equipment) null, "002", ISSUE, DUE));
+        assertThrows(IllegalArgumentException.class, () -> new Loan(camera, "002", ISSUE, DUE));
+
+        camera.applyReturnAssessment(inventory.prepareReturnAssessment(camera, true, "NONE", "Repaired"));
+        camera.setLoaned(true);
         assertThrows(IllegalArgumentException.class, () -> new Loan(camera, "002", ISSUE, DUE));
     }
 
