@@ -213,10 +213,17 @@ class EquipmentViewTest {
 
     @Test
     void details_controlAndWideCharacters_areRenderedSafely() {
-        String name = "\t\r\n\u001b\u2028\u2029\u200d\u20dd\uFE0F\u20E3"
-                + "\u1100\u2329\u232A\u2E80\u303F\uAC00\uE000\uF900\uFE10\uFE20"
-                + "\uFE30\uFE70\uFF00\uFF61\uFFE0\uFFE7\u1F000\u1FB00\u20000\u40000\u232B";
+        String[] wideCases = {"A", "\u1100", "\u2329", "\u232A", "\u2E80", "\u303F", "\uAC00",
+            "\uE000", "\uF900", "\uFE10", "\uFE20", "\uFE30", "\uFE70", "\uFF00", "\uFF61",
+            "\uFFE0", "\uFFE7", new String(Character.toChars(0x1F000)),
+            new String(Character.toChars(0x1FB00)), new String(Character.toChars(0x20000)),
+            new String(Character.toChars(0x40000)), "\u232B"};
+        String name = String.join(" ", wideCases);
         EquipmentView.printDetails(new Camera(name, "001", 1));
+        EquipmentView.printDetails(new Camera("\u20E3", "002", 1));
+        EquipmentView.printDetails(new Camera("\u20DD", "003", 1));
+        EquipmentView.printDetails(new Camera("\u200D", "004", 1));
+        EquipmentView.printDetails(new Camera("\t\r\n\u001b\u2028\u2029", "005", 1));
 
         assertTrue(printed().contains("\\t\\r\\n\\u001b\\u2028\\u2029"));
         assertFalse(printed().contains("\u001b"));
