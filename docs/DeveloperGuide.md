@@ -236,7 +236,8 @@ and changing records.
 [PlantUML source](diagrams/ReturnSequence.puml)
 
 1. `LoanReturn.parse(...)` requires a Loan ID from `001` to `999`, an explicit serviceability decision and
-   a damage value. Final `remarks/` is optional unless damage is `OTHER`, which requires non-empty text.
+   a damage value. Optional `cond/` follows damage and accepts integers from 1 to 10; omission retains the
+   current rating. Final `remarks/` is optional unless damage is `OTHER`, which requires non-empty text.
    Supplied remarks must be one line of at most 200 characters after trimming; final text remains literal.
 2. `LoanHandler.findLoanForReturn(...)` requires exactly one active loan. The handler finds the current equipment
    and calls `Loan.ownsEquipment(...)`, checking the object reference, active loan ID and permanent equipment
@@ -244,13 +245,14 @@ and changing records.
    from assessing or releasing replacement equipment.
 3. `EquipmentHandler.prepareReturnAssessment(...)` validates damage against the equipment subtype and rejects
    `OTHER` when the trimmed remarks are empty. It creates a detached proposal preserving the name, Item ID,
-   permanent record ID, numeric condition and subtype attributes.
-   `Loan.returnedCopy()` creates a detached returned loan with the same loan ID, equipment identity, borrower
-   and dates. The proposals do not change either live object.
+   permanent record ID and subtype attributes. The handler applies any explicit numeric rating to this proposal.
+   `LoanReturnAssessment.fromEquipment(...)` copies the proposed type, condition, damage, remarks and serviceability
+   into an immutable per-loan assessment. `Loan.returnedCopy(assessment)` retains this assessment and the issue
+   snapshot with the same loan ID, equipment identity, borrower and dates. Neither live object changes yet.
 4. `LoanReturnStorage.save(...)` saves a proposed inventory containing the assessment and a proposed loan list
    containing the returned copy. The next loan number is saved without being incremented.
 5. After saving succeeds, `Equipment.applyReturnAssessment(...)` changes the original item and
-   `Loan.setReturned(true)` changes the original loan. The latter detaches its active equipment reference and
+   `Loan.completeReturn(assessment)` records the assessment once on the original loan. It detaches the active equipment reference and
    clears the item's loan ID and loaned flag. The loan remains in the list; its count and next ID are unchanged.
 
 The original equipment object is retained because bundles and active loan associations use object references.
@@ -259,7 +261,8 @@ it cannot be returned twice or reactivated. Later borrowing creates a new loan w
 
 Serviceability is separate from the loaned flag. An unserviceable returned item has no active loan, but new loans,
 new bundle additions and `status/available` filtering reject it. Listing displays `Unserviceable`.
-Normal name and numeric-condition updates retain the assessment. There is no repair command in this feature.
+Normal name and numeric-condition updates retain serviceability and cannot rewrite per-loan snapshots.
+There is no repair command in this feature.
 Storage prefixes each add record with `recordId/UUID`, then `serviceable/yes|no`, separated by tabs.
 This keeps metadata separate from free-form names, subtype attributes and remarks. Legacy equipment without an
 assessment defaults to serviceable.
@@ -654,17 +657,21 @@ inconsistent records, and rollback after a replacement failure. `BackupIntegrati
 non-overwriting behaviour. `RestoreIntegrationTest` covers valid restoration, restart persistence, invalid sources,
 startup recovery, bundle clearing and preservation of live state after a failed restore.
 
-### Preserving equipment condition when a loan is issued
+<a id="preserving-equipment-condition-when-a-loan-is-issued"></a>
+
+### Preserving condition assessments for each loan
 
 #### Purpose and responsibilities
 
-Each new loan preserves the condition of its equipment at the moment the loan is issued. This historical snapshot remains unchanged if the equipment is later updated, damaged, repaired or returned.
+Each loan preserves the equipment condition at issue and its assessment at return. Both snapshots belong to that
+Loan ID and remain unchanged after equipment updates or later borrowing.
 
 | Class | Responsibility |
 | --- | --- |
 | `EquipmentConditionSnapshot` | Stores an immutable copy of the equipment type, numeric condition, damage and remarks. |
-| `Loan` | Owns the optional issue-time snapshot and preserves it when a returned copy is created. |
-| `LoanHandler` | Creates loans from available equipment and displays a snapshot for `view loan/[LOAN ID]`. |
+| `LoanReturnAssessment` | Combines a return-condition snapshot with the assessed serviceability. |
+| `Loan` | Owns optional issue and return assessments and permits a return to be recorded only once. |
+| `LoanHandler` | Captures return proposals and compares saved assessments for `view loan/<LOAN ID>`. |
 | `EqmManager` | Routes the view command and displays validation errors without changing records. |
 | `EquipmentConditionSnapshotCodec` | Converts snapshots between model values and their saved representation. |
 | `LoanStorage` | Saves and restores optional snapshots while continuing to accept legacy loan records. |
@@ -673,15 +680,35 @@ Each new loan preserves the condition of its equipment at the moment the loan is
 
 When a valid loan is created from an equipment object, `EquipmentConditionSnapshot.fromEquipment(...)` copies the relevant condition fields into a separate immutable value object. The loan stores this snapshot together with its identifiers, borrower and dates.
 
-The snapshot contains copied values rather than a reference to the equipment. Consequently, a later return assessment or equipment update cannot rewrite historical issue-time information. `Loan.returnedCopy()` carries the same snapshot into the returned record.
+The snapshot contains copied values rather than a reference to the equipment. Consequently, a later return
+assessment or equipment update cannot rewrite historical issue-time information.
+`Loan.returnedCopy(assessment)` carries both saved assessments into the returned record.
 
-For `view loan/001`, `EqmManager` delegates to `LoanHandler.viewLoanIssueCondition(...)`. The handler validates the exact three-digit loan ID, finds one matching loan and prints the recorded equipment type, condition, damage and remarks. The command performs no save and does not alter the managed loan or equipment collections.
+For `view loan/001`, `EqmManager` delegates to `LoanHandler.viewLoanAssessments(...)`. The handler validates
+one Loan ID and compares its saved issue and return assessments. It reads no current equipment values and performs
+no save. Active loans show `Not returned`; missing legacy assessments show `Not recorded`. Remarks are printed
+below the comparison columns to avoid a wide table. New loans copy issue-time serviceability into `Loan` alongside
+the condition snapshot. It remains unchanged on return and borrower/date edits; equipment reassignment captures
+the replacement's serviceability with its new issue snapshot.
 
 #### Persistence and backward compatibility
 
 `LoanStorage` delegates snapshot encoding and decoding to `EquipmentConditionSnapshotCodec`. New loan records append the snapshot data after the existing loan and equipment-identity fields. Loading reconstructs an equivalent immutable snapshot before publishing the proposed loan list.
 
 Snapshot fields are optional for backward compatibility. A legacy record without them loads with no snapshot and remains available through the normal loan commands. Querying that record reports that its issue condition was not recorded. Incomplete or malformed snapshot metadata is rejected as damaged saved data instead of being silently replaced with current equipment information.
+
+The return workflow stores a `LoanReturnAssessment` alongside the issue snapshot. It combines the same immutable
+condition value object with the assessed serviceability. `LoanReturnAssessmentCodec` reuses the existing snapshot
+escaping with `returnType/`, `returnCondition/`, `returnDamage/` and `returnRemarks/`, then appends
+`returnServiceable/yes|no`. These optional fields follow any issue snapshot in the same loan record, so existing
+backup and restore operations include them automatically. New issue snapshots also save an optional
+`issueServiceable/yes|no` field before the return fields. Older records without it retain an unknown value
+rather than inheriting the equipment's current serviceability.
+
+Returned legacy loans remain without a return assessment; current equipment is never used to reconstruct one.
+An older active loan can receive a new return assessment even when its issue snapshot is absent. Partial or invalid
+return metadata, a return assessment on an active record, and conflicting issue/return equipment types cause loading
+to fail before the live loan list is replaced. Later borrowing creates another loan and cannot overwrite these values.
 
 #### Design choices and alternatives
 
@@ -692,6 +719,9 @@ The snapshot is stored inside `Loan` because it describes that specific borrowin
 Legacy snapshots are left absent rather than inferred from present equipment. Inference could create false historical information, especially after equipment updates, returns or Item ID reuse.
 
 #### Verification
+
+Return-assessment tests cover repeated borrowing, all four subtypes, identifier boundaries, Unicode notes, Item ID
+reuse, legacy files, restarts, backup/restore, read-only viewing and failed saves followed by retry.
 
 `EquipmentConditionSnapshotTest` covers normalization, valid boundaries, invalid values, equality and subtype extraction. `LoanIssueConditionSnapshotTest` verifies capture, immutability and preservation through returned copies. `EquipmentConditionSnapshotCodecTest` covers valid round trips and malformed encoded values.
 

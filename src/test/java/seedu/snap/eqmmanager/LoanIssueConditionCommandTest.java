@@ -53,14 +53,14 @@ class LoanIssueConditionCommandTest {
                 output.toString(StandardCharsets.UTF_8);
         assertTrue(
                 actual.contains(
-                        "Loan 001 issue-time condition:"));
+                        "Loan 001 condition assessments (Item ID: 001)"));
         assertTrue(actual.contains("Item ID: 001"));
-        assertTrue(actual.contains("Type: camera"));
-        assertTrue(actual.contains("Condition: 6"));
-        assertTrue(actual.contains("Damage: SENSOR_DAMAGE"));
+        assertTrue(actual.replaceAll(" +", " ").contains("Type | camera | Not returned"));
+        assertTrue(actual.replaceAll(" +", " ").contains("Condition | 6 | Not returned"));
+        assertTrue(actual.replaceAll(" +", " ").contains("Damage | SENSOR_DAMAGE | Not returned"));
         assertTrue(
                 actual.contains(
-                        "Remarks: Handle carefully"));
+                        "Issue remarks: Handle carefully"));
     }
 
     @Test
@@ -77,12 +77,12 @@ class LoanIssueConditionCommandTest {
                 output.toString(StandardCharsets.UTF_8);
         assertTrue(
                 actual.contains(
-                        "Loan 001 issue-time condition:"));
-        assertTrue(actual.contains("Condition: 6"));
-        assertTrue(actual.contains("Damage: SENSOR_DAMAGE"));
+                        "Loan 001 condition assessments (Item ID: 001)"));
+        assertTrue(actual.replaceAll(" +", " ").contains("Condition | 6 | Not returned"));
+        assertTrue(actual.replaceAll(" +", " ").contains("Damage | SENSOR_DAMAGE | Not returned"));
         assertTrue(
                 actual.contains(
-                        "Remarks: Handle carefully"));
+                        "Issue remarks: Handle carefully"));
     }
 
     @Test
@@ -105,7 +105,7 @@ class LoanIssueConditionCommandTest {
 
         assertEquals(
                 "[ERROR] Invalid command format. Expected: "
-                        + "view loan/[LOAN ID]."
+                        + "view loan/<LOAN ID>."
                         + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
     }
@@ -120,7 +120,7 @@ class LoanIssueConditionCommandTest {
 
         assertTrue(
                 output.toString(StandardCharsets.UTF_8)
-                        .contains("Condition: 6"));
+                        .replaceAll(" +", " ").contains("Condition | 6 | Not returned"));
     }
 
     @Test
