@@ -135,6 +135,38 @@ class EquipmentSubclassTest {
     }
 
     @Test
+    void constructors_rejectSubclassesThatReportTheWrongType() {
+        assertThrows(AssertionError.class,
+                () -> new Camera("Camera", "101", 8, "APS-C", Camera.CameraDamage.NONE) {
+                    @Override
+                    public String getType() {
+                        return "not-camera";
+                    }
+                });
+        assertThrows(AssertionError.class,
+                () -> new Lens("Lens", "102", 8, "24-70 mm", Lens.LensDamage.NONE) {
+                    @Override
+                    public String getType() {
+                        return "not-lens";
+                    }
+                });
+        assertThrows(AssertionError.class,
+                () -> new Battery("Battery", "103", 8, "2130 mAh", Battery.BatteryDamage.NONE) {
+                    @Override
+                    public String getType() {
+                        return "not-battery";
+                    }
+                });
+        assertThrows(AssertionError.class,
+                () -> new Tripod("Tripod", "104", 8, "3/8 inch", Tripod.TripodDamage.NONE) {
+                    @Override
+                    public String getType() {
+                        return "not-tripod";
+                    }
+                });
+    }
+
+    @Test
     void constructors_attributeAtLengthLimitIsPreserved() {
         String attribute = "a".repeat(100);
 

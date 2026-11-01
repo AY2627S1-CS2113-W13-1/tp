@@ -47,5 +47,7 @@ class EquipmentTest {
         assertThrows(AssertionError.class,
                 () -> new Camera("Camera", "001", 1, "unspecified", Camera.CameraDamage.NONE,
                         "line one\nline two"));
+        assertThrows(AssertionError.class,
+                () -> new Camera("Camera", "001", 1, "unspecified", Camera.CameraDamage.NONE, null));
     }
 }
