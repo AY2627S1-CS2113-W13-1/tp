@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -167,5 +168,13 @@ class EquipmentStorageTest {
         try (Stream<Path> files = Files.list(temporaryDirectory)) {
             assertTrue(files.noneMatch(path -> path.getFileName().toString().startsWith("equipment-")));
         }
+    }
+
+    @Test
+    void save_nullEquipmentEntry_throwsAssertionError() throws IOException {
+        Path file = temporaryDirectory.resolve("equipment.txt");
+
+        assertThrows(AssertionError.class,
+                () -> EquipmentStorage.save(file, Collections.singletonList(null)));
     }
 }
