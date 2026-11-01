@@ -49,5 +49,23 @@ class EquipmentTest {
                         "line one\nline two"));
         assertThrows(AssertionError.class,
                 () -> new Camera("Camera", "001", 1, "unspecified", Camera.CameraDamage.NONE, null));
+        assertThrows(AssertionError.class,
+                () -> new Camera("Camera", "001", 1, "unspecified", Camera.CameraDamage.NONE,
+                        "line one\rline two"));
+    }
+
+    @Test
+    void returnAssessmentAndLoanId_validateAllReachableIdentityFields() {
+        Camera original = new Camera("Camera", "001", 5);
+        assertThrows(IllegalArgumentException.class, () -> original.applyReturnAssessment(null));
+        assertThrows(IllegalArgumentException.class,
+                () -> original.applyReturnAssessment(new Camera("Camera", "002", 5)));
+        Camera differentRecord = new Camera("Camera", "001", 5);
+        differentRecord.restoreRecordId("e21c9254-ab91-4624-82eb-9b4423e5a795");
+        assertThrows(IllegalArgumentException.class, () -> original.applyReturnAssessment(differentRecord));
+        assertThrows(IllegalArgumentException.class,
+                () -> original.applyReturnAssessment(new Camera("Camera", "001", 6)));
+        assertThrows(AssertionError.class, () -> original.setLoanId("000"));
+        original.setLoanId(null);
     }
 }

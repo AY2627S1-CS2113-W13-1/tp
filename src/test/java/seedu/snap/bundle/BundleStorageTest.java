@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import seedu.snap.equipment.EquipmentHandler;
+import seedu.snap.equipment.Equipment;
 import seedu.snap.exceptions.BundleAdditionUnsuccessful;
 
 /** Tests bundle storage validation, exact equipment identity matching and save failures. */
@@ -119,6 +120,40 @@ class BundleStorageTest {
         assertThrows(IOException.class, handler::saveToStorage);
 
         assertEquals("keep this data", Files.readString(sentinel));
+    }
+
+    @Test
+    void save_nullBundle_isRejectedByTheStorageInvariant() throws Exception {
+        Path file = temporaryDirectory.resolve("bundles.txt");
+
+        assertThrows(AssertionError.class,
+                () -> BundleStorage.save(file, java.util.Collections.singletonList(null)));
+    }
+
+    @Test
+    void save_invalidOverriddenBundleIdentity_isRejected() throws Exception {
+        Path file = temporaryDirectory.resolve("bundles.txt");
+        Bundle invalid = new Bundle("Travel Kit", "001") {
+            @Override
+            public String getBundleId() {
+                return "000";
+            }
+        };
+
+        assertThrows(IOException.class, () -> BundleStorage.save(file, List.of(invalid)));
+    }
+
+    @Test
+    void save_nullEquipmentReference_isRejectedByTheStorageInvariant() throws Exception {
+        Path file = temporaryDirectory.resolve("bundles.txt");
+        Bundle invalid = new Bundle("Travel Kit", "001") {
+            @Override
+            public List<Equipment> getEquipmentList() {
+                return java.util.Collections.singletonList(null);
+            }
+        };
+
+        assertThrows(AssertionError.class, () -> BundleStorage.save(file, List.of(invalid)));
     }
 
     @Test

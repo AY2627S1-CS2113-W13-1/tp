@@ -28,6 +28,16 @@ class BundleTest {
     }
 
     @Test
+    void newBundle_rejectsInvalidIdentity() {
+        assertThrows(AssertionError.class, () -> new Bundle(null, "001"));
+        assertThrows(AssertionError.class, () -> new Bundle("", "001"));
+        assertThrows(AssertionError.class, () -> new Bundle("A".repeat(101), "001"));
+        assertThrows(AssertionError.class, () -> new Bundle("Kit", null));
+        assertThrows(AssertionError.class, () -> new Bundle("Kit", "000"));
+        assertThrows(AssertionError.class, () -> new Bundle("Kit", "01"));
+    }
+
+    @Test
     void addEquipment_meetsRequirements_marksBundleComplete() {
         Bundle bundle = new Bundle("Travel Kit", "001");
 
