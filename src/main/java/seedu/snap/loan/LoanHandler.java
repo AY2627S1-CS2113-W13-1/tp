@@ -39,13 +39,13 @@ public class LoanHandler {
     private static final int MAX_LOAN_NUMBER = 999;
     private static final Logger logger = Logger.getLogger(LoanHandler.class.getName());
     private static final String ID_FORMAT = "[0-9]{3}";
-    private static final String LOAN_COMMAND_FORMAT = "Invalid command format. Use: add-loan E-id/[ITEM ID] "
-            + "U-id/[BORROWER ID] [issued/DD-MM-YY] due/[DD-MM-YY]. Omitted issued/ uses today's date.";
+    private static final String LOAN_COMMAND_FORMAT = "Invalid command format. Use: add-loan e/[ITEM ID] "
+            + "u/[BORROWER ID] [issued/DD-MM-YY] due/[DD-MM-YY]. Omitted issued/ uses today's date.";
     private static final String LEGACY_LOAN_COMMAND = "loan";
     private static final String LEGACY_ITEM_MARKER = "id/";
     private static final String LEGACY_BORROWER_MARKER = "b/";
     private static final Pattern HISTORY_COMMAND = Pattern.compile(
-            "(?U)\\Aeqm-loan-history\\s+E-id/([0-9]{3})\\z");
+            "(?U)\\Aeqm-loan-history\\s+e/([0-9]{3})\\z");
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-uu")
             .withResolverStyle(ResolverStyle.STRICT);
 
@@ -424,8 +424,8 @@ public class LoanHandler {
      */
     public Loan deleteLoan(String input) throws LoanDeletionUnsuccessful {
         String[] arguments = input == null ? new String[0] : input.trim().split("\\s+");
-        if (arguments.length != 2 || !arguments[0].equals("loan-delete") || !arguments[1].startsWith("L-id/")) {
-            throw new LoanDeletionUnsuccessful("Invalid command format. Expected: loan-delete L-id/[LOAN ID].");
+        if (arguments.length != 2 || !arguments[0].equals("loan-delete") || !arguments[1].startsWith("l/")) {
+            throw new LoanDeletionUnsuccessful("Invalid command format. Expected: loan-delete l/[LOAN ID].");
         }
         String loanId = parseDeleteLoanId(arguments[1]);
         Loan loan = null;
@@ -468,7 +468,7 @@ public class LoanHandler {
                 && arguments.length != EXPECTED_ADD_ARGUMENT_COUNT - 1) {
             throw new LoanAdditionUnsuccessful(LOAN_COMMAND_FORMAT);
         }
-        return parseLoanArguments(arguments, clock, "add-loan", "E-id/", "U-id/");
+        return parseLoanArguments(arguments, clock, "add-loan", "e/", "u/");
     }
 
     /** Requires explicit dates in stored records; loading never supplies a current-date default. */
@@ -557,7 +557,7 @@ public class LoanHandler {
      * @throws LoanDeletionUnsuccessful when the format is invalid
      */
     private String parseDeleteLoanId(String argument) throws LoanDeletionUnsuccessful {
-        String loanId = argument.substring("L-id/".length());
+        String loanId = argument.substring("l/".length());
         if (!loanId.matches(ID_FORMAT) || loanId.equals("000")) {
             throw new LoanDeletionUnsuccessful("Invalid loan ID \"" + loanId
                     + "\". Loan ID must be exactly three digits from 001 to 999.");
@@ -790,14 +790,14 @@ public class LoanHandler {
 
         if (arguments.length != 2
                 || !arguments[0].equals("loan-show")
-                || !arguments[1].startsWith("L-id/")) {
+                || !arguments[1].startsWith("l/")) {
             throw new LoanViewingUnsuccessful(
                     "Invalid command format. Expected: "
-                            + "loan-show L-id/[LOAN ID].");
+                            + "loan-show l/[LOAN ID].");
         }
 
         String loanId =
-                arguments[1].substring("L-id/".length());
+                arguments[1].substring("l/".length());
         if (!loanId.matches(ID_FORMAT)
                 || loanId.equals("000")) {
             throw new LoanViewingUnsuccessful(
@@ -857,7 +857,7 @@ public class LoanHandler {
      * Selects active and returned loans for the currently registered physical item.
      * The query sorts a copy and never guesses associations from a reused Item ID.
      *
-     * @param input command in the form {@code eqm-loan-history E-id/001}
+     * @param input command in the form {@code eqm-loan-history e/001}
      * @return an unmodifiable list in issue-date order, then loan-ID order for equal dates
      * @throws LoanHistoryUnsuccessful if syntax is invalid or the item is missing or ambiguous
      */
@@ -917,7 +917,7 @@ public class LoanHandler {
      * Returns active loans held by the borrower in a borrower query.
      * A borrower is known when at least one current or returned loan uses the ID.
      *
-     * @param input command in the form {@code list-loan-borrower U-id/002}
+     * @param input command in the form {@code list-loan-borrower u/002}
      * @return an unmodifiable snapshot containing only the borrower's active loans
      * @throws LoanBorrowerUnsuccessful if syntax is invalid or the borrower is unknown
      */
@@ -978,7 +978,7 @@ public class LoanHandler {
                 return matcher.group(1);
             }
         }
-        throw new LoanHistoryUnsuccessful("Invalid format. Use: eqm-loan-history E-id/[ITEM ID], from 001 to 999.");
+        throw new LoanHistoryUnsuccessful("Invalid format. Use: eqm-loan-history e/[ITEM ID], from 001 to 999.");
     }
 
     /** Prints loan records using the same table format as the all-loans command. */
