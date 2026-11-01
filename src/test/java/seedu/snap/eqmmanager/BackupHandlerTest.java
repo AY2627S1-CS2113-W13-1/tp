@@ -28,6 +28,18 @@ class BackupHandlerTest {
     private Path temporaryDirectory;
 
     @Test
+    void constructor_rejectsMissingDependencies() {
+        EquipmentHandler equipment = new EquipmentHandler();
+        LoanHandler loans = new LoanHandler(equipment);
+
+        assertThrows(IllegalArgumentException.class, () -> new BackupHandler(null, equipment, loans));
+        assertThrows(IllegalArgumentException.class, () -> new BackupHandler(temporaryDirectory, null, loans));
+        assertThrows(IllegalArgumentException.class, () -> new BackupHandler(temporaryDirectory, equipment, null));
+        assertThrows(IllegalArgumentException.class,
+                () -> new BackupHandler(temporaryDirectory, equipment, loans, null, null));
+    }
+
+    @Test
     void createBackup_populatedData_copiesAllFilesAndLeavesLiveDataUnchanged() throws Exception {
         Path dataDirectory = temporaryDirectory.resolve("data");
         EquipmentHandler equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
@@ -128,9 +140,24 @@ class BackupHandlerTest {
         BackupHandler handler = new BackupHandler(dataDirectory, equipment, loans);
 
         for (String command : new String[]{null, "", "backup", "backup path/", "backup file/test",
-            "backup path/test\nsecond"}) {
+            "backup path/test\nsecond", "backup path/\u0000"}) {
             assertThrows(BackupUnsuccessful.class, () -> handler.createBackup(command), command);
         }
+    }
+
+    @Test
+    void createBackup_rejectsLiveDirectoryAndItsParentAsDestination() throws Exception {
+        Path dataDirectory = temporaryDirectory.resolve("data");
+        EquipmentHandler equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
+        LoanHandler loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"),
+                dataDirectory.resolve("loan-sequence.txt"));
+        BackupHandler handler = new BackupHandler(dataDirectory, equipment, loans);
+
+        assertThrows(BackupUnsuccessful.class, () -> handler.createBackup("backup path/" + dataDirectory));
+        assertThrows(BackupUnsuccessful.class,
+                () -> handler.createBackup("backup path/" + dataDirectory.resolve("child")));
+        assertThrows(BackupUnsuccessful.class,
+                () -> handler.createBackup("backup path/" + temporaryDirectory));
     }
 
     @Test
@@ -264,6 +291,60 @@ class BackupHandlerTest {
 
         assertTrue(exception.getMessage().contains("not an existing directory"));
         assertFalse(Files.exists(dataDirectory));
+    }
+
+    @Test
+    void restoreBackup_invalidCommandOrSource_reportsRequiredError() throws Exception {
+        Path dataDirectory = temporaryDirectory.resolve("data");
+        EquipmentHandler equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
+        LoanHandler loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"),
+                dataDirectory.resolve("loan-sequence.txt"));
+        BackupHandler handler = new BackupHandler(dataDirectory, equipment, loans);
+        Path file = temporaryDirectory.resolve("not-a-directory");
+        Files.writeString(file, "not a backup");
+
+        for (String command : new String[]{null, "", "restore", "restore path/", "restore file/test",
+            "restore path/test\nsecond", "restore path/\u0000"}) {
+            assertThrows(BackupUnsuccessful.class, () -> handler.restoreBackup(command), command);
+        }
+        assertThrows(BackupUnsuccessful.class, () -> handler.restoreBackup("restore path/" + file));
+        assertThrows(BackupUnsuccessful.class, () -> handler.restoreBackup("restore path/" + dataDirectory));
+        assertThrows(BackupUnsuccessful.class,
+                () -> handler.restoreBackup("restore path/" + dataDirectory.resolve("child")));
+        assertThrows(BackupUnsuccessful.class,
+                () -> handler.restoreBackup("restore path/" + temporaryDirectory));
+    }
+
+    @Test
+    void restoreBackup_missingRequiredFileOrManifest_rejectsBackup() throws Exception {
+        Path dataDirectory = temporaryDirectory.resolve("data");
+        EquipmentHandler equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
+        LoanHandler loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"),
+                dataDirectory.resolve("loan-sequence.txt"));
+        BackupHandler handler = new BackupHandler(dataDirectory, equipment, loans);
+        Path backup = temporaryDirectory.resolve("backup");
+        handler.createBackup("backup path/" + backup);
+
+        Files.delete(backup.resolve(BackupHandler.MANIFEST_FILE_NAME));
+        assertThrows(BackupUnsuccessful.class, () -> handler.restoreBackup("restore path/" + backup));
+        handler.createBackup("backup path/" + temporaryDirectory.resolve("backup-two"));
+    }
+
+    @Test
+    void restoreBackup_acceptsNormalisedManifestLineEndings() throws Exception {
+        Path dataDirectory = temporaryDirectory.resolve("data");
+        EquipmentHandler equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
+        LoanHandler loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"),
+                dataDirectory.resolve("loan-sequence.txt"));
+        BackupHandler handler = new BackupHandler(dataDirectory, equipment, loans);
+        Path backup = temporaryDirectory.resolve("line-ending-backup");
+        handler.createBackup("backup path/" + backup);
+        String manifest = Files.readString(backup.resolve(BackupHandler.MANIFEST_FILE_NAME))
+                .replace(System.lineSeparator(), "\r\n").stripTrailing();
+        Files.writeString(backup.resolve(BackupHandler.MANIFEST_FILE_NAME), manifest);
+
+        assertEquals(backup.toAbsolutePath().normalize(),
+                handler.restoreBackup("restore path/" + backup));
     }
 
     @Test
