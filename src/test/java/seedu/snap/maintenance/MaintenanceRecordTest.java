@@ -53,6 +53,8 @@ class MaintenanceRecordTest {
                 Arguments.of(EQUIPMENT_RECORD_ID, null, "Work", "Outcome"),
                 Arguments.of(EQUIPMENT_RECORD_ID, DATE, "", "Outcome"),
                 Arguments.of(EQUIPMENT_RECORD_ID, DATE, "Work", ""),
+                Arguments.of(EQUIPMENT_RECORD_ID, DATE, null, "Outcome"),
+                Arguments.of(EQUIPMENT_RECORD_ID, DATE, "Work", null),
                 Arguments.of(EQUIPMENT_RECORD_ID, DATE, "Work\ncontinued", "Outcome"),
                 Arguments.of(EQUIPMENT_RECORD_ID, DATE, "Work\tcontinued", "Outcome"),
                 Arguments.of(EQUIPMENT_RECORD_ID, DATE, "W".repeat(MaintenanceRecord.MAX_WORK_LENGTH + 1), "Outcome"),
