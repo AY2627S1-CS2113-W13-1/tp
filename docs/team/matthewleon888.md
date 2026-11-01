@@ -16,12 +16,12 @@ equipment details, availability, loans, returns, bundles and maintenance records
 
 ### v1.1
 
-- **Bundle loan history and persistence:** Implemented `history bundle` for viewing active and returned loans
+- **Bundle loan history and persistence:** Implemented `bundle-history` for viewing active and returned loans
   associated with every item in a bundle. Preserved bundle, equipment and loan relationships across restarts,
   added validation and fixed the save ordering for removing bundle membership before deleting equipment.
   Added tests for output, ordering, empty histories and persistence. ([Issue #68](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/68),
   [PR #115](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/115))
-- **Loan-detail editing:** Implemented `update loan` for changing permitted loan details without changing the
+- **Loan-detail editing:** Implemented `loan-update` for changing permitted loan details without changing the
   loan ID. Added validation for borrower IDs, dates, equipment availability, duplicate active loans and returned
   loans. Used a proposal-and-save workflow to keep invalid updates from changing live or saved records, and
   preserved issue-condition snapshots during borrower or date-only edits. ([Issue #107](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/107),

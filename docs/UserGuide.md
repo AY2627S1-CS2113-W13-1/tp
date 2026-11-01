@@ -663,14 +663,9 @@ The directory and saved files are created on the first save, including the final
 Each item's availability and associated loan ID are rebuilt from active loans at startup, so loaned items
 remain `Loaned` after restarting the application.
 
-The text file contains one equipment record per line in the legacy storage format. This internal format remains
-backward-compatible even though interactive commands use the standardized names and markers. For example:
-
-```text
-add i/Canon EOS R10 id/001 type/camera cond/1
-add i/Travel tripod id/003 type/tripod cond/2 thread/1/4 inch damage/NONE
-add i/Canon EOS R10 id/004 type/camera cond/1 remarks/Handle with care
-```
+The text file contains one equipment record per line in an internal storage format. This format is managed by the
+application and should not be entered as an interactive command; interactive input uses the standardized names and
+markers described in the command sections above.
 
 Saved equipment records use the four supported types and retain their type-specific values and damage.
 Existing records of supported types without optional fields are also accepted, using `unspecified` and `NONE`.
@@ -684,11 +679,9 @@ the serviceability prefix. The application assigns this identifier; it is separa
 Older equipment records are upgraded and saved with permanent identifiers when first loaded. If that save fails,
 startup reports the error instead of using identifiers that could change on the next restart.
 
-Loan records include the loan ID, item ID, borrower ID, issue date, due date and returned status. For example:
-
-```text
-loan loanId/001 id/001 b/002 issued/01-10-26 due/08-10-26 returned/false
-```
+Loan records include the loan ID, item ID, borrower ID, issue date, due date and returned status in an internal
+storage format. This format is managed by the application; use `add-loan`, `loan-update` and `loan-return` for
+interactive input.
 
 Saved loans always contain explicit issue and due dates, including a default issue date chosen by a command.
 Loading a saved record never substitutes today's date for a missing or malformed date.

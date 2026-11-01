@@ -9,7 +9,7 @@ participant ":EqmManager" as Manager
 participant "Help" as Help <<utility>>
 participant "System.out" as Output
 
-User -> Manager: executeInput("help list overdue")
+User -> Manager: executeInput("help list-loan-overdue")
 activate Manager
 note right of Manager
 Trim surrounding whitespace and check startup status.

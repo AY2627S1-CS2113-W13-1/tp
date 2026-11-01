@@ -446,7 +446,7 @@ checking records, object identities, counters, saved bytes and modification time
 one command's format, example, fields, defaults and restrictions; `help all` displays the complete reference
 for all supported commands. Topics use exact lowercase command names, including hyphenated names such as
 `loan-delete`, `loan-show` and `bundle-history`. Group names are menu labels, not topics. Unknown topics print
-an error and the menu. Old command topics and aliases, including `list member`, are rejected.
+an error and the menu. Unsupported command topics and aliases are rejected.
 
 `EqmManager.executeInput(...)` recognises `help` followed by whitespace or the end of the input and passes the
 optional topic to `Help`. `Help` trims surrounding Unicode whitespace and normalises whitespace between topic
