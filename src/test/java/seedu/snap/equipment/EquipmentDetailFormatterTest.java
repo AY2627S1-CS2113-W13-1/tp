@@ -1,6 +1,7 @@
 package seedu.snap.equipment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
@@ -55,6 +56,25 @@ class EquipmentDetailFormatterTest {
                 "sensor/APS-C mount/Canon RF "
                         + "thread/1/4\"-20 battery/LP-E17",
                 details.toString());
+    }
+
+    @Test
+    void appendIfSpecified_nullDetails_throwsAssertionError() {
+        assertThrows(AssertionError.class,
+                () -> EquipmentDetailFormatter.appendIfSpecified(null, EquipmentDetailField.MOUNT, "Canon RF"));
+    }
+
+    @Test
+    void appendIfSpecified_nullField_throwsAssertionError() {
+        assertThrows(AssertionError.class,
+                () -> EquipmentDetailFormatter.appendIfSpecified(new StringBuilder(), null, "Canon RF"));
+    }
+
+    @Test
+    void appendIfSpecified_nullValue_throwsAssertionError() {
+        assertThrows(AssertionError.class,
+                () -> EquipmentDetailFormatter.appendIfSpecified(new StringBuilder(), EquipmentDetailField.MOUNT,
+                        null));
     }
 }
 
