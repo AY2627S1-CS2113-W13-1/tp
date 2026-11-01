@@ -232,6 +232,17 @@ class BundleHandlerTest {
     }
 
     @Test
+    void removeItemsFromBundle_onlyUnknownItems_doesNotPersistAChange() throws Exception {
+        Bundle bundle = bundleHandler.addBundle("add-bundle name/Travel Kit");
+
+        List<String> messages = bundleHandler.removeItemsFromBundle("remove-from-bundle id/001 999");
+
+        assertEquals(1, messages.size());
+        assertTrue(messages.getFirst().contains("not in bundle 001"));
+        assertTrue(bundle.getEquipmentList().isEmpty());
+    }
+
+    @Test
     void removeItemsFromBundle_invalidCommandOrUnknownBundle_throwsException() {
         assertThrows(BundleAdditionUnsuccessful.class,
                 () -> bundleHandler.removeItemsFromBundle("remove-from-bundle id/001"));
