@@ -123,64 +123,63 @@ public class EqmManager {
         if (normalizedInput.equals("restore") || normalizedInput.startsWith("restore ")) {
             restoreBackup(normalizedInput);
         } else if (startupError != null) {
-            if (normalizedInput.equals("bye")) {
+            if (normalizedInput.equals("exit")) {
                 isRunning = false;
             } else {
                 ConsoleOutput.error("Could not load saved data: " + startupError);
             }
         } else if (normalizedInput.matches("(?sU)help(?:\\s.*)?")) {
             Help.print(normalizedInput.substring("help".length()));
-        } else if (normalizedInput.equals("bye")) {
+        } else if (normalizedInput.equals("exit")) {
             isRunning = !saveBeforeExit();
         } else if (normalizedInput.equals("backup") || normalizedInput.startsWith("backup ")) {
             createBackup(normalizedInput);
-        } else if (normalizedInput.equals("delete loan")
-                || normalizedInput.startsWith("delete loan/")
-                || normalizedInput.startsWith("delete loan ")) {
+        } else if (normalizedInput.equals("loan-delete")
+                || normalizedInput.startsWith("loan-delete ")) {
             deleteLoan(normalizedInput);
-        } else if (normalizedInput.equals("delete") || normalizedInput.startsWith("delete ")) {
+        } else if (normalizedInput.matches("(?U)eqm-delete(?:\\s.*)?")) {
             deleteEquipment(normalizedInput);
-        } else if (normalizedInput.matches("(?U)add(?:\\s.*)?")) {
+        } else if (normalizedInput.matches("(?U)add-eqm(?:\\s.*)?")) {
             addEquipment(normalizedInput);
-        } else if (normalizedInput.matches("(?sU)loan(?:\\s.*)?")) {
+        } else if (normalizedInput.matches("(?sU)add-loan(?:\\s.*)?")) {
             addLoan(normalizedInput);
-        } else if (normalizedInput.matches("(?sU)return(?:\\s.*)?")) {
+        } else if (normalizedInput.matches("(?sU)loan-return(?:\\s.*)?")) {
             returnEquipment(normalizedInput);
-        } else if (normalizedInput.matches("(?sU)maintain(?:\\s.*)?")) {
+        } else if (normalizedInput.matches("(?sU)eqm-maintain(?:\\s.*)?")) {
             recordMaintenance(normalizedInput);
-        } else if (normalizedInput.startsWith("history bundle/")) {
+        } else if (normalizedInput.startsWith("bundle-history")) {
             viewBundleLoanHistory(normalizedInput);
-        } else if (normalizedInput.matches("(?sU)history(?:\\s.*)?")) {
+        } else if (normalizedInput.matches("(?sU)eqm-loan-history(?:\\s.*)?")) {
             viewLoanHistory(normalizedInput);
-        } else if (normalizedInput.matches("(?U)view(?:\\s.*)?")) {
+        } else if (normalizedInput.matches("(?U)loan-show(?:\\s.*)?")) {
             viewLoanIssueCondition(normalizedInput);
-        } else if (normalizedInput.matches("(?U)update\\s+loan(?:\\s.*|/.*)?")) {
+        } else if (normalizedInput.matches("(?U)loan-update(?:\\s.*|/.*)?")) {
             updateLoan(normalizedInput);
-        } else if (normalizedInput.matches("(?sU)list\\s+(?:borrower|member)(?:/.*|\\s.*)?")) {
+        } else if (normalizedInput.matches("(?sU)list-loan-borrower(?:\\s.*|/.*)?")) {
             viewActiveLoansForBorrower(normalizedInput);
-        } else if (normalizedInput.matches("(?U)filter(?:\\s.*)?")) {
+        } else if (normalizedInput.matches("(?U)filter-eqm(?:\\s.*)?")) {
             filterEquipment(normalizedInput);
-        } else if (normalizedInput.matches("(?U)update(?:\\s.*)?")) {
+        } else if (normalizedInput.matches("(?U)eqm-update(?:\\s.*)?")) {
             updateEquipment(normalizedInput);
-        } else if (normalizedInput.matches("(?sU)show(?:\\s.*)?")) {
+        } else if (normalizedInput.matches("(?sU)eqm-show(?:\\s.*)?")) {
             showEquipment(normalizedInput);
-        } else if (normalizedInput.equals("list overdue")) {
+        } else if (normalizedInput.equals("list-loan-overdue")) {
             viewOverdueLoans();
-        } else if (normalizedInput.equals("list loans")) {
+        } else if (normalizedInput.equals("list-loan")) {
             loans.viewAllLoans();
         } else if (normalizedInput.equals("add-bundle") || normalizedInput.startsWith("add-bundle ")) {
             addBundle(normalizedInput);
-        } else if (normalizedInput.equals("add-to-bundle") || normalizedInput.startsWith("add-to-bundle ")) {
+        } else if (normalizedInput.equals("bundle-add-eqm") || normalizedInput.startsWith("bundle-add-eqm ")) {
             addItemsToBundle(normalizedInput);
-        } else if (normalizedInput.matches("(?U)remove-from-bundle(?:\\s.*)?")) {
+        } else if (normalizedInput.matches("(?U)bundle-remove-eqm(?:\\s.*)?")) {
             removeItemsFromBundle(normalizedInput);
-        } else if (normalizedInput.equals("list bundles")) {
+        } else if (normalizedInput.equals("list-bundle")) {
             try {
                 bundles.viewAllBundles(normalizedInput);
             } catch (BundleAdditionUnsuccessful e) {
                 ConsoleOutput.error(e.getMessage());
             }
-        } else if (normalizedInput.equals("list") || normalizedInput.startsWith("list ")) {
+        } else if (normalizedInput.equals("list-eqm")) {
             equipment.viewAllEquipment();
         } else {
             ConsoleOutput.error("Command not recognised. Type help for available commands.");

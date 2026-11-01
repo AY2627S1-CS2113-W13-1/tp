@@ -97,7 +97,7 @@ final class EquipmentStorage {
     /** Loads legacy add records as serviceable and reads assessment metadata without parsing free-form field text. */
     private static Equipment parseServiceabilityLine(String line) throws EquipmentAdditionUnsuccessful {
         if (!line.startsWith(SERVICEABILITY_PREFIX)) {
-            return EquipmentHandler.parseEquipment(line);
+            return EquipmentHandler.parseStoredEquipment(line);
         }
         int delimiter = line.indexOf('\t');
         if (delimiter < 0) {
@@ -107,7 +107,7 @@ final class EquipmentStorage {
         if (!serviceability.equals("yes") && !serviceability.equals("no")) {
             throw new IllegalArgumentException("Saved serviceability must be yes or no.");
         }
-        Equipment equipment = EquipmentHandler.parseEquipment(line.substring(delimiter + 1));
+        Equipment equipment = EquipmentHandler.parseStoredEquipment(line.substring(delimiter + 1));
         equipment.setServiceable(serviceability.equals("yes"));
         return equipment;
     }

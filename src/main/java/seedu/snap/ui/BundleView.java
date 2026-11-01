@@ -45,7 +45,7 @@ public final class BundleView {
 
     /** Describes current persistence, which supersedes the original session-only bundle limitation. */
     public static void persistenceNote() {
-        System.out.println("Save new bundles and additions with bye; saved bundles are restored at startup.");
+        System.out.println("Save new bundles and additions with exit; saved bundles are restored at startup.");
         System.out.println("Successful membership removals are saved immediately.");
     }
 }
