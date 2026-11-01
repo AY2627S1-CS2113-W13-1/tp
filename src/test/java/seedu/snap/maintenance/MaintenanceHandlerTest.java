@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -42,6 +43,19 @@ class MaintenanceHandlerTest {
 
         handler.loadFromStorage();
 
+        assertTrue(handler.getMaintenanceRecords().isEmpty());
+    }
+
+    @Test
+    void loadFromStorage_futureRecord_isRejected() throws Exception {
+        Path file = temporaryDirectory.resolve("maintenance.txt");
+        Files.writeString(file, "maintenance\tequipment/" + java.util.UUID.randomUUID()
+                + "\tdate/28-10-26\twork/Repair\toutcome/Planned\n");
+        MaintenanceHandler handler = new MaintenanceHandler(new EquipmentHandler(), file, FIXED_CLOCK);
+
+        IOException exception = assertThrows(IOException.class, handler::loadFromStorage);
+
+        assertEquals("Maintenance date cannot be in the future.", exception.getMessage());
         assertTrue(handler.getMaintenanceRecords().isEmpty());
     }
 
