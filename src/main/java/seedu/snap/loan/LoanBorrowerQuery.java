@@ -8,7 +8,7 @@ import seedu.snap.exceptions.LoanBorrowerUnsuccessful;
 /** Represents a validated command for finding equipment held by one borrower. */
 public record LoanBorrowerQuery(String borrowerId) {
     private static final Pattern COMMAND = Pattern.compile(
-            "(?U)\\Alist-loan-borrower\\s+U-id/([0-9]{3})\\z");
+            "(?U)\\Alist-loan-borrower\\s+u/([0-9]{3})\\z");
 
     /** Creates a query after validating the borrower's three-digit identifier. */
     public LoanBorrowerQuery {
@@ -33,6 +33,6 @@ public record LoanBorrowerQuery(String borrowerId) {
     /** Creates the user-facing error shared by all malformed borrower query commands. */
     private static LoanBorrowerUnsuccessful invalidFormat() {
         return new LoanBorrowerUnsuccessful(
-                "Invalid format. Use: list-loan-borrower U-id/[BORROWER ID], from 000 to 999.");
+                "Invalid format. Use: list-loan-borrower u/[BORROWER ID], from 000 to 999.");
     }
 }

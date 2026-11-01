@@ -29,7 +29,7 @@ public class BundleHandler {
     private static final String LIST_BUNDLES_COMMAND = "list-bundle";
     private static final String HISTORY_COMMAND_PREFIX = "bundle-history ";
     private static final String NAME_MARKER = "name/";
-    private static final String ID_MARKER = "B-id/";
+    private static final String ID_MARKER = "b/";
     private static final Logger LOGGER = Logger.getLogger(BundleHandler.class.getName());
 
     private final ArrayList<Bundle> bundles = new ArrayList<>();
@@ -169,7 +169,7 @@ public class BundleHandler {
     /**
      * Adds every valid equipment ID from a command and reports each result.
      *
-     * @param input command in the form {@code bundle-add-eqm B-id/[BUNDLE ID] [EQUIPMENT ID]...}
+     * @param input command in the form {@code bundle-add-eqm b/[BUNDLE ID] [EQUIPMENT ID]...}
      * @return one success or failure message for every requested equipment ID
      * @throws BundleAdditionUnsuccessful when the command syntax is invalid
      */
@@ -182,7 +182,7 @@ public class BundleHandler {
         String[] arguments = input == null ? new String[0] : input.trim().split("\\s+");
         if (arguments.length < 3 || !arguments[0].equals(ADD_TO_BUNDLE_COMMAND)) {
             throw new BundleAdditionUnsuccessful(
-                    "Invalid format. Use: bundle-add-eqm B-id/[BUNDLE ID] [EQUIPMENT ID]...");
+                    "Invalid format. Use: bundle-add-eqm b/[BUNDLE ID] [EQUIPMENT ID]...");
         }
 
         String bundleId = parseBundleId(arguments[1]);
@@ -203,7 +203,7 @@ public class BundleHandler {
     /**
      * Removes every requested equipment ID from one bundle and reports each result.
      *
-     * @param input command in the form {@code bundle-remove-eqm B-id/[BUNDLE ID] [EQUIPMENT ID]...}
+     * @param input command in the form {@code bundle-remove-eqm b/[BUNDLE ID] [EQUIPMENT ID]...}
      * @return one success or failure message for every requested equipment ID
      * @throws BundleAdditionUnsuccessful when the command syntax or bundle ID is invalid
      */
@@ -216,7 +216,7 @@ public class BundleHandler {
         String[] arguments = input == null ? new String[0] : input.trim().split("\\s+");
         if (arguments.length < 3 || !arguments[0].equals(REMOVE_FROM_BUNDLE_COMMAND)) {
             throw new BundleAdditionUnsuccessful(
-                    "Invalid format. Use: bundle-remove-eqm B-id/[BUNDLE ID] [EQUIPMENT ID]...");
+                    "Invalid format. Use: bundle-remove-eqm b/[BUNDLE ID] [EQUIPMENT ID]...");
         }
 
         String bundleId = parseBundleId(arguments[1]);
@@ -265,7 +265,7 @@ public class BundleHandler {
     /**
      * Selects all loans for every physical item in a bundle.
      *
-     * @param input command in the form {@code bundle-history B-id/[ID]} or
+     * @param input command in the form {@code bundle-history b/[ID]} or
      *              {@code bundle-history name/[NAME]}
      * @param loans handler containing active and returned loan records
      * @return an unmodifiable list sorted by issue date and loan ID
@@ -430,7 +430,7 @@ public class BundleHandler {
         String normalized = input == null ? "" : input.trim();
         if (!normalized.startsWith(HISTORY_COMMAND_PREFIX)) {
             throw new BundleHistoryUnsuccessful(
-                    "Invalid format. Use: bundle-history B-id/[BUNDLE ID] or bundle-history name/[NAME].");
+                    "Invalid format. Use: bundle-history b/[BUNDLE ID] or bundle-history name/[NAME].");
         }
 
         String selector = normalized.substring(HISTORY_COMMAND_PREFIX.length()).trim();
@@ -449,7 +449,7 @@ public class BundleHandler {
             return new BundleSelector(null, name);
         }
         throw new BundleHistoryUnsuccessful(
-                "Invalid format. Use: bundle-history B-id/[BUNDLE ID] or bundle-history name/[NAME].");
+                "Invalid format. Use: bundle-history b/[BUNDLE ID] or bundle-history name/[NAME].");
     }
 
     /** Represents one validated bundle history selector. */
@@ -468,7 +468,7 @@ public class BundleHandler {
 
     private String parseBundleId(String argument) throws BundleAdditionUnsuccessful {
         if (!argument.startsWith(ID_MARKER)) {
-            throw new BundleAdditionUnsuccessful("Bundle ID must use the B-id/[three digits] format.");
+            throw new BundleAdditionUnsuccessful("Bundle ID must use the b/[three digits] format.");
         }
         String bundleId = argument.substring(ID_MARKER.length());
         if (!bundleId.matches("[0-9]{3}") || bundleId.equals("000")) {

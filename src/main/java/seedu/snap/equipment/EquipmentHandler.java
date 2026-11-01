@@ -24,17 +24,17 @@ public class EquipmentHandler {
     /** Diagnostic logger; the application sends outcomes and detailed traces to local files. */
     private static final Logger logger = Logger.getLogger(EquipmentHandler.class.getName());
     private static final String ADD_COMMAND = "add-eqm";
-    private static final String ADD_FORMAT_ERROR = "Invalid format. Use: add-eqm name/[ITEM] E-id/[ITEM ID] "
+    private static final String ADD_FORMAT_ERROR = "Invalid format. Use: add-eqm name/[ITEM] e/[ITEM ID] "
             + "type/[TYPE] cond/[CONDITION]";
     private static final String LEGACY_ADD_COMMAND = "add";
     private static final String LEGACY_ITEM_MARKER = "i/";
     private static final String LEGACY_ID_MARKER = "id/";
     private static final String LEGACY_ADD_FORMAT_ERROR = "Invalid format. Use: add i/[ITEM] id/[ITEM ID] "
             + "type/[TYPE] cond/[CONDITION]";
-    private static final Pattern DELETE_PATTERN = Pattern.compile("eqm-delete\\s+E-id/([0-9]{3})");
-    private static final Pattern SHOW_PATTERN = Pattern.compile("(?U)eqm-show\\s+E-id/([0-9]{3})");
+    private static final Pattern DELETE_PATTERN = Pattern.compile("eqm-delete\\s+e/([0-9]{3})");
+    private static final Pattern SHOW_PATTERN = Pattern.compile("(?U)eqm-show\\s+e/([0-9]{3})");
     private static final String ITEM_MARKER = "name/";
-    private static final String ID_MARKER = "E-id/";
+    private static final String ID_MARKER = "e/";
     private static final String TYPE_MARKER = "type/";
     private static final String CONDITION_MARKER = "cond/";
     private static final String[] DETAIL_MARKERS =
@@ -590,7 +590,7 @@ public class EquipmentHandler {
     public void showEquipment(String input) throws EquipmentViewingUnsuccessful {
         Matcher matcher = input == null ? null : SHOW_PATTERN.matcher(EquipmentFields.trimWhitespace(input));
         if (matcher == null || !matcher.matches() || matcher.group(1).equals("000")) {
-            throw new EquipmentViewingUnsuccessful("Invalid format. Use: eqm-show E-id/[ITEM ID], from 001 to 999.");
+            throw new EquipmentViewingUnsuccessful("Invalid format. Use: eqm-show e/[ITEM ID], from 001 to 999.");
         }
         Equipment item = getEquipmentById(matcher.group(1));
         if (item == null) {
