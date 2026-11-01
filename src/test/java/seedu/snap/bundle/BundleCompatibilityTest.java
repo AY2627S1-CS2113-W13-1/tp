@@ -28,23 +28,23 @@ class BundleCompatibilityTest {
     @BeforeEach
     void setUp() throws EquipmentAdditionUnsuccessful {
         equipmentHandler = new EquipmentHandler();
-        equipmentHandler.addEquipment("add i/Camera id/001 type/camera cond/1 sensor/APS-C"
+        equipmentHandler.addEquipment("add-eqm name/Camera E-id/001 type/camera cond/1 sensor/APS-C"
                 + " mount/Canon RF thread/Quarter inch battery/LP-E17");
-        equipmentHandler.addEquipment("add i/Compatible Lens id/002 type/lens cond/1 zoom/18-45 mm"
+        equipmentHandler.addEquipment("add-eqm name/Compatible Lens E-id/002 type/lens cond/1 zoom/18-45 mm"
                 + " mount/canon rf sensor/aps-c");
-        equipmentHandler.addEquipment("add i/Compatible Battery id/003 type/battery cond/1"
+        equipmentHandler.addEquipment("add-eqm name/Compatible Battery E-id/003 type/battery cond/1"
                 + " capacity/1000 mAh battery/lp-e17");
-        equipmentHandler.addEquipment("add i/Compatible Tripod id/004 type/tripod cond/1"
+        equipmentHandler.addEquipment("add-eqm name/Compatible Tripod E-id/004 type/tripod cond/1"
                 + " thread/quarter inch");
-        equipmentHandler.addEquipment("add i/Wrong Mount Lens id/005 type/lens cond/1"
+        equipmentHandler.addEquipment("add-eqm name/Wrong Mount Lens E-id/005 type/lens cond/1"
                 + " mount/Nikon Z sensor/APS-C");
-        equipmentHandler.addEquipment("add i/Wrong Sensor Lens id/006 type/lens cond/1"
+        equipmentHandler.addEquipment("add-eqm name/Wrong Sensor Lens E-id/006 type/lens cond/1"
                 + " mount/Canon RF sensor/Full frame");
-        equipmentHandler.addEquipment("add i/Wrong Battery id/007 type/battery cond/1"
+        equipmentHandler.addEquipment("add-eqm name/Wrong Battery E-id/007 type/battery cond/1"
                 + " battery/NP-FZ100");
-        equipmentHandler.addEquipment("add i/Wrong Tripod id/008 type/tripod cond/1"
+        equipmentHandler.addEquipment("add-eqm name/Wrong Tripod E-id/008 type/tripod cond/1"
                 + " thread/Three eighth inch");
-        equipmentHandler.addEquipment("add i/Unknown Lens id/009 type/lens cond/1");
+        equipmentHandler.addEquipment("add-eqm name/Unknown Lens E-id/009 type/lens cond/1");
         bundleHandler = new BundleHandler(equipmentHandler);
     }
 
@@ -54,7 +54,7 @@ class BundleCompatibilityTest {
         Bundle bundle = bundleHandler.addBundle("add-bundle name/Compatible Kit");
 
         List<String> messages =
-                bundleHandler.addItemsToBundle("add-to-bundle id/001 001 002 003 004");
+                bundleHandler.addItemsToBundle("bundle-add-eqm B-id/001 001 002 003 004");
 
         assertEquals(4, messages.size());
         assertTrue(messages.stream().allMatch(message -> message.contains("successfully")));
@@ -75,10 +75,10 @@ class BundleCompatibilityTest {
     void addItemsToBundle_incompatibleEquipment_rejectsCandidate(String candidateId)
             throws BundleAdditionUnsuccessful {
         Bundle bundle = bundleHandler.addBundle("add-bundle name/Incompatible Kit");
-        bundleHandler.addItemsToBundle("add-to-bundle id/001 001");
+        bundleHandler.addItemsToBundle("bundle-add-eqm B-id/001 001");
 
         List<String> messages =
-                bundleHandler.addItemsToBundle("add-to-bundle id/001 " + candidateId);
+                bundleHandler.addItemsToBundle("bundle-add-eqm B-id/001 " + candidateId);
 
         assertEquals(List.of(
                 "Equipment ID " + candidateId
@@ -94,7 +94,7 @@ class BundleCompatibilityTest {
         Bundle bundle = bundleHandler.addBundle("add-bundle name/Mixed Kit");
 
         List<String> messages =
-                bundleHandler.addItemsToBundle("add-to-bundle id/001 001 005 003");
+                bundleHandler.addItemsToBundle("bundle-add-eqm B-id/001 001 005 003");
 
         assertTrue(messages.get(0).contains("successfully"));
         assertEquals(
@@ -110,7 +110,7 @@ class BundleCompatibilityTest {
         Bundle bundle = bundleHandler.addBundle("add-bundle name/Reverse Kit");
 
         List<String> messages =
-                bundleHandler.addItemsToBundle("add-to-bundle id/001 005 001");
+                bundleHandler.addItemsToBundle("bundle-add-eqm B-id/001 005 001");
 
         assertTrue(messages.get(0).contains("successfully"));
         assertEquals(
@@ -125,7 +125,7 @@ class BundleCompatibilityTest {
         Bundle bundle = bundleHandler.addBundle("add-bundle name/Unknown Kit");
 
         List<String> messages =
-                bundleHandler.addItemsToBundle("add-to-bundle id/001 001 009");
+                bundleHandler.addItemsToBundle("bundle-add-eqm B-id/001 001 009");
 
         assertTrue(messages.stream().allMatch(message -> message.contains("successfully")));
         assertEquals(List.of("001", "009"), equipmentIds(bundle));
@@ -137,7 +137,7 @@ class BundleCompatibilityTest {
         Bundle bundle = bundleHandler.addBundle("add-bundle name/Camera-free Kit");
 
         List<String> messages =
-                bundleHandler.addItemsToBundle("add-to-bundle id/001 002 003");
+                bundleHandler.addItemsToBundle("bundle-add-eqm B-id/001 002 003");
 
         assertTrue(messages.stream().allMatch(message -> message.contains("successfully")));
         assertEquals(List.of("002", "003"), equipmentIds(bundle));

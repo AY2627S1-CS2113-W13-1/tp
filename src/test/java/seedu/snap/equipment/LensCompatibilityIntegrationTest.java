@@ -21,7 +21,7 @@ import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 /** Tests Lens compatibility parsing, display and persistence. */
 class LensCompatibilityIntegrationTest {
     private static final String FULL_LENS_COMMAND =
-            "add i/Standard Zoom id/101 type/lens cond/8 "
+            "add-eqm name/Standard Zoom E-id/101 type/lens cond/8 "
                     + "zoom/24-70 mm mount/Canon RF "
                     + "sensor/Full frame damage/NONE remarks/Ready";
 
@@ -45,7 +45,7 @@ class LensCompatibilityIntegrationTest {
         Lens lens = assertInstanceOf(
                 Lens.class,
                 EquipmentHandler.parseEquipment(
-                        "add i/Prime Lens id/102 type/lens cond/9"));
+                        "add-eqm name/Prime Lens E-id/102 type/lens cond/9"));
 
         assertEquals(
                 CompatibilityText.UNSPECIFIED,
@@ -65,7 +65,7 @@ class LensCompatibilityIntegrationTest {
         Lens lens = assertInstanceOf(
                 Lens.class,
                 EquipmentHandler.parseEquipment(
-                        "add i/Portrait Lens id/103 type/lens cond/7 "
+                        "add-eqm name/Portrait Lens E-id/103 type/lens cond/7 "
                                 + "mount/Nikon Z sensor/Full frame"));
 
         assertEquals(
@@ -82,13 +82,13 @@ class LensCompatibilityIntegrationTest {
     @Test
     void parseEquipment_invalidLensFields_throwException() {
         String repeatedMount =
-                "add i/Lens id/104 type/lens cond/5 "
+                "add-eqm name/Lens E-id/104 type/lens cond/5 "
                         + "mount/Canon RF mount/Nikon Z";
         String wrongOrder =
-                "add i/Lens id/105 type/lens cond/5 "
+                "add-eqm name/Lens E-id/105 type/lens cond/5 "
                         + "sensor/APS-C mount/Canon RF";
         String batteryField =
-                "add i/Lens id/106 type/lens cond/5 "
+                "add-eqm name/Lens E-id/106 type/lens cond/5 "
                         + "battery/LP-E17";
 
         assertThrows(
@@ -162,7 +162,7 @@ class LensCompatibilityIntegrationTest {
 
         Lens updatedLens = assertInstanceOf(
                 Lens.class,
-                handler.updateEquipment("update id/101 cond/9"));
+                handler.updateEquipment("eqm-update E-id/101 cond/9"));
 
         assertEquals(9, updatedLens.getCondition());
         assertFullCompatibility(updatedLens);
@@ -194,7 +194,7 @@ class LensCompatibilityIntegrationTest {
                             output,
                             true,
                             StandardCharsets.UTF_8));
-            handler.showEquipment("show id/101");
+            handler.showEquipment("eqm-show E-id/101");
         } finally {
             System.setOut(originalOutput);
         }

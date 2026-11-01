@@ -32,15 +32,17 @@ class BundleHandlerTest {
     @BeforeEach
     void setUp() throws EquipmentAdditionUnsuccessful {
         equipmentHandler = new EquipmentHandler();
-        equipmentHandler.addEquipment("add i/Camera id/001 type/camera cond/8 sensor/Full frame"
+        equipmentHandler.addEquipment("add-eqm name/Camera E-id/001 type/camera cond/8 sensor/Full frame"
                 + " damage/SHUTTER_FAULT remarks/Handle with care");
-        equipmentHandler.addEquipment("add i/Battery id/002 type/battery cond/8 capacity/2000 mAh damage/NONE");
-        equipmentHandler.addEquipment("add i/Battery 2 id/003 type/battery cond/8");
-        equipmentHandler.addEquipment("add i/Tripod id/004 type/tripod cond/8 thread/Quarter inch damage/NONE");
-        equipmentHandler.addEquipment("add i/Lens id/005 type/lens cond/8 zoom/24 to 70 mm damage/NONE");
-        equipmentHandler.addEquipment("add i/Lens 2 id/006 type/lens cond/8");
-        equipmentHandler.addEquipment("add i/Camera 2 id/007 type/camera cond/8");
-        equipmentHandler.addEquipment("add i/Tripod 2 id/008 type/tripod cond/8");
+        equipmentHandler.addEquipment("add-eqm name/Battery E-id/002 type/battery cond/8 "
+                + "capacity/2000 mAh damage/NONE");
+        equipmentHandler.addEquipment("add-eqm name/Battery 2 E-id/003 type/battery cond/8");
+        equipmentHandler.addEquipment("add-eqm name/Tripod E-id/004 type/tripod cond/8 "
+                + "thread/Quarter inch damage/NONE");
+        equipmentHandler.addEquipment("add-eqm name/Lens E-id/005 type/lens cond/8 zoom/24 to 70 mm damage/NONE");
+        equipmentHandler.addEquipment("add-eqm name/Lens 2 E-id/006 type/lens cond/8");
+        equipmentHandler.addEquipment("add-eqm name/Camera 2 E-id/007 type/camera cond/8");
+        equipmentHandler.addEquipment("add-eqm name/Tripod 2 E-id/008 type/tripod cond/8");
         bundleHandler = new BundleHandler(equipmentHandler);
     }
 
@@ -91,7 +93,7 @@ class BundleHandlerTest {
             throws BundleAdditionUnsuccessful {
         Bundle bundle = bundleHandler.addBundle("add-bundle name/Travel Kit");
 
-        List<String> messages = bundleHandler.addItemsToBundle("add-to-bundle id/001 001 002 005");
+        List<String> messages = bundleHandler.addItemsToBundle("bundle-add-eqm B-id/001 001 002 005");
 
         assertEquals(3, messages.size());
         assertTrue(messages.stream().allMatch(message -> message.contains("successfully")));
@@ -103,7 +105,7 @@ class BundleHandlerTest {
             throws BundleAdditionUnsuccessful {
         Bundle bundle = bundleHandler.addBundle("add-bundle name/Travel Kit");
 
-        List<String> messages = bundleHandler.addItemsToBundle("add-to-bundle id/001 001 007 004 008");
+        List<String> messages = bundleHandler.addItemsToBundle("bundle-add-eqm B-id/001 001 007 004 008");
 
         assertEquals(4, messages.size());
         assertTrue(messages.get(0).contains("successfully"));
@@ -118,9 +120,9 @@ class BundleHandlerTest {
             throws BundleAdditionUnsuccessful, LoanAdditionUnsuccessful {
         Bundle bundle = bundleHandler.addBundle("add-bundle name/Travel Kit");
         LoanHandler loans = new LoanHandler(equipmentHandler);
-        loans.addLoan("loan id/006 b/001 issued/01-10-26 due/02-10-26");
+        loans.addLoan("add-loan E-id/006 U-id/001 issued/01-10-26 due/02-10-26");
 
-        List<String> messages = bundleHandler.addItemsToBundle("add-to-bundle id/001 999 006 001 001");
+        List<String> messages = bundleHandler.addItemsToBundle("bundle-add-eqm B-id/001 999 006 001 001");
 
         assertTrue(messages.get(0).contains("does not exist"));
         assertTrue(messages.get(1).contains("currently loaned"));
@@ -132,15 +134,15 @@ class BundleHandlerTest {
     @Test
     void addItemsToBundle_returnedItem_canJoinBundle() throws Exception {
         Bundle bundle = bundleHandler.addBundle("add-bundle name/Travel Kit");
-        bundleHandler.addItemsToBundle("add-to-bundle id/001 001 002");
+        bundleHandler.addItemsToBundle("bundle-add-eqm B-id/001 001 002");
         LoanHandler loans = new LoanHandler(equipmentHandler);
-        Loan loan = loans.addLoan("loan id/005 b/001 issued/01-10-26 due/02-10-26");
-        assertTrue(bundleHandler.addItemsToBundle("add-to-bundle id/001 005")
+        Loan loan = loans.addLoan("add-loan E-id/005 U-id/001 issued/01-10-26 due/02-10-26");
+        assertTrue(bundleHandler.addItemsToBundle("bundle-add-eqm B-id/001 005")
                 .getFirst().contains("currently loaned"));
         assertFalse(bundle.isComplete());
 
         loan.setReturned(true);
-        List<String> messages = bundleHandler.addItemsToBundle("add-to-bundle id/001 005");
+        List<String> messages = bundleHandler.addItemsToBundle("bundle-add-eqm B-id/001 005");
 
         assertEquals(List.of("Equipment ID 005 added to bundle 001 successfully."), messages);
         assertTrue(bundle.isComplete());
@@ -151,10 +153,10 @@ class BundleHandlerTest {
     void addItemsToBundle_deletedLoan_releasesItemForBundle() throws Exception {
         Bundle bundle = bundleHandler.addBundle("add-bundle name/Travel Kit");
         LoanHandler loans = new LoanHandler(equipmentHandler);
-        loans.addLoan("loan id/001 b/001 issued/01-10-26 due/02-10-26");
+        loans.addLoan("add-loan E-id/001 U-id/001 issued/01-10-26 due/02-10-26");
 
-        loans.deleteLoan("delete loan/001");
-        List<String> messages = bundleHandler.addItemsToBundle("add-to-bundle id/001 001");
+        loans.deleteLoan("loan-delete L-id/001");
+        List<String> messages = bundleHandler.addItemsToBundle("bundle-add-eqm B-id/001 001");
 
         assertTrue(messages.getFirst().contains("successfully"));
         assertEquals(List.of(equipmentHandler.getEquipmentById("001")), bundle.getEquipmentList());
@@ -164,9 +166,9 @@ class BundleHandlerTest {
     void addItemsToBundle_allowsBatteryLensAdditionsAfterCompletion()
             throws BundleAdditionUnsuccessful {
         Bundle bundle = bundleHandler.addBundle("add-bundle name/Travel Kit");
-        bundleHandler.addItemsToBundle("add-to-bundle id/001 001 002 005");
+        bundleHandler.addItemsToBundle("bundle-add-eqm B-id/001 001 002 005");
 
-        List<String> messages = bundleHandler.addItemsToBundle("add-to-bundle id/001 003 006");
+        List<String> messages = bundleHandler.addItemsToBundle("bundle-add-eqm B-id/001 003 006");
 
         assertTrue(messages.stream().allMatch(message -> message.contains("successfully")));
         assertTrue(bundle.isComplete());
@@ -179,8 +181,8 @@ class BundleHandlerTest {
         Bundle first = bundleHandler.addBundle("add-bundle name/First Kit");
         Bundle second = bundleHandler.addBundle("add-bundle name/Second Kit");
 
-        List<String> firstMessages = bundleHandler.addItemsToBundle("add-to-bundle id/001 001");
-        List<String> secondMessages = bundleHandler.addItemsToBundle("add-to-bundle id/002 001");
+        List<String> firstMessages = bundleHandler.addItemsToBundle("bundle-add-eqm B-id/001 001");
+        List<String> secondMessages = bundleHandler.addItemsToBundle("bundle-add-eqm B-id/002 001");
 
         assertTrue(firstMessages.getFirst().contains("successfully"));
         assertTrue(secondMessages.getFirst().contains("successfully"));
@@ -191,15 +193,15 @@ class BundleHandlerTest {
     @Test
     void addItemsToBundle_unknownBundle_throwsException() {
         assertThrows(BundleAdditionUnsuccessful.class,
-                () -> bundleHandler.addItemsToBundle("add-to-bundle id/001 001"));
+                () -> bundleHandler.addItemsToBundle("bundle-add-eqm B-id/001 001"));
     }
 
     @Test
     void removeItemsFromBundle_removesMembersAndReportsEachResult() throws Exception {
         Bundle bundle = bundleHandler.addBundle("add-bundle name/Travel Kit");
-        bundleHandler.addItemsToBundle("add-to-bundle id/001 001 002 005");
+        bundleHandler.addItemsToBundle("bundle-add-eqm B-id/001 001 002 005");
 
-        List<String> messages = bundleHandler.removeItemsFromBundle("remove-from-bundle id/001 002 999 001");
+        List<String> messages = bundleHandler.removeItemsFromBundle("bundle-remove-eqm B-id/001 002 999 001");
 
         assertEquals(3, messages.size());
         assertTrue(messages.get(0).contains("removed from bundle 001 successfully"));
@@ -213,9 +215,9 @@ class BundleHandlerTest {
     @Test
     void removeItemsFromBundle_invalidCommandOrUnknownBundle_throwsException() {
         assertThrows(BundleAdditionUnsuccessful.class,
-                () -> bundleHandler.removeItemsFromBundle("remove-from-bundle id/001"));
+                () -> bundleHandler.removeItemsFromBundle("bundle-remove-eqm B-id/001"));
         assertThrows(BundleAdditionUnsuccessful.class,
-                () -> bundleHandler.removeItemsFromBundle("remove-from-bundle id/999 001"));
+                () -> bundleHandler.removeItemsFromBundle("bundle-remove-eqm B-id/999 001"));
     }
 
     @Test
@@ -223,7 +225,7 @@ class BundleHandlerTest {
         Bundle first = bundleHandler.addBundle("add-bundle name/First Kit");
         Bundle second = bundleHandler.addBundle("add-bundle name/Second Kit");
         assertFalse(bundleHandler.containsEquipmentId("001"));
-        bundleHandler.addItemsToBundle("add-to-bundle id/002 001 002 005");
+        bundleHandler.addItemsToBundle("bundle-add-eqm B-id/002 001 002 005");
 
         assertTrue(bundleHandler.containsEquipmentId("001"));
         assertTrue(bundleHandler.containsEquipmentId("002"));
@@ -238,10 +240,10 @@ class BundleHandlerTest {
     @Test
     void updateEquipment_bundledItem_preservesReferenceDetailsAndCompletion() throws Exception {
         Bundle bundle = bundleHandler.addBundle("add-bundle name/Travel Kit");
-        bundleHandler.addItemsToBundle("add-to-bundle id/001 001 002 005");
+        bundleHandler.addItemsToBundle("bundle-add-eqm B-id/001 001 002 005");
         Equipment camera = equipmentHandler.getEquipmentById("001");
 
-        equipmentHandler.updateEquipment("update id/001 i/Updated Camera cond/3");
+        equipmentHandler.updateEquipment("eqm-update E-id/001 name/Updated Camera cond/3");
 
         assertSame(camera, bundle.getEquipmentList().getFirst());
         assertEquals("Updated Camera", bundle.getEquipmentList().getFirst().getItemName());
@@ -254,13 +256,13 @@ class BundleHandlerTest {
     @Test
     void viewAllBundles_printsBundleAndContents() throws BundleAdditionUnsuccessful {
         bundleHandler.addBundle("add-bundle name/Travel Kit");
-        bundleHandler.addItemsToBundle("add-to-bundle id/001 001 002");
+        bundleHandler.addItemsToBundle("bundle-add-eqm B-id/001 001 002");
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         PrintStream originalOutput = System.out;
         System.setOut(new PrintStream(output, true, StandardCharsets.UTF_8));
 
         try {
-            bundleHandler.viewAllBundles("list bundles");
+            bundleHandler.viewAllBundles("list-bundle");
         } finally {
             System.setOut(originalOutput);
         }
@@ -275,13 +277,13 @@ class BundleHandlerTest {
     @Test
     void getBundleLoanHistory_combinesActiveAndReturnedLoansInChronologicalOrder() throws Exception {
         Bundle bundle = bundleHandler.addBundle("add-bundle name/Travel Kit");
-        bundleHandler.addItemsToBundle("add-to-bundle id/001 001 002");
+        bundleHandler.addItemsToBundle("bundle-add-eqm B-id/001 001 002");
         LoanHandler loans = new LoanHandler(equipmentHandler);
-        Loan firstLoan = loans.addLoan("loan id/001 b/111 issued/01-10-26 due/02-10-26");
-        Loan secondLoan = loans.addLoan("loan id/002 b/222 issued/03-10-26 due/04-10-26");
+        Loan firstLoan = loans.addLoan("add-loan E-id/001 U-id/111 issued/01-10-26 due/02-10-26");
+        Loan secondLoan = loans.addLoan("add-loan E-id/002 U-id/222 issued/03-10-26 due/04-10-26");
         secondLoan.setReturned(true);
 
-        List<Loan> history = bundleHandler.getBundleLoanHistory("history bundle/id/001", loans);
+        List<Loan> history = bundleHandler.getBundleLoanHistory("bundle-history B-id/001", loans);
 
         assertEquals(List.of(firstLoan, secondLoan), history);
         assertEquals("111", history.getFirst().getBorrowerId());
@@ -293,7 +295,7 @@ class BundleHandlerTest {
     void getBundleLoanHistory_canSelectByNameAndHandlesEmptyHistory() throws Exception {
         bundleHandler.addBundle("add-bundle name/Travel Kit");
 
-        List<Loan> history = bundleHandler.getBundleLoanHistory("history bundle/name/Travel Kit",
+        List<Loan> history = bundleHandler.getBundleLoanHistory("bundle-history name/Travel Kit",
                 new LoanHandler(equipmentHandler));
 
         assertTrue(history.isEmpty());
@@ -302,12 +304,12 @@ class BundleHandlerTest {
     @Test
     void getBundleLoanHistory_rejectsInvalidAndUnknownSelectors() {
         LoanHandler loans = new LoanHandler(equipmentHandler);
-        for (String input : new String[]{"history bundle/id/000", "history bundle/id/01",
-            "history bundle/name/", "history id/001"}) {
+        for (String input : new String[]{"bundle-history B-id/000", "bundle-history B-id/01",
+            "bundle-history name/", "eqm-loan-history E-id/001"}) {
             assertThrows(BundleHistoryUnsuccessful.class,
                     () -> bundleHandler.getBundleLoanHistory(input, loans));
         }
         assertThrows(BundleHistoryUnsuccessful.class,
-                () -> bundleHandler.getBundleLoanHistory("history bundle/id/001", loans));
+                () -> bundleHandler.getBundleLoanHistory("bundle-history B-id/001", loans));
     }
 }

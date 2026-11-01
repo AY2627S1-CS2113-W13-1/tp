@@ -21,7 +21,7 @@ import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 /** Tests Camera compatibility parsing, display and persistence. */
 class CameraCompatibilityIntegrationTest {
     private static final String FULL_CAMERA_COMMAND =
-            "add i/Canon R50 id/001 type/camera cond/8 "
+            "add-eqm name/Canon R50 E-id/001 type/camera cond/8 "
                     + "sensor/APS-C mount/Canon RF thread/1/4\"-20 "
                     + "battery/LP-E17 damage/NONE remarks/Ready";
 
@@ -45,7 +45,7 @@ class CameraCompatibilityIntegrationTest {
         Camera camera = assertInstanceOf(
                 Camera.class,
                 EquipmentHandler.parseEquipment(
-                        "add i/Camera id/001 type/camera cond/5 "
+                        "add-eqm name/Camera E-id/001 type/camera cond/5 "
                                 + "sensor/APS-C damage/NONE"));
 
         assertEquals("APS-C", camera.getSensorFormat());
@@ -63,7 +63,7 @@ class CameraCompatibilityIntegrationTest {
         Camera camera = assertInstanceOf(
                 Camera.class,
                 EquipmentHandler.parseEquipment(
-                        "add i/Camera id/001 type/camera cond/5 "
+                        "add-eqm name/Camera E-id/001 type/camera cond/5 "
                                 + "mount/Canon RF battery/LP-E17"));
 
         assertEquals("Canon RF", camera.getLensMount());
@@ -79,7 +79,7 @@ class CameraCompatibilityIntegrationTest {
 
     @Test
     void parseEquipment_repeatedCompatibilityField_throwsException() {
-        String command = "add i/Camera id/001 type/camera cond/5 "
+        String command = "add-eqm name/Camera E-id/001 type/camera cond/5 "
                 + "mount/Canon RF mount/Nikon Z";
 
         assertThrows(
@@ -89,7 +89,7 @@ class CameraCompatibilityIntegrationTest {
 
     @Test
     void parseEquipment_wrongCompatibilityFieldOrder_throwsException() {
-        String command = "add i/Camera id/001 type/camera cond/5 "
+        String command = "add-eqm name/Camera E-id/001 type/camera cond/5 "
                 + "damage/NONE sensor/APS-C";
 
         assertThrows(
@@ -99,9 +99,9 @@ class CameraCompatibilityIntegrationTest {
 
     @Test
     void parseEquipment_fieldsFromOtherSubclasses_throwException() {
-        String zoomCommand = "add i/Camera id/001 type/camera cond/5 "
+        String zoomCommand = "add-eqm name/Camera E-id/001 type/camera cond/5 "
                 + "zoom/24-70 mm";
-        String capacityCommand = "add i/Camera id/001 type/camera cond/5 "
+        String capacityCommand = "add-eqm name/Camera E-id/001 type/camera cond/5 "
                 + "capacity/2000 mAh";
 
         assertThrows(
@@ -114,11 +114,11 @@ class CameraCompatibilityIntegrationTest {
 
     @Test
     void parseEquipment_invalidCompatibilityValues_throwException() {
-        String emptyMount = "add i/Camera id/001 type/camera cond/5 mount/";
-        String emptyThread = "add i/Camera id/001 type/camera cond/5 thread/";
-        String repeatedBattery = "add i/Camera id/001 type/camera cond/5 "
+        String emptyMount = "add-eqm name/Camera E-id/001 type/camera cond/5 mount/";
+        String emptyThread = "add-eqm name/Camera E-id/001 type/camera cond/5 thread/";
+        String repeatedBattery = "add-eqm name/Camera E-id/001 type/camera cond/5 "
                 + "battery/AA battery/AAA";
-        String invalidDamage = "add i/Camera id/001 type/camera cond/5 "
+        String invalidDamage = "add-eqm name/Camera E-id/001 type/camera cond/5 "
                 + "damage/SWELLING";
 
         assertThrows(
@@ -189,7 +189,7 @@ class CameraCompatibilityIntegrationTest {
 
         Camera updatedCamera = assertInstanceOf(
                 Camera.class,
-                handler.updateEquipment("update id/001 cond/9"));
+                handler.updateEquipment("eqm-update E-id/001 cond/9"));
 
         assertEquals(9, updatedCamera.getCondition());
         assertFullCompatibility(updatedCamera);
@@ -218,7 +218,7 @@ class CameraCompatibilityIntegrationTest {
                             output,
                             true,
                             StandardCharsets.UTF_8));
-            handler.showEquipment("show id/001");
+            handler.showEquipment("eqm-show E-id/001");
         } finally {
             System.setOut(originalOutput);
         }

@@ -26,54 +26,58 @@ import seedu.snap.equipment.Tripod;
 
 /** Checks the command guide covers executable syntax, meaningful defaults and important restrictions. */
 class HelpTest {
-    private static final List<String> TOPICS = List.of("add", "list", "show", "delete item", "loan", "return",
-            "delete loan", "update loan", "list loans", "view loan", "list borrower", "list overdue", "history",
-            "filter", "update", "maintain", "add-bundle", "add-to-bundle", "backup", "restore",
-            "remove-from-bundle", "list bundles", "history bundle", "help", "bye");
+    private static final List<String> TOPICS = List.of("add-eqm", "list-eqm", "eqm-show", "eqm-delete", "add-loan",
+            "loan-return", "loan-delete", "loan-update", "list-loan", "loan-show", "list-loan-borrower",
+            "list-loan-overdue", "eqm-loan-history", "filter-eqm", "eqm-update", "eqm-maintain", "add-bundle",
+            "bundle-add-eqm", "backup", "restore", "bundle-remove-eqm", "list-bundle", "bundle-history", "help",
+            "exit");
 
     /** Supplies the user-facing syntax and example for each supported command. */
     private static Stream<Arguments> commandExamples() {
         return Stream.of(
-                Arguments.of("add", "add i/<NAME> id/<ID> type/<TYPE> cond/<N>"
+                Arguments.of("add-eqm", "add-eqm name/<NAME> E-id/<ID> type/<TYPE> cond/<N>"
                         + " [TYPE DETAIL] [damage/<DAMAGE>] [remarks/<TEXT>]",
-                        "add i/Canon EOS R10 id/001 type/camera cond/1 "
+                        "add-eqm name/Canon EOS R10 E-id/001 type/camera cond/1 "
                                 + "sensor/APS-C mount/Canon RF damage/NONE"),
-                Arguments.of("list", "list", "list"),
-                Arguments.of("show", "show id/<ID>", "show id/001"),
-                Arguments.of("delete item", "delete item/<ID>", "delete item/001"),
-                Arguments.of("loan", "loan id/<ITEM ID> b/<BORROWER ID> [issued/<DD-MM-YY>] due/<DD-MM-YY>",
-                        "loan id/001 b/002 issued/24-10-26 due/31-10-26"),
-                Arguments.of("return", "return loan/<LOAN ID> serviceable/<yes|no> damage/<DAMAGE> "
-                        + "[cond/<N>] [remarks/<TEXT>]",
-                        "return loan/001 serviceable/no damage/SENSOR_DAMAGE cond/8 remarks/Sensor needs repair"),
-                Arguments.of("delete loan", "delete loan/<LOAN ID>", "delete loan/001"),
-                Arguments.of("update loan", "update loan/<LOAN ID> [id/<ITEM ID>] [b/<BORROWER ID>]"
+                Arguments.of("list-eqm", "list-eqm", "list-eqm"),
+                Arguments.of("eqm-show", "eqm-show E-id/<ID>", "eqm-show E-id/001"),
+                Arguments.of("eqm-delete", "eqm-delete E-id/<ID>", "eqm-delete E-id/001"),
+                Arguments.of("add-loan", "add-loan E-id/<ITEM ID> U-id/<BORROWER ID> "
+                                + "[issued/<DD-MM-YY>] due/<DD-MM-YY>",
+                        "add-loan E-id/001 U-id/002 issued/24-10-26 due/31-10-26"),
+                Arguments.of("loan-return", "loan-return L-id/<LOAN ID> serviceable/<yes|no> "
+                                + "damage/<DAMAGE> [remarks/<TEXT>]",
+                        "loan-return L-id/001 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair"),
+                Arguments.of("loan-delete", "loan-delete L-id/<LOAN ID>", "loan-delete L-id/001"),
+                Arguments.of("loan-update", "loan-update L-id/<LOAN ID> [E-id/<ITEM ID>] [U-id/<BORROWER ID>]"
                                 + " [issued/<DD-MM-YY>] [due/<DD-MM-YY>]",
-                        "update loan/001 id/002 b/007 due/07-11-26"),
-                Arguments.of("list loans", "list loans", "list loans"),
-                Arguments.of("view loan", "view loan/<LOAN ID>", "view loan/001"),
+                        "loan-update L-id/001 E-id/002 U-id/007 due/07-11-26"),
+                Arguments.of("list-loan", "list-loan", "list-loan"),
+                Arguments.of("loan-show", "loan-show L-id/<LOAN ID>", "loan-show L-id/001"),
                 Arguments.of("backup", "backup path/<DIRECTORY>", "backup path/backups/session-1"),
                 Arguments.of("restore", "restore path/<DIRECTORY>", "restore path/backups/session-1"),
-                Arguments.of("list borrower", "list borrower/<BORROWER ID>", "list borrower/002"),
-                Arguments.of("list borrower", "list member/<MEMBER ID>", "list member/002"),
-                Arguments.of("list overdue", "list overdue", "list overdue"),
-                Arguments.of("history", "history id/<ITEM ID>", "history id/001"),
-                Arguments.of("filter", "filter [id/<ID>] [i/<NAME>] [type/<TYPE>] [cond/<N|MIN-MAX>] [status/<STATUS>]",
-                        "filter type/camera cond/1-3 status/available"),
-                Arguments.of("maintain", "maintain id/<ITEM ID> date/<DD-MM-YY> work/<DESCRIPTION> outcome/<OUTCOME>",
-                        "maintain id/001 date/27-10-26 work/Replaced battery outcome/Completed"),
-                Arguments.of("update", "update id/<ID> [i/<NAME>] [type/<TYPE>] [cond/<N>]",
-                        "update id/001 i/Studio camera cond/5"),
+                Arguments.of("list-loan-borrower", "list-loan-borrower U-id/<BORROWER ID>",
+                        "list-loan-borrower U-id/002"),
+                Arguments.of("list-loan-overdue", "list-loan-overdue", "list-loan-overdue"),
+                Arguments.of("eqm-loan-history", "eqm-loan-history E-id/<ITEM ID>", "eqm-loan-history E-id/001"),
+                Arguments.of("filter-eqm", "filter-eqm [E-id/<ID>] [name/<NAME>] [type/<TYPE>] "
+                                + "[cond/<N|MIN-MAX>] [status/<STATUS>]",
+                        "filter-eqm type/camera cond/1-3 status/available"),
+                Arguments.of("eqm-maintain", "eqm-maintain E-id/<ITEM ID> date/<DD-MM-YY> "
+                                + "work/<DESCRIPTION> outcome/<OUTCOME>",
+                        "eqm-maintain E-id/001 date/27-10-26 work/Replaced battery outcome/Completed"),
+                Arguments.of("eqm-update", "eqm-update E-id/<ID> [name/<NAME>] [type/<TYPE>] [cond/<N>]",
+                        "eqm-update E-id/001 name/Studio camera cond/5"),
                 Arguments.of("add-bundle", "add-bundle name/<NAME>", "add-bundle name/Studio kit"),
-                Arguments.of("add-to-bundle", "add-to-bundle id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]",
-                        "add-to-bundle id/001 001 002 003"),
-                Arguments.of("remove-from-bundle", "remove-from-bundle id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]",
-                        "remove-from-bundle id/001 001"),
-                Arguments.of("list bundles", "list bundles", "list bundles"),
-                Arguments.of("history bundle", "history bundle/id/<BUNDLE ID>", "history bundle/id/001"),
-                Arguments.of("history bundle", "history bundle/name/<NAME>", "history bundle/name/Studio kit"),
+                Arguments.of("bundle-add-eqm", "bundle-add-eqm B-id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]",
+                        "bundle-add-eqm B-id/001 001 002 003"),
+                Arguments.of("bundle-remove-eqm", "bundle-remove-eqm B-id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]",
+                        "bundle-remove-eqm B-id/001 001"),
+                Arguments.of("list-bundle", "list-bundle", "list-bundle"),
+                Arguments.of("bundle-history", "bundle-history B-id/<BUNDLE ID>", "bundle-history B-id/001"),
+                Arguments.of("bundle-history", "bundle-history name/<NAME>", "bundle-history name/Studio kit"),
                 Arguments.of("help", "help", "help"),
-                Arguments.of("bye", "bye", "bye"));
+                Arguments.of("exit", "exit", "exit"));
     }
 
     @ParameterizedTest
@@ -112,7 +116,7 @@ class HelpTest {
         String lowerCaseText = text.toLowerCase(Locale.ROOT);
 
         assertTrue(text.lines().count() < 20, "The default menu must fit in a small terminal.");
-        for (String group : List.of("equipment", "loan", "bundle")) {
+        for (String group : List.of("equipment", "add-loan", "bundle")) {
             assertTrue(lowerCaseText.contains(group), "The menu should group " + group + " commands.");
         }
         List<String> menuRows = text.lines().filter(line -> line.startsWith("| ") && line.endsWith(" |"))
@@ -177,7 +181,7 @@ class HelpTest {
 
     @Test
     void getText_topic_placesRequestedCommandBeforeSharedRulesAndUsesHeadingSeparators() {
-        String text = Help.getText("loan");
+        String text = Help.getText("add-loan");
         List<String> lines = text.lines().toList();
 
         assertEquals("=".repeat(100), lines.getFirst());
@@ -192,8 +196,7 @@ class HelpTest {
     void getText_all_separatesEveryCommandWithSpacedFullWidthHeadingBands() {
         List<String> lines = Help.getText("all").lines().toList();
         List<String> headings = List.of("ADD EQUIPMENT", "LIST EQUIPMENT", "SHOW EQUIPMENT", "DELETE EQUIPMENT",
-                "ADD LOAN", "RETURN EQUIPMENT", "DELETE LOAN", "UPDATE LOAN", "LIST LOANS",
-                "VIEW LOAN CONDITION ASSESSMENTS",
+                "ADD LOAN", "RETURN EQUIPMENT", "DELETE LOAN", "UPDATE LOAN", "LIST LOANS", "VIEW LOAN ISSUE CONDITION",
                 "EQUIPMENT HELD BY MEMBER", "LIST OVERDUE LOANS", "ITEM LOAN HISTORY", "FILTER EQUIPMENT",
                 "UPDATE EQUIPMENT", "RECORD MAINTENANCE", "CREATE BUNDLE", "ADD EQUIPMENT TO BUNDLE",
                 "REMOVE EQUIPMENT FROM BUNDLE", "LIST BUNDLES", "BUNDLE LOAN HISTORY", "BACK UP DATA", "RESTORE DATA",
@@ -224,24 +227,25 @@ class HelpTest {
 
     @Test
     void getText_multiwordTopics_selectExactGuideAfterWhitespaceNormalisation() {
-        assertEquals(Help.getText("delete item"), Help.getText(" \tdelete\u2003item\u00a0 "));
-        assertEquals(Help.getText("delete loan"), Help.getText("delete  \tloan"));
-        assertEquals(Help.getText("list loans"), Help.getText("list\nloans"));
-        assertEquals(Help.getText("view loan"), Help.getText(" \tview\u2003loan\u00a0 "));
-        assertEquals(Help.getText("list overdue"), Help.getText("list\u00a0overdue"));
-        assertEquals(Help.getText("list bundles"), Help.getText("list\u2009\u202fbundles"));
-        assertEquals(Help.getText("history bundle"), Help.getText(" \thistory\u2003bundle\u00a0 "));
-        assertEquals(Help.getText("list borrower"), Help.getText(" \tlist\u2003member\u00a0 "));
-        assertFalse(labelledValues(Help.getText("list"), "Format:").contains("list loans"));
-        assertFalse(labelledValues(Help.getText("delete item"), "Format:").contains("delete loan/<LOAN ID>"));
-        assertFalse(labelledValues(Help.getText("history"), "Format:").contains("history bundle/id/<BUNDLE ID>"));
+        assertEquals(Help.getText("eqm-delete"), Help.getText(" \teqm-delete\u00a0 "));
+        assertEquals(Help.getText("loan-delete"), Help.getText(" \tloan-delete\u00a0 "));
+        assertEquals(Help.getText("list-loan"), Help.getText(" \tlist-loan\u00a0 "));
+        assertEquals(Help.getText("loan-show"), Help.getText(" \tloan-show\u00a0 "));
+        assertEquals(Help.getText("list-loan-overdue"), Help.getText(" \tlist-loan-overdue\u00a0 "));
+        assertEquals(Help.getText("list-bundle"), Help.getText(" \tlist-bundle\u00a0 "));
+        assertEquals(Help.getText("bundle-history"), Help.getText(" \tbundle-history\u00a0 "));
+        assertEquals(Help.getText("list-loan-borrower"), Help.getText(" \tlist-loan-borrower\u00a0 "));
+        assertFalse(labelledValues(Help.getText("list-eqm"), "Format:").contains("list-loan"));
+        assertFalse(labelledValues(Help.getText("eqm-delete"), "Format:").contains("loan-delete L-id/<LOAN ID>"));
+        assertFalse(labelledValues(Help.getText("eqm-loan-history"), "Format:")
+                .contains("bundle-history B-id/<BUNDLE ID>"));
     }
 
     /** Supplies misspellings, partial topics and aliases that must not select a command guide. */
     private static Stream<String> unknownTopics() {
         return Stream.of("unknown", "HELP", "ADD", "helpall", "helpful", "equipment", "loans", "bundles",
-                "delete", "list loan", "list items", "list loans extra", "view", "view loan/001", "view loan extra",
-                "history bundle/id/001", "history bundle/name/Studio kit", "remove-from-bundle id/001 001",
+                "delete", "list loan", "list items", "list-loan extra", "view", "loan-show L-id/001", "view loan extra",
+                "bundle-history B-id/001", "bundle-history name/Studio kit", "bundle-remove-eqm B-id/001 001",
                 "help add", "all extra");
     }
 
@@ -257,24 +261,25 @@ class HelpTest {
 
     @Test
     void getText_topicGuides_retainRelevantRequirementsDefaultsAndRestrictions() {
-        assertTrue(proseFor("add").contains("Name, unused Item ID, type and condition are required"));
-        assertTrue(proseFor("add").contains("omitted damage defaults to NONE;"));
-        assertTrue(proseFor("delete item").contains("Active loans and bundle membership block deletion."));
-        assertTrue(proseFor("loan").contains("Omitted issued/ defaults to today's date"));
-        assertTrue(proseFor("loan").contains("Issue date must be on or before the required due date."));
-        assertTrue(proseFor("return").contains("explicit serviceable/ and damage/ assessment"));
-        assertTrue(proseFor("return").contains("For other damage values, omitted or empty remarks clear prior notes."));
-        assertTrue(proseFor("delete loan").contains(
+        assertTrue(proseFor("add-eqm").contains("Name, unused Item ID, type and condition are required"));
+        assertTrue(proseFor("add-eqm").contains("omitted damage defaults to NONE;"));
+        assertTrue(proseFor("eqm-delete").contains("Active loans and bundle membership block deletion."));
+        assertTrue(proseFor("add-loan").contains("Omitted issued/ defaults to today's date"));
+        assertTrue(proseFor("add-loan").contains("Issue date must be on or before the required due date."));
+        assertTrue(proseFor("loan-return").contains("explicit serviceable/ and damage/ assessment"));
+        assertTrue(proseFor("loan-return").contains(
+                "For other damage values, omitted or empty remarks clear prior notes."));
+        assertTrue(proseFor("loan-delete").contains(
                 "Deleting returned history leaves newer active loans unchanged."));
-        assertTrue(proseFor("list overdue").contains("Returned loans and loans due today or later are excluded."));
-        assertTrue(proseFor("history").contains("Reused Item IDs keep separate histories."));
-        assertTrue(proseFor("filter").contains("All filters must match (AND)."));
-        assertTrue(proseFor("update").contains("Omitted fields retain their current values."));
+        assertTrue(proseFor("list-loan-overdue").contains("Returned loans and loans due today or later are excluded."));
+        assertTrue(proseFor("eqm-loan-history").contains("Reused Item IDs keep separate histories."));
+        assertTrue(proseFor("filter-eqm").contains("All filters must match (AND)."));
+        assertTrue(proseFor("eqm-update").contains("Omitted fields retain their current values."));
         assertTrue(proseFor("add-bundle").contains(
                 "Bundles and their equipment memberships are restored between application runs"));
-        assertTrue(proseFor("add-to-bundle").contains(
+        assertTrue(proseFor("bundle-add-eqm").contains(
                 "exactly one camera, at least one lens and at least one battery."));
-        assertTrue(proseFor("bye").contains("A save failure keeps the application running;"));
+        assertTrue(proseFor("exit").contains("A save failure keeps the application running;"));
     }
 
     @ParameterizedTest
@@ -283,8 +288,8 @@ class HelpTest {
             String type, String fields, Enum<?>[] damages) {
         String choices = String.join(", ", Arrays.stream(damages).map(Enum::name).toList());
 
-        assertTrue(proseFor("add").contains(type + ": " + fields + "; damage: " + choices), type);
-        assertTrue(proseFor("return").contains(type + ": " + choices), type);
+        assertTrue(proseFor("add-eqm").contains(type + ": " + fields + "; damage: " + choices), type);
+        assertTrue(proseFor("loan-return").contains(type + ": " + choices), type);
     }
 
     /** Checks each subtype separately so damage listed under the wrong type cannot satisfy the test. */
@@ -359,20 +364,21 @@ class HelpTest {
         assertTrue(text.contains("Changing its numeric condition does not repair it."));
         assertTrue(text.contains("Successful updates are saved to data/loans.txt before live records change."));
         assertTrue(text.contains("Returned loans cannot be edited."));
-        assertTrue(proseFor("update loan").contains(
+        assertTrue(proseFor("loan-update").contains(
                 "Reassigning to another item releases the old item and captures the replacement's condition."));
-        assertTrue(proseFor("update loan").contains(
+        assertTrue(proseFor("loan-update").contains(
                 "Changing only the borrower or dates preserves the recorded issue condition."));
     }
 
     @Test
-    void getText_viewLoan_explainsAssessmentsLegacyRecordsAndReadOnlyBehaviour() {
-        String text = proseFor("view loan");
+    void getText_viewLoan_explainsCapturedConditionLegacyRecordsAndReadOnlyBehaviour() {
+        String text = proseFor("loan-show");
 
         assertTrue(text.contains(
-                "Compares the saved issue and return type, condition, damage and remarks for one loan."));
+                "Shows the equipment type, condition, damage and remarks recorded when the loan was issued."));
         assertTrue(text.contains(
-                "Active loans show Not returned. Missing legacy assessments show Not recorded."));
+                "Legacy loans without a saved snapshot report that the issue condition was not recorded."));
+        assertTrue(text.contains("this shows the replacement's condition at reassignment."));
         assertTrue(text.contains("This read-only command does not change equipment, loans or saved records."));
     }
 
@@ -383,9 +389,9 @@ class HelpTest {
         assertTrue(text.contains("Requires an existing Item ID, a valid maintenance date"));
         assertTrue(text.contains("Maintenance records are saved to maintenance.txt"));
         assertTrue(text.contains("Maintenance work: 1-200 characters; outcomes: 1-100 characters."));
-        assertTrue(proseFor("maintain").contains("in the displayed field order."));
-        assertTrue(proseFor("maintain").contains("cannot contain tabs or line breaks."));
-        assertTrue(proseFor("maintain").contains(
+        assertTrue(proseFor("eqm-maintain").contains("in the displayed field order."));
+        assertTrue(proseFor("eqm-maintain").contains("cannot contain tabs or line breaks."));
+        assertTrue(proseFor("eqm-maintain").contains(
                 "Recording maintenance does not change condition, damage, remarks or serviceability."));
     }
 
@@ -432,14 +438,14 @@ class HelpTest {
         assertTrue(text.contains("Known compatibility mismatches are rejected."));
         assertTrue(text.contains(
                 "Missing compatibility details or unrelated equipment types do not block addition."));
-        assertTrue(text.contains("Format: remove-from-bundle id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]"));
+        assertTrue(text.contains("Format: bundle-remove-eqm B-id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]"));
         assertTrue(text.contains("eligible for deletion after it has been removed from every bundle."));
-        assertTrue(proseFor("remove-from-bundle").contains(
+        assertTrue(proseFor("bundle-remove-eqm").contains(
                 "Successful removals are saved immediately; a save failure restores the previous memberships."));
-        assertTrue(proseFor("add-to-bundle").contains(
+        assertTrue(proseFor("bundle-add-eqm").contains(
                 "A rejected item does not undo earlier additions."));
-        assertTrue(proseFor("add-to-bundle").contains("Save additions with bye before exiting."));
-        assertTrue(proseFor("remove-from-bundle").contains(
+        assertTrue(proseFor("bundle-add-eqm").contains("Save additions with exit before exiting."));
+        assertTrue(proseFor("bundle-remove-eqm").contains(
                 "Loaned and unserviceable items may be removed from a bundle."));
         assertFalse(text.contains("Bundles exist only for the current session"));
         assertFalse(text.contains("Shows current-session bundles"));
@@ -447,10 +453,10 @@ class HelpTest {
 
     @Test
     void getText_bundleHistory_explainsBothSelectorsOrderingAndEmptyResults() {
-        String text = proseFor("history bundle");
+        String text = proseFor("bundle-history");
 
-        assertTrue(labelledValues(Help.getText("history bundle"), "Format:")
-                .containsAll(List.of("history bundle/id/<BUNDLE ID>", "history bundle/name/<NAME>")));
+        assertTrue(labelledValues(Help.getText("bundle-history"), "Format:")
+                .containsAll(List.of("bundle-history B-id/<BUNDLE ID>", "bundle-history name/<NAME>")));
         assertTrue(text.contains(
                 "Includes active and returned loans for every equipment item in the selected bundle."));
         assertTrue(text.contains("Results are sorted by issue date, earliest first, then Loan ID."));
@@ -464,13 +470,13 @@ class HelpTest {
     void getText_overdueLoans_explainsEligibilityAndReadOnlyBehaviour() {
         String text = normaliseWhitespace(Help.getText());
 
-        assertTrue(text.contains("Format: list overdue"));
+        assertTrue(text.contains("Format: list-loan-overdue"));
         assertTrue(text.contains(
                 "Shows active loans with due dates earlier than today's local date."));
         assertTrue(text.contains(
                 "Returned loans and loans due today or later are excluded."));
         assertTrue(text.contains(
-                "Uses the same columns and DD-MM-YY dates as list loans, with Overdue state and a count."));
+                "Uses the same columns and DD-MM-YY dates as list-loan, with Overdue state and a count."));
     }
 
     @Test
@@ -495,11 +501,11 @@ class HelpTest {
         String text = normaliseWhitespace(Help.getText());
 
         assertTrue(text.contains("EQUIPMENT HELD BY MEMBER"));
-        assertTrue(text.contains("The equivalent alias list member/<MEMBER ID> is also accepted."));
+        assertFalse(text.contains("list member"));
         assertTrue(text.contains("Shows only active equipment held by the selected borrower"));
         assertTrue(text.contains("Returned loans and loans held by other borrowers are excluded."));
         assertTrue(text.contains("An unknown borrower ID and a known borrower with no active loans"));
-        assertTrue(proseFor("list borrower").contains(
+        assertTrue(proseFor("list-loan-borrower").contains(
                 "A borrower is known when at least one active or returned loan uses that ID."));
         assertTrue(text.contains("This read-only query does not change equipment, loans or saved files."));
     }
@@ -509,17 +515,14 @@ class HelpTest {
         String text = Help.getText();
 
         assertTrue(labelledValues(text, "Format:").containsAll(List.of("help", "help <COMMAND>", "help all")));
-        assertTrue(labelledValues(text, "Example:").containsAll(List.of("help", "help loan", "help all")));
+        assertTrue(labelledValues(text, "Example:").containsAll(List.of("help", "help add-loan", "help all")));
         text = normaliseWhitespace(text);
         assertTrue(text.contains("Saves equipment, loans, maintenance records and bundles before exiting."));
         assertTrue(text.contains("A save failure keeps the application running;"));
-        assertTrue(text.contains("fix the reported file problem and retry bye."));
-        assertTrue(proseFor("help").contains("help list member is an alias for help list borrower."));
-        assertTrue(proseFor("bye").contains(
-                "After a startup loading error, bye exits without saving the failed data set."));
-        assertTrue(proseFor("bye").contains("If input ends, the same final save is attempted once."));
-        assertTrue(proseFor("bye").contains(
-                "After a startup loading error, the end of input also exits without saving."));
+        assertTrue(text.contains("fix the reported file problem and retry exit."));
+        assertFalse(proseFor("help").contains("list member"));
+        assertTrue(proseFor("exit").contains(
+                "After a startup loading error, exit exits without saving the failed data set."));
         assertFalse(text.contains("Format: repair"));
         assertFalse(text.contains("No arguments are accepted."));
     }

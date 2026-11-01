@@ -51,8 +51,8 @@ class EquipmentLoanHistoryTest {
         loanFile = temporaryDirectory.resolve("loans.txt");
         sequenceFile = temporaryDirectory.resolve("loan-sequence.txt");
         equipment = new EquipmentHandler(equipmentFile);
-        camera = equipment.addEquipment("add i/Camera id/001 type/camera cond/4 sensor/APS-C");
-        equipment.addEquipment("add i/Lens id/002 type/lens cond/5 zoom/24-70mm");
+        camera = equipment.addEquipment("add-eqm name/Camera E-id/001 type/camera cond/4 sensor/APS-C");
+        equipment.addEquipment("add-eqm name/Lens E-id/002 type/lens cond/5 zoom/24-70mm");
         loans = new LoanHandler(equipment, loanFile, sequenceFile);
     }
 
@@ -65,7 +65,7 @@ class EquipmentLoanHistoryTest {
         Loan sameDate = addLoan("001", "333", "01-10-26", "03-10-26");
         Loan otherItem = addLoan("002", "444", "01-10-26", "04-10-26");
 
-        List<Loan> history = loans.getLoanHistory("history id/001");
+        List<Loan> history = loans.getLoanHistory("eqm-loan-history E-id/001");
 
         assertEquals(List.of(earlier, sameDate, later), history);
         assertSame(earlier, history.getFirst());
@@ -91,7 +91,7 @@ class EquipmentLoanHistoryTest {
         assertFalse(original.isReturned());
         assertEquals(original.getLoanId(), camera.getLoanId());
         returnLoan(original);
-        equipment.updateEquipment("update id/001 i/Updated Camera cond/5");
+        equipment.updateEquipment("eqm-update E-id/001 name/Updated Camera cond/5");
         assertEquals(recordId, original.getEquipmentRecordId());
         assertEquals(recordId, camera.getRecordId());
 
@@ -99,7 +99,7 @@ class EquipmentLoanHistoryTest {
         restartedEquipment.loadFromStorage();
         LoanHandler restartedLoans = new LoanHandler(restartedEquipment, loanFile, sequenceFile);
         restartedLoans.loadFromStorage();
-        Loan restored = restartedLoans.getLoanHistory("history id/001").getFirst();
+        Loan restored = restartedLoans.getLoanHistory("eqm-loan-history E-id/001").getFirst();
 
         assertEquals(recordId, restartedEquipment.getEquipmentList().getFirst().getRecordId());
         assertEquals(recordId, restored.getEquipmentRecordId());
@@ -115,27 +115,27 @@ class EquipmentLoanHistoryTest {
         Loan history = addLoan("001", "111", "01-10-26", "02-10-26");
         returnLoan(history);
         String oldRecordId = camera.getRecordId();
-        assertSame(camera, equipment.deleteEquipment("delete item/001"));
+        assertSame(camera, equipment.deleteEquipment("eqm-delete E-id/001"));
         Equipment replacement = equipment.addEquipment(
-                "add i/Camera id/001 type/" + replacementType + " cond/4");
+                "add-eqm name/Camera E-id/001 type/" + replacementType + " cond/4");
 
         assertNotEquals(oldRecordId, replacement.getRecordId());
-        assertTrue(loans.getLoanHistory("history id/001").isEmpty());
+        assertTrue(loans.getLoanHistory("eqm-loan-history E-id/001").isEmpty());
         Loan current = addLoan("001", "222", "03-10-26", "04-10-26");
 
-        assertEquals(List.of(current), loans.getLoanHistory("history id/001"));
+        assertEquals(List.of(current), loans.getLoanHistory("eqm-loan-history E-id/001"));
         assertEquals(List.of(history, current), loans.getLoanList());
         assertEquals(oldRecordId, history.getEquipmentRecordId());
         assertEquals(replacement.getRecordId(), current.getEquipmentRecordId());
         assertEquals("002", current.getLoanId());
         assertThrows(LoanReturnUnsuccessful.class,
-                () -> loans.returnLoan("return loan/001 serviceable/no damage/NONE remarks/Old loan"));
-        assertSame(history, loans.deleteLoan("delete loan/001"));
+                () -> loans.returnLoan("loan-return L-id/001 serviceable/no damage/NONE remarks/Old loan"));
+        assertSame(history, loans.deleteLoan("loan-delete L-id/001"));
         history.setReturned(true);
         assertThrows(IllegalStateException.class, () -> history.setReturned(false));
         assertTrue(replacement.isLoaned());
         assertEquals(current.getLoanId(), replacement.getLoanId());
-        assertEquals(List.of(current), loans.getLoanHistory("history id/001"));
+        assertEquals(List.of(current), loans.getLoanHistory("eqm-loan-history E-id/001"));
     }
 
     @Test
@@ -143,23 +143,23 @@ class EquipmentLoanHistoryTest {
         Loan oldLoan = addLoan("001", "111", "01-10-26", "02-10-26");
         returnLoan(oldLoan);
         String oldRecordId = camera.getRecordId();
-        equipment.deleteEquipment("delete item/001");
+        equipment.deleteEquipment("eqm-delete E-id/001");
         EquipmentHandler restartedEquipment = new EquipmentHandler(equipmentFile);
         restartedEquipment.loadFromStorage();
         LoanHandler restartedLoans = new LoanHandler(restartedEquipment, loanFile, sequenceFile);
         restartedLoans.loadFromStorage();
-        assertThrows(LoanHistoryUnsuccessful.class, () -> restartedLoans.getLoanHistory("history id/001"));
+        assertThrows(LoanHistoryUnsuccessful.class, () -> restartedLoans.getLoanHistory("eqm-loan-history E-id/001"));
 
-        Equipment replacement = restartedEquipment.addEquipment("add i/Camera id/001 type/camera cond/4");
+        Equipment replacement = restartedEquipment.addEquipment("add-eqm name/Camera E-id/001 type/camera cond/4");
         assertNotEquals(oldRecordId, replacement.getRecordId());
-        assertTrue(restartedLoans.getLoanHistory("history id/001").isEmpty());
-        Loan current = restartedLoans.addLoan("loan id/001 b/222 issued/03-10-26 due/04-10-26");
+        assertTrue(restartedLoans.getLoanHistory("eqm-loan-history E-id/001").isEmpty());
+        Loan current = restartedLoans.addLoan("add-loan E-id/001 U-id/222 issued/03-10-26 due/04-10-26");
         restartedEquipment = new EquipmentHandler(equipmentFile);
         restartedEquipment.loadFromStorage();
         LoanHandler reloadedLoans = new LoanHandler(restartedEquipment, loanFile, sequenceFile);
         reloadedLoans.loadFromStorage();
 
-        assertEquals(List.of(current.getLoanId()), reloadedLoans.getLoanHistory("history id/001")
+        assertEquals(List.of(current.getLoanId()), reloadedLoans.getLoanHistory("eqm-loan-history E-id/001")
                 .stream().map(Loan::getLoanId).toList());
         assertEquals(List.of(oldRecordId, replacement.getRecordId()), reloadedLoans.getLoanList()
                 .stream().map(Loan::getEquipmentRecordId).toList());
@@ -169,7 +169,7 @@ class EquipmentLoanHistoryTest {
 
     @Test
     void history_existingItemWithoutLoans_returnsAnEmptyReadOnlyList() throws Exception {
-        List<Loan> history = loans.getLoanHistory("history id/001");
+        List<Loan> history = loans.getLoanHistory("eqm-loan-history E-id/001");
 
         assertTrue(history.isEmpty());
         assertThrows(UnsupportedOperationException.class, () -> history.add(null));
@@ -191,9 +191,9 @@ class EquipmentLoanHistoryTest {
         Files.setLastModifiedTime(loanFile, marker);
         Files.setLastModifiedTime(sequenceFile, marker);
 
-        List<Loan> history = loans.getLoanHistory("history id/001");
-        captureHistory("history id/001");
-        captureHistory("history id/002");
+        List<Loan> history = loans.getLoanHistory("eqm-loan-history E-id/001");
+        captureHistory("eqm-loan-history E-id/001");
+        captureHistory("eqm-loan-history E-id/002");
 
         assertEquals(List.of(active), history);
         assertThrows(UnsupportedOperationException.class, history::clear);
@@ -218,7 +218,7 @@ class EquipmentLoanHistoryTest {
         returnLoan(returned);
         addLoan("001", "222", "03-10-26", "04-10-26");
 
-        String printed = captureHistory("history id/001");
+        String printed = captureHistory("eqm-loan-history E-id/001");
 
         assertTrue(printed.contains("BORROWER ID"));
         assertTrue(printed.contains("ISSUED"));
@@ -232,10 +232,12 @@ class EquipmentLoanHistoryTest {
 
     /** Supplies malformed history commands and unsupported item ID formats. */
     private static Stream<String> invalidHistoryCommands() {
-        return Stream.of(null, "", "history", "history id", "history id/", "history id/000", "history id/01",
-                "history id/1000", "history id/abc", "history id/-01", "history item/001", "history loan/001",
-                "history /id001", "history id/001 extra", "history id/001 id/002", "history id/001 b/002",
-                "History id/001", "history ID/001");
+        return Stream.of(null, "", "history", "history id", "eqm-loan-history E-id/", "eqm-loan-history E-id/000",
+                "eqm-loan-history E-id/01", "eqm-loan-history E-id/1000", "eqm-loan-history E-id/abc",
+                "eqm-loan-history E-id/-01", "history item/001", "history loan/001", "history /id001",
+                "eqm-loan-history E-id/001 extra", "eqm-loan-history E-id/001 E-id/002",
+                "eqm-loan-history E-id/001 U-id/002",
+                "History E-id/001", "history ID/001");
     }
 
     @ParameterizedTest
@@ -248,7 +250,7 @@ class EquipmentLoanHistoryTest {
 
         assertThrows(LoanHistoryUnsuccessful.class, () -> loans.getLoanHistory(command));
 
-        assertEquals(List.of(active), loans.getLoanHistory("history id/001"));
+        assertEquals(List.of(active), loans.getLoanHistory("eqm-loan-history E-id/001"));
         assertFalse(active.isReturned());
         assertTrue(camera.isLoaned());
         assertEquals(active.getLoanId(), camera.getLoanId());
@@ -261,10 +263,10 @@ class EquipmentLoanHistoryTest {
     @Test
     void history_unknownEquipment_differsFromExistingEquipmentWithNoLoans() throws Exception {
         LoanHistoryUnsuccessful error = assertThrows(LoanHistoryUnsuccessful.class,
-                () -> loans.getLoanHistory("history id/999"));
+                () -> loans.getLoanHistory("eqm-loan-history E-id/999"));
 
         assertTrue(error.getMessage().contains("999"));
-        assertTrue(loans.getLoanHistory("history id/001").isEmpty());
+        assertTrue(loans.getLoanHistory("eqm-loan-history E-id/001").isEmpty());
         assertFalse(Files.exists(loanFile));
         assertEquals("001", loans.getNextLoanId());
     }
@@ -281,7 +283,7 @@ class EquipmentLoanHistoryTest {
         Loan active = loans.getLoanList().getLast();
         assertNull(oldReturned.getEquipmentRecordId());
         assertEquals(camera.getRecordId(), active.getEquipmentRecordId());
-        assertEquals(List.of(active), loans.getLoanHistory("history id/001"));
+        assertEquals(List.of(active), loans.getLoanHistory("eqm-loan-history E-id/001"));
         assertEquals("002", camera.getLoanId());
         assertEquals(2, loans.getLoanCount());
         assertTrue(Files.readString(loanFile).contains("equipment/" + camera.getRecordId()));
@@ -289,7 +291,7 @@ class EquipmentLoanHistoryTest {
         returnLoan(active);
         loans.loadFromStorage();
         assertNull(loans.getLoanList().getFirst().getEquipmentRecordId());
-        assertEquals(List.of("002"), loans.getLoanHistory("history id/001")
+        assertEquals(List.of("002"), loans.getLoanHistory("eqm-loan-history E-id/001")
                 .stream().map(Loan::getLoanId).toList());
         assertTrue(loans.getLoanList().getLast().isReturned());
     }
@@ -303,7 +305,7 @@ class EquipmentLoanHistoryTest {
         assertEquals(1, loans.getLoanCount());
         assertTrue(loans.getLoanList().getFirst().isReturned());
         assertNull(loans.getLoanList().getFirst().getEquipmentRecordId());
-        assertTrue(loans.getLoanHistory("history id/001").isEmpty());
+        assertTrue(loans.getLoanHistory("eqm-loan-history E-id/001").isEmpty());
         assertFalse(camera.isLoaned());
         assertEquals("002", loans.getNextLoanId());
     }
@@ -322,7 +324,7 @@ class EquipmentLoanHistoryTest {
         assertThrows(IOException.class, loans::loadFromStorage);
 
         assertEquals(List.of(original), loans.getLoanList());
-        assertEquals(List.of(original), loans.getLoanHistory("history id/001"));
+        assertEquals(List.of(original), loans.getLoanHistory("eqm-loan-history E-id/001"));
         assertSame(original, loans.getLoanList().getFirst());
         assertFalse(original.isReturned());
         assertEquals(original.getLoanId(), camera.getLoanId());
@@ -334,7 +336,7 @@ class EquipmentLoanHistoryTest {
 
         Files.writeString(loanFile, savedLoans);
         loans.loadFromStorage();
-        assertEquals(camera.getRecordId(), loans.getLoanHistory("history id/001").getFirst()
+        assertEquals(camera.getRecordId(), loans.getLoanHistory("eqm-loan-history E-id/001").getFirst()
                 .getEquipmentRecordId());
     }
 
@@ -372,7 +374,7 @@ class EquipmentLoanHistoryTest {
         assertEquals("007", equipment.getEquipmentById("002").getLoanId());
         assertEquals("008", loans.getNextLoanId());
         assertEquals(equipment.getEquipmentById("002").getRecordId(),
-                loans.getLoanHistory("history id/002").getFirst().getEquipmentRecordId());
+                loans.getLoanHistory("eqm-loan-history E-id/002").getFirst().getEquipmentRecordId());
         assertTrue(Files.readString(loanFile).contains("equipment/"
                 + equipment.getEquipmentById("002").getRecordId()));
     }
@@ -411,7 +413,7 @@ class EquipmentLoanHistoryTest {
         assertEquals("007", equipment.getEquipmentById("002").getLoanId());
         assertEquals("008", loans.getNextLoanId());
         assertEquals(equipment.getEquipmentById("002").getRecordId(),
-                loans.getLoanHistory("history id/002").getFirst().getEquipmentRecordId());
+                loans.getLoanHistory("eqm-loan-history E-id/002").getFirst().getEquipmentRecordId());
         assertTrue(Files.readString(loanFile).contains("equipment/"
                 + equipment.getEquipmentById("002").getRecordId()));
         assertEquals("nextLoanId/008", Files.readString(sequenceFile).trim());
@@ -419,12 +421,12 @@ class EquipmentLoanHistoryTest {
 
     /** Creates loans with distinct borrower IDs so history selection is independent of table layout. */
     private Loan addLoan(String itemId, String borrowerId, String issued, String due) throws Exception {
-        return loans.addLoan("loan id/" + itemId + " b/" + borrowerId + " issued/" + issued + " due/" + due);
+        return loans.addLoan("add-loan E-id/" + itemId + " U-id/" + borrowerId + " issued/" + issued + " due/" + due);
     }
 
     /** Completes a loan without removing the record needed by history queries. */
     private void returnLoan(Loan loan) throws Exception {
-        loans.returnLoan("return loan/" + loan.getLoanId() + " serviceable/yes damage/NONE remarks/");
+        loans.returnLoan("loan-return L-id/" + loan.getLoanId() + " serviceable/yes damage/NONE remarks/");
     }
 
     /** Captures history output and always restores the shared output stream. */

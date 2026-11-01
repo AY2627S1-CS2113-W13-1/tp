@@ -37,12 +37,12 @@ class LoanUpdateIntegrationTest {
     @Test
     void updateLoanCommand_routesToLoanHandlerAndPersistsChangedDetails() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("add i/Camera id/001 type/camera cond/4");
-        manager.executeInput("add i/Tripod id/002 type/tripod cond/5");
-        manager.executeInput("loan id/001 b/002 issued/01-10-26 due/10-10-26");
+        manager.executeInput("add-eqm name/Camera E-id/001 type/camera cond/4");
+        manager.executeInput("add-eqm name/Tripod E-id/002 type/tripod cond/5");
+        manager.executeInput("add-loan E-id/001 U-id/002 issued/01-10-26 due/10-10-26");
         output.reset();
 
-        manager.executeInput("update loan/001 id/002 b/007 due/15-10-26");
+        manager.executeInput("loan-update L-id/001 E-id/002 U-id/007 due/15-10-26");
 
         String feedback = output.toString(StandardCharsets.UTF_8);
         assertTrue(feedback.contains("[OK] Loan 001 updated."));
@@ -52,7 +52,7 @@ class LoanUpdateIntegrationTest {
                 .contains("loanId/001 id/002 b/007 issued/01-10-26 due/15-10-26"));
 
         output.reset();
-        manager.executeInput("list loans");
+        manager.executeInput("list-loan");
         assertTrue(output.toString(StandardCharsets.UTF_8).contains(
                 "| 001     | 002     | 007         |"));
     }
@@ -60,12 +60,12 @@ class LoanUpdateIntegrationTest {
     @Test
     void updateLoanCommand_invalidInput_printsLoanErrorAndRecovers() {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("add i/Camera id/001 type/camera cond/4");
-        manager.executeInput("loan id/001 b/002 issued/01-10-26 due/10-10-26");
+        manager.executeInput("add-eqm name/Camera E-id/001 type/camera cond/4");
+        manager.executeInput("add-loan E-id/001 U-id/002 issued/01-10-26 due/10-10-26");
         output.reset();
 
-        manager.executeInput("update loan/001 due/30-09-26");
-        manager.executeInput("list loans");
+        manager.executeInput("loan-update L-id/001 due/30-09-26");
+        manager.executeInput("list-loan");
 
         String actual = output.toString(StandardCharsets.UTF_8);
         assertTrue(actual.contains("Issued date must not be later than the due date."));
@@ -75,12 +75,12 @@ class LoanUpdateIntegrationTest {
     @Test
     void updateLoanCommand_acceptsRepeatedSpacesAndTabsBetweenCommandWords() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("add i/Camera id/001 type/camera cond/4");
-        manager.executeInput("loan id/001 b/002 issued/01-10-26 due/10-10-26");
+        manager.executeInput("add-eqm name/Camera E-id/001 type/camera cond/4");
+        manager.executeInput("add-loan E-id/001 U-id/002 issued/01-10-26 due/10-10-26");
         output.reset();
 
-        manager.executeInput("update  loan/001 b/007");
-        manager.executeInput("update\tloan/001 b/008");
+        manager.executeInput("loan-update  L-id/001 U-id/007");
+        manager.executeInput("loan-update\tL-id/001 U-id/008");
 
         String actual = output.toString(StandardCharsets.UTF_8);
         assertEquals(2, actual.lines().filter(line -> line.equals("[OK] Loan 001 updated.")).count());
@@ -93,13 +93,13 @@ class LoanUpdateIntegrationTest {
     @Test
     void updateLoanCommand_restartedManagerLoadsEditedLoan() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("add i/Camera id/001 type/camera cond/4");
-        manager.executeInput("loan id/001 b/002 issued/01-10-26 due/10-10-26");
-        manager.executeInput("update loan/001 b/007 due/15-10-26");
+        manager.executeInput("add-eqm name/Camera E-id/001 type/camera cond/4");
+        manager.executeInput("add-loan E-id/001 U-id/002 issued/01-10-26 due/10-10-26");
+        manager.executeInput("loan-update L-id/001 U-id/007 due/15-10-26");
 
         EqmManager restarted = new EqmManager(temporaryDirectory);
         output.reset();
-        restarted.executeInput("list loans");
+        restarted.executeInput("list-loan");
 
         String actual = output.toString(StandardCharsets.UTF_8);
         assertTrue(actual.contains("| 001     | 001     | 007         |"));
@@ -109,14 +109,14 @@ class LoanUpdateIntegrationTest {
     @Test
     void updateLoanCommand_borrowerOnlyEditPreservesIssueConditionAfterRestart() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("add i/Test Camera id/001 type/camera cond/6 sensor/Full frame "
+        manager.executeInput("add-eqm name/Test Camera E-id/001 type/camera cond/6 sensor/Full frame "
                 + "damage/SENSOR_DAMAGE remarks/Handle carefully");
-        manager.executeInput("loan id/001 b/101 issued/01-10-26 due/20-10-26");
-        manager.executeInput("update loan/001 b/007");
+        manager.executeInput("add-loan E-id/001 U-id/101 issued/01-10-26 due/20-10-26");
+        manager.executeInput("loan-update L-id/001 U-id/007");
 
         EqmManager restarted = new EqmManager(temporaryDirectory);
         output.reset();
-        restarted.executeInput("view loan/001");
+        restarted.executeInput("loan-show L-id/001");
 
         String actual = output.toString(StandardCharsets.UTF_8).replaceAll(" +", " ");
         assertTrue(actual.contains("Condition | 6 | Not returned"));
@@ -127,19 +127,19 @@ class LoanUpdateIntegrationTest {
     @Test
     void updateLoanCommand_equipmentChangeUsesReplacementConditionAfterRestart() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("add i/Test Camera id/001 type/camera cond/6 sensor/Full frame "
+        manager.executeInput("add-eqm name/Test Camera E-id/001 type/camera cond/6 sensor/Full frame "
                 + "damage/SENSOR_DAMAGE remarks/Handle carefully");
-        manager.executeInput("add i/Test Tripod id/002 type/tripod cond/3 thread/3/8");
-        manager.executeInput("loan id/001 b/101 issued/01-10-26 due/20-10-26");
-        manager.executeInput("update loan/001 id/002");
+        manager.executeInput("add-eqm name/Test Tripod E-id/002 type/tripod cond/3 thread/3/8");
+        manager.executeInput("add-loan E-id/001 U-id/101 issued/01-10-26 due/20-10-26");
+        manager.executeInput("loan-update L-id/001 E-id/002");
 
         output.reset();
-        manager.executeInput("view loan/001");
+        manager.executeInput("loan-show L-id/001");
         assertReplacementConditionIsDisplayed();
 
         EqmManager restarted = new EqmManager(temporaryDirectory);
         output.reset();
-        restarted.executeInput("view loan/001");
+        restarted.executeInput("loan-show L-id/001");
 
         assertReplacementConditionIsDisplayed();
     }
