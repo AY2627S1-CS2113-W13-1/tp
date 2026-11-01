@@ -35,46 +35,46 @@ class HelpTest {
     /** Supplies the user-facing syntax and example for each supported command. */
     private static Stream<Arguments> commandExamples() {
         return Stream.of(
-                Arguments.of("add-eqm", "add-eqm name/<NAME> E-id/<ID> type/<TYPE> cond/<N>"
+                Arguments.of("add-eqm", "add-eqm name/<NAME> e/<ID> type/<TYPE> cond/<N>"
                         + " [TYPE DETAIL] [damage/<DAMAGE>] [remarks/<TEXT>]",
-                        "add-eqm name/Canon EOS R10 E-id/001 type/camera cond/1 "
+                        "add-eqm name/Canon EOS R10 e/001 type/camera cond/1 "
                                 + "sensor/APS-C mount/Canon RF damage/NONE"),
                 Arguments.of("list-eqm", "list-eqm", "list-eqm"),
-                Arguments.of("eqm-show", "eqm-show E-id/<ID>", "eqm-show E-id/001"),
-                Arguments.of("eqm-delete", "eqm-delete E-id/<ID>", "eqm-delete E-id/001"),
-                Arguments.of("add-loan", "add-loan E-id/<ITEM ID> U-id/<BORROWER ID> "
+                Arguments.of("eqm-show", "eqm-show e/<ID>", "eqm-show e/001"),
+                Arguments.of("eqm-delete", "eqm-delete e/<ID>", "eqm-delete e/001"),
+                Arguments.of("add-loan", "add-loan e/<ITEM ID> u/<BORROWER ID> "
                                 + "[issued/<DD-MM-YY>] due/<DD-MM-YY>",
-                        "add-loan E-id/001 U-id/002 issued/24-10-26 due/31-10-26"),
-                Arguments.of("loan-return", "loan-return L-id/<LOAN ID> serviceable/<yes|no> "
+                        "add-loan e/001 u/002 issued/24-10-26 due/31-10-26"),
+                Arguments.of("loan-return", "loan-return l/<LOAN ID> serviceable/<yes|no> "
                                 + "damage/<DAMAGE> [remarks/<TEXT>]",
-                        "loan-return L-id/001 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair"),
-                Arguments.of("loan-delete", "loan-delete L-id/<LOAN ID>", "loan-delete L-id/001"),
-                Arguments.of("loan-update", "loan-update L-id/<LOAN ID> [E-id/<ITEM ID>] [U-id/<BORROWER ID>]"
+                        "loan-return l/001 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair"),
+                Arguments.of("loan-delete", "loan-delete l/<LOAN ID>", "loan-delete l/001"),
+                Arguments.of("loan-update", "loan-update l/<LOAN ID> [e/<ITEM ID>] [u/<BORROWER ID>]"
                                 + " [issued/<DD-MM-YY>] [due/<DD-MM-YY>]",
-                        "loan-update L-id/001 E-id/002 U-id/007 due/07-11-26"),
+                        "loan-update l/001 e/002 u/007 due/07-11-26"),
                 Arguments.of("list-loan", "list-loan", "list-loan"),
-                Arguments.of("loan-show", "loan-show L-id/<LOAN ID>", "loan-show L-id/001"),
+                Arguments.of("loan-show", "loan-show l/<LOAN ID>", "loan-show l/001"),
                 Arguments.of("backup", "backup path/<DIRECTORY>", "backup path/backups/session-1"),
                 Arguments.of("restore", "restore path/<DIRECTORY>", "restore path/backups/session-1"),
-                Arguments.of("list-loan-borrower", "list-loan-borrower U-id/<BORROWER ID>",
-                        "list-loan-borrower U-id/002"),
+                Arguments.of("list-loan-borrower", "list-loan-borrower u/<BORROWER ID>",
+                        "list-loan-borrower u/002"),
                 Arguments.of("list-loan-overdue", "list-loan-overdue", "list-loan-overdue"),
-                Arguments.of("eqm-loan-history", "eqm-loan-history E-id/<ITEM ID>", "eqm-loan-history E-id/001"),
-                Arguments.of("filter-eqm", "filter-eqm [E-id/<ID>] [name/<NAME>] [type/<TYPE>] "
+                Arguments.of("eqm-loan-history", "eqm-loan-history e/<ITEM ID>", "eqm-loan-history e/001"),
+                Arguments.of("filter-eqm", "filter-eqm [e/<ID>] [name/<NAME>] [type/<TYPE>] "
                                 + "[cond/<N|MIN-MAX>] [status/<STATUS>]",
                         "filter-eqm type/camera cond/1-3 status/available"),
-                Arguments.of("eqm-maintain", "eqm-maintain E-id/<ITEM ID> date/<DD-MM-YY> "
+                Arguments.of("eqm-maintain", "eqm-maintain e/<ITEM ID> date/<DD-MM-YY> "
                                 + "work/<DESCRIPTION> outcome/<OUTCOME>",
-                        "eqm-maintain E-id/001 date/27-10-26 work/Replaced battery outcome/Completed"),
-                Arguments.of("eqm-update", "eqm-update E-id/<ID> [name/<NAME>] [type/<TYPE>] [cond/<N>]",
-                        "eqm-update E-id/001 name/Studio camera cond/5"),
+                        "eqm-maintain e/001 date/27-10-26 work/Replaced battery outcome/Completed"),
+                Arguments.of("eqm-update", "eqm-update e/<ID> [name/<NAME>] [type/<TYPE>] [cond/<N>]",
+                        "eqm-update e/001 name/Studio camera cond/5"),
                 Arguments.of("add-bundle", "add-bundle name/<NAME>", "add-bundle name/Studio kit"),
-                Arguments.of("bundle-add-eqm", "bundle-add-eqm B-id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]",
-                        "bundle-add-eqm B-id/001 001 002 003"),
-                Arguments.of("bundle-remove-eqm", "bundle-remove-eqm B-id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]",
-                        "bundle-remove-eqm B-id/001 001"),
+                Arguments.of("bundle-add-eqm", "bundle-add-eqm b/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]",
+                        "bundle-add-eqm b/001 001 002 003"),
+                Arguments.of("bundle-remove-eqm", "bundle-remove-eqm b/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]",
+                        "bundle-remove-eqm b/001 001"),
                 Arguments.of("list-bundle", "list-bundle", "list-bundle"),
-                Arguments.of("bundle-history", "bundle-history B-id/<BUNDLE ID>", "bundle-history B-id/001"),
+                Arguments.of("bundle-history", "bundle-history b/<BUNDLE ID>", "bundle-history b/001"),
                 Arguments.of("bundle-history", "bundle-history name/<NAME>", "bundle-history name/Studio kit"),
                 Arguments.of("help", "help", "help"),
                 Arguments.of("exit", "exit", "exit"));
@@ -235,16 +235,16 @@ class HelpTest {
         assertEquals(Help.getText("bundle-history"), Help.getText(" \tbundle-history\u00a0 "));
         assertEquals(Help.getText("list-loan-borrower"), Help.getText(" \tlist-loan-borrower\u00a0 "));
         assertFalse(labelledValues(Help.getText("list-eqm"), "Format:").contains("list-loan"));
-        assertFalse(labelledValues(Help.getText("eqm-delete"), "Format:").contains("loan-delete L-id/<LOAN ID>"));
+        assertFalse(labelledValues(Help.getText("eqm-delete"), "Format:").contains("loan-delete l/<LOAN ID>"));
         assertFalse(labelledValues(Help.getText("eqm-loan-history"), "Format:")
-                .contains("bundle-history B-id/<BUNDLE ID>"));
+                .contains("bundle-history b/<BUNDLE ID>"));
     }
 
     /** Supplies misspellings, partial topics and aliases that must not select a command guide. */
     private static Stream<String> unknownTopics() {
         return Stream.of("unknown", "HELP", "ADD", "helpall", "helpful", "equipment", "loans", "bundles",
-                "delete", "list loan", "list items", "list-loan extra", "view", "loan-show L-id/001", "view loan extra",
-                "bundle-history B-id/001", "bundle-history name/Studio kit", "bundle-remove-eqm B-id/001 001",
+                "delete", "list loan", "list items", "list-loan extra", "view", "loan-show l/001", "view loan extra",
+                "bundle-history b/001", "bundle-history name/Studio kit", "bundle-remove-eqm b/001 001",
                 "help add", "all extra");
     }
 
@@ -437,7 +437,7 @@ class HelpTest {
         assertTrue(text.contains("Known compatibility mismatches are rejected."));
         assertTrue(text.contains(
                 "Missing compatibility details or unrelated equipment types do not block addition."));
-        assertTrue(text.contains("Format: bundle-remove-eqm B-id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]"));
+        assertTrue(text.contains("Format: bundle-remove-eqm b/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]"));
         assertTrue(text.contains("eligible for deletion after it has been removed from every bundle."));
         assertTrue(proseFor("bundle-remove-eqm").contains(
                 "Successful removals are saved immediately; a save failure restores the previous memberships."));
@@ -455,7 +455,7 @@ class HelpTest {
         String text = proseFor("bundle-history");
 
         assertTrue(labelledValues(Help.getText("bundle-history"), "Format:")
-                .containsAll(List.of("bundle-history B-id/<BUNDLE ID>", "bundle-history name/<NAME>")));
+                .containsAll(List.of("bundle-history b/<BUNDLE ID>", "bundle-history name/<NAME>")));
         assertTrue(text.contains(
                 "Includes active and returned loans for every equipment item in the selected bundle."));
         assertTrue(text.contains("Results are sorted by issue date, earliest first, then Loan ID."));

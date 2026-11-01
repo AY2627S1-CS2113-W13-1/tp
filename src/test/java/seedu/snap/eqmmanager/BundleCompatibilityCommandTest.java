@@ -38,17 +38,17 @@ class BundleCompatibilityCommandTest {
     @Test
     void addToBundle_incompatibleAndCompatibleCandidates_reportsAndStoresEachResult() {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("add-eqm name/Camera E-id/001 type/camera cond/1 sensor/APS-C"
+        manager.executeInput("add-eqm name/Camera e/001 type/camera cond/1 sensor/APS-C"
                 + " mount/Canon RF battery/LP-E17");
-        manager.executeInput("add-eqm name/Incompatible Lens E-id/002 type/lens cond/1"
+        manager.executeInput("add-eqm name/Incompatible Lens e/002 type/lens cond/1"
                 + " mount/Nikon Z sensor/APS-C");
-        manager.executeInput("add-eqm name/Compatible Battery E-id/003 type/battery cond/1"
+        manager.executeInput("add-eqm name/Compatible Battery e/003 type/battery cond/1"
                 + " battery/lp-e17");
         manager.executeInput("add-bundle name/Camera Kit");
-        manager.executeInput("bundle-add-eqm B-id/001 001");
+        manager.executeInput("bundle-add-eqm b/001 001");
         output.reset();
 
-        manager.executeInput("bundle-add-eqm B-id/001 002 003");
+        manager.executeInput("bundle-add-eqm b/001 002 003");
 
         String printed = output.toString(StandardCharsets.UTF_8);
         assertTrue(printed.contains("[ERROR] Equipment ID 002 was not added:"

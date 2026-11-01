@@ -21,7 +21,7 @@ import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 /** Tests Tripod compatibility parsing, display and persistence. */
 class TripodCompatibilityIntegrationTest {
     private static final String FULL_TRIPOD_COMMAND =
-            "add-eqm name/Studio Tripod E-id/301 type/tripod cond/8 "
+            "add-eqm name/Studio Tripod e/301 type/tripod cond/8 "
                     + "thread/1/4\"-20 damage/NONE remarks/Stable";
 
     @TempDir
@@ -45,7 +45,7 @@ class TripodCompatibilityIntegrationTest {
         Tripod tripod = assertInstanceOf(
                 Tripod.class,
                 EquipmentHandler.parseEquipment(
-                        "add-eqm name/Tripod E-id/302 "
+                        "add-eqm name/Tripod e/302 "
                                 + "type/tripod cond/7"));
 
         assertEquals(
@@ -59,13 +59,13 @@ class TripodCompatibilityIntegrationTest {
     @Test
     void parseEquipment_invalidTripodFields_throwException() {
         String repeatedThread =
-                "add-eqm name/Tripod E-id/303 type/tripod cond/5 "
+                "add-eqm name/Tripod e/303 type/tripod cond/5 "
                         + "thread/1/4\"-20 thread/3/8\"-16";
         String mountField =
-                "add-eqm name/Tripod E-id/304 type/tripod cond/5 "
+                "add-eqm name/Tripod e/304 type/tripod cond/5 "
                         + "mount/Canon RF";
         String invalidDamage =
-                "add-eqm name/Tripod E-id/305 type/tripod cond/5 "
+                "add-eqm name/Tripod e/305 type/tripod cond/5 "
                         + "damage/CRACKED";
 
         assertThrows(
@@ -138,7 +138,7 @@ class TripodCompatibilityIntegrationTest {
 
         Tripod updatedTripod = assertInstanceOf(
                 Tripod.class,
-                handler.updateEquipment("eqm-update E-id/301 cond/9"));
+                handler.updateEquipment("eqm-update e/301 cond/9"));
 
         assertEquals(9, updatedTripod.getCondition());
         assertFullCompatibility(updatedTripod);
@@ -170,7 +170,7 @@ class TripodCompatibilityIntegrationTest {
                             output,
                             true,
                             StandardCharsets.UTF_8));
-            handler.showEquipment("eqm-show E-id/301");
+            handler.showEquipment("eqm-show e/301");
         } finally {
             System.setOut(originalOutput);
         }

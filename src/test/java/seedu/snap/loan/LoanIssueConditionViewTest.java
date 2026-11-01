@@ -59,7 +59,7 @@ class LoanIssueConditionViewTest {
                         + "issued/01-10-26 due/20-10-26");
         output.reset();
 
-        handler.viewLoanAssessments("loan-view L-id/001");
+        handler.viewLoanAssessments("loan-view l/001");
 
         String actual = output.toString(StandardCharsets.UTF_8).replaceAll(" +", " ");
         assertTrue(actual.contains("Loan 001 condition assessments (Item ID: 001)"));
@@ -84,7 +84,7 @@ class LoanIssueConditionViewTest {
                         + "issued/01-10-26 due/20-10-26");
         output.reset();
 
-        handler.viewLoanAssessments("loan-view L-id/001");
+        handler.viewLoanAssessments("loan-view l/001");
 
         assertTrue(
                 output.toString(StandardCharsets.UTF_8)
@@ -110,7 +110,7 @@ class LoanIssueConditionViewTest {
                 new LoanHandler(equipment, loanFile);
         handler.loadFromStorage();
         output.reset();
-        handler.viewLoanAssessments("loan-view L-id/001");
+        handler.viewLoanAssessments("loan-view l/001");
 
         String actual = output.toString(StandardCharsets.UTF_8).replaceAll(" +", " ");
         assertTrue(actual.contains("Status: Active"));
@@ -132,7 +132,7 @@ class LoanIssueConditionViewTest {
 
         assertEquals(
                 "Invalid command format. Expected: "
-                        + "loan-view L-id/<LOAN ID>.",
+                        + "loan-view l/<LOAN ID>.",
                 exception.getMessage());
     }
 
@@ -145,7 +145,7 @@ class LoanIssueConditionViewTest {
                 assertThrows(
                         LoanViewingUnsuccessful.class,
                         () -> handler.viewLoanAssessments(
-                                "loan-view L-id/01"));
+                                "loan-view l/01"));
 
         assertEquals(
                 "Invalid loan ID \"01\". Loan ID must be "
@@ -162,7 +162,7 @@ class LoanIssueConditionViewTest {
                 assertThrows(
                         LoanViewingUnsuccessful.class,
                         () -> handler.viewLoanAssessments(
-                                "loan-view L-id/999"));
+                                "loan-view l/999"));
 
         assertEquals(
                 "No loan found for loan ID 999.",

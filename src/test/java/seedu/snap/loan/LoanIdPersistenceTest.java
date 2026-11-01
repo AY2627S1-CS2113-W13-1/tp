@@ -28,7 +28,7 @@ import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 /** Tests assignment, persistence, and lifecycle safety of unique loan identifiers. */
 class LoanIdPersistenceTest {
     private static final String FIRST_LOAN =
-            "add-loan E-id/001 U-id/002 issued/01-10-26 due/02-10-26";
+            "add-loan e/001 u/002 issued/01-10-26 due/02-10-26";
     private EquipmentHandler equipment;
     private Equipment camera;
     private ByteArrayOutputStream output;
@@ -40,9 +40,9 @@ class LoanIdPersistenceTest {
     @BeforeEach
     void setUp() throws Exception {
         equipment = new EquipmentHandler();
-        camera = equipment.addEquipment("add-eqm name/Camera E-id/001 type/camera cond/1");
-        equipment.addEquipment("add-eqm name/Tripod E-id/003 type/tripod cond/2");
-        equipment.addEquipment("add-eqm name/Lens E-id/005 type/lens cond/3");
+        camera = equipment.addEquipment("add-eqm name/Camera e/001 type/camera cond/1");
+        equipment.addEquipment("add-eqm name/Tripod e/003 type/tripod cond/2");
+        equipment.addEquipment("add-eqm name/Lens e/005 type/lens cond/3");
         output = new ByteArrayOutputStream();
         originalOutput = System.out;
         System.setOut(new PrintStream(output, true, StandardCharsets.UTF_8));
@@ -58,7 +58,7 @@ class LoanIdPersistenceTest {
         LoanHandler handler = new LoanHandler(equipment);
 
         Loan first = handler.addLoan(FIRST_LOAN);
-        Loan second = handler.addLoan("add-loan E-id/003 U-id/004 issued/03-10-26 due/04-10-26");
+        Loan second = handler.addLoan("add-loan e/003 u/004 issued/03-10-26 due/04-10-26");
 
         assertEquals("001", first.getLoanId());
         assertEquals("002", second.getLoanId());
@@ -72,10 +72,10 @@ class LoanIdPersistenceTest {
         Path loanFile = temporaryDirectory.resolve("loans.txt");
         LoanHandler handler = new LoanHandler(equipment, loanFile);
         handler.addLoan(FIRST_LOAN);
-        handler.addLoan("add-loan E-id/003 U-id/004 issued/03-10-26 due/04-10-26");
+        handler.addLoan("add-loan e/003 u/004 issued/03-10-26 due/04-10-26");
 
-        handler.deleteLoan("loan-delete L-id/001");
-        Loan replacement = handler.addLoan("add-loan E-id/005 U-id/006 issued/05-10-26 due/06-10-26");
+        handler.deleteLoan("loan-delete l/001");
+        Loan replacement = handler.addLoan("add-loan e/005 u/006 issued/05-10-26 due/06-10-26");
 
         assertEquals("003", replacement.getLoanId());
         assertEquals("004", Files.readString(temporaryDirectory.resolve("loan-sequence.txt")).trim()
@@ -92,7 +92,7 @@ class LoanIdPersistenceTest {
 
         LoanHandler handler = new LoanHandler(equipment, loanFile, sequenceFile);
         handler.loadFromStorage();
-        Loan next = handler.addLoan("add-loan E-id/003 U-id/004 issued/03-10-26 due/04-10-26");
+        Loan next = handler.addLoan("add-loan e/003 u/004 issued/03-10-26 due/04-10-26");
 
         assertEquals("022", next.getLoanId());
     }
@@ -107,10 +107,10 @@ class LoanIdPersistenceTest {
 
         LoanHandler handler = new LoanHandler(equipment, loanFile, sequenceFile);
         handler.loadFromStorage();
-        handler.deleteLoan("loan-delete L-id/021");
+        handler.deleteLoan("loan-delete l/021");
         handler = new LoanHandler(equipment, loanFile, sequenceFile);
         handler.loadFromStorage();
-        Loan next = handler.addLoan("add-loan E-id/003 U-id/004 issued/03-10-26 due/04-10-26");
+        Loan next = handler.addLoan("add-loan e/003 u/004 issued/03-10-26 due/04-10-26");
 
         assertEquals("022", next.getLoanId());
         assertEquals("nextLoanId/023", Files.readString(sequenceFile).trim());
@@ -126,7 +126,7 @@ class LoanIdPersistenceTest {
 
         assertEquals("999", handler.addLoan(FIRST_LOAN).getLoanId());
         LoanAdditionUnsuccessful exception = assertThrows(LoanAdditionUnsuccessful.class,
-                () -> handler.addLoan("add-loan E-id/003 U-id/004 issued/03-10-26 due/04-10-26"));
+                () -> handler.addLoan("add-loan e/003 u/004 issued/03-10-26 due/04-10-26"));
 
         assertTrue(exception.getMessage().contains("maximum is 999"));
         assertEquals("1000", handler.getNextLoanId());
@@ -154,7 +154,7 @@ class LoanIdPersistenceTest {
         Path loanFile = temporaryDirectory.resolve("loans.txt");
         EquipmentHandler firstEquipment = new EquipmentHandler(equipmentFile);
         Equipment firstCamera = firstEquipment.addEquipment(
-                "add-eqm name/Camera E-id/001 type/camera cond/1 sensor/APS-C remarks/Loan ID label");
+                "add-eqm name/Camera e/001 type/camera cond/1 sensor/APS-C remarks/Loan ID label");
         String savedEquipment = Files.readString(equipmentFile);
         LoanHandler firstLoans = new LoanHandler(firstEquipment, loanFile);
         firstLoans.addLoan(FIRST_LOAN);
@@ -177,7 +177,7 @@ class LoanIdPersistenceTest {
     void borrowerZero_isAcceptedInNewAndMigratedSavedRecords() throws Exception {
         Path loanFile = temporaryDirectory.resolve("loans.txt");
         LoanHandler handler = new LoanHandler(equipment, loanFile);
-        handler.addLoan(FIRST_LOAN.replace("U-id/002", "U-id/000"));
+        handler.addLoan(FIRST_LOAN.replace("u/002", "u/000"));
         handler.loadFromStorage();
         assertEquals("000", handler.getLoanList().getFirst().getBorrowerId());
 
@@ -210,7 +210,7 @@ class LoanIdPersistenceTest {
         Loan current = handler.addLoan(FIRST_LOAN.replace("01-10-26", "03-10-26")
                 .replace("02-10-26", "04-10-26"));
 
-        handler.deleteLoan("loan-delete L-id/001");
+        handler.deleteLoan("loan-delete l/001");
 
         assertEquals("002", current.getLoanId());
         assertEquals("002", camera.getLoanId());
@@ -223,8 +223,8 @@ class LoanIdPersistenceTest {
         LoanHandler handler = new LoanHandler(equipment);
         handler.addLoan(FIRST_LOAN);
 
-        for (String command : new String[]{"delete-loan L-id/001", "eqm-delete E-id/001", "delete /id001",
-            "loan-delete L-id/001 issued/01-10-26", "loan-delete L-id/01", "loan-delete L-id/000"}) {
+        for (String command : new String[]{"delete-loan l/001", "eqm-delete e/001", "delete /id001",
+            "loan-delete l/001 issued/01-10-26", "loan-delete l/01", "loan-delete l/000"}) {
             assertThrows(LoanDeletionUnsuccessful.class, () -> handler.deleteLoan(command));
         }
         assertEquals(1, handler.getLoanCount());
@@ -258,7 +258,7 @@ class LoanIdPersistenceTest {
         Files.writeString(sequenceFile.resolve("keep.txt"), "keep sequence data");
 
         assertThrows(LoanAdditionUnsuccessful.class,
-                () -> handler.addLoan(FIRST_LOAN.replace("E-id/001", "E-id/003")));
+                () -> handler.addLoan(FIRST_LOAN.replace("e/001", "e/003")));
 
         assertEquals(List.of(original), handler.getLoanList());
         assertEquals("002", handler.getNextLoanId());
@@ -329,7 +329,7 @@ class LoanIdPersistenceTest {
         Path loanFile = temporaryDirectory.resolve("loans.txt");
         LoanHandler handler = new LoanHandler(equipment, loanFile);
         assertThrows(LoanAdditionUnsuccessful.class,
-                () -> handler.addLoan(FIRST_LOAN.replace("E-id/001", "E-id/000")));
+                () -> handler.addLoan(FIRST_LOAN.replace("e/001", "e/000")));
         String[] invalidRecords = {
             "loan id/000 b/002 issued/01-10-26 due/02-10-26",
             "loan loanId/000 id/001 b/002 issued/01-10-26 due/02-10-26",
@@ -348,10 +348,10 @@ class LoanIdPersistenceTest {
     @Test
     void deletingByLoanId_targetsTheRecordEvenWhenItsItemIdDiffers() throws Exception {
         LoanHandler handler = new LoanHandler(equipment);
-        Loan first = handler.addLoan(FIRST_LOAN.replace("E-id/001", "E-id/003"));
+        Loan first = handler.addLoan(FIRST_LOAN.replace("e/001", "e/003"));
         Loan second = handler.addLoan(FIRST_LOAN);
 
-        assertSame(first, handler.deleteLoan("loan-delete L-id/001"));
+        assertSame(first, handler.deleteLoan("loan-delete l/001"));
 
         assertEquals(List.of(second), handler.getLoanList());
         assertEquals("002", camera.getLoanId());

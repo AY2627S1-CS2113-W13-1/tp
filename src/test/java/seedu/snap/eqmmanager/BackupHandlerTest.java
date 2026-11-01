@@ -31,10 +31,10 @@ class BackupHandlerTest {
     void createBackup_populatedData_copiesAllFilesAndLeavesLiveDataUnchanged() throws Exception {
         Path dataDirectory = temporaryDirectory.resolve("data");
         EquipmentHandler equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
-        equipment.addEquipment("add-eqm name/Camera E-id/001 type/camera cond/4 sensor/APS-C");
+        equipment.addEquipment("add-eqm name/Camera e/001 type/camera cond/4 sensor/APS-C");
         LoanHandler loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"),
                 dataDirectory.resolve("loan-sequence.txt"));
-        loans.addLoan("add-loan E-id/001 U-id/111 issued/01-10-26 due/02-10-26");
+        loans.addLoan("add-loan e/001 u/111 issued/01-10-26 due/02-10-26");
         List<Path> liveFiles = List.of(dataDirectory.resolve("equipment.txt"), dataDirectory.resolve("loans.txt"),
                 dataDirectory.resolve("loan-sequence.txt"));
         List<byte[]> liveContents = liveFiles.stream().map(this::readBytes).toList();
@@ -137,16 +137,16 @@ class BackupHandlerTest {
     void restoreBackup_validBackup_replacesLiveRecordsAndReloadsHandlers() throws Exception {
         Path dataDirectory = temporaryDirectory.resolve("data");
         EquipmentHandler equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
-        equipment.addEquipment("add-eqm name/Camera E-id/001 type/camera cond/4 sensor/APS-C");
+        equipment.addEquipment("add-eqm name/Camera e/001 type/camera cond/4 sensor/APS-C");
         LoanHandler loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"),
                 dataDirectory.resolve("loan-sequence.txt"));
-        Loan original = loans.addLoan("add-loan E-id/001 U-id/111 issued/01-10-26 due/02-10-26");
+        Loan original = loans.addLoan("add-loan e/001 u/111 issued/01-10-26 due/02-10-26");
         BackupHandler handler = new BackupHandler(dataDirectory, equipment, loans);
         Path backup = temporaryDirectory.resolve("valid-backup");
         handler.createBackup("backup path/" + backup);
-        loans.returnLoan("loan-return L-id/" + original.getLoanId()
+        loans.returnLoan("loan-return l/" + original.getLoanId()
                 + " serviceable/yes damage/NONE remarks/");
-        equipment.addEquipment("add-eqm name/Lens E-id/002 type/lens cond/5 zoom/24-70mm");
+        equipment.addEquipment("add-eqm name/Lens e/002 type/lens cond/5 zoom/24-70mm");
 
         Path restored = handler.restoreBackup("restore path/" + backup);
 
@@ -163,10 +163,10 @@ class BackupHandlerTest {
     void restoreBackup_tamperedOrIncompleteBackup_leavesLiveRecordsUnchanged() throws Exception {
         Path dataDirectory = temporaryDirectory.resolve("data");
         EquipmentHandler equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
-        equipment.addEquipment("add-eqm name/Camera E-id/001 type/camera cond/4 sensor/APS-C");
+        equipment.addEquipment("add-eqm name/Camera e/001 type/camera cond/4 sensor/APS-C");
         LoanHandler loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"),
                 dataDirectory.resolve("loan-sequence.txt"));
-        loans.addLoan("add-loan E-id/001 U-id/111 issued/01-10-26 due/02-10-26");
+        loans.addLoan("add-loan e/001 u/111 issued/01-10-26 due/02-10-26");
         BackupHandler handler = new BackupHandler(dataDirectory, equipment, loans);
         Path backup = temporaryDirectory.resolve("tampered-backup");
         handler.createBackup("backup path/" + backup);
@@ -209,7 +209,7 @@ class BackupHandlerTest {
     void restoreBackup_duplicateEquipmentWithMatchingManifest_rejectsBeforeReplacingLiveData() throws Exception {
         Path dataDirectory = temporaryDirectory.resolve("data");
         EquipmentHandler equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
-        equipment.addEquipment("add-eqm name/Camera E-id/001 type/camera cond/4 sensor/APS-C");
+        equipment.addEquipment("add-eqm name/Camera e/001 type/camera cond/4 sensor/APS-C");
         LoanHandler loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"),
                 dataDirectory.resolve("loan-sequence.txt"));
         BackupHandler handler = new BackupHandler(dataDirectory, equipment, loans);
@@ -232,7 +232,7 @@ class BackupHandlerTest {
     void restoreBackup_inconsistentActiveLoanWithMatchingManifest_rejectsBeforeReplacingLiveData() throws Exception {
         Path dataDirectory = temporaryDirectory.resolve("data");
         EquipmentHandler equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
-        equipment.addEquipment("add-eqm name/Camera E-id/001 type/camera cond/4 sensor/APS-C");
+        equipment.addEquipment("add-eqm name/Camera e/001 type/camera cond/4 sensor/APS-C");
         LoanHandler loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"),
                 dataDirectory.resolve("loan-sequence.txt"));
         BackupHandler handler = new BackupHandler(dataDirectory, equipment, loans);
@@ -270,16 +270,16 @@ class BackupHandlerTest {
     void restoreBackup_failureAfterFileReplacement_rollsBackFilesAndInMemoryState() throws Exception {
         Path dataDirectory = temporaryDirectory.resolve("data");
         EquipmentHandler equipment = new EquipmentHandler(dataDirectory.resolve("equipment.txt"));
-        equipment.addEquipment("add-eqm name/Camera E-id/001 type/camera cond/4 sensor/APS-C");
+        equipment.addEquipment("add-eqm name/Camera e/001 type/camera cond/4 sensor/APS-C");
         LoanHandler loans = new LoanHandler(equipment, dataDirectory.resolve("loans.txt"),
                 dataDirectory.resolve("loan-sequence.txt"));
-        Loan original = loans.addLoan("add-loan E-id/001 U-id/111 issued/01-10-26 due/02-10-26");
+        Loan original = loans.addLoan("add-loan e/001 u/111 issued/01-10-26 due/02-10-26");
         BackupHandler handler = new BackupHandler(dataDirectory, equipment, loans);
         Path backup = temporaryDirectory.resolve("rollback-backup");
         handler.createBackup("backup path/" + backup);
 
-        loans.returnLoan("loan-return L-id/" + original.getLoanId() + " serviceable/yes damage/NONE remarks/");
-        equipment.addEquipment("add-eqm name/Lens E-id/002 type/lens cond/5 zoom/24-70mm");
+        loans.returnLoan("loan-return l/" + original.getLoanId() + " serviceable/yes damage/NONE remarks/");
+        equipment.addEquipment("add-eqm name/Lens e/002 type/lens cond/5 zoom/24-70mm");
         List<Path> liveFiles = List.of(dataDirectory.resolve(BackupHandler.EQUIPMENT_FILE_NAME),
                 dataDirectory.resolve(BackupHandler.LOAN_FILE_NAME),
                 dataDirectory.resolve(BackupHandler.SEQUENCE_FILE_NAME));

@@ -42,9 +42,9 @@ class CommandFeedbackIntegrationTest {
         System.setOut(new PrintStream(output, true, StandardCharsets.UTF_8));
         Clock clock = Clock.fixed(Instant.parse("2026-10-27T12:00:00Z"), ZoneOffset.UTC);
         manager = new EqmManager(dataDirectory, clock);
-        manager.executeInput("add-eqm name/Alpha camera E-id/001 type/camera cond/4");
-        manager.executeInput("add-eqm name/Studio lens E-id/002 type/lens cond/2");
-        manager.executeInput("add-eqm name/Spare battery E-id/003 type/battery cond/3");
+        manager.executeInput("add-eqm name/Alpha camera e/001 type/camera cond/4");
+        manager.executeInput("add-eqm name/Studio lens e/002 type/lens cond/2");
+        manager.executeInput("add-eqm name/Spare battery e/003 type/battery cond/3");
         output.reset();
     }
 
@@ -55,7 +55,7 @@ class CommandFeedbackIntegrationTest {
 
     @Test
     void loan_successShowsAssignedIdItemBorrowerAndDates() throws Exception {
-        manager.executeInput("add-loan E-id/001 U-id/222 issued/24-10-26 due/27-10-26");
+        manager.executeInput("add-loan e/001 u/222 issued/24-10-26 due/27-10-26");
 
         assertTrue(printed().contains("[OK] Loan 001 issued."));
         assertTrue(printed().contains("Item: 001 \"Alpha camera\""));
@@ -69,10 +69,10 @@ class CommandFeedbackIntegrationTest {
     @ParameterizedTest
     @ValueSource(booleans = {true, false})
     void return_successShowsTheResultingAvailability(boolean serviceable) throws Exception {
-        manager.executeInput("add-loan E-id/001 U-id/222 issued/24-10-26 due/27-10-26");
+        manager.executeInput("add-loan e/001 u/222 issued/24-10-26 due/27-10-26");
         output.reset();
 
-        manager.executeInput("loan-return L-id/001 serviceable/" + (serviceable ? "yes" : "no") + " damage/NONE");
+        manager.executeInput("loan-return l/001 serviceable/" + (serviceable ? "yes" : "no") + " damage/NONE");
 
         assertTrue(printed().contains("[OK] Loan 001 returned."));
         assertTrue(printed().contains("Item: 001 \"Alpha camera\""));
@@ -85,13 +85,13 @@ class CommandFeedbackIntegrationTest {
 
     @Test
     void bundle_mixedBatchLabelsEveryResultAndExplainsFinalComposition() {
-        manager.executeInput("add-eqm name/Second camera E-id/004 type/camera cond/2");
+        manager.executeInput("add-eqm name/Second camera e/004 type/camera cond/2");
         manager.executeInput("add-bundle name/Review kit");
         assertTrue(printed().contains("Bundle 001 \"Review kit\" created."));
         assertTrue(printed().contains("Incomplete (missing camera, lens, battery)"));
         output.reset();
 
-        manager.executeInput("bundle-add-eqm B-id/001 001 999 004 002 003 001");
+        manager.executeInput("bundle-add-eqm b/001 001 999 004 002 003 001");
 
         assertEquals(3, printed().lines().filter(line -> line.startsWith("[OK]")).count());
         assertEquals(3, printed().lines().filter(line -> line.startsWith("[ERROR]")).count());
@@ -105,7 +105,7 @@ class CommandFeedbackIntegrationTest {
     @Test
     void bundle_failedRemovalSaveReportsOnlyErrorAndRestoresMembers() throws Exception {
         manager.executeInput("add-bundle name/Review kit");
-        manager.executeInput("bundle-add-eqm B-id/001 001 002 003");
+        manager.executeInput("bundle-add-eqm b/001 001 002 003");
         BundleHandler bundles = field(manager, "bundles", BundleHandler.class);
         bundles.saveToStorage();
         Bundle bundle = bundles.getBundleList().getFirst();
@@ -117,7 +117,7 @@ class CommandFeedbackIntegrationTest {
         Files.writeString(sentinel, "keep bundle data");
         output.reset();
 
-        manager.executeInput("bundle-remove-eqm B-id/001 001");
+        manager.executeInput("bundle-remove-eqm b/001 001");
 
         assertTrue(printed().contains("[ERROR] Could not save bundle removal:"));
         assertFalse(printed().contains("[OK]"));
@@ -128,13 +128,13 @@ class CommandFeedbackIntegrationTest {
 
     @Test
     void deletingReturnedHistoryDoesNotDescribeAReplacementWithTheSameVisibleId() {
-        manager.executeInput("add-loan E-id/001 U-id/222 issued/24-10-26 due/27-10-26");
-        manager.executeInput("loan-return L-id/001 serviceable/yes damage/NONE");
-        manager.executeInput("eqm-delete E-id/001");
-        manager.executeInput("add-eqm name/Replacement E-id/001 type/camera cond/1");
+        manager.executeInput("add-loan e/001 u/222 issued/24-10-26 due/27-10-26");
+        manager.executeInput("loan-return l/001 serviceable/yes damage/NONE");
+        manager.executeInput("eqm-delete e/001");
+        manager.executeInput("add-eqm name/Replacement e/001 type/camera cond/1");
         output.reset();
 
-        manager.executeInput("loan-delete L-id/001");
+        manager.executeInput("loan-delete l/001");
 
         assertTrue(printed().contains("[OK] Loan 001 deleted."));
         assertTrue(printed().contains("original equipment is not in the inventory"));
@@ -148,7 +148,7 @@ class CommandFeedbackIntegrationTest {
         LoanHandler loans = field(manager, "loans", LoanHandler.class);
         String inventory = Files.readString(dataDirectory.resolve("equipment.txt"));
 
-        manager.executeInput("add-loan E-id/999 U-id/222 issued/24-10-26 due/27-10-26");
+        manager.executeInput("add-loan e/999 u/222 issued/24-10-26 due/27-10-26");
 
         assertTrue(printed().startsWith("[ERROR]"));
         assertFalse(printed().contains("[OK]"));

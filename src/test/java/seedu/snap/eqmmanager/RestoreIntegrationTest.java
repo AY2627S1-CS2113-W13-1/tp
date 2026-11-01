@@ -34,8 +34,8 @@ class RestoreIntegrationTest {
         originalOutput = System.out;
         System.setOut(new PrintStream(output, true, StandardCharsets.UTF_8));
         manager = new EqmManager(temporaryDirectory.resolve("data"));
-        manager.executeInput("add-eqm name/Camera E-id/001 type/camera cond/4 sensor/APS-C");
-        manager.executeInput("add-loan E-id/001 U-id/111 issued/01-10-26 due/02-10-26");
+        manager.executeInput("add-eqm name/Camera e/001 type/camera cond/4 sensor/APS-C");
+        manager.executeInput("add-loan e/001 u/111 issued/01-10-26 due/02-10-26");
         output.reset();
     }
 
@@ -48,8 +48,8 @@ class RestoreIntegrationTest {
     void restoreCommand_validBackup_restoresAvailabilityHistoryAndSequence() throws Exception {
         Path backupDirectory = temporaryDirectory.resolve("backup");
         manager.executeInput("backup path/" + backupDirectory);
-        manager.executeInput("loan-return L-id/001 serviceable/yes damage/NONE remarks/");
-        manager.executeInput("add-eqm name/Lens E-id/002 type/lens cond/5 zoom/24-70mm");
+        manager.executeInput("loan-return l/001 serviceable/yes damage/NONE remarks/");
+        manager.executeInput("add-eqm name/Lens e/002 type/lens cond/5 zoom/24-70mm");
         output.reset();
 
         manager.executeInput("restore path/" + backupDirectory);
@@ -73,7 +73,7 @@ class RestoreIntegrationTest {
     void restoreCommand_restoredState_survivesRestart() throws Exception {
         Path backupDirectory = temporaryDirectory.resolve("backup");
         manager.executeInput("backup path/" + backupDirectory);
-        manager.executeInput("loan-return L-id/001 serviceable/yes damage/NONE remarks/");
+        manager.executeInput("loan-return l/001 serviceable/yes damage/NONE remarks/");
         output.reset();
 
         manager.executeInput("restore path/" + backupDirectory);
@@ -106,9 +106,9 @@ class RestoreIntegrationTest {
     void restoreCommand_success_persistsClearedBundlesBeforeRestart() throws Exception {
         Path backupDirectory = temporaryDirectory.resolve("backup");
         manager.executeInput("backup path/" + backupDirectory);
-        manager.executeInput("add-eqm name/Extra Lens E-id/002 type/lens cond/5 zoom/24-70mm");
+        manager.executeInput("add-eqm name/Extra Lens e/002 type/lens cond/5 zoom/24-70mm");
         manager.executeInput("add-bundle name/Persisted old bundle");
-        manager.executeInput("bundle-add-eqm B-id/001 002");
+        manager.executeInput("bundle-add-eqm b/001 002");
         manager.executeInput("exit");
         assertTrue(Files.readString(temporaryDirectory.resolve("data/bundles.txt")).contains("002"));
         manager = new EqmManager(temporaryDirectory.resolve("data"));
@@ -129,7 +129,7 @@ class RestoreIntegrationTest {
     void restoreCommand_startupLoadFailureCanRecoverFromValidBackup() throws Exception {
         Path dataDirectory = temporaryDirectory.resolve("broken-data");
         EqmManager creator = new EqmManager(dataDirectory);
-        creator.executeInput("add-eqm name/Camera E-id/001 type/camera cond/4 sensor/APS-C");
+        creator.executeInput("add-eqm name/Camera e/001 type/camera cond/4 sensor/APS-C");
         Path backupDirectory = temporaryDirectory.resolve("recovery-backup");
         creator.executeInput("backup path/" + backupDirectory);
         Files.writeString(dataDirectory.resolve("equipment.txt"), "not an equipment record\n");
@@ -177,7 +177,7 @@ class RestoreIntegrationTest {
     void restoreCommand_invalidBackup_reportsFailureAndPreservesCurrentState() throws Exception {
         Path backupDirectory = temporaryDirectory.resolve("backup");
         manager.executeInput("backup path/" + backupDirectory);
-        manager.executeInput("loan-return L-id/001 serviceable/yes damage/NONE remarks/");
+        manager.executeInput("loan-return l/001 serviceable/yes damage/NONE remarks/");
         String equipmentBefore = Files.readString(temporaryDirectory.resolve("data/equipment.txt"));
         String loansBefore = Files.readString(temporaryDirectory.resolve("data/loans.txt"));
         Files.delete(backupDirectory.resolve("loan-sequence.txt"));
