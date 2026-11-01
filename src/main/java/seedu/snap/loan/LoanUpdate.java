@@ -14,8 +14,8 @@ import seedu.snap.exceptions.LoanUpdateUnsuccessful;
 record LoanUpdate(String loanId, String itemId, String borrowerId,
         LocalDateTime issuedDate, LocalDateTime dueDate) {
     private static final String ID_FORMAT = "[0-9]{3}";
-    private static final String FORMAT = "Invalid format. Use: update loan/[LOAN ID] "
-            + "[id/[ITEM ID]] [b/[BORROWER ID]] [issued/DD-MM-YY] [due/DD-MM-YY].";
+    private static final String FORMAT = "Invalid format. Use: loan-update L-id/[LOAN ID] "
+            + "[E-id/[ITEM ID]] [U-id/[BORROWER ID]] [issued/DD-MM-YY] [due/DD-MM-YY].";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-uu")
             .withResolverStyle(ResolverStyle.STRICT);
 
@@ -26,12 +26,12 @@ record LoanUpdate(String loanId, String itemId, String borrowerId,
         }
         String trimmed = input.trim();
         String[] arguments = trimmed.isEmpty() ? new String[0] : trimmed.split("(?U)\\s+");
-        if (arguments.length < 3 || !arguments[0].equals("update")
-                || !arguments[1].startsWith("loan/")) {
+        if (arguments.length < 3 || !arguments[0].equals("loan-update")
+                || !arguments[1].startsWith("L-id/")) {
             throw new LoanUpdateUnsuccessful(FORMAT);
         }
 
-        String loanId = parseIdentifier(arguments[1].substring("loan/".length()), "loan ID");
+        String loanId = parseIdentifier(arguments[1].substring("L-id/".length()), "loan ID");
         String itemId = null;
         String borrowerId = null;
         LocalDateTime issuedDate = null;
@@ -41,13 +41,13 @@ record LoanUpdate(String loanId, String itemId, String borrowerId,
             String argument = arguments[i];
             String field;
             String value;
-            if (argument.startsWith("id/")) {
+            if (argument.startsWith("E-id/")) {
                 field = "id";
-                value = argument.substring("id/".length());
+                value = argument.substring("E-id/".length());
                 itemId = parseIdentifier(value, "item ID");
-            } else if (argument.startsWith("b/")) {
+            } else if (argument.startsWith("U-id/")) {
                 field = "b";
-                value = argument.substring("b/".length());
+                value = argument.substring("U-id/".length());
                 borrowerId = parseBorrowerId(value);
             } else if (argument.startsWith("issued/")) {
                 field = "issued";

@@ -7,9 +7,9 @@ import seedu.snap.exceptions.LoanReturnUnsuccessful;
 
 /** Holds the mandatory assessment and optional remarks from a return command, before any records change. */
 record LoanReturn(String loanId, boolean serviceable, String damage, Integer condition, String remarks) {
-    private static final String FORMAT = "Invalid format. Use: return loan/<LOAN ID> "
-            + "serviceable/<yes|no> damage/<DAMAGE|none> [cond/<1-10>] [remarks/<REMARKS>].";
-    private static final Pattern COMMAND = Pattern.compile("(?U)\\A\\s*return\\s+loan/([0-9]{3})"
+    private static final String FORMAT = "Invalid format. Use: loan-return L-id/[LOAN ID] "
+            + "serviceable/[yes|no] damage/[DAMAGE|none] [remarks/[REMARKS]].";
+    private static final Pattern COMMAND = Pattern.compile("(?U)\\A\\s*loan-return\\s+L-id/([0-9]{3})"
             + "\\s+serviceable/((?i:yes|no))\\s+damage/([A-Za-z_]+)"
             + "(?:\\s+cond/([^\\s]+))?(?:\\s+remarks/(.*))?\\s*\\z");
 

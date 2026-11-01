@@ -8,8 +8,8 @@ import java.util.regex.Pattern;
 
 /** Reads named equipment fields without losing spaces within names and types. */
 final class EquipmentFields {
-    static final String ID_FIELD = "id";
-    static final String NAME_FIELD = "i";
+    static final String ID_FIELD = "E-id";
+    static final String NAME_FIELD = "name";
     static final String TYPE_FIELD = "type";
     static final String CONDITION_FIELD = "cond";
     static final String STATUS_FIELD = "status";
