@@ -15,8 +15,9 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import seedu.snap.equipment.EquipmentHandler;
+import seedu.snap.equipment.Camera;
 import seedu.snap.equipment.Equipment;
+import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.BundleAdditionUnsuccessful;
 
 /** Tests bundle storage validation, exact equipment identity matching and save failures. */
@@ -65,6 +66,7 @@ class BundleStorageTest {
         String validRecordId = UUID.randomUUID().toString();
         List<String> invalidRecords = List.of(
                 "wrong id/001 name64/" + validName + " items/",
+                "bundle id/001 name64/",
                 "bundle wrong/001 name64/" + validName + " items/",
                 "bundle id/001 wrong/" + validName + " items/",
                 "bundle id/001 name64/not-base64! items/",
@@ -78,6 +80,8 @@ class BundleStorageTest {
                 "bundle id/001 name64/" + validName + " items/001~"
                         + validRecordId.toUpperCase(),
                 "bundle id/001 name64/" + validName + " items/001~" + validRecordId + ",001~"
+                        + validRecordId,
+                "bundle id/001 name64/" + validName + " items/001~" + validRecordId + ",002~"
                         + validRecordId);
 
         for (String record : invalidRecords) {
@@ -154,6 +158,21 @@ class BundleStorageTest {
         };
 
         assertThrows(AssertionError.class, () -> BundleStorage.save(file, List.of(invalid)));
+    }
+
+    @Test
+    void save_nonCanonicalEquipmentReference_isRejectedByTheStorageInvariant() throws Exception {
+        Path file = temporaryDirectory.resolve("bundles.txt");
+        Equipment invalid = new Camera("Camera", "001", 5) {
+            @Override
+            public String getRecordId() {
+                return "not-a-uuid";
+            }
+        };
+        Bundle bundle = new Bundle("Travel Kit", "001");
+        bundle.addEquipment(invalid);
+
+        assertThrows(AssertionError.class, () -> BundleStorage.save(file, List.of(bundle)));
     }
 
     @Test
