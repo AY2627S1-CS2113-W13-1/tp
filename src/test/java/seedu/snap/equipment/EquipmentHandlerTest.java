@@ -680,4 +680,52 @@ class EquipmentHandlerTest {
         assertTrue(actual.lines().allMatch(line -> line.length() <= 100));
         assertTrue(!actual.contains("Needs cleaning"));
     }
+
+    @Test
+    void loadFromStorage_inMemoryHandler_isANoOp() throws Exception {
+        EquipmentHandler handler = new EquipmentHandler();
+
+        handler.loadFromStorage();
+
+        assertTrue(handler.getEquipmentList().isEmpty());
+    }
+
+    @Test
+    void prepareReturnAssessment_unknownEquipmentType_isRejected() {
+        EquipmentHandler handler = new EquipmentHandler();
+        Equipment unknown = new UnknownEquipment();
+
+        assertThrows(IllegalArgumentException.class,
+                () -> handler.prepareReturnAssessment(unknown, true, "NONE", ""));
+    }
+
+    @Test
+    void parseEquipment_markersInsideRemarks_areTreatedAsFreeText() throws Exception {
+        Equipment item = EquipmentHandler.parseEquipment(
+                "add i/Camera id/001 type/camera cond/1 remarks/Ready sensor/APS-C");
+
+        assertEquals("Ready sensor/APS-C", item.getRemarks());
+    }
+
+    /** A valid Equipment subtype that is intentionally outside the supported command types. */
+    private static final class UnknownEquipment extends Equipment {
+        UnknownEquipment() {
+            super("Unknown", "001", 1, "");
+        }
+
+        @Override
+        public String getType() {
+            return "unknown";
+        }
+
+        @Override
+        public String getDetails() {
+            return "";
+        }
+
+        @Override
+        protected void applyDamageAssessment(Equipment assessed) {
+            // No damage fields exist for this test-only subtype.
+        }
+    }
 }
