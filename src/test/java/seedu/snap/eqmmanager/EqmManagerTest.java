@@ -323,6 +323,8 @@ class EqmManagerTest {
         EqmManager manager = new EqmManager(temporaryDirectory);
 
         manager.executeInput("delete loan");
+        output.reset();
+        manager.executeInput("delete loan 001");
 
         assertTrue(output.toString(StandardCharsets.UTF_8).contains("Invalid command format"));
     }
