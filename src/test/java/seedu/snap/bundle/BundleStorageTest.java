@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Base64;
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,57 @@ class BundleStorageTest {
         IOException exception = assertThrows(IOException.class, handler::loadFromStorage);
 
         assertTrue(exception.getMessage().contains("line 1"));
+    }
+
+    @Test
+    void load_missingFileAndBlankLines_returnNoBundles() throws Exception {
+        Path file = temporaryDirectory.resolve("missing-bundles.txt");
+
+        assertTrue(BundleStorage.load(file).isEmpty());
+        Files.writeString(file, "\n  \n");
+        assertTrue(BundleStorage.load(file).isEmpty());
+    }
+
+    @Test
+    void load_duplicateBundleIds_areRejected() throws Exception {
+        Path file = temporaryDirectory.resolve("bundles.txt");
+        String name = Base64.getUrlEncoder().withoutPadding()
+                .encodeToString("Travel Kit".getBytes(StandardCharsets.UTF_8));
+        String record = "bundle id/001 name64/" + name + " items/";
+        Files.writeString(file, record + System.lineSeparator() + record + System.lineSeparator());
+
+        IOException exception = assertThrows(IOException.class, () -> BundleStorage.load(file));
+
+        assertTrue(exception.getMessage().contains("Duplicate bundle ID 001"));
+    }
+
+    @Test
+    void load_rejectsInvalidStructureNameAndItemReferences() throws Exception {
+        Path file = temporaryDirectory.resolve("bundles.txt");
+        String validName = Base64.getUrlEncoder().withoutPadding()
+                .encodeToString("Travel Kit".getBytes(StandardCharsets.UTF_8));
+        String validRecordId = UUID.randomUUID().toString();
+        List<String> invalidRecords = List.of(
+                "wrong id/001 name64/" + validName + " items/",
+                "bundle wrong/001 name64/" + validName + " items/",
+                "bundle id/001 wrong/" + validName + " items/",
+                "bundle id/001 name64/not-base64! items/",
+                "bundle id/001 name64/ items/",
+                "bundle id/001 name64/" + Base64.getUrlEncoder().withoutPadding()
+                        .encodeToString("x".repeat(101).getBytes(StandardCharsets.UTF_8)) + " items/",
+                "bundle id/001 name64/" + validName + " wrong/",
+                "bundle id/001 name64/" + validName + " items/001",
+                "bundle id/001 name64/" + validName + " items/000~" + validRecordId,
+                "bundle id/001 name64/" + validName + " items/001~not-a-uuid",
+                "bundle id/001 name64/" + validName + " items/001~"
+                        + validRecordId.toUpperCase(),
+                "bundle id/001 name64/" + validName + " items/001~" + validRecordId + ",001~"
+                        + validRecordId);
+
+        for (String record : invalidRecords) {
+            Files.writeString(file, record + System.lineSeparator());
+            assertThrows(IOException.class, () -> BundleStorage.load(file), record);
+        }
     }
 
     @Test
