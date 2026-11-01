@@ -11,6 +11,7 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.List;
 import java.time.LocalDate;
 import java.time.Clock;
@@ -66,6 +67,28 @@ public class LoanHandlerTest {
         assertEquals("001", loanHandler.getLoanList().getFirst().getLoanId());
         assertEquals("001", equipment.getEquipmentList().getFirst().getLoanId());
         assertTrue(equipment.getEquipmentList().getFirst().isLoaned());
+    }
+
+    @Test
+    void constructorAndReadOnlyOperations_validateInternalArguments() throws Exception {
+        assertThrows(AssertionError.class, () -> new LoanHandler(null));
+        LoanHandler loanHandler = new LoanHandler(equipment);
+
+        loanHandler.loadFromStorage();
+        assertThrows(AssertionError.class, () -> loanHandler.hasActiveLoanForItem(null));
+        assertThrows(NullPointerException.class, () -> loanHandler.getOverdueLoans(null));
+        assertThrows(IllegalArgumentException.class, () -> loanHandler.getLoanHistoryForEquipment(null));
+        assertThrows(IllegalArgumentException.class, () -> loanHandler.printLoans(null));
+        assertThrows(AssertionError.class, () -> loanHandler.printLoans(Collections.singletonList(null)));
+    }
+
+    @Test
+    void parseLoanRecord_acceptsDocumentedAlternatePrefixes() throws Exception {
+        Loan loan = LoanHandler.parseLoanRecord("loan /id001 /b002 /issued01-10-26 /due02-10-26");
+
+        assertEquals("001", loan.getItemId());
+        assertEquals("002", loan.getBorrowerId());
+        assertThrows(LoanAdditionUnsuccessful.class, () -> LoanHandler.parseLoanRecord(null));
     }
 
     @Test
