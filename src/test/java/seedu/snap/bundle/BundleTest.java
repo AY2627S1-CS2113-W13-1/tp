@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
 import seedu.snap.equipment.Battery;
@@ -101,5 +103,63 @@ class BundleTest {
         assertThrows(UnsupportedOperationException.class, () -> bundle.getEquipmentList().clear());
         assertTrue(bundle.containsEquipmentId("001"));
         assertFalse(bundle.containsEquipmentId("002"));
+    }
+
+    @Test
+    void addEquipment_rejectsNullAndDuplicateIds() {
+        Bundle bundle = new Bundle("Travel Kit", "001");
+        Camera camera = new Camera("Camera", "001", 8);
+
+        assertThrows(IllegalArgumentException.class, () -> bundle.addEquipment(null));
+        bundle.addEquipment(camera);
+        assertThrows(AssertionError.class, () -> bundle.addEquipment(new Camera("Other", "001", 8)));
+    }
+
+    @Test
+    void removeEquipmentById_nullId_returnsFalse() {
+        Bundle bundle = new Bundle("Travel Kit", "001");
+
+        assertFalse(bundle.removeEquipmentById(null));
+    }
+
+    @Test
+    void restoreEquipment_replacesContentsAndRejectsNull() {
+        Bundle bundle = new Bundle("Travel Kit", "001");
+        Camera camera = new Camera("Camera", "001", 8);
+        Battery battery = new Battery("Battery", "002", 8);
+        Lens lens = new Lens("Lens", "003", 8);
+        bundle.addEquipment(camera);
+
+        bundle.restoreEquipment(List.of(camera, battery, lens));
+
+        assertEquals(List.of(camera, battery, lens), bundle.getEquipmentList());
+        assertTrue(bundle.isComplete());
+        assertThrows(IllegalArgumentException.class, () -> bundle.restoreEquipment(null));
+    }
+
+    @Test
+    void completionState_checksEachCompositionLimit() {
+        Bundle missingCamera = new Bundle("Missing camera", "001");
+        missingCamera.addEquipment(new Battery("Battery", "001", 8));
+        missingCamera.addEquipment(new Lens("Lens", "002", 8));
+        assertFalse(missingCamera.isComplete());
+
+        Bundle missingBattery = new Bundle("Missing battery", "002");
+        missingBattery.addEquipment(new Camera("Camera", "003", 8));
+        missingBattery.addEquipment(new Lens("Lens", "004", 8));
+        assertFalse(missingBattery.isComplete());
+
+        Bundle tooManyTripods = new Bundle("Many tripods", "003");
+        tooManyTripods.addEquipment(new Camera("Camera", "005", 8));
+        tooManyTripods.addEquipment(new Battery("Battery", "006", 8));
+        tooManyTripods.addEquipment(new Lens("Lens", "007", 8));
+        tooManyTripods.addEquipment(new Tripod("Tripod", "008", 8));
+        tooManyTripods.addEquipment(new Tripod("Tripod 2", "009", 8));
+        assertFalse(tooManyTripods.isComplete());
+
+        Bundle missingLens = new Bundle("Missing lens", "004");
+        missingLens.addEquipment(new Camera("Camera", "010", 8));
+        missingLens.addEquipment(new Battery("Battery", "011", 8));
+        assertFalse(missingLens.isComplete());
     }
 }
