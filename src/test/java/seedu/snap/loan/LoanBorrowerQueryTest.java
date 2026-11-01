@@ -34,6 +34,12 @@ class LoanBorrowerQueryTest {
     }
 
     @Test
+    void constructor_invalidBorrowerIds_rejectsNullAndWrongLength() {
+        assertThrows(IllegalArgumentException.class, () -> new LoanBorrowerQuery(null));
+        assertThrows(IllegalArgumentException.class, () -> new LoanBorrowerQuery("12"));
+    }
+
+    @Test
     void parse_unicodeWhitespaceAroundCommand_acceptsTrimmedInput() throws Exception {
         LoanBorrowerQuery query = LoanBorrowerQuery.parse("\tlist\u2003member/007\u00a0");
 
