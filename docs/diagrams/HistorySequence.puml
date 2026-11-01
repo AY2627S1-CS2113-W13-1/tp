@@ -8,7 +8,7 @@ participant ":EqmManager" as Manager
 participant ":LoanHandler" as Handler
 participant ":EquipmentHandler" as Inventory
 
-Manager -> Handler: viewLoanHistory("history id/001")
+Manager -> Handler: viewLoanHistory("eqm-loan-history E-id/001")
 activate Handler
 Handler -> Handler: getLoanHistory(input)
 activate Handler
@@ -33,7 +33,7 @@ else selected history contains loans
     Handler -> Handler: printLoans(history)
 end
 opt returned loans for this Item ID have no permanent identity
-    Handler -> Handler: print omission note directing user to list loans
+    Handler -> Handler: print omission note directing user to list-loan
 end
 Handler --> Manager: display completed
 deactivate Handler

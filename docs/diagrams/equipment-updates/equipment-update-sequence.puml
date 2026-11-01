@@ -10,7 +10,7 @@ participant ":EquipmentHandler" as Handler
 participant "EquipmentStorage" as Storage <<utility>>
 participant "target:Camera" as Target
 
-title update id/001 i/Film Camera cond/5
+title eqm-update E-id/001 name/Film Camera cond/5
 
 Manager -> Handler : updateEquipment(input)
 activate Handler
