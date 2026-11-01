@@ -13,6 +13,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import seedu.snap.equipment.Camera;
 import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.EquipmentHandler;
 
@@ -193,6 +194,34 @@ class EquipmentViewTest {
         assertTrue(printed().contains("Active loan ID: (none)"));
     }
 
+    @Test
+    void details_unserviceableAndUnknownEquipment_showFallbackStates() throws Exception {
+        EquipmentHandler handler = new EquipmentHandler();
+        Equipment camera = handler.addEquipment("add i/Camera id/001 type/camera cond/2");
+        camera.applyReturnAssessment(handler.prepareReturnAssessment(camera, false, "SENSOR_DAMAGE", "Repair"));
+
+        handler.showEquipment("show id/001");
+
+        assertTrue(printed().contains("Status: Unserviceable"));
+        output.reset();
+        Equipment unknown = new UnknownEquipment();
+
+        EquipmentView.printDetails(unknown);
+
+        assertTrue(printed().contains("Details: custom details"));
+    }
+
+    @Test
+    void details_controlAndWideCharacters_areRenderedSafely() {
+        String name = "\t\r\n\u001b\u2028\u2029\u200d\u20dd\uFE0F\u20E3"
+                + "\u1100\u2329\u232A\u2E80\u303F\uAC00\uE000\uF900\uFE10\uFE20"
+                + "\uFE30\uFE70\uFF00\uFF61\uFFE0\uFFE7\u1F000\u1FB00\u20000\u40000\u232B";
+        EquipmentView.printDetails(new Camera(name, "001", 1));
+
+        assertTrue(printed().contains("\\t\\r\\n\\u001b\\u2028\\u2029"));
+        assertFalse(printed().contains("\u001b"));
+    }
+
     /** Reassembles a wrapped value without changing its internal whitespace. */
     private String field(String label) {
         String prefix = label + ": ";
@@ -213,5 +242,26 @@ class EquipmentViewTest {
 
     private String printed() {
         return output.toString(StandardCharsets.UTF_8);
+    }
+
+    private static final class UnknownEquipment extends Equipment {
+        private UnknownEquipment() {
+            super("Custom", "001", 1);
+        }
+
+        @Override
+        public String getType() {
+            return "custom";
+        }
+
+        @Override
+        public String getDetails() {
+            return "custom details";
+        }
+
+        @Override
+        protected void applyDamageAssessment(Equipment assessed) {
+            // No subtype-specific assessment is needed for this view-only test object.
+        }
     }
 }
