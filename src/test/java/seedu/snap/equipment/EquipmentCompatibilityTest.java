@@ -155,6 +155,15 @@ class EquipmentCompatibilityTest {
     }
 
     @Test
+    void compare_twoCameras_returnsNotApplicable() {
+        Camera first = createCamera("Canon RF", "Full frame", "1/4\"-20", "Li-ion");
+        Camera second = createCamera("Canon RF", "Full frame", "1/4\"-20", "Li-ion");
+
+        assertEquals(CompatibilityResult.NOT_APPLICABLE,
+                EquipmentCompatibility.compare(first, second));
+    }
+
+    @Test
     void compare_nullEquipment_throwsException() {
         Battery battery = createBattery("Li-ion");
 
@@ -216,6 +225,20 @@ class EquipmentCompatibilityTest {
 
         assertEquals(
                 CompatibilityResult.INCOMPATIBLE,
+                EquipmentCompatibility.compare(camera, lens));
+    }
+
+    @Test
+    void compare_compatibleAndUnknownSensor_returnsUnknown() {
+        Camera camera = createCamera(
+                "Canon RF",
+                "Full frame",
+                "1/4\"-20",
+                "Li-ion");
+        Lens lens = createLens("Canon RF", CompatibilityText.UNSPECIFIED);
+
+        assertEquals(
+                CompatibilityResult.UNKNOWN,
                 EquipmentCompatibility.compare(camera, lens));
     }
 
