@@ -51,6 +51,16 @@ class EquipmentConditionSnapshotCodecTest {
     }
 
     @Test
+    void decode_nullFieldsOrNegativeStart_throwsException() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> EquipmentConditionSnapshotCodec.decode(null, 0));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> EquipmentConditionSnapshotCodec.decode(new String[0], -1));
+    }
+
+    @Test
     void decode_invalidCondition_throwsException() {
         String[] invalidFields = {
             "issueType/camera",
@@ -64,6 +74,19 @@ class EquipmentConditionSnapshotCodecTest {
                 () -> EquipmentConditionSnapshotCodec.decode(
                         invalidFields,
                         0));
+    }
+
+    @Test
+    void decode_missingOrUnexpectedFieldPrefix_throwsException() {
+        String[] nullField = {null, "issueCondition/6", "issueDamage/NONE", "issueRemarks/"};
+        String[] unexpectedField = {"unexpected/camera", "issueCondition/6", "issueDamage/NONE", "issueRemarks/"};
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> EquipmentConditionSnapshotCodec.decode(nullField, 0));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> EquipmentConditionSnapshotCodec.decode(unexpectedField, 0));
     }
     @Test
     void decode_malformedPercentEncoding_throwsException() {
