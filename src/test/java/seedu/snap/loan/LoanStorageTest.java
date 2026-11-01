@@ -250,4 +250,40 @@ class LoanStorageTest {
             assertTrue(files.noneMatch(path -> path.getFileName().toString().startsWith("loans-")));
         }
     }
+
+    @Test
+    void load_invalidSequenceFile_isRejectedBeforeLoanIdsAreAssigned() throws IOException {
+        Path file = temporaryDirectory.resolve("loans.txt");
+        Path sequence = temporaryDirectory.resolve("loan-sequence.txt");
+        Files.writeString(file, "");
+
+        for (String contents : List.of(
+                "wrong/001\n",
+                "nextLoanId/001\nnextLoanId/002\n",
+                "nextLoanId/not-a-number\n",
+                "nextLoanId/000\n",
+                "nextLoanId/1001\n")) {
+            Files.writeString(sequence, contents);
+            assertThrows(IOException.class, () -> LoanStorage.load(file, sequence), contents);
+        }
+    }
+
+    @Test
+    void save_rejectsInvalidNextLoanNumbers() throws IOException {
+        Path file = temporaryDirectory.resolve("loans.txt");
+        Path sequence = temporaryDirectory.resolve("loan-sequence.txt");
+        Loan loan = new Loan("001", "001", "002", LocalDateTime.of(2026, 10, 1, 0, 0),
+                LocalDateTime.of(2026, 10, 2, 0, 0));
+
+        assertThrows(IOException.class, () -> LoanStorage.save(file, List.of(loan), sequence, 0));
+        assertThrows(IOException.class, () -> LoanStorage.save(file, List.of(loan), sequence, 1001));
+    }
+
+    @Test
+    void save_nullLoan_isRejectedByTheStorageInvariant() throws IOException {
+        Path file = temporaryDirectory.resolve("loans.txt");
+
+        assertThrows(AssertionError.class,
+                () -> LoanStorage.save(file, java.util.Collections.singletonList(null)));
+    }
 }
