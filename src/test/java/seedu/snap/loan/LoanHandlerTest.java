@@ -29,6 +29,7 @@ import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
+import seedu.snap.exceptions.LoanViewingUnsuccessful;
 
 /** Tests loan IDs, availability and deletion of individual loan records. */
 public class LoanHandlerTest {
@@ -89,6 +90,22 @@ public class LoanHandlerTest {
         assertEquals("001", loan.getItemId());
         assertEquals("002", loan.getBorrowerId());
         assertThrows(LoanAdditionUnsuccessful.class, () -> LoanHandler.parseLoanRecord(null));
+        assertThrows(LoanAdditionUnsuccessful.class,
+                () -> LoanHandler.parseLoanRecord("wrong /id001 /b002 /issued01-10-26 /due02-10-26"));
+        assertThrows(LoanAdditionUnsuccessful.class,
+                () -> LoanHandler.parseLoanRecord("loan id/abc b/002 issued/01-10-26 due/02-10-26"));
+        LoanHandler handler = new LoanHandler(equipment);
+        assertThrows(LoanAdditionUnsuccessful.class,
+                () -> handler.addLoan("loan id/001 b/002 issued/01-10-26\ndue/02-10-26"));
+    }
+
+    @Test
+    void viewLoanIssueCondition_invalidBoundaryCommands_areRejected() {
+        LoanHandler handler = new LoanHandler(equipment);
+
+        assertThrows(LoanViewingUnsuccessful.class, () -> handler.viewLoanIssueCondition(null));
+        assertThrows(LoanViewingUnsuccessful.class, () -> handler.viewLoanIssueCondition("view"));
+        assertThrows(LoanViewingUnsuccessful.class, () -> handler.viewLoanIssueCondition("view loan/000"));
     }
 
     @Test
