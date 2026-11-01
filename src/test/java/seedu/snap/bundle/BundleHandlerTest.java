@@ -55,12 +55,25 @@ class BundleHandlerTest {
     }
 
     @Test
+    void constructor_andStorageWithoutBackingFile_areSafe() throws Exception {
+        assertThrows(IllegalArgumentException.class, () -> new BundleHandler(null));
+        bundleHandler.loadFromStorage();
+        bundleHandler.saveToStorage();
+        bundleHandler.addBundle("add-bundle name/Travel Kit");
+        bundleHandler.clearBundles();
+
+        assertTrue(bundleHandler.getBundleList().isEmpty());
+    }
+
+    @Test
     void addBundle_invalidName_throwsException() {
         for (String name : new String[]{"", "   ", "\u2003", "A".repeat(101)}) {
             assertThrows(BundleAdditionUnsuccessful.class,
                     () -> bundleHandler.addBundle("add-bundle name/" + name));
             assertTrue(bundleHandler.getBundleList().isEmpty());
         }
+        assertThrows(BundleAdditionUnsuccessful.class, () -> bundleHandler.addBundle(null));
+        assertThrows(BundleAdditionUnsuccessful.class, () -> bundleHandler.addBundle("add-bundle"));
     }
 
     @Test
@@ -195,6 +208,14 @@ class BundleHandlerTest {
     }
 
     @Test
+    void addItemsToBundle_invalidCommandOrBundleId_throwsException() {
+        for (String input : new String[]{null, "", "add-to-bundle", "wrong id/001 001",
+            "add-to-bundle wrong/001 001", "add-to-bundle id/000 001", "add-to-bundle id/01 001"}) {
+            assertThrows(BundleAdditionUnsuccessful.class, () -> bundleHandler.addItemsToBundle(input));
+        }
+    }
+
+    @Test
     void removeItemsFromBundle_removesMembersAndReportsEachResult() throws Exception {
         Bundle bundle = bundleHandler.addBundle("add-bundle name/Travel Kit");
         bundleHandler.addItemsToBundle("add-to-bundle id/001 001 002 005");
@@ -216,6 +237,10 @@ class BundleHandlerTest {
                 () -> bundleHandler.removeItemsFromBundle("remove-from-bundle id/001"));
         assertThrows(BundleAdditionUnsuccessful.class,
                 () -> bundleHandler.removeItemsFromBundle("remove-from-bundle id/999 001"));
+        for (String input : new String[]{null, "", "remove-from-bundle", "wrong id/001 001",
+            "remove-from-bundle wrong/001 001", "remove-from-bundle id/000 001"}) {
+            assertThrows(BundleAdditionUnsuccessful.class, () -> bundleHandler.removeItemsFromBundle(input));
+        }
     }
 
     @Test
@@ -273,6 +298,12 @@ class BundleHandlerTest {
     }
 
     @Test
+    void viewAllBundles_invalidCommand_throwsException() {
+        assertThrows(BundleAdditionUnsuccessful.class, () -> bundleHandler.viewAllBundles(null));
+        assertThrows(BundleAdditionUnsuccessful.class, () -> bundleHandler.viewAllBundles("list"));
+    }
+
+    @Test
     void getBundleLoanHistory_combinesActiveAndReturnedLoansInChronologicalOrder() throws Exception {
         Bundle bundle = bundleHandler.addBundle("add-bundle name/Travel Kit");
         bundleHandler.addItemsToBundle("add-to-bundle id/001 001 002");
@@ -309,5 +340,22 @@ class BundleHandlerTest {
         }
         assertThrows(BundleHistoryUnsuccessful.class,
                 () -> bundleHandler.getBundleLoanHistory("history bundle/id/001", loans));
+        assertThrows(IllegalArgumentException.class,
+                () -> bundleHandler.getBundleLoanHistory("history bundle/id/001", null));
+    }
+
+    @Test
+    void viewBundleLoanHistory_validEmptyBundle_printsNoHistory() throws Exception {
+        bundleHandler.addBundle("add-bundle name/Travel Kit");
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        PrintStream originalOutput = System.out;
+        System.setOut(new PrintStream(output, true, StandardCharsets.UTF_8));
+        try {
+            bundleHandler.viewBundleLoanHistory("history bundle/id/001", new LoanHandler(equipmentHandler));
+        } finally {
+            System.setOut(originalOutput);
+        }
+
+        assertTrue(output.toString(StandardCharsets.UTF_8).contains("No loan history for bundle 001"));
     }
 }
