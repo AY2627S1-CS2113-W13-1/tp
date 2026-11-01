@@ -41,4 +41,15 @@ class AppLoggingTest {
             assertEquals(0L, files.filter(path -> path.toString().endsWith(".lck")).count());
         }
     }
+
+    @Test
+    void close_whenLoggingCannotStart_doesNotChangeLoggerSettings() throws Exception {
+        Path blockedDirectory = temporaryDirectory.resolve("logs");
+        Files.writeString(blockedDirectory, "not a directory");
+
+        AppLogging logging = AppLogging.start(blockedDirectory);
+
+        logging.close();
+        assertTrue(Files.isRegularFile(blockedDirectory));
+    }
 }
