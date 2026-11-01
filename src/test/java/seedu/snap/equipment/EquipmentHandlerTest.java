@@ -720,6 +720,23 @@ class EquipmentHandlerTest {
     }
 
     @Test
+    void saveReturnAssessment_rejectsMismatchedReferences() throws Exception {
+        EquipmentHandler handler = new EquipmentHandler();
+        Camera current = (Camera) handler.addEquipment("add i/Camera id/001 type/camera cond/1");
+        Equipment assessed = handler.prepareReturnAssessment(current, false, "NONE", "Repair");
+
+        assertThrows(IllegalArgumentException.class,
+                () -> handler.saveReturnAssessment(new Camera("Other", "002", 1), assessed));
+        assertThrows(IllegalArgumentException.class, () -> handler.saveReturnAssessment(current, null));
+        assertThrows(IllegalArgumentException.class,
+                () -> handler.saveReturnAssessment(current, new Lens("Camera", "001", 1)));
+        assertThrows(IllegalArgumentException.class,
+                () -> handler.saveReturnAssessment(current, new Camera("Camera", "002", 1)));
+        assertThrows(IllegalArgumentException.class,
+                () -> handler.saveReturnAssessment(current, new Camera("Camera", "001", 1)));
+    }
+
+    @Test
     void parseEquipment_markersInsideRemarks_areTreatedAsFreeText() throws Exception {
         Equipment item = EquipmentHandler.parseEquipment(
                 "add i/Camera id/001 type/camera cond/1 remarks/Ready sensor/APS-C");
