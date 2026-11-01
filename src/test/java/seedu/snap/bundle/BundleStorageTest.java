@@ -67,6 +67,7 @@ class BundleStorageTest {
         List<String> invalidRecords = List.of(
                 "wrong id/001 name64/" + validName + " items/",
                 "bundle id/001 name64/",
+                "bundle id/000 name64/" + validName + " items/",
                 "bundle wrong/001 name64/" + validName + " items/",
                 "bundle id/001 wrong/" + validName + " items/",
                 "bundle id/001 name64/not-base64! items/",
