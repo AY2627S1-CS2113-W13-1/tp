@@ -53,6 +53,17 @@ class LoanStorageTest {
     }
 
     @Test
+    void load_incompleteAndUnexpectedOptionalFields_rejectTheSavedFile() throws IOException {
+        Path file = temporaryDirectory.resolve("loans.txt");
+        for (String record : List.of(
+                "loan",
+                "loan id/001 b/002 issued/01-10-26 due/02-10-26 returned/false extra")) {
+            Files.writeString(file, record + System.lineSeparator());
+            assertThrows(IOException.class, () -> LoanStorage.load(file), record);
+        }
+    }
+
+    @Test
     void load_returnedHistoryForDeletedAndReusedIds_attachesOnlyTheActiveLoan() throws Exception {
         EquipmentHandler equipment = inventoryWithItems("001");
         Equipment replacement = equipment.getEquipmentList().getFirst();
@@ -285,5 +296,14 @@ class LoanStorageTest {
 
         assertThrows(AssertionError.class,
                 () -> LoanStorage.save(file, java.util.Collections.singletonList(null)));
+    }
+
+    @Test
+    void save_legacyLoanWithoutId_isRejected() throws IOException {
+        Path file = temporaryDirectory.resolve("loans.txt");
+        Loan legacy = new Loan("001", "002", LocalDateTime.of(2026, 10, 1, 0, 0),
+                LocalDateTime.of(2026, 10, 2, 0, 0));
+
+        assertThrows(IOException.class, () -> LoanStorage.save(file, List.of(legacy)));
     }
 }
