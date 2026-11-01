@@ -112,6 +112,31 @@ class BundleStorageTest {
     }
 
     @Test
+    void load_duplicateCategoryItems_rejectsInvalidBundleComposition() throws Exception {
+        EquipmentHandler equipment = new EquipmentHandler();
+        equipment.addEquipment("add i/Camera id/001 type/camera cond/5");
+        equipment.addEquipment("add i/Camera 2 id/002 type/camera cond/5");
+        equipment.addEquipment("add i/Tripod id/003 type/tripod cond/5");
+        equipment.addEquipment("add i/Tripod 2 id/004 type/tripod cond/5");
+        String encodedName = Base64.getUrlEncoder().withoutPadding()
+                .encodeToString("Invalid bundle".getBytes(StandardCharsets.UTF_8));
+        Path file = temporaryDirectory.resolve("bundles.txt");
+        BundleHandler handler = new BundleHandler(equipment, file);
+
+        String cameraRecord = "bundle id/001 name64/" + encodedName + " items/001~"
+                + equipment.getEquipmentById("001").getRecordId() + ",002~"
+                + equipment.getEquipmentById("002").getRecordId();
+        Files.writeString(file, cameraRecord + System.lineSeparator());
+        assertThrows(IOException.class, handler::loadFromStorage);
+
+        String tripodRecord = "bundle id/001 name64/" + encodedName + " items/003~"
+                + equipment.getEquipmentById("003").getRecordId() + ",004~"
+                + equipment.getEquipmentById("004").getRecordId();
+        Files.writeString(file, tripodRecord + System.lineSeparator());
+        assertThrows(IOException.class, handler::loadFromStorage);
+    }
+
+    @Test
     void save_blockedDestination_preservesSentinel() throws Exception {
         EquipmentHandler equipment = new EquipmentHandler();
         equipment.addEquipment("add i/Camera id/001 type/camera cond/5 sensor/Full frame");
