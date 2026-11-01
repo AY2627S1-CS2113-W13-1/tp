@@ -10,11 +10,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import seedu.snap.Identifier;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 
 /** Loads and saves loan records in a readable UTF-8 text file. */
@@ -103,7 +103,8 @@ final class LoanStorage {
 
         int minimumNextNumber = FIRST_LOAN_NUMBER;
         for (Loan loan : loaded) {
-            minimumNextNumber = Math.max(minimumNextNumber, Integer.parseInt(loan.getLoanId()) + 1);
+            minimumNextNumber = Math.max(minimumNextNumber,
+                    Identifier.number(loan.getLoanId(), Identifier.Type.LOAN) + 1);
         }
         int nextLoanNumber = readNextLoanNumber(sequenceFile, minimumNextNumber);
         if (nextLoanNumber < minimumNextNumber) {
@@ -111,8 +112,8 @@ final class LoanStorage {
                     minimumNextNumber);
             nextLoanNumber = minimumNextNumber;
         }
-        boolean migrated = records.stream().anyMatch(record -> record.loanId() == null);
-        return new LoadedLoans(loaded, nextLoanNumber, migrated);
+        boolean migrated = records.stream().anyMatch(record -> record.loanId() == null || record.migrated());
+        return new LoadedLoans(loaded, nextLoanNumber, migrated || sequenceNeedsMigration(sequenceFile));
     }
 
     /** Saves records through a temporary file before replacing the destination. */
@@ -214,13 +215,16 @@ final class LoanStorage {
         int expectedMinimumFields = hasLoanId ? 6 : 5;
         if (fields.length < expectedMinimumFields
                 || !fields[0].equals("loan")) {
-            throw new IllegalArgumentException("Expected loanId/NNN id/NNN b/NNN issued/DD-MM-YY due/DD-MM-YY.");
+            throw new IllegalArgumentException("Expected loanId/LNNN id/ENNN b/UNNN issued/DD-MM-YY due/DD-MM-YY.");
         }
 
         int offset = hasLoanId ? 1 : 0;
-        String loanId = hasLoanId ? parseLoanIdField(fields[1]) : null;
-        String itemId = parseField(fields[1 + offset], "id/");
-        String borrowerId = parseField(fields[2 + offset], "b/");
+        String rawLoanId = hasLoanId ? parseField(fields[1], "loanId/") : null;
+        String loanId = hasLoanId ? parseTypedValue(rawLoanId, Identifier.Type.LOAN, "Loan ID") : null;
+        String rawItemId = parseField(fields[1 + offset], "id/");
+        String itemId = parseTypedValue(rawItemId, Identifier.Type.EQUIPMENT, "Item ID");
+        String rawBorrowerId = parseField(fields[2 + offset], "b/");
+        String borrowerId = parseTypedValue(rawBorrowerId, Identifier.Type.BORROWER, "Borrower ID");
         String issuedText = parseField(fields[3 + offset], "issued/");
         String dueText = parseField(fields[4 + offset], "due/");
         Loan parsed = LoanHandler.parseLoanRecord("loan id/" + itemId + " b/" + borrowerId
@@ -262,9 +266,11 @@ final class LoanStorage {
                     "Unexpected optional loan storage fields.");
         }
 
+        boolean migrated = (rawLoanId != null && !rawLoanId.equals(loanId))
+                || !rawItemId.equals(itemId) || !rawBorrowerId.equals(borrowerId);
         return new LoanRecord(loanId, parsed.getItemId(), parsed.getBorrowerId(),
                 parsed.getIssuedDate(), parsed.getDueDate(), returned,
-                equipmentRecordId, issueConditionSnapshot);
+                equipmentRecordId, issueConditionSnapshot, migrated);
     }
 
     /** Parses the optional returned status from a storage field. */
@@ -278,12 +284,15 @@ final class LoanStorage {
         return Boolean.parseBoolean(returnedValue);
     }
 
-    private static String parseLoanIdField(String field) {
-        String loanId = parseField(field, "loanId/");
-        if (!isValidLoanId(loanId)) {
-            throw new IllegalArgumentException("Loan ID must be from 001 to 999.");
+    /** Parses a canonical identifier or migrates a legacy numeric value in saved data. */
+    private static String parseTypedValue(String value, Identifier.Type type, String name) {
+        try {
+            return Identifier.migrate(value, type);
+        } catch (IllegalArgumentException exception) {
+            String lowerBound = type == Identifier.Type.BORROWER ? "U000" : type.prefix() + "001";
+            throw new IllegalArgumentException(name + " must use " + lowerBound + " to "
+                    + type.prefix() + "999.", exception);
         }
-        return loanId;
     }
 
     private static String parseField(String field, String prefix) {
@@ -302,6 +311,9 @@ final class LoanStorage {
             throw new IOException("Invalid loan sequence file.");
         }
         String value = lines.getFirst().substring("nextLoanId/".length());
+        if (value.startsWith("L")) {
+            value = value.substring(1);
+        }
         try {
             int next = Integer.parseInt(value);
             if (next < FIRST_LOAN_NUMBER || next > MAX_LOAN_NUMBER + 1) {
@@ -309,21 +321,27 @@ final class LoanStorage {
             }
             return next;
         } catch (NumberFormatException exception) {
-            throw new IOException("Loan sequence must contain nextLoanId/001 through nextLoanId/1000.",
+            throw new IOException("Loan sequence must contain nextLoanId/L001 through nextLoanId/L1000.",
                     exception);
         }
     }
 
     private static String formatLoanId(int loanNumber) {
-        return String.format(Locale.ROOT, "%03d", loanNumber);
+        return Identifier.format(loanNumber, Identifier.Type.LOAN);
     }
 
     private static String formatSequenceNumber(int loanNumber) {
-        return String.format(Locale.ROOT, "%03d", loanNumber);
+        return loanNumber == MAX_LOAN_NUMBER + 1 ? "L1000" : Identifier.format(loanNumber, Identifier.Type.LOAN);
     }
 
-    private static boolean isValidLoanId(String loanId) {
-        return loanId.matches("[0-9]{3}") && !loanId.equals("000");
+    /** Returns whether the existing sequence file still uses the legacy numeric representation. */
+    private static boolean sequenceNeedsMigration(Path sequenceFile) throws IOException {
+        if (sequenceFile == null || Files.notExists(sequenceFile)) {
+            return false;
+        }
+        List<String> lines = Files.readAllLines(sequenceFile, StandardCharsets.UTF_8);
+        return lines.size() == 1 && lines.getFirst().startsWith("nextLoanId/")
+                && !lines.getFirst().substring("nextLoanId/".length()).startsWith("L");
     }
 
     /** Result of loading records and their next monotonic identifier. */
@@ -333,7 +351,7 @@ final class LoanStorage {
     private record LoanRecord(String loanId, String itemId, String borrowerId,
             java.time.LocalDateTime issuedDate, java.time.LocalDateTime dueDate, boolean returned,
             String equipmentRecordId,
-            EquipmentConditionSnapshot issueConditionSnapshot) {
+            EquipmentConditionSnapshot issueConditionSnapshot, boolean migrated) {
     }
 
     /** Captures a file before replacement so failed loan and return saves can be rolled back. */

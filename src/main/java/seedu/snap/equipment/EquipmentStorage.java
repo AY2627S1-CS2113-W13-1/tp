@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 
@@ -18,6 +20,7 @@ final class EquipmentStorage {
     private static final String RECORD_ID_PREFIX = "recordId/";
     /** Storage-only metadata appears before the add record so free-form fields remain unambiguous. */
     private static final String SERVICEABILITY_PREFIX = "serviceable/";
+    private static final Pattern LEGACY_ITEM_ID = Pattern.compile("(?U)(\\bid/)([0-9]{3})(?=\\s+type/)");
 
     private EquipmentStorage() {
         // Utility class; do not instantiate.
@@ -48,7 +51,8 @@ final class EquipmentStorage {
                 continue;
             }
             try {
-                Equipment equipment = parseStorageLine(line);
+                String normalizedLine = normalizeLegacyItemId(line);
+                Equipment equipment = parseStorageLine(normalizedLine);
                 if (!ids.add(equipment.getItemId())) {
                     throw new IllegalArgumentException("Duplicate equipment ID " + equipment.getItemId() + ".");
                 }
@@ -57,7 +61,7 @@ final class EquipmentStorage {
                             + equipment.getRecordId() + ".");
                 }
                 loaded.add(equipment);
-                requiresMigration |= !line.startsWith(RECORD_ID_PREFIX);
+                requiresMigration |= !line.startsWith(RECORD_ID_PREFIX) || !normalizedLine.equals(line);
             } catch (EquipmentAdditionUnsuccessful | IllegalArgumentException exception) {
                 throw new IOException("Invalid equipment record on line " + lineNumber + ": "
                         + exception.getMessage(), exception);
@@ -73,6 +77,21 @@ final class EquipmentStorage {
             }
         }
         return loaded;
+    }
+
+    /** Rewrites only the actual add-record item ID, leaving free-form name text untouched. */
+    private static String normalizeLegacyItemId(String line) {
+        Matcher matcher = LEGACY_ITEM_ID.matcher(line);
+        int idStart = -1;
+        int idEnd = -1;
+        while (matcher.find()) {
+            idStart = matcher.start(2);
+            idEnd = matcher.end(2);
+        }
+        if (idStart < 0) {
+            return line;
+        }
+        return line.substring(0, idStart) + "E" + line.substring(idStart, idEnd) + line.substring(idEnd);
     }
 
     /** Reads permanent identity metadata before parsing older serviceability or add record formats. */

@@ -7,6 +7,7 @@ import java.util.logging.Logger;
 import java.time.LocalDate;
 import java.util.Objects;
 
+import seedu.snap.Identifier;
 import seedu.snap.equipment.Equipment;
 
 /** Represents an identified loan to a borrower, with an optional active equipment association. */
@@ -80,9 +81,12 @@ public class Loan {
         if (equipmentRecordId != null && !isValidEquipmentRecordId(equipmentRecordId)) {
             throw new IllegalArgumentException("Equipment record identity must be a canonical UUID.");
         }
-        assert loanId == null || isValidIdentifier(loanId) : "Loan ID must be from 001 to 999";
-        assert itemId != null && isValidIdentifier(itemId) : "Item ID must be from 001 to 999";
-        assert borrowerId != null && borrowerId.matches("[0-9]{3}") : "Borrower ID must be three digits";
+        assert loanId == null || Identifier.isValid(loanId, Identifier.Type.LOAN)
+                : "Loan ID must be from L001 to L999";
+        assert itemId != null && Identifier.isValid(itemId, Identifier.Type.EQUIPMENT)
+                : "Item ID must be from E001 to E999";
+        assert borrowerId != null && Identifier.isValid(borrowerId, Identifier.Type.BORROWER)
+                : "Borrower ID must be from U000 to U999";
         assert issuedDate != null && dueDate != null : "A loan must have issue and due dates";
         assert !issuedDate.isAfter(dueDate) : "A loan issue date must not be after its due date";
         this.loanId = loanId;
@@ -140,7 +144,8 @@ public class Loan {
     }
 
     public void setBorrowerId(String borrowerId) {
-        assert borrowerId != null && borrowerId.matches("[0-9]{3}") : "Borrower ID must be three digits";
+        assert borrowerId != null && Identifier.isValid(borrowerId, Identifier.Type.BORROWER)
+                : "Borrower ID must be from U000 to U999";
         this.borrowerId = borrowerId;
     }
 
@@ -307,11 +312,6 @@ public class Loan {
             throw new IllegalArgumentException("A loan requires available equipment.");
         }
         return equipment.getItemId();
-    }
-
-    /** Returns whether an item or loan identifier is in the supported range. */
-    private static boolean isValidIdentifier(String id) {
-        return id.matches("[0-9]{3}") && !id.equals("000");
     }
 
     /** Rejects shortened, non-canonical and malformed UUIDs before constructing stored loan records. */

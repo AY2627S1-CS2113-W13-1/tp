@@ -16,6 +16,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import seedu.snap.Identifier;
 import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.MaintenanceRecordUnsuccessful;
@@ -98,7 +99,7 @@ public class MaintenanceHandler {
     /**
      * Adds and persists one maintenance record after validating the target equipment and all fields.
      *
-     * @param input command in the form {@code maintain id/001 date/27-10-26 work/Repair outcome/Completed}
+     * @param input command in the form {@code maintain id/E001 date/27-10-26 work/Repair outcome/Completed}
      * @return the newly added maintenance record
      * @throws MaintenanceRecordUnsuccessful if the command, equipment ID, date, or record save is invalid
      */
@@ -154,8 +155,8 @@ public class MaintenanceHandler {
         }
 
         String itemId = matcher.group(1);
-        if (!isValidItemId(itemId)) {
-            throw new MaintenanceRecordUnsuccessful("Item ID must be from 001 to 999.");
+        if (!Identifier.isValid(itemId, Identifier.Type.EQUIPMENT)) {
+            throw new MaintenanceRecordUnsuccessful("Item ID must be from E001 to E999.");
         }
         LocalDate date;
         try {
@@ -171,11 +172,6 @@ public class MaintenanceHandler {
         if (storageFile != null) {
             MaintenanceStorage.save(storageFile, proposedRecords);
         }
-    }
-
-    /** Checks the visible three-digit item ID accepted by the existing equipment commands. */
-    private static boolean isValidItemId(String itemId) {
-        return itemId != null && itemId.matches("[0-9]{3}") && !itemId.equals("000");
     }
 
     /** Returns whether a maintenance date is later than today in the configured application time zone. */

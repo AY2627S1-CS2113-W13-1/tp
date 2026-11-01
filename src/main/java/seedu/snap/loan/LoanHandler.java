@@ -13,7 +13,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -21,6 +20,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.Objects;
 
+import seedu.snap.Identifier;
 import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
@@ -38,10 +38,9 @@ public class LoanHandler {
     private static final int FIRST_LOAN_NUMBER = 1;
     private static final int MAX_LOAN_NUMBER = 999;
     private static final Logger logger = Logger.getLogger(LoanHandler.class.getName());
-    private static final String ID_FORMAT = "[0-9]{3}";
     private static final String LOAN_COMMAND_FORMAT = "Invalid command format. Use: loan id/[ITEM ID] "
             + "b/[BORROWER ID] [issued/DD-MM-YY] due/[DD-MM-YY]. Omitted issued/ uses today's date.";
-    private static final Pattern HISTORY_COMMAND = Pattern.compile("(?U)\\Ahistory\\s+id/([0-9]{3})\\z");
+    private static final Pattern HISTORY_COMMAND = Pattern.compile("(?U)\\Ahistory\\s+id/(E[0-9]{3})\\z");
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-uu")
             .withResolverStyle(ResolverStyle.STRICT);
 
@@ -86,9 +85,9 @@ public class LoanHandler {
         this.clock = clock;
     }
 
-    /** Returns the next loan ID, or 1000 when all supported identifiers have been used. */
+    /** Returns the next loan ID, or L1000 when all supported identifiers have been used. */
     public String getNextLoanId() {
-        return formatLoanId(nextLoanNumber);
+        return nextLoanNumber == MAX_LOAN_NUMBER + 1 ? "L1000" : formatLoanId(nextLoanNumber);
     }
 
     /** Returns the number of currently loaded loans. */
@@ -482,11 +481,8 @@ public class LoanHandler {
             throw new LoanAdditionUnsuccessful(LOAN_COMMAND_FORMAT);
         }
 
-        String itemId = parseArgument(arguments[1], "id/", "/id", "item ID");
-        if (itemId.equals("000")) {
-            throw new LoanAdditionUnsuccessful("Item ID must be from 001 to 999.");
-        }
-        String borrowerId = parseArgument(arguments[2], "b/", "/b", "borrower ID");
+        String itemId = parseArgument(arguments[1], "id/", "/id", "item ID", Identifier.Type.EQUIPMENT);
+        String borrowerId = parseArgument(arguments[2], "b/", "/b", "borrower ID", Identifier.Type.BORROWER);
         LocalDateTime issuedDate;
         LocalDateTime dueDate;
         if (arguments.length == EXPECTED_ADD_ARGUMENT_COUNT) {
@@ -520,9 +516,10 @@ public class LoanHandler {
      * @param prefix          required prefix for the documented argument format
      * @param alternatePrefix required prefix for the alternate argument format
      * @param name            human-readable argument name for the error message
-     * @return the validated three-digit ID
+     * @return the validated typed ID
      */
-    private static String parseArgument(String argument, String prefix, String alternatePrefix, String name)
+    private static String parseArgument(String argument, String prefix, String alternatePrefix, String name,
+            Identifier.Type type)
             throws LoanAdditionUnsuccessful {
         String value;
         if (argument.startsWith(prefix)) {
@@ -530,11 +527,11 @@ public class LoanHandler {
         } else if (argument.startsWith(alternatePrefix)) {
             value = argument.substring(alternatePrefix.length());
         } else {
-            throw idFormatError(prefix, alternatePrefix, name);
+            throw idFormatError(prefix, alternatePrefix, name, type);
         }
 
-        if (!value.matches(ID_FORMAT)) {
-            throw idFormatError(prefix, alternatePrefix, name);
+        if (!Identifier.isValid(value, type)) {
+            throw idFormatError(prefix, alternatePrefix, name, type);
         }
         return value;
     }
@@ -543,24 +540,26 @@ public class LoanHandler {
      * Extracts and validates the loan ID from a delete loan command.
      *
      * @param argument loan ID argument, including its prefix
-     * @return the validated three-digit loan ID
+     * @return the validated typed loan ID
      * @throws LoanDeletionUnsuccessful when the format is invalid
      */
     private String parseDeleteLoanId(String argument) throws LoanDeletionUnsuccessful {
         String loanId = argument.substring("loan/".length());
-        if (!loanId.matches(ID_FORMAT) || loanId.equals("000")) {
+        if (!Identifier.isValid(loanId, Identifier.Type.LOAN)) {
             throw new LoanDeletionUnsuccessful("Invalid loan ID \"" + loanId
-                    + "\". Loan ID must be exactly three digits from 001 to 999.");
+                    + "\". Loan ID must be exactly L001 to L999.");
         }
         return loanId;
     }
 
-    /**
-     * Creates an error for an invalid ID argument.
-     */
-    private static LoanAdditionUnsuccessful idFormatError(String prefix, String alternatePrefix, String name) {
+    /** Creates an identifier-format error that names the required type prefix. */
+    private static LoanAdditionUnsuccessful idFormatError(String prefix, String alternatePrefix, String name,
+            Identifier.Type type) {
+        String lowerBound = type == Identifier.Type.BORROWER ? "U000" : type.prefix() + "001";
+        String upperBound = type.prefix() + "999";
         return new LoanAdditionUnsuccessful("Invalid " + name + " format. Expected "
-                + prefix + "[three digits] or " + alternatePrefix + "[three digits].");
+                + prefix + lowerBound + " to " + upperBound + " or " + alternatePrefix + lowerBound
+                + " to " + upperBound + ".");
     }
 
     /**
@@ -724,13 +723,12 @@ public class LoanHandler {
 
         String loanId =
                 arguments[1].substring("loan/".length());
-        if (!loanId.matches(ID_FORMAT)
-                || loanId.equals("000")) {
+        if (!Identifier.isValid(loanId, Identifier.Type.LOAN)) {
             throw new LoanViewingUnsuccessful(
                     "Invalid loan ID \""
                             + loanId
                             + "\". Loan ID must be exactly "
-                            + "three digits from 001 to 999.");
+                            + "L001 to L999.");
         }
 
         return loanId;
@@ -783,7 +781,7 @@ public class LoanHandler {
      * Selects active and returned loans for the currently registered physical item.
      * The query sorts a copy and never guesses associations from a reused Item ID.
      *
-     * @param input command in the form {@code history id/001}
+     * @param input command in the form {@code history id/E001}
      * @return an unmodifiable list in issue-date order, then loan-ID order for equal dates
      * @throws LoanHistoryUnsuccessful if syntax is invalid or the item is missing or ambiguous
      */
@@ -819,7 +817,7 @@ public class LoanHandler {
             }
         }
         history.sort(Comparator.comparing(Loan::getIssuedDate)
-                .thenComparingInt(loan -> Integer.parseInt(loan.getLoanId())));
+                .thenComparingInt(loan -> Identifier.number(loan.getLoanId(), Identifier.Type.LOAN)));
         assert history.stream().allMatch(loan -> loan.getEquipmentRecordId() != null)
                 : "Equipment history must contain attributed loan records";
         return List.copyOf(history);
@@ -843,7 +841,7 @@ public class LoanHandler {
      * Returns active loans held by the borrower in a borrower query.
      * A borrower is known when at least one current or returned loan uses the ID.
      *
-     * @param input command in the form {@code list borrower/002}
+     * @param input command in the form {@code list borrower/U002}
      * @return an unmodifiable snapshot containing only the borrower's active loans
      * @throws LoanBorrowerUnsuccessful if syntax is invalid or the borrower is unknown
      */
@@ -900,11 +898,11 @@ public class LoanHandler {
     private static String parseHistoryItemId(String input) throws LoanHistoryUnsuccessful {
         if (input != null && !input.matches("(?s).*\\R.*")) {
             Matcher matcher = HISTORY_COMMAND.matcher(input.replaceAll("(?U)^\\s+|\\s+$", ""));
-            if (matcher.matches() && !matcher.group(1).equals("000")) {
+            if (matcher.matches() && Identifier.isValid(matcher.group(1), Identifier.Type.EQUIPMENT)) {
                 return matcher.group(1);
             }
         }
-        throw new LoanHistoryUnsuccessful("Invalid format. Use: history id/[ITEM ID], from 001 to 999.");
+        throw new LoanHistoryUnsuccessful("Invalid format. Use: history id/[ITEM ID], from E001 to E999.");
     }
 
     /** Prints loan records using the same table format as the all-loans command. */
@@ -925,7 +923,7 @@ public class LoanHandler {
 
     /** Formats identifiers independently of the computer's default locale. */
     private static String formatLoanId(int loanNumber) {
-        return String.format(Locale.ROOT, "%03d", loanNumber);
+        return Identifier.format(loanNumber, Identifier.Type.LOAN);
     }
 
     /** Places the sequence beside the loan file by default. */

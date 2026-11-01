@@ -41,7 +41,7 @@ public final class EquipmentFilter {
     private void validate() {
         String id = fields.get(EquipmentFields.ID_FIELD);
         if (id != null && !Equipment.isValidItemId(id)) {
-            throw new IllegalArgumentException("Item ID must be from 001 to 999.");
+            throw new IllegalArgumentException("Item ID must be from E001 to E999.");
         }
         String name = fields.get(EquipmentFields.NAME_FIELD);
         if (name != null && name.length() > Equipment.MAX_NAME_LENGTH) {
