@@ -1,6 +1,7 @@
 package seedu.snap.ui;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 import org.junit.jupiter.api.Test;
 
@@ -24,5 +25,15 @@ class ConsoleOutputTest {
     void inline_controlCharacters_areVisibleAndOrdinaryNamesArePreserved() {
         assertEquals("Camera 相机", ConsoleOutput.inline("Camera 相机"));
         assertEquals("Kit\\u000a\\u001b[31m", ConsoleOutput.inline("Kit\n\u001b[31m"));
+    }
+
+    @Test
+    void inline_lineSeparators_areEscaped() {
+        assertEquals("\\u2028\\u2029", ConsoleOutput.inline("\u2028\u2029"));
+    }
+
+    @Test
+    void usesColour_withoutAConsole_usesPlainOutput() {
+        assertFalse(ConsoleOutput.usesColour());
     }
 }
