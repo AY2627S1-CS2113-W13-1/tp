@@ -280,6 +280,22 @@ class LoanStorageTest {
     }
 
     @Test
+    void load_legacyRecord_skipsExplicitLoanIdsDuringMigration() throws IOException {
+        Path file = temporaryDirectory.resolve("loans.txt");
+        Path sequence = temporaryDirectory.resolve("loan-sequence.txt");
+        Files.writeString(file,
+                "loan loanId/001 id/001 b/002 issued/01-10-26 due/02-10-26\n"
+                + "loan id/002 b/003 issued/03-10-26 due/04-10-26\n");
+        Files.writeString(sequence, "nextLoanId/001\n");
+
+        LoanStorage.LoadedLoans loaded = LoanStorage.load(file, sequence);
+
+        assertEquals(List.of("001", "002"), loaded.loans().stream().map(Loan::getLoanId).toList());
+        assertEquals(3, loaded.nextLoanNumber());
+        assertTrue(loaded.migrated());
+    }
+
+    @Test
     void save_rejectsInvalidNextLoanNumbers() throws IOException {
         Path file = temporaryDirectory.resolve("loans.txt");
         Path sequence = temporaryDirectory.resolve("loan-sequence.txt");
