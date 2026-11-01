@@ -2,6 +2,7 @@ package seedu.snap.eqmmanager;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
@@ -286,6 +287,44 @@ class EqmManagerTest {
                 "[ERROR] Command not recognised. Type help for available commands." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8)
         );
+    }
+
+    @Test
+    void executeInput_nullCommand_isReportedAsUnrecognised() {
+        EqmManager manager = new EqmManager(temporaryDirectory);
+
+        manager.executeInput(null);
+
+        assertEquals(
+                "[ERROR] Command not recognised. Type help for available commands." + System.lineSeparator(),
+                output.toString(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void constructor_nullDataDirectory_isRejected() {
+        assertThrows(IllegalArgumentException.class, () -> new EqmManager(null));
+    }
+
+    @Test
+    void startupLoadFailure_blocksCommandsUntilExit() throws Exception {
+        Files.writeString(temporaryDirectory.resolve("equipment.txt"), "not a valid record\n");
+        EqmManager manager = new EqmManager(temporaryDirectory);
+
+        manager.executeInput("list");
+
+        assertTrue(output.toString(StandardCharsets.UTF_8).contains("Could not load saved data:"));
+        output.reset();
+        manager.executeInput("bye");
+        assertEquals("", output.toString(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void executeInput_deleteLoanWithoutId_routesToLoanValidation() {
+        EqmManager manager = new EqmManager(temporaryDirectory);
+
+        manager.executeInput("delete loan");
+
+        assertTrue(output.toString(StandardCharsets.UTF_8).contains("Invalid command format"));
     }
 
     @Test
