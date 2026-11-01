@@ -24,11 +24,11 @@ class BundleViewTest {
         assertEquals(List.of("camera", "lens", "battery"), bundle.getMissingEquipmentTypes());
         assertEquals("Incomplete (missing camera, lens, battery)", BundleView.composition(bundle));
         assertThrows(UnsupportedOperationException.class, () -> bundle.getMissingEquipmentTypes().clear());
-        bundle.addEquipment(equipment.addEquipment("add-eqm name/Camera E-id/001 type/camera cond/1"));
+        bundle.addEquipment(equipment.addEquipment("add-eqm name/Camera e/001 type/camera cond/1"));
         assertEquals("Incomplete (missing lens, battery)", BundleView.composition(bundle));
-        bundle.addEquipment(equipment.addEquipment("add-eqm name/Lens E-id/002 type/lens cond/2"));
+        bundle.addEquipment(equipment.addEquipment("add-eqm name/Lens e/002 type/lens cond/2"));
         assertEquals("Incomplete (missing battery)", BundleView.composition(bundle));
-        bundle.addEquipment(equipment.addEquipment("add-eqm name/Battery E-id/003 type/battery cond/3"));
+        bundle.addEquipment(equipment.addEquipment("add-eqm name/Battery e/003 type/battery cond/3"));
         assertEquals("Complete", BundleView.composition(bundle));
         assertTrue(bundle.getMissingEquipmentTypes().isEmpty());
         assertTrue(bundle.isComplete());

@@ -37,12 +37,12 @@ class LoanUpdateIntegrationTest {
     @Test
     void updateLoanCommand_routesToLoanHandlerAndPersistsChangedDetails() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("add-eqm name/Camera E-id/001 type/camera cond/4");
-        manager.executeInput("add-eqm name/Tripod E-id/002 type/tripod cond/5");
-        manager.executeInput("add-loan E-id/001 U-id/002 issued/01-10-26 due/10-10-26");
+        manager.executeInput("add-eqm name/Camera e/001 type/camera cond/4");
+        manager.executeInput("add-eqm name/Tripod e/002 type/tripod cond/5");
+        manager.executeInput("add-loan e/001 u/002 issued/01-10-26 due/10-10-26");
         output.reset();
 
-        manager.executeInput("loan-update L-id/001 E-id/002 U-id/007 due/15-10-26");
+        manager.executeInput("loan-update l/001 e/002 u/007 due/15-10-26");
 
         String feedback = output.toString(StandardCharsets.UTF_8);
         assertTrue(feedback.contains("[OK] Loan 001 updated."));
@@ -60,11 +60,11 @@ class LoanUpdateIntegrationTest {
     @Test
     void updateLoanCommand_invalidInput_printsLoanErrorAndRecovers() {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("add-eqm name/Camera E-id/001 type/camera cond/4");
-        manager.executeInput("add-loan E-id/001 U-id/002 issued/01-10-26 due/10-10-26");
+        manager.executeInput("add-eqm name/Camera e/001 type/camera cond/4");
+        manager.executeInput("add-loan e/001 u/002 issued/01-10-26 due/10-10-26");
         output.reset();
 
-        manager.executeInput("loan-update L-id/001 due/30-09-26");
+        manager.executeInput("loan-update l/001 due/30-09-26");
         manager.executeInput("list-loan");
 
         String actual = output.toString(StandardCharsets.UTF_8);
@@ -75,12 +75,12 @@ class LoanUpdateIntegrationTest {
     @Test
     void updateLoanCommand_acceptsRepeatedSpacesAndTabsBetweenCommandWords() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("add-eqm name/Camera E-id/001 type/camera cond/4");
-        manager.executeInput("add-loan E-id/001 U-id/002 issued/01-10-26 due/10-10-26");
+        manager.executeInput("add-eqm name/Camera e/001 type/camera cond/4");
+        manager.executeInput("add-loan e/001 u/002 issued/01-10-26 due/10-10-26");
         output.reset();
 
-        manager.executeInput("loan-update  L-id/001 U-id/007");
-        manager.executeInput("loan-update\tL-id/001 U-id/008");
+        manager.executeInput("loan-update  l/001 u/007");
+        manager.executeInput("loan-update\tl/001 u/008");
 
         String actual = output.toString(StandardCharsets.UTF_8);
         assertEquals(2, actual.lines().filter(line -> line.equals("[OK] Loan 001 updated.")).count());
@@ -93,9 +93,9 @@ class LoanUpdateIntegrationTest {
     @Test
     void updateLoanCommand_restartedManagerLoadsEditedLoan() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("add-eqm name/Camera E-id/001 type/camera cond/4");
-        manager.executeInput("add-loan E-id/001 U-id/002 issued/01-10-26 due/10-10-26");
-        manager.executeInput("loan-update L-id/001 U-id/007 due/15-10-26");
+        manager.executeInput("add-eqm name/Camera e/001 type/camera cond/4");
+        manager.executeInput("add-loan e/001 u/002 issued/01-10-26 due/10-10-26");
+        manager.executeInput("loan-update l/001 u/007 due/15-10-26");
 
         EqmManager restarted = new EqmManager(temporaryDirectory);
         output.reset();
@@ -109,14 +109,14 @@ class LoanUpdateIntegrationTest {
     @Test
     void updateLoanCommand_borrowerOnlyEditPreservesIssueConditionAfterRestart() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("add-eqm name/Test Camera E-id/001 type/camera cond/6 sensor/Full frame "
+        manager.executeInput("add-eqm name/Test Camera e/001 type/camera cond/6 sensor/Full frame "
                 + "damage/SENSOR_DAMAGE remarks/Handle carefully");
-        manager.executeInput("add-loan E-id/001 U-id/101 issued/01-10-26 due/20-10-26");
-        manager.executeInput("loan-update L-id/001 U-id/007");
+        manager.executeInput("add-loan e/001 u/101 issued/01-10-26 due/20-10-26");
+        manager.executeInput("loan-update l/001 u/007");
 
         EqmManager restarted = new EqmManager(temporaryDirectory);
         output.reset();
-        restarted.executeInput("loan-show L-id/001");
+        restarted.executeInput("loan-show l/001");
 
         String actual = output.toString(StandardCharsets.UTF_8);
         assertTrue(actual.contains("Condition: 6"));
@@ -127,19 +127,19 @@ class LoanUpdateIntegrationTest {
     @Test
     void updateLoanCommand_equipmentChangeUsesReplacementConditionAfterRestart() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("add-eqm name/Test Camera E-id/001 type/camera cond/6 sensor/Full frame "
+        manager.executeInput("add-eqm name/Test Camera e/001 type/camera cond/6 sensor/Full frame "
                 + "damage/SENSOR_DAMAGE remarks/Handle carefully");
-        manager.executeInput("add-eqm name/Test Tripod E-id/002 type/tripod cond/3 thread/3/8");
-        manager.executeInput("add-loan E-id/001 U-id/101 issued/01-10-26 due/20-10-26");
-        manager.executeInput("loan-update L-id/001 E-id/002");
+        manager.executeInput("add-eqm name/Test Tripod e/002 type/tripod cond/3 thread/3/8");
+        manager.executeInput("add-loan e/001 u/101 issued/01-10-26 due/20-10-26");
+        manager.executeInput("loan-update l/001 e/002");
 
         output.reset();
-        manager.executeInput("loan-show L-id/001");
+        manager.executeInput("loan-show l/001");
         assertReplacementConditionIsDisplayed();
 
         EqmManager restarted = new EqmManager(temporaryDirectory);
         output.reset();
-        restarted.executeInput("loan-show L-id/001");
+        restarted.executeInput("loan-show l/001");
 
         assertReplacementConditionIsDisplayed();
     }

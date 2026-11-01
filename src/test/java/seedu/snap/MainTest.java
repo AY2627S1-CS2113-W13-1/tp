@@ -33,10 +33,10 @@ class MainTest {
 
     /** Verifies that user validation and diagnostic logging work independently of Java assertions. */
     private void verifyEquipmentDiagnostics(boolean areAssertionsEnabled) throws Exception {
-        String commands = "add-eqm name/Camera E-id/001 type/camera cond/1\n"
-                + "add-eqm name/Tripod E-id/002 type/tripod cond/11\n"
-                + "add-eqm name/\u2003 E-id/002 type/camera cond/1\n"
-                + "add-eqm name/Camera E-id/002 type/\u2003 cond/1\nexit\n";
+        String commands = "add-eqm name/Camera e/001 type/camera cond/1\n"
+                + "add-eqm name/Tripod e/002 type/tripod cond/11\n"
+                + "add-eqm name/\u2003 e/002 type/camera cond/1\n"
+                + "add-eqm name/Camera e/002 type/\u2003 cond/1\nexit\n";
         String output = runApplication(commands, areAssertionsEnabled);
         assertTrue(output.contains("#############"));
         assertTrue(output.indexOf("#############") < output.indexOf("Welcome to snAp."));
@@ -67,7 +67,7 @@ class MainTest {
     @Test
     void main_logDirectoryBlocked_warnsAndContinues() throws Exception {
         Files.writeString(temporaryDirectory.resolve("logs"), "This file prevents directory creation.");
-        String output = runApplication("add-eqm name/Camera E-id/001 type/camera cond/1\nexit\n", true);
+        String output = runApplication("add-eqm name/Camera e/001 type/camera cond/1\nexit\n", true);
         assertTrue(output.contains("Warning: Application logging is unavailable:"));
         assertTrue(output.contains("[OK] Equipment 001 added."));
         assertFalse(output.contains("Added equipment with item ID"));
@@ -75,9 +75,9 @@ class MainTest {
 
     @Test
     void main_equipmentAndLoanCommands_shareLogsWithoutConsoleDiagnostics() throws Exception {
-        String output = runApplication("add-eqm name/Camera E-id/001 type/camera cond/1\n"
-                + "add-loan E-id/001 U-id/001 issued/15-10-26 due/16-10-26\n"
-                + "loan-delete L-id/001\nloan-delete L-id/999\nexit\n", true);
+        String output = runApplication("add-eqm name/Camera e/001 type/camera cond/1\n"
+                + "add-loan e/001 u/001 issued/15-10-26 due/16-10-26\n"
+                + "loan-delete l/001\nloan-delete l/999\nexit\n", true);
         assertTrue(output.contains("[OK] Equipment 001 added."));
         assertTrue(output.contains("[OK] Loan 001 deleted."));
         assertTrue(output.contains("No loan found for loan ID 999."));
@@ -94,9 +94,9 @@ class MainTest {
 
     @Test
     void main_restart_loadsPersistedEquipmentAndLoans() throws Exception {
-        String firstRun = runApplication("add-eqm name/Camera E-id/001 type/camera cond/1"
+        String firstRun = runApplication("add-eqm name/Camera e/001 type/camera cond/1"
                 + " sensor/Full frame damage/SHUTTER_FAULT\n"
-                + "add-loan E-id/001 U-id/002 issued/01-10-26 due/02-10-26\nexit\n", true);
+                + "add-loan e/001 u/002 issued/01-10-26 due/02-10-26\nexit\n", true);
 
         assertTrue(firstRun.contains("[OK] Equipment 001 added."));
         assertTrue(firstRun.contains("[OK] Loan 001 issued."));
@@ -107,7 +107,7 @@ class MainTest {
         assertTrue(Files.readString(temporaryDirectory.resolve("data/loans.txt"))
                 .contains("loan loanId/001 id/001 b/002 issued/01-10-26 due/02-10-26 returned/false"));
 
-        String secondRun = runApplication("list-eqm\nlist-loan\neqm-show E-id/001\nexit\n", true);
+        String secondRun = runApplication("list-eqm\nlist-loan\neqm-show e/001\nexit\n", true);
 
         assertTrue(secondRun.contains("Welcome to snAp. Loaded 1 equipment record(s) and 1 loan(s)."));
         assertTrue(secondRun.contains("Camera"));
@@ -132,7 +132,7 @@ class MainTest {
                 + "loan id/003 b/030 issued/01-10-26 due/02-10-26 returned/false\n"
                 + "loan id/004 b/040 issued/01-10-26 due/02-10-26 returned/true\n");
 
-        String firstRun = runApplication("list-eqm\nloan-delete L-id/001\nexit\n", true);
+        String firstRun = runApplication("list-eqm\nloan-delete l/001\nexit\n", true);
 
         assertTrue(firstRun.contains("Welcome to snAp. Loaded 4 equipment record(s) and 4 loan(s)."));
         assertTrue(firstRun.contains(equipmentRow("Camera", "001", "camera", 7, "Loaned")));

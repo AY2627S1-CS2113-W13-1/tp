@@ -35,16 +35,16 @@ class BundleLoanHistoryIntegrationTest {
     @Test
     void historyBundleCommand_displaysActiveAndReturnedLoans() {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("add-eqm name/Camera E-id/001 type/camera cond/5 sensor/Full frame");
-        manager.executeInput("add-eqm name/Battery E-id/002 type/battery cond/5 capacity/2000 mAh");
+        manager.executeInput("add-eqm name/Camera e/001 type/camera cond/5 sensor/Full frame");
+        manager.executeInput("add-eqm name/Battery e/002 type/battery cond/5 capacity/2000 mAh");
         manager.executeInput("add-bundle name/Travel Kit");
-        manager.executeInput("bundle-add-eqm B-id/001 001 002");
-        manager.executeInput("add-loan E-id/001 U-id/111 issued/01-10-26 due/02-10-26");
-        manager.executeInput("add-loan E-id/002 U-id/222 issued/03-10-26 due/04-10-26");
-        manager.executeInput("loan-return L-id/002 serviceable/yes damage/NONE");
+        manager.executeInput("bundle-add-eqm b/001 001 002");
+        manager.executeInput("add-loan e/001 u/111 issued/01-10-26 due/02-10-26");
+        manager.executeInput("add-loan e/002 u/222 issued/03-10-26 due/04-10-26");
+        manager.executeInput("loan-return l/002 serviceable/yes damage/NONE");
         output.reset();
 
-        manager.executeInput("bundle-history B-id/001");
+        manager.executeInput("bundle-history b/001");
 
         String printed = output.toString(StandardCharsets.UTF_8);
         assertTrue(printed.contains("Loan history for bundle 001 (Travel Kit)"));
@@ -58,7 +58,7 @@ class BundleLoanHistoryIntegrationTest {
     void historyBundleCommand_reportsUnknownBundle() {
         EqmManager manager = new EqmManager(temporaryDirectory);
 
-        manager.executeInput("bundle-history B-id/001");
+        manager.executeInput("bundle-history b/001");
 
         String printed = output.toString(StandardCharsets.UTF_8);
         assertTrue(printed.contains("requested bundle does not exist"));
@@ -68,13 +68,13 @@ class BundleLoanHistoryIntegrationTest {
     @Test
     void historyBundleCommand_survivesRestartWithBundleAndLoanPersistence() {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("add-eqm name/Camera E-id/001 type/camera cond/5 sensor/Full frame");
-        manager.executeInput("add-eqm name/Battery E-id/002 type/battery cond/5 capacity/2000 mAh");
+        manager.executeInput("add-eqm name/Camera e/001 type/camera cond/5 sensor/Full frame");
+        manager.executeInput("add-eqm name/Battery e/002 type/battery cond/5 capacity/2000 mAh");
         manager.executeInput("add-bundle name/Travel Kit");
-        manager.executeInput("bundle-add-eqm B-id/001 001 002");
-        manager.executeInput("add-loan E-id/001 U-id/111 issued/01-10-26 due/02-10-26");
-        manager.executeInput("add-loan E-id/002 U-id/222 issued/03-10-26 due/04-10-26");
-        manager.executeInput("loan-return L-id/002 serviceable/yes damage/NONE");
+        manager.executeInput("bundle-add-eqm b/001 001 002");
+        manager.executeInput("add-loan e/001 u/111 issued/01-10-26 due/02-10-26");
+        manager.executeInput("add-loan e/002 u/222 issued/03-10-26 due/04-10-26");
+        manager.executeInput("loan-return l/002 serviceable/yes damage/NONE");
         manager.executeInput("exit");
         output.reset();
 

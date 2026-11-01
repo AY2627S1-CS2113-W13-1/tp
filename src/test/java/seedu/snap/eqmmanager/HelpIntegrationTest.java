@@ -63,19 +63,19 @@ class HelpIntegrationTest {
         System.setOut(new PrintStream(output, true, StandardCharsets.UTF_8));
         dataDirectory = temporaryDirectory.resolve("data");
         manager = new EqmManager(dataDirectory, FIXED_CLOCK);
-        manager.executeInput("add-eqm name/Camera E-id/001 type/camera cond/4 sensor/Full frame "
+        manager.executeInput("add-eqm name/Camera e/001 type/camera cond/4 sensor/Full frame "
                 + "remarks/Camera checked");
-        manager.executeInput("add-eqm name/Battery E-id/002 type/battery cond/5 capacity/2000mAh");
-        manager.executeInput("add-eqm name/Lens E-id/003 type/lens cond/6 zoom/24-70mm");
-        manager.executeInput("add-eqm name/Tripod E-id/004 type/tripod cond/7 thread/1-4 inch");
-        manager.executeInput("add-eqm name/Workshop battery E-id/005 type/battery cond/3 capacity/1500mAh");
-        manager.executeInput("add-eqm name/Spare battery E-id/006 type/battery cond/8 capacity/1800mAh");
+        manager.executeInput("add-eqm name/Battery e/002 type/battery cond/5 capacity/2000mAh");
+        manager.executeInput("add-eqm name/Lens e/003 type/lens cond/6 zoom/24-70mm");
+        manager.executeInput("add-eqm name/Tripod e/004 type/tripod cond/7 thread/1-4 inch");
+        manager.executeInput("add-eqm name/Workshop battery e/005 type/battery cond/3 capacity/1500mAh");
+        manager.executeInput("add-eqm name/Spare battery e/006 type/battery cond/8 capacity/1800mAh");
         manager.executeInput("add-bundle name/Camera kit");
-        manager.executeInput("bundle-add-eqm B-id/001 001 002 003 004");
-        manager.executeInput("add-loan E-id/005 U-id/111 due/25-10-26");
-        manager.executeInput("loan-return L-id/001 serviceable/no damage/SWELLING remarks/Needs repair");
-        manager.executeInput("add-loan E-id/001 U-id/222 due/25-10-26");
-        manager.executeInput("eqm-maintain E-id/005 date/24-10-26 work/Inspected swelling outcome/Repair required");
+        manager.executeInput("bundle-add-eqm b/001 001 002 003 004");
+        manager.executeInput("add-loan e/005 u/111 due/25-10-26");
+        manager.executeInput("loan-return l/001 serviceable/no damage/SWELLING remarks/Needs repair");
+        manager.executeInput("add-loan e/001 u/222 due/25-10-26");
+        manager.executeInput("eqm-maintain e/005 date/24-10-26 work/Inspected swelling outcome/Repair required");
         readField(manager, "bundles", BundleHandler.class).saveToStorage();
         assertTrue(readField(manager, "bundles", BundleHandler.class).getBundleList().getFirst().isComplete());
         assertTrue(readField(manager, "equipment", EquipmentHandler.class).getEquipmentById("001").isLoaned());
@@ -131,7 +131,7 @@ class HelpIntegrationTest {
 
         assertTrue(printedContent().contains("Command not recognised"));
         assertTrue(printedContent().contains("Type help"));
-        assertFalse(printedContent().contains("add-loan E-id/"));
+        assertFalse(printedContent().contains("add-loan e/"));
         assertEquals(before, snapshot(manager));
         assertSavedFilesUnchanged(filesBefore);
         assertEquals(pathsBefore, treePaths(dataDirectory));
@@ -142,7 +142,7 @@ class HelpIntegrationTest {
         manager.executeInput("help");
 
         assertMenuPrinted();
-        assertFalse(printedContent().contains("Format: add-loan E-id/"));
+        assertFalse(printedContent().contains("Format: add-loan e/"));
         assertFalse(printedContent().contains("damage/SENSOR_DAMAGE"));
         assertTrue(printed().lines().count() <= 24, "The command menu should fit a normal terminal screen");
     }
@@ -165,27 +165,27 @@ class HelpIntegrationTest {
     @CsvSource(delimiter = '|', value = {
         "add-eqm | Format: add-eqm name/<NAME>",
         "list-eqm | Format: list-eqm",
-        "eqm-show | Format: eqm-show E-id/<ID>",
-        "eqm-delete | Format: eqm-delete E-id/<ID>",
-        "add-loan | Format: add-loan E-id/<ITEM ID>",
-        "loan-return | Format: loan-return L-id/<LOAN ID>",
-        "loan-delete | Format: loan-delete L-id/<LOAN ID>",
-        "loan-update | Format: loan-update L-id/<LOAN ID>",
+        "eqm-show | Format: eqm-show e/<ID>",
+        "eqm-delete | Format: eqm-delete e/<ID>",
+        "add-loan | Format: add-loan e/<ITEM ID>",
+        "loan-return | Format: loan-return l/<LOAN ID>",
+        "loan-delete | Format: loan-delete l/<LOAN ID>",
+        "loan-update | Format: loan-update l/<LOAN ID>",
         "list-loan | Format: list-loan",
-        "loan-show | Format: loan-show L-id/<LOAN ID>",
+        "loan-show | Format: loan-show l/<LOAN ID>",
         "backup | Format: backup path/<DIRECTORY>",
         "restore | Format: restore path/<DIRECTORY>",
-        "list-loan-borrower | Format: list-loan-borrower U-id/<BORROWER ID>",
+        "list-loan-borrower | Format: list-loan-borrower u/<BORROWER ID>",
         "list-loan-overdue | Format: list-loan-overdue",
-        "eqm-loan-history | Format: eqm-loan-history E-id/<ITEM ID>",
-        "filter-eqm | Format: filter-eqm [E-id/<ID>]",
-        "eqm-update | Format: eqm-update E-id/<ID>",
-        "eqm-maintain | Format: eqm-maintain E-id/<ITEM ID>",
+        "eqm-loan-history | Format: eqm-loan-history e/<ITEM ID>",
+        "filter-eqm | Format: filter-eqm [e/<ID>]",
+        "eqm-update | Format: eqm-update e/<ID>",
+        "eqm-maintain | Format: eqm-maintain e/<ITEM ID>",
         "add-bundle | Format: add-bundle name/<NAME>",
-        "bundle-add-eqm | Format: bundle-add-eqm B-id/<BUNDLE ID>",
-        "bundle-remove-eqm | Format: bundle-remove-eqm B-id/<BUNDLE ID>",
+        "bundle-add-eqm | Format: bundle-add-eqm b/<BUNDLE ID>",
+        "bundle-remove-eqm | Format: bundle-remove-eqm b/<BUNDLE ID>",
         "list-bundle | Format: list-bundle",
-        "bundle-history | Format: bundle-history B-id/<BUNDLE ID>",
+        "bundle-history | Format: bundle-history b/<BUNDLE ID>",
         "help | Format: help",
         "exit | Format: exit"
     })
@@ -196,7 +196,7 @@ class HelpIntegrationTest {
         assertTrue(printedContent().contains("Example: " + topic), topic);
         assertFalse(printedContent().contains("Command not recognised"), topic);
         assertFalse(printedContent().contains("Unknown help topic"), topic);
-        String unrelated = topic.equals("add-loan") ? "Format: add-eqm name/" : "Format: add-loan E-id/";
+        String unrelated = topic.equals("add-loan") ? "Format: add-eqm name/" : "Format: add-loan e/";
         assertFalse(printedContent().contains(unrelated), "Topic help should omit unrelated command sections");
     }
 
@@ -206,9 +206,9 @@ class HelpIntegrationTest {
     void help_singleWordTopicWhitespace_showsLoanSyntax(String command) {
         manager.executeInput(command);
 
-        assertTrue(printedContent().contains("Format: add-loan E-id/<ITEM ID>"));
+        assertTrue(printedContent().contains("Format: add-loan e/<ITEM ID>"));
         assertTrue(printedContent().contains("Omitted issued/ defaults to today's date"));
-        assertFalse(printedContent().contains("Format: loan-return L-id/"));
+        assertFalse(printedContent().contains("Format: loan-return l/"));
     }
 
     @ParameterizedTest
@@ -231,11 +231,11 @@ class HelpIntegrationTest {
 
         manager.executeInput(command);
 
-        assertTrue(printedContent().contains("Format: loan-show L-id/<LOAN ID>"));
-        assertTrue(printedContent().contains("Example: loan-show L-id/001"));
+        assertTrue(printedContent().contains("Format: loan-show l/<LOAN ID>"));
+        assertTrue(printedContent().contains("Example: loan-show l/001"));
         assertTrue(printedContent().contains("Legacy loans without a saved snapshot"));
         assertFalse(printedContent().contains("Unknown help topic"));
-        assertFalse(printedContent().contains("Format: add-loan E-id/"));
+        assertFalse(printedContent().contains("Format: add-loan e/"));
         assertEquals(before, snapshot(manager));
         assertSavedFilesUnchanged(filesBefore);
     }
@@ -246,12 +246,12 @@ class HelpIntegrationTest {
         manager.executeInput(command);
 
         assertTrue(printedContent().contains("Format: add-eqm name/<NAME>"));
-        assertTrue(printedContent().contains("Format: add-loan E-id/<ITEM ID>"));
-        assertTrue(printedContent().contains("Format: loan-return L-id/<LOAN ID>"));
-        assertTrue(printedContent().contains("Format: loan-show L-id/<LOAN ID>"));
-        assertTrue(printedContent().contains("Format: bundle-add-eqm B-id/<BUNDLE ID>"));
-        assertTrue(printedContent().contains("Format: bundle-remove-eqm B-id/<BUNDLE ID>"));
-        assertTrue(printedContent().contains("Format: bundle-history B-id/<BUNDLE ID>"));
+        assertTrue(printedContent().contains("Format: add-loan e/<ITEM ID>"));
+        assertTrue(printedContent().contains("Format: loan-return l/<LOAN ID>"));
+        assertTrue(printedContent().contains("Format: loan-show l/<LOAN ID>"));
+        assertTrue(printedContent().contains("Format: bundle-add-eqm b/<BUNDLE ID>"));
+        assertTrue(printedContent().contains("Format: bundle-remove-eqm b/<BUNDLE ID>"));
+        assertTrue(printedContent().contains("Format: bundle-history b/<BUNDLE ID>"));
         assertTrue(printedContent().contains("Format: bundle-history name/<NAME>"));
         assertTrue(printedContent().contains("Format: exit"));
         assertTrue(printedContent().contains("Omitted issued/ defaults to today's date"));
@@ -266,7 +266,7 @@ class HelpIntegrationTest {
         assertTrue(printedContent().contains("Unknown help topic"));
         assertMenuPrinted();
         assertFalse(printedContent().contains("Command not recognised"));
-        assertFalse(printedContent().contains("Format: add-loan E-id/"));
+        assertFalse(printedContent().contains("Format: add-loan e/"));
     }
 
     @Test
@@ -314,7 +314,7 @@ class HelpIntegrationTest {
         assertSavedFilesUnchanged(originals);
         output.reset();
 
-        manager.executeInput("add-loan E-id/006 U-id/333 due/25-10-26");
+        manager.executeInput("add-loan e/006 u/333 due/25-10-26");
         manager.executeInput("add-bundle name/Next kit");
 
         assertTrue(printedContent().contains("[OK] Loan 003 issued."));
@@ -330,9 +330,9 @@ class HelpIntegrationTest {
         executeAllReadOnlyForms(manager, snapshot(manager));
         output.reset();
 
-        manager.executeInput("eqm-update E-id/006 name/Updated spare battery cond/9");
+        manager.executeInput("eqm-update e/006 name/Updated spare battery cond/9");
         manager.executeInput("list-loan");
-        manager.executeInput("eqm-loan-history E-id/001");
+        manager.executeInput("eqm-loan-history e/001");
 
         assertTrue(printedContent().contains(" updated."));
         assertTrue(printedContent().contains("BORROWER ID"));
@@ -353,12 +353,12 @@ class HelpIntegrationTest {
         assertTrue(printedContent().contains("Welcome to snAp."));
         assertTrue(printedContent().contains("Type help"));
         assertMenuPrinted();
-        assertTrue(printedContent().contains("Format: add-loan E-id/<ITEM ID>"));
+        assertTrue(printedContent().contains("Format: add-loan e/<ITEM ID>"));
         assertTrue(printedContent().contains("Unknown help topic"));
         assertTrue(printedContent().contains("Goodbye."));
         assertFalse(readField(interactive, "isRunning", Boolean.class));
-        assertTrue(printed().indexOf("Welcome") < printed().indexOf("add-loan E-id/"));
-        assertTrue(printed().indexOf("add-loan E-id/") < printed().indexOf("Goodbye."));
+        assertTrue(printed().indexOf("Welcome") < printed().indexOf("add-loan e/"));
+        assertTrue(printed().indexOf("add-loan e/") < printed().indexOf("Goodbye."));
 
         String newline = System.lineSeparator();
         String divider = "-".repeat(100);
@@ -411,7 +411,7 @@ class HelpIntegrationTest {
 
         assertTrue(printedContent().contains("Could not load saved data"));
         assertFalse(printedContent().contains("Welcome to snAp."));
-        assertFalse(printedContent().contains("add-loan E-id/"));
+        assertFalse(printedContent().contains("add-loan e/"));
         assertEquals(original, Files.readString(invalidLoans));
         assertFalse(Files.exists(invalidDirectory.resolve("equipment.txt")));
         assertFalse(Files.exists(invalidDirectory.resolve("loan-sequence.txt")));
@@ -425,19 +425,19 @@ class HelpIntegrationTest {
         Map<Path, SavedFile> files = savedFiles(dataDirectory);
         output.reset();
 
-        restarted.executeInput("eqm-show E-id/001");
+        restarted.executeInput("eqm-show e/001");
         assertTrue(printed().contains("Name: Camera"));
         assertTrue(printed().contains("Sensor format: Full frame"));
         assertTrue(printed().contains("Status: Loaned"));
         assertTrue(printed().contains("Active loan ID: 002"));
         output.reset();
-        restarted.executeInput("eqm-show E-id/005");
+        restarted.executeInput("eqm-show e/005");
         assertTrue(printed().contains("Status: Unserviceable"));
         assertTrue(printed().contains("Damage: SWELLING"));
         assertTrue(printed().contains("Remarks: Needs repair"));
         assertTrue(printed().contains("Active loan ID: (none)"));
         output.reset();
-        restarted.executeInput("eqm-show E-id/006");
+        restarted.executeInput("eqm-show e/006");
         assertTrue(printed().contains("Status: Available"));
         assertTrue(printed().contains("Active loan ID: (none)"));
         executeAllReadOnlyForms(restarted, before);
@@ -447,23 +447,23 @@ class HelpIntegrationTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"eqm-show", "eqm-show E-id/000", "eqm-show E-id/01", "eqm-show E-id/1000",
-        "eqm-show E-id/-01", "eqm-show E-id/１２３", "eqm-show E-id/001 unexpected",
-        "eqm-show E-id/001 E-id/002", "eqm-show E-id/001 type/camera"})
+    @ValueSource(strings = {"eqm-show", "eqm-show e/000", "eqm-show e/01", "eqm-show e/1000",
+        "eqm-show e/-01", "eqm-show e/１２３", "eqm-show e/001 unexpected",
+        "eqm-show e/001 e/002", "eqm-show e/001 type/camera"})
     void equipmentViews_invalidShowSyntax_reportsFormatWithoutChangingState(String command) throws Exception {
         ApplicationState before = snapshot(manager);
         Map<Path, SavedFile> files = savedFiles(dataDirectory);
 
         manager.executeInput(command);
 
-        assertTrue(printed().contains("Invalid format. Use: eqm-show E-id/[ITEM ID], from 001 to 999."));
+        assertTrue(printed().contains("Invalid format. Use: eqm-show e/[ITEM ID], from 001 to 999."));
         assertEquals(before, snapshot(manager));
         assertSavedFilesUnchanged(files);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"eqm-show E-id/001", "  eqm-show\tE-id/001  ", "eqm-show\u2003E-id/001",
-        "eqm-show\u00a0E-id/001"})
+    @ValueSource(strings = {"eqm-show e/001", "  eqm-show\te/001  ", "eqm-show\u2003e/001",
+        "eqm-show\u00a0e/001"})
     void equipmentViews_showWhitespace_selectsExactItem(String command) {
         manager.executeInput(command);
 
@@ -541,14 +541,14 @@ class HelpIntegrationTest {
     /** Repeats help, lists and histories so viewing records cannot save data or consume identifiers. */
     private void executeAllReadOnlyForms(EqmManager target, ApplicationState expected) throws Exception {
         List<String> requests = new ArrayList<>(helpRequests());
-        requests.addAll(List.of("list-eqm", "filter-eqm cond/1-10", "filter-eqm E-id/999", "eqm-show E-id/001",
-                "eqm-show E-id/002", "eqm-show E-id/003", "eqm-show E-id/004", "eqm-show E-id/005",
-                "eqm-show E-id/006", "eqm-show E-id/999", "eqm-show",
-                "eqm-show E-id/000", "eqm-show E-id/001 E-id/002", "eqm-show E-id/001 remarks/Unexpected"));
-        requests.addAll(List.of("list-loan", "list-loan-overdue", "eqm-loan-history E-id/001",
-                "eqm-loan-history E-id/005",
-                "bundle-history B-id/001", "bundle-history name/Camera kit", "list-bundle",
-                "list-loan-borrower U-id/222", "list-loan-borrower U-id/999", "loan-show L-id/001"));
+        requests.addAll(List.of("list-eqm", "filter-eqm cond/1-10", "filter-eqm e/999", "eqm-show e/001",
+                "eqm-show e/002", "eqm-show e/003", "eqm-show e/004", "eqm-show e/005",
+                "eqm-show e/006", "eqm-show e/999", "eqm-show",
+                "eqm-show e/000", "eqm-show e/001 e/002", "eqm-show e/001 remarks/Unexpected"));
+        requests.addAll(List.of("list-loan", "list-loan-overdue", "eqm-loan-history e/001",
+                "eqm-loan-history e/005",
+                "bundle-history b/001", "bundle-history name/Camera kit", "list-bundle",
+                "list-loan-borrower u/222", "list-loan-borrower u/999", "loan-show l/001"));
         for (int repetition = 0; repetition < 2; repetition++) {
             for (String command : requests) {
                 output.reset();

@@ -35,7 +35,7 @@ class EquipmentViewTest {
     @Test
     void inventory_longNameAndRemarks_keepsOnlyBoundedSummaryColumns() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
-        handler.addEquipment("add-eqm name/" + "A".repeat(100) + " E-id/001 type/camera cond/10 "
+        handler.addEquipment("add-eqm name/" + "A".repeat(100) + " e/001 type/camera cond/10 "
                 + "remarks/" + "r".repeat(200));
 
         handler.viewAllEquipment();
@@ -50,17 +50,17 @@ class EquipmentViewTest {
         assertTrue(rows.getLast().contains("A".repeat(45) + "..."));
         assertFalse(printed().contains("sensor/"));
         assertFalse(printed().contains("r".repeat(20)));
-        assertTrue(printed().contains("eqm-show E-id/<ID>"));
+        assertTrue(printed().contains("eqm-show e/<ID>"));
         assertTrue(printed().contains("1 equipment item."));
     }
 
     @Test
     void inventory_wideAndJoinedUnicodeNames_preservesGraphemesAndColumnWidths() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
-        handler.addEquipment("add-eqm name/" + "相".repeat(30) + " E-id/001 type/camera cond/1");
-        handler.addEquipment("add-eqm name/" + "😀".repeat(26) + " E-id/002 type/lens cond/2");
-        handler.addEquipment("add-eqm name/" + "e\u0301".repeat(50) + " E-id/003 type/battery cond/3");
-        handler.addEquipment("add-eqm name/" + "👩‍👩‍👧‍👦".repeat(8) + " E-id/004 type/tripod cond/4");
+        handler.addEquipment("add-eqm name/" + "相".repeat(30) + " e/001 type/camera cond/1");
+        handler.addEquipment("add-eqm name/" + "😀".repeat(26) + " e/002 type/lens cond/2");
+        handler.addEquipment("add-eqm name/" + "e\u0301".repeat(50) + " e/003 type/battery cond/3");
+        handler.addEquipment("add-eqm name/" + "👩‍👩‍👧‍👦".repeat(8) + " e/004 type/tripod cond/4");
 
         handler.viewAllEquipment();
 
@@ -75,7 +75,7 @@ class EquipmentViewTest {
     @Test
     void inventory_controlCharacters_areVisibleWithoutCreatingExtraRows() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
-        handler.addEquipment("add-eqm name/Camera\t\u001b[31m E-id/001 type/camera cond/1");
+        handler.addEquipment("add-eqm name/Camera\t\u001b[31m e/001 type/camera cond/1");
 
         handler.viewAllEquipment();
 
@@ -88,7 +88,7 @@ class EquipmentViewTest {
     @Test
     void inventory_pipeInName_keepsTableColumnsAndOriginalDetails() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
-        Equipment item = handler.addEquipment("add-eqm name/Camera | Kit E-id/001 type/camera cond/1");
+        Equipment item = handler.addEquipment("add-eqm name/Camera | Kit e/001 type/camera cond/1");
 
         handler.viewAllEquipment();
 
@@ -108,7 +108,7 @@ class EquipmentViewTest {
         assertEquals("Camera | Kit", item.getItemName());
         output.reset();
 
-        handler.showEquipment("eqm-show E-id/001");
+        handler.showEquipment("eqm-show e/001");
 
         assertEquals("Camera | Kit", field("Name"));
     }
@@ -116,8 +116,8 @@ class EquipmentViewTest {
     @Test
     void inventory_andFilteredResults_useIdenticalTablesInOriginalOrder() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
-        handler.addEquipment("add-eqm name/Camera E-id/002 type/camera cond/1");
-        handler.addEquipment("add-eqm name/Lens E-id/001 type/lens cond/2");
+        handler.addEquipment("add-eqm name/Camera e/002 type/camera cond/1");
+        handler.addEquipment("add-eqm name/Lens e/001 type/lens cond/2");
         handler.viewAllEquipment();
         List<String> inventoryRows = printed().lines().skip(1).toList();
         output.reset();
@@ -153,11 +153,11 @@ class EquipmentViewTest {
         String name = "A".repeat(100);
         String details = "S".repeat(100);
         String remarks = "r".repeat(98) + "  " + "R".repeat(100);
-        Equipment item = handler.addEquipment("add-eqm name/" + name + " E-id/001 type/camera cond/8 sensor/" + details
+        Equipment item = handler.addEquipment("add-eqm name/" + name + " e/001 type/camera cond/8 sensor/" + details
                 + " mount/RF thread/1-4 battery/LP-E6 damage/OTHER remarks/" + remarks);
         item.setLoanId("007");
 
-        handler.showEquipment("eqm-show E-id/001");
+        handler.showEquipment("eqm-show e/001");
 
         assertEquals(name, field("Name"));
         assertEquals(details, field("Sensor format"));
@@ -174,20 +174,20 @@ class EquipmentViewTest {
     @Test
     void details_otherSubtypesExposeCompatibilityAndDefaults() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
-        handler.addEquipment("add-eqm name/Lens E-id/001 type/lens cond/2 zoom/24-70 mount/RF sensor/APS-C");
-        handler.addEquipment("add-eqm name/Battery E-id/002 type/battery cond/3 capacity/2000mAh battery/LP-E6");
-        handler.addEquipment("add-eqm name/Tripod E-id/003 type/tripod cond/4");
+        handler.addEquipment("add-eqm name/Lens e/001 type/lens cond/2 zoom/24-70 mount/RF sensor/APS-C");
+        handler.addEquipment("add-eqm name/Battery e/002 type/battery cond/3 capacity/2000mAh battery/LP-E6");
+        handler.addEquipment("add-eqm name/Tripod e/003 type/tripod cond/4");
 
-        handler.showEquipment("eqm-show E-id/001");
+        handler.showEquipment("eqm-show e/001");
         assertTrue(printed().contains("Zoom range: 24-70"));
         assertTrue(printed().contains("Lens mount: RF"));
         assertTrue(printed().contains("Sensor format: APS-C"));
         output.reset();
-        handler.showEquipment("eqm-show E-id/002");
+        handler.showEquipment("eqm-show e/002");
         assertTrue(printed().contains("Capacity: 2000mAh"));
         assertTrue(printed().contains("Battery type: LP-E6"));
         output.reset();
-        handler.showEquipment("eqm-show E-id/003");
+        handler.showEquipment("eqm-show e/003");
         assertTrue(printed().contains("Thread: unspecified"));
         assertTrue(printed().contains("Damage: NONE"));
         assertTrue(printed().contains("Remarks: (none)"));

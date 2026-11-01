@@ -82,7 +82,7 @@ class HelpExamplesIntegrationTest {
         if (command.equals("restore")) {
             manager.executeInput("backup path/" + backupDirectory);
             assertTrue(printed().contains("Backup created successfully"));
-            manager.executeInput("add-eqm name/Added after backup E-id/004 type/tripod cond/1");
+            manager.executeInput("add-eqm name/Added after backup e/004 type/tripod cond/1");
             field(manager, "equipment", EquipmentHandler.class).saveToStorage();
         }
         output.reset();
@@ -137,20 +137,20 @@ class HelpExamplesIntegrationTest {
         if (command.equals("add-eqm")) {
             return manager;
         }
-        manager.executeInput("add-eqm name/Camera E-id/001 type/camera cond/1 sensor/APS-C mount/Canon RF");
-        manager.executeInput("add-eqm name/Battery E-id/002 type/battery cond/2 capacity/2000mAh");
-        manager.executeInput("add-eqm name/Lens E-id/003 type/lens cond/3 zoom/24-70mm mount/Canon RF sensor/APS-C");
+        manager.executeInput("add-eqm name/Camera e/001 type/camera cond/1 sensor/APS-C mount/Canon RF");
+        manager.executeInput("add-eqm name/Battery e/002 type/battery cond/2 capacity/2000mAh");
+        manager.executeInput("add-eqm name/Lens e/003 type/lens cond/3 zoom/24-70mm mount/Canon RF sensor/APS-C");
         if (Set.of("bundle-add-eqm", "bundle-remove-eqm", "list-bundle", "bundle-history", "restore")
                 .contains(command)) {
             manager.executeInput("add-bundle name/Studio kit");
             if (!command.equals("bundle-add-eqm")) {
-                manager.executeInput("bundle-add-eqm B-id/001 001 002 003");
+                manager.executeInput("bundle-add-eqm b/001 001 002 003");
             }
         }
         if (Set.of("loan-return", "loan-delete", "loan-update", "list-loan", "loan-show", "list-loan-borrower",
                 "list-loan-overdue", "eqm-loan-history", "bundle-history", "backup", "restore")
                 .contains(command)) {
-            manager.executeInput("add-loan E-id/001 U-id/002 issued/24-10-26 due/27-10-26");
+            manager.executeInput("add-loan e/001 u/002 issued/24-10-26 due/27-10-26");
         }
         field(manager, "equipment", EquipmentHandler.class).saveToStorage();
         field(manager, "loans", LoanHandler.class).saveToStorage();

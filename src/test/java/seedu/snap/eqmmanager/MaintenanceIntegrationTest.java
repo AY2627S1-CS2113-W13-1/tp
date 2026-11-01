@@ -41,10 +41,10 @@ class MaintenanceIntegrationTest {
     @Test
     void maintain_validCommand_reportsSuccessAndPersistsRecord() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory, FIXED_CLOCK);
-        manager.executeInput("add-eqm name/Camera E-id/001 type/camera cond/5");
+        manager.executeInput("add-eqm name/Camera e/001 type/camera cond/5");
         output.reset();
 
-        manager.executeInput("eqm-maintain E-id/001 date/27-10-26 work/Replaced battery outcome/Completed");
+        manager.executeInput("eqm-maintain e/001 date/27-10-26 work/Replaced battery outcome/Completed");
 
         String printed = output.toString(StandardCharsets.UTF_8);
         assertTrue(printed.contains("[OK] Maintenance recorded successfully."));
@@ -62,11 +62,11 @@ class MaintenanceIntegrationTest {
     @Test
     void maintain_invalidCommand_reportsErrorAndAcceptsNextValidCommand() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory, FIXED_CLOCK);
-        manager.executeInput("add-eqm name/Camera E-id/001 type/camera cond/5");
+        manager.executeInput("add-eqm name/Camera e/001 type/camera cond/5");
         output.reset();
 
-        manager.executeInput("eqm-maintain E-id/001 date/31-02-26 work/Repair outcome/Completed");
-        manager.executeInput("eqm-maintain E-id/001 date/27-10-26 work/Repair outcome/Completed");
+        manager.executeInput("eqm-maintain e/001 date/31-02-26 work/Repair outcome/Completed");
+        manager.executeInput("eqm-maintain e/001 date/27-10-26 work/Repair outcome/Completed");
 
         String printed = output.toString(StandardCharsets.UTF_8);
         assertTrue(printed.contains("[ERROR] Maintenance date must use DD-MM-YY."));
@@ -93,7 +93,7 @@ class MaintenanceIntegrationTest {
         Files.writeString(file, original);
         EqmManager manager = new EqmManager(temporaryDirectory, FIXED_CLOCK);
 
-        manager.executeInput("eqm-maintain E-id/001 date/27-10-26 work/Repair outcome/Completed");
+        manager.executeInput("eqm-maintain e/001 date/27-10-26 work/Repair outcome/Completed");
 
         String printed = output.toString(StandardCharsets.UTF_8);
         assertTrue(printed.contains("Could not load saved data: maintenance.txt:"));

@@ -68,7 +68,7 @@ class EquipmentReturnAssessmentTest {
         return Stream.of(
                 Arguments.of(
                         "camera",
-                        "add-eqm name/Camera E-id/001 type/camera cond/7 "
+                        "add-eqm name/Camera e/001 type/camera cond/7 "
                                 + "sensor/Full frame mount/Canon RF "
                                 + "thread/Quarter inch battery/LP-E17",
                         "SHUTTER_FAULT",
@@ -77,7 +77,7 @@ class EquipmentReturnAssessmentTest {
                                 + "damage/SHUTTER_FAULT"),
                 Arguments.of(
                         "lens",
-                        "add-eqm name/Lens E-id/001 type/lens cond/7 "
+                        "add-eqm name/Lens e/001 type/lens cond/7 "
                                 + "zoom/24-70 mm mount/Canon RF "
                                 + "sensor/Full frame",
                         "SCRATCHED_GLASS",
@@ -86,7 +86,7 @@ class EquipmentReturnAssessmentTest {
                                 + "damage/SCRATCHED_GLASS"),
                 Arguments.of(
                         "battery",
-                        "add-eqm name/Battery E-id/001 type/battery cond/7 "
+                        "add-eqm name/Battery e/001 type/battery cond/7 "
                                 + "capacity/2130 mAh battery/LP-E17",
                         "CONTACT_DAMAGE",
                         "capacity/2130 mAh battery/LP-E17 "
@@ -136,11 +136,11 @@ class EquipmentReturnAssessmentTest {
             throws Exception {
         Path file = temporaryDirectory.resolve("equipment.txt");
         EquipmentHandler handler = new EquipmentHandler(file);
-        Equipment original = handler.addEquipment("add-eqm name/Original E-id/001 type/" + type + " cond/7 "
+        Equipment original = handler.addEquipment("add-eqm name/Original e/001 type/" + type + " cond/7 "
                 + attribute + " remarks/Before return");
         BundleHandler bundles = new BundleHandler(handler);
         Bundle bundle = bundles.addBundle("add-bundle name/Session kit");
-        bundles.addItemsToBundle("bundle-add-eqm B-id/001 001");
+        bundles.addItemsToBundle("bundle-add-eqm b/001 001");
         original.setLoanId("123");
 
         Equipment assessed = handler.prepareReturnAssessment(original, false, damage, "Return assessment");
@@ -162,7 +162,7 @@ class EquipmentReturnAssessmentTest {
         assertEquals("123", original.getLoanId());
         assertEquals(attribute + " damage/" + damage, original.getDetails());
         assertEquals("Return assessment", original.getRemarks());
-        assertSame(original, handler.updateEquipment("eqm-update E-id/001 name/Updated cond/8"));
+        assertSame(original, handler.updateEquipment("eqm-update e/001 name/Updated cond/8"));
         EquipmentHandler restarted = new EquipmentHandler(file);
         restarted.loadFromStorage();
         Equipment restored = restarted.getEquipmentList().getFirst();
@@ -187,7 +187,7 @@ class EquipmentReturnAssessmentTest {
     @MethodSource("invalidDamageValues")
     void assessment_invalidDamage_rejectsWithoutChangingEquipment(String type, String damage) throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
-        Equipment original = handler.addEquipment("add-eqm name/Original E-id/001 type/" + type + " cond/7");
+        Equipment original = handler.addEquipment("add-eqm name/Original e/001 type/" + type + " cond/7");
         String details = original.getDetails();
 
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
@@ -204,7 +204,7 @@ class EquipmentReturnAssessmentTest {
     void assessment_otherWithoutMeaningfulRemarks_rejectsWithoutChangingEquipment(String type) throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
         Equipment original = handler.addEquipment(
-                "add-eqm name/Original E-id/001 type/" + type + " cond/7 remarks/Before return");
+                "add-eqm name/Original e/001 type/" + type + " cond/7 remarks/Before return");
         String details = original.getDetails();
 
         for (String remarks : new String[] {"", " \t ", "\u00A0"}) {
@@ -222,7 +222,7 @@ class EquipmentReturnAssessmentTest {
     @Test
     void assessment_remarksBoundary_rejectsLongOrMultilineValues() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
-        Equipment original = handler.addEquipment("add-eqm name/Camera E-id/001 type/camera cond/7");
+        Equipment original = handler.addEquipment("add-eqm name/Camera e/001 type/camera cond/7");
         String longest = "r".repeat(Equipment.MAX_REMARKS_LENGTH);
 
         assertEquals(longest, handler.prepareReturnAssessment(original, true, "none", longest).getRemarks());
@@ -242,8 +242,8 @@ class EquipmentReturnAssessmentTest {
     void assessment_remarksWithCommandPrefixes_roundTripWithoutChangingStructuralFields() throws Exception {
         Path file = temporaryDirectory.resolve("equipment.txt");
         EquipmentHandler handler = new EquipmentHandler(file);
-        Equipment original = handler.addEquipment("add-eqm name/Camera E-id/001 type/camera cond/7 sensor/Full frame");
-        String remarks = "Recheck name/Spare E-id/002 type/lens cond/1 remarks/Label serviceable/no damage/OTHER";
+        Equipment original = handler.addEquipment("add-eqm name/Camera e/001 type/camera cond/7 sensor/Full frame");
+        String remarks = "Recheck name/Spare e/002 type/lens cond/1 remarks/Label serviceable/no damage/OTHER";
         Equipment assessed = handler.prepareReturnAssessment(original, false, "SHUTTER_FAULT", remarks);
 
         handler.saveReturnAssessment(original, assessed);
@@ -265,7 +265,7 @@ class EquipmentReturnAssessmentTest {
     void applyAssessment_differentIdentityOrAttribute_rejectsWithoutMutation() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
         Camera original = (Camera) handler.addEquipment(
-                "add-eqm name/Camera E-id/001 type/camera cond/7 sensor/Full frame");
+                "add-eqm name/Camera e/001 type/camera cond/7 sensor/Full frame");
         List<Equipment> invalid = List.of(
                 new Lens("Camera", "001", 7),
                 new Camera("Camera", "002", 7, "Full frame", Camera.CameraDamage.SENSOR_DAMAGE),
@@ -286,7 +286,7 @@ class EquipmentReturnAssessmentTest {
         Files.write(file, List.of(
                 "serviceable/no\tadd i/Legacy id/001 type/camera cond/7 remarks/serviceable/no",
                 "serviceable/yes\tadd i/Ready id/002 type/lens cond/7 zoom/serviceable/no",
-                "serviceable/no\tadd name/Repair E-id/003 type/battery cond/7 remarks/check serviceable/yes"));
+                "serviceable/no\tadd name/Repair e/003 type/battery cond/7 remarks/check serviceable/yes"));
         List<Equipment> loaded = EquipmentStorage.load(file);
 
         assertTrue(loaded.get(0).isServiceable());
@@ -305,7 +305,7 @@ class EquipmentReturnAssessmentTest {
     void storage_invalidServiceability_reportsRecordAndPreservesInventory() throws Exception {
         Path file = temporaryDirectory.resolve("equipment.txt");
         EquipmentHandler handler = new EquipmentHandler(file);
-        Equipment original = handler.addEquipment("add-eqm name/Camera E-id/001 type/camera cond/7");
+        Equipment original = handler.addEquipment("add-eqm name/Camera e/001 type/camera cond/7");
         for (String prefix : new String[]{"serviceable/maybe\t", "serviceable/no "}) {
             Files.writeString(file, prefix + "add i/Camera id/001 type/camera cond/7");
 
@@ -321,7 +321,7 @@ class EquipmentReturnAssessmentTest {
     void saveAssessment_failedReplacement_preservesOriginalEquipmentAndExistingData() throws Exception {
         Path file = temporaryDirectory.resolve("equipment.txt");
         EquipmentHandler handler = new EquipmentHandler(file);
-        Equipment original = handler.addEquipment("add-eqm name/Camera E-id/001 type/camera cond/7 remarks/Original");
+        Equipment original = handler.addEquipment("add-eqm name/Camera e/001 type/camera cond/7 remarks/Original");
         Equipment assessed = handler.prepareReturnAssessment(original, false, "SENSOR_DAMAGE", "After return");
         Files.delete(file);
         Files.createDirectory(file);
@@ -343,7 +343,7 @@ class EquipmentReturnAssessmentTest {
     @Test
     void unserviceableEquipment_listingAndFilters_doNotReportAvailableOrLoaned() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
-        Equipment original = handler.addEquipment("add-eqm name/Camera E-id/001 type/camera cond/7");
+        Equipment original = handler.addEquipment("add-eqm name/Camera e/001 type/camera cond/7");
         original.applyReturnAssessment(handler.prepareReturnAssessment(original, false, "SENSOR_DAMAGE", "Repair"));
         LoanHandler loans = new LoanHandler(handler);
 
@@ -351,7 +351,7 @@ class EquipmentReturnAssessmentTest {
                 .apply(handler.getEquipmentList(), loans).isEmpty());
         assertTrue(EquipmentFilter.parse("filter-eqm status/loaned")
                 .apply(handler.getEquipmentList(), loans).isEmpty());
-        assertEquals(List.of(original), EquipmentFilter.parse("filter-eqm E-id/001")
+        assertEquals(List.of(original), EquipmentFilter.parse("filter-eqm e/001")
                 .apply(handler.getEquipmentList(), loans));
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         PrintStream previous = System.out;
@@ -370,12 +370,12 @@ class EquipmentReturnAssessmentTest {
     @Test
     void unserviceableEquipment_bundleAddition_rejectsAndLeavesBundleEmpty() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
-        Equipment original = handler.addEquipment("add-eqm name/Camera E-id/001 type/camera cond/7");
+        Equipment original = handler.addEquipment("add-eqm name/Camera e/001 type/camera cond/7");
         original.applyReturnAssessment(handler.prepareReturnAssessment(original, false, "SENSOR_DAMAGE", "Repair"));
         BundleHandler bundles = new BundleHandler(handler);
         Bundle bundle = bundles.addBundle("add-bundle name/Session kit");
 
-        List<String> messages = bundles.addItemsToBundle("bundle-add-eqm B-id/001 001");
+        List<String> messages = bundles.addItemsToBundle("bundle-add-eqm b/001 001");
 
         assertEquals(List.of("Equipment ID 001 was not added: equipment is unserviceable."), messages);
         assertTrue(bundle.getEquipmentList().isEmpty());

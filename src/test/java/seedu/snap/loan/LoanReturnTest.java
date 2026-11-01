@@ -31,9 +31,9 @@ import seedu.snap.exceptions.LoanReturnUnsuccessful;
 
 /** Verifies return assessments, retained loan records and recovery from failed saves. */
 class LoanReturnTest {
-    private static final String LOAN_COMMAND = "add-loan E-id/001 U-id/002 issued/01-10-26 due/02-10-26";
+    private static final String LOAN_COMMAND = "add-loan e/001 u/002 issued/01-10-26 due/02-10-26";
     private static final String RETURN_COMMAND =
-            "loan-return L-id/001 serviceable/yes damage/NONE remarks/Checked at counter";
+            "loan-return l/001 serviceable/yes damage/NONE remarks/Checked at counter";
     private EquipmentHandler equipment;
     private Camera camera;
     private LoanHandler loans;
@@ -51,7 +51,7 @@ class LoanReturnTest {
         loanFile = temporaryDirectory.resolve("loans.txt");
         sequenceFile = temporaryDirectory.resolve("loan-sequence.txt");
         equipment = new EquipmentHandler(equipmentFile);
-        camera = (Camera) equipment.addEquipment("add-eqm name/Camera E-id/001 type/camera cond/4"
+        camera = (Camera) equipment.addEquipment("add-eqm name/Camera e/001 type/camera cond/4"
                 + " sensor/APS-C damage/SENSOR_DAMAGE remarks/Original assessment");
         loans = new LoanHandler(equipment, loanFile, sequenceFile);
         original = loans.addLoan(LOAN_COMMAND);
@@ -82,7 +82,7 @@ class LoanReturnTest {
         assertEquals("002", loans.getNextLoanId());
         assertEquals(savedSequence, Files.readString(sequenceFile));
         assertTrue(Files.readString(loanFile).contains("returned/true"));
-        assertSame(camera, EquipmentFilter.parse("filter-eqm E-id/001 status/available")
+        assertSame(camera, EquipmentFilter.parse("filter-eqm e/001 status/available")
                 .apply(equipment.getEquipmentList(), loans).getFirst());
     }
 
@@ -98,12 +98,12 @@ class LoanReturnTest {
         assertEquals("Original assessment", firstSnapshot.getRemarks());
 
         loans.returnLoan(
-                "loan-return L-id/001 serviceable/yes "
+                "loan-return l/001 serviceable/yes "
                         + "damage/SHUTTER_FAULT "
                         + "remarks/Assessed after return");
-        equipment.updateEquipment("eqm-update E-id/001 cond/8");
+        equipment.updateEquipment("eqm-update e/001 cond/8");
         Loan second = loans.addLoan(
-                "add-loan E-id/001 U-id/003 issued/03-10-26 due/04-10-26");
+                "add-loan e/001 u/003 issued/03-10-26 due/04-10-26");
 
         EquipmentConditionSnapshot secondSnapshot =
                 second.getIssueConditionSnapshot();
@@ -158,11 +158,11 @@ class LoanReturnTest {
 
     @Test
     void returnLoan_unserviceableItem_survivesReloadAndCannotBeLoanedAgain() throws Exception {
-        loans.returnLoan("loan-return L-id/001 serviceable/no damage/SHUTTER_FAULT remarks/Needs repair");
+        loans.returnLoan("loan-return l/001 serviceable/no damage/SHUTTER_FAULT remarks/Needs repair");
 
         assertFalse(camera.isLoaned());
         assertFalse(camera.isServiceable());
-        assertTrue(EquipmentFilter.parse("filter-eqm E-id/001 status/available")
+        assertTrue(EquipmentFilter.parse("filter-eqm e/001 status/available")
                 .apply(equipment.getEquipmentList(), loans).isEmpty());
         assertThrows(LoanAdditionUnsuccessful.class, () -> loans.addLoan(LOAN_COMMAND));
         assertEquals("002", loans.getNextLoanId());
@@ -187,7 +187,7 @@ class LoanReturnTest {
 
     @Test
     void returnLoan_assessmentValuesIgnoreCaseAndEmptyRemarksClearOldRemarks() throws Exception {
-        loans.returnLoan("loan-return L-id/001 serviceable/YeS damage/sHuTtEr_FaUlT remarks/");
+        loans.returnLoan("loan-return l/001 serviceable/YeS damage/sHuTtEr_FaUlT remarks/");
 
         assertTrue(camera.isServiceable());
         assertEquals(CameraDamage.SHUTTER_FAULT, camera.getDamage());
@@ -199,7 +199,7 @@ class LoanReturnTest {
     void returnLoan_maximumLengthRemarks_areSavedAndReloaded() throws Exception {
         String remarks = "x".repeat(200);
 
-        loans.returnLoan("loan-return L-id/001 serviceable/yes damage/NONE remarks/" + remarks);
+        loans.returnLoan("loan-return l/001 serviceable/yes damage/NONE remarks/" + remarks);
 
         EquipmentHandler reloaded = new EquipmentHandler(equipmentFile);
         reloaded.loadFromStorage();
@@ -211,7 +211,7 @@ class LoanReturnTest {
     @ValueSource(strings = {"yes", "no"})
     void returnLoan_otherDamageWithRemarks_survivesRestart(String serviceability) throws Exception {
         String remarks = "Damage outside listed categories";
-        String command = "loan-return L-id/001 serviceable/" + serviceability
+        String command = "loan-return l/001 serviceable/" + serviceability
                 + " damage/other remarks/" + remarks;
         boolean expectedServiceable = "yes".equals(serviceability);
 
@@ -239,7 +239,7 @@ class LoanReturnTest {
     void returnLoan_fieldPrefixesInsideFinalRemarks_areSavedAsLiteralText() throws Exception {
         String remarks = "Checked serviceable/no damage/SENSOR_DAMAGE label on case";
 
-        loans.returnLoan("loan-return L-id/001 serviceable/yes damage/NONE remarks/" + remarks);
+        loans.returnLoan("loan-return l/001 serviceable/yes damage/NONE remarks/" + remarks);
 
         EquipmentHandler reloaded = new EquipmentHandler(equipmentFile);
         reloaded.loadFromStorage();
@@ -258,7 +258,7 @@ class LoanReturnTest {
         String savedSequence = Files.readString(sequenceFile);
 
         assertThrows(LoanReturnUnsuccessful.class,
-                () -> loans.returnLoan("loan-return L-id/001 serviceable/no damage/SHUTTER_FAULT remarks/Rejected"));
+                () -> loans.returnLoan("loan-return l/001 serviceable/no damage/SHUTTER_FAULT remarks/Rejected"));
         assertThrows(IllegalStateException.class, () -> original.setReturned(false));
         original.setReturned(true);
 
@@ -298,33 +298,33 @@ class LoanReturnTest {
 
     /** Covers missing, malformed, misplaced and unsupported return assessment fields. */
     private static Stream<String> invalidReturnCommands() {
-        return Stream.of(null, "", "loan-return", "loan-return L-id/001",
-                "loan-return L-id/000 serviceable/yes damage/NONE remarks/",
-                "loan-return L-id/01 serviceable/yes damage/NONE remarks/",
-                "loan-return L-id/1000 serviceable/yes damage/NONE remarks/",
-                "loan-return L-id/999 serviceable/yes damage/NONE remarks/",
-                "loan-return L-id/001 damage/NONE remarks/",
-                "loan-return L-id/001 serviceable/yes remarks/",
-                "loan-return L-id/001 serviceable/true damage/NONE remarks/",
-                "loan-return L-id/001 serviceable/ damage/NONE remarks/",
-                "loan-return L-id/001 serviceable/yes damage/ remarks/",
-                "loan-return L-id/001 serviceable/yes damage/SCRATCHED_GLASS remarks/",
-                "loan-return L-id/001 serviceable/yes damage/UNKNOWN remarks/",
-                "loan-return L-id/001 serviceable/yes damage/OTHER",
-                "loan-return L-id/001 serviceable/yes damage/OTHER remarks/",
-                "loan-return L-id/001 serviceable/no damage/other remarks/   ",
-                "loan-return L-id/001 damage/NONE serviceable/yes remarks/",
+        return Stream.of(null, "", "loan-return", "loan-return l/001",
+                "loan-return l/000 serviceable/yes damage/NONE remarks/",
+                "loan-return l/01 serviceable/yes damage/NONE remarks/",
+                "loan-return l/1000 serviceable/yes damage/NONE remarks/",
+                "loan-return l/999 serviceable/yes damage/NONE remarks/",
+                "loan-return l/001 damage/NONE remarks/",
+                "loan-return l/001 serviceable/yes remarks/",
+                "loan-return l/001 serviceable/true damage/NONE remarks/",
+                "loan-return l/001 serviceable/ damage/NONE remarks/",
+                "loan-return l/001 serviceable/yes damage/ remarks/",
+                "loan-return l/001 serviceable/yes damage/SCRATCHED_GLASS remarks/",
+                "loan-return l/001 serviceable/yes damage/UNKNOWN remarks/",
+                "loan-return l/001 serviceable/yes damage/OTHER",
+                "loan-return l/001 serviceable/yes damage/OTHER remarks/",
+                "loan-return l/001 serviceable/no damage/other remarks/   ",
+                "loan-return l/001 damage/NONE serviceable/yes remarks/",
                 "return serviceable/yes loan/001 damage/NONE remarks/",
-                "loan-return L-id/001 loan/001 serviceable/yes damage/NONE remarks/",
-                "loan-return L-id/001 serviceable/yes serviceable/no damage/NONE remarks/",
-                "loan-return L-id/001 serviceable/yes damage/NONE cond/5 remarks/",
+                "loan-return l/001 loan/001 serviceable/yes damage/NONE remarks/",
+                "loan-return l/001 serviceable/yes serviceable/no damage/NONE remarks/",
+                "loan-return l/001 serviceable/yes damage/NONE cond/5 remarks/",
                 "Return loan/001 serviceable/yes damage/NONE remarks/",
                 "return Loan/001 serviceable/yes damage/NONE remarks/",
-                "loan-return L-id/001 Serviceable/yes damage/NONE remarks/",
-                "loan-return L-id/001 serviceable/yes Damage/NONE remarks/",
-                "loan-return L-id/001 serviceable/yes damage/NONE Remarks/",
-                "loan-return L-id/001 serviceable/yes damage/NONE remarks/" + "x".repeat(201),
-                "loan-return L-id/001 serviceable/yes damage/NONE remarks/first\nsecond");
+                "loan-return l/001 Serviceable/yes damage/NONE remarks/",
+                "loan-return l/001 serviceable/yes Damage/NONE remarks/",
+                "loan-return l/001 serviceable/yes damage/NONE Remarks/",
+                "loan-return l/001 serviceable/yes damage/NONE remarks/" + "x".repeat(201),
+                "loan-return l/001 serviceable/yes damage/NONE remarks/first\nsecond");
     }
 
     @ParameterizedTest
