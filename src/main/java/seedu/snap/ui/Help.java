@@ -95,7 +95,7 @@ public final class Help {
     private static List<CommandHelp> createCommands() {
         return List.of(
                 new CommandHelp("add-eqm", "Equipment", lineEndings(String.format(Locale.ROOT, """
-                        ADD EQUIPMENT
+                        ADD-EQM
                         Format: add-eqm name/<NAME> E-id/<ID> type/<TYPE> cond/<N> [TYPE DETAIL] [damage/<DAMAGE>] \
                         [remarks/<TEXT>]
                         Example: add-eqm name/Canon EOS R10 E-id/001 type/camera cond/1 sensor/APS-C
@@ -123,7 +123,7 @@ public final class Help {
                         damageValues(Lens.LensDamage.values()), damageValues(Battery.BatteryDamage.values()),
                         damageValues(Tripod.TripodDamage.values())))),
                 new CommandHelp("list-eqm", "Equipment", lineEndings("""
-                        LIST EQUIPMENT
+                        LIST-EQM
                         Format: list-eqm
                         Example: list-eqm
                         Shows all equipment with Item ID, name, type, numeric condition and status in a compact table.
@@ -132,7 +132,7 @@ public final class Help {
                         Status is Available, Loaned or Unserviceable.
                         """)),
                 new CommandHelp("eqm-show", "Equipment", lineEndings("""
-                        SHOW EQUIPMENT
+                        EQM-SHOW
                         Format: eqm-show E-id/<ID>
                         Example: eqm-show E-id/001
                         Requires an existing Item ID from 001 to 999. Extra fields are not accepted.
@@ -143,7 +143,7 @@ public final class Help {
                         This read-only command does not change records, identifiers or saved data.
                         """)),
                 new CommandHelp("eqm-delete", "Equipment", lineEndings("""
-                        DELETE EQUIPMENT
+                        EQM-DELETE
                         Format: eqm-delete E-id/<ID>
                         Example: eqm-delete E-id/001
                         Requires an existing Item ID. Active loans and bundle membership block deletion.
@@ -151,7 +151,7 @@ public final class Help {
                         Existing loans remain in list-loan; a replacement using this Item ID has separate history.
                         """)),
                 new CommandHelp("add-loan", "Loans", lineEndings("""
-                        ADD LOAN
+                        ADD-LOAN
                         Format: add-loan E-id/<ITEM ID> U-id/<BORROWER ID> [issued/<DD-MM-YY>] due/<DD-MM-YY>
                         Example: add-loan E-id/001 U-id/002 issued/24-10-26 due/31-10-26
                         Item ID, borrower ID and due/ are required. Keep the displayed field order.
@@ -165,7 +165,7 @@ public final class Help {
                         Success shows the assigned Loan ID, item ID and name, borrower, issue date and due date.
                         """)),
                 new CommandHelp("loan-return", "Loans", lineEndings(String.format(Locale.ROOT, """
-                        RETURN EQUIPMENT
+                        LOAN-RETURN
                         Format: loan-return L-id/<LOAN ID> serviceable/<yes|no> damage/<DAMAGE> [remarks/<TEXT>]
                         Example: loan-return L-id/001 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair
                         Requires an active Loan ID and explicit serviceable/ and damage/ assessment, in that order.
@@ -192,7 +192,7 @@ public final class Help {
                         damageValues(Lens.LensDamage.values()), damageValues(Battery.BatteryDamage.values()),
                         damageValues(Tripod.TripodDamage.values())))),
                 new CommandHelp("loan-delete", "Loans", lineEndings("""
-                        DELETE LOAN
+                        LOAN-DELETE
                         Format: loan-delete L-id/<LOAN ID>
                         Example: loan-delete L-id/001
                         Removes one loan record and its history. Deleting an active loan releases its equipment.
@@ -200,7 +200,7 @@ public final class Help {
                         Deleting returned history leaves newer active loans unchanged. Deleted IDs are never reused.
                         """)),
                 new CommandHelp("loan-update", "Loans", lineEndings("""
-                        UPDATE LOAN
+                        LOAN-UPDATE
                         Format: loan-update L-id/<LOAN ID> [E-id/<ITEM ID>] [U-id/<BORROWER ID>] \
                         [issued/<DD-MM-YY>] [due/<DD-MM-YY>]
                         Example: loan-update L-id/001 E-id/002 U-id/007 due/07-11-26
@@ -215,7 +215,7 @@ public final class Help {
                         Successful updates are saved to data/loans.txt before live records change.
                         """)),
                 new CommandHelp("list-loan", "Loans", lineEndings("""
-                        LIST LOANS
+                        LIST-LOAN
                         Format: list-loan
                         Example: list-loan
                         Shows Loan ID, Item ID, borrower, DD-MM-YY dates and Active, Returned or Overdue state.
@@ -231,7 +231,7 @@ public final class Help {
                         This read-only command does not change equipment, loans or saved records.
                         """)),
                 new CommandHelp("loan-show", "Loans", lineEndings("""
-                        VIEW LOAN ISSUE CONDITION
+                        LOAN-SHOW
                         Format: loan-show L-id/<LOAN ID>
                         Example: loan-show L-id/001
                         Shows the equipment type, condition, damage and remarks recorded when the loan was issued.
@@ -240,7 +240,7 @@ public final class Help {
                         This read-only command does not change equipment, loans or saved records.
                         """)),
                 new CommandHelp("list-loan-borrower", "Loans", lineEndings("""
-                        EQUIPMENT HELD BY MEMBER
+                        LIST-LOAN-BORROWER
                         Format: list-loan-borrower U-id/<BORROWER ID>
                         Example: list-loan-borrower U-id/002
                         Shows only active equipment held by the selected borrower, with loan details.
@@ -251,7 +251,7 @@ public final class Help {
                         This read-only query does not change equipment, loans or saved files.
                         """)),
                 new CommandHelp("list-loan-overdue", "Loans", lineEndings("""
-                        LIST OVERDUE LOANS
+                        LIST-LOAN-OVERDUE
                         Format: list-loan-overdue
                         Example: list-loan-overdue
                         Shows active loans with due dates earlier than today's local date.
@@ -260,7 +260,7 @@ public final class Help {
                         This read-only command does not change any records.
                         """)),
                 new CommandHelp("eqm-loan-history", "Equipment", lineEndings("""
-                        ITEM LOAN HISTORY
+                        EQM-LOAN-HISTORY
                         Format: eqm-loan-history E-id/<ITEM ID>
                         Example: eqm-loan-history E-id/001
                         Requires an existing Item ID. Includes its physical item's active and returned loans.
@@ -270,7 +270,7 @@ public final class Help {
                         Older returned records without a proven item association remain available in list-loan.
                         """)),
                 new CommandHelp("filter-eqm", "Equipment", lineEndings("""
-                        FILTER EQUIPMENT
+                        FILTER-EQM
                         Format: filter-eqm [E-id/<ID>] [name/<NAME>] [type/<TYPE>] [cond/<N|MIN-MAX>] [status/<STATUS>]
                         Example: filter-eqm type/camera cond/1-3 status/available
                         Supply at least one filter, in any order, with each prefix once. All filters must match (AND).
@@ -283,7 +283,7 @@ public final class Help {
                         Uses the same compact table as list-eqm. Use eqm-show E-id/<ID> for full equipment values.
                         """)),
                 new CommandHelp("eqm-update", "Equipment", lineEndings("""
-                        UPDATE EQUIPMENT
+                        EQM-UPDATE
                         Format: eqm-update E-id/<ID> [name/<NAME>] [type/<TYPE>] [cond/<N>]
                         Example: eqm-update E-id/001 name/Studio camera cond/5
                         Requires an existing Item ID and at least one update field, in any order, each prefix once.
@@ -293,7 +293,7 @@ public final class Help {
                         Updates retain subtype details, damage, remarks, serviceability, loans and bundle membership.
                         """)),
                 new CommandHelp("eqm-maintain", "Equipment", lineEndings(String.format(Locale.ROOT, """
-                        RECORD MAINTENANCE
+                        EQM-MAINTAIN
                         Format: eqm-maintain E-id/<ITEM ID> date/<DD-MM-YY> work/<DESCRIPTION> outcome/<OUTCOME>
                         Example: eqm-maintain E-id/001 date/27-10-26 work/Replaced battery outcome/Completed
                         Requires an existing Item ID, a valid maintenance date that is not in the future,
@@ -307,7 +307,7 @@ public final class Help {
                         Success shows the Item ID, name, maintenance date, work description and outcome.
                         """, MaintenanceRecord.MAX_WORK_LENGTH, MaintenanceRecord.MAX_OUTCOME_LENGTH))),
                 new CommandHelp("add-bundle", "Bundles", lineEndings("""
-                        CREATE BUNDLE
+                        ADD-BUNDLE
                         Format: add-bundle name/<NAME>
                         Example: add-bundle name/Studio kit
                         Requires a name of 1-100 characters. Bundle IDs are assigned automatically, 001-999.
@@ -317,7 +317,7 @@ public final class Help {
                         Bundles and their equipment memberships are restored between application runs after exit.
                         """)),
                 new CommandHelp("bundle-add-eqm", "Bundles", lineEndings("""
-                        ADD EQUIPMENT TO BUNDLE
+                        BUNDLE-ADD-EQM
                         Format: bundle-add-eqm B-id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]
                         Example: bundle-add-eqm B-id/001 001 002 003
                         Requires an existing bundle and at least one existing, serviceable, unloaned equipment item.
@@ -335,7 +335,7 @@ public final class Help {
                         Save additions with exit before exiting.
                         """)),
                 new CommandHelp("bundle-remove-eqm", "Bundles", lineEndings("""
-                        REMOVE EQUIPMENT FROM BUNDLE
+                        BUNDLE-REMOVE-EQM
                         Format: bundle-remove-eqm B-id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]
                         Example: bundle-remove-eqm B-id/001 001
                         Requires an existing bundle and at least one Item ID. Each ID receives its own result.
@@ -345,7 +345,7 @@ public final class Help {
                         Successful removals are saved immediately; a save failure restores the previous memberships.
                         """)),
                 new CommandHelp("list-bundle", "Bundles", lineEndings("""
-                        LIST BUNDLES
+                        LIST-BUNDLE
                         Format: list-bundle
                         Example: list-bundle
                         Shows saved and current bundles, their equipment and whether their composition is complete.
@@ -353,7 +353,7 @@ public final class Help {
                         Save new bundles and additions with exit; successful removals are saved immediately.
                         """)),
                 new CommandHelp("bundle-history", "Bundles", lineEndings("""
-                        BUNDLE LOAN HISTORY
+                        BUNDLE-HISTORY
                         Format: bundle-history B-id/<BUNDLE ID>
                         Example: bundle-history B-id/001
                         Format: bundle-history name/<NAME>
@@ -366,7 +366,7 @@ public final class Help {
                         An empty bundle history and unknown bundle are reported clearly.
                         """)),
                 new CommandHelp("backup", "General", lineEndings("""
-                        BACK UP DATA
+                        BACKUP
                         Format: backup path/<DIRECTORY>
                         Example: backup path/backups/session-1
                         Copies saved equipment.txt, loans.txt and loan-sequence.txt, plus backup-manifest.txt.
@@ -376,7 +376,7 @@ public final class Help {
                         Backup creation does not change live records. Paths may contain spaces after path/.
                         """)),
                 new CommandHelp("restore", "General", lineEndings("""
-                        RESTORE DATA
+                        RESTORE
                         Format: restore path/<DIRECTORY>
                         Example: restore path/backups/session-1
                         Requires an existing backup directory outside the live data directory.

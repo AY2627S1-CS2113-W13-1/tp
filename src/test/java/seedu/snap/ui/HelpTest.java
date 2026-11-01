@@ -185,7 +185,7 @@ class HelpTest {
         List<String> lines = text.lines().toList();
 
         assertEquals("=".repeat(100), lines.getFirst());
-        assertEquals("ADD LOAN", lines.get(1));
+        assertEquals("ADD-LOAN", lines.get(1));
         assertEquals(lines.getFirst(), lines.get(2));
         assertTrue(lines.get(3).isBlank());
         assertTrue(text.indexOf("Format:") < text.indexOf("snAp command help"));
@@ -195,12 +195,11 @@ class HelpTest {
     @Test
     void getText_all_separatesEveryCommandWithSpacedFullWidthHeadingBands() {
         List<String> lines = Help.getText("all").lines().toList();
-        List<String> headings = List.of("ADD EQUIPMENT", "LIST EQUIPMENT", "SHOW EQUIPMENT", "DELETE EQUIPMENT",
-                "ADD LOAN", "RETURN EQUIPMENT", "DELETE LOAN", "UPDATE LOAN", "LIST LOANS", "VIEW LOAN ISSUE CONDITION",
-                "EQUIPMENT HELD BY MEMBER", "LIST OVERDUE LOANS", "ITEM LOAN HISTORY", "FILTER EQUIPMENT",
-                "UPDATE EQUIPMENT", "RECORD MAINTENANCE", "CREATE BUNDLE", "ADD EQUIPMENT TO BUNDLE",
-                "REMOVE EQUIPMENT FROM BUNDLE", "LIST BUNDLES", "BUNDLE LOAN HISTORY", "BACK UP DATA", "RESTORE DATA",
-                "HELP", "EXIT");
+        List<String> headings = List.of("ADD-EQM", "LIST-EQM", "EQM-SHOW", "EQM-DELETE", "ADD-LOAN", "LOAN-RETURN",
+                "LOAN-DELETE", "LOAN-UPDATE", "LIST-LOAN", "LOAN-SHOW", "LIST-LOAN-BORROWER",
+                "LIST-LOAN-OVERDUE", "EQM-LOAN-HISTORY", "FILTER-EQM", "EQM-UPDATE", "EQM-MAINTAIN", "ADD-BUNDLE",
+                "BUNDLE-ADD-EQM", "BUNDLE-REMOVE-EQM", "LIST-BUNDLE", "BUNDLE-HISTORY", "BACKUP", "RESTORE", "HELP",
+                "EXIT");
         String divider = "=".repeat(100);
 
         assertEquals(headings.size() * 2L, lines.stream().filter(divider::equals).count());
