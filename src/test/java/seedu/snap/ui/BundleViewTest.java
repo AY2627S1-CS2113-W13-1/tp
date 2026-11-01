@@ -13,6 +13,8 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import seedu.snap.bundle.Bundle;
+import seedu.snap.equipment.Camera;
+import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.EquipmentHandler;
 
 /** Checks composition explanations without adding a second validation or compatibility rule. */
@@ -35,6 +37,23 @@ class BundleViewTest {
     }
 
     @Test
+    void composition_incompleteBundleWithNoMissingTypes_explainsUnmetRequirements() {
+        Bundle bundle = new Bundle("Kit", "001") {
+            @Override
+            public boolean isComplete() {
+                return false;
+            }
+
+            @Override
+            public List<String> getMissingEquipmentTypes() {
+                return List.of();
+            }
+        };
+
+        assertEquals("Incomplete (requirements not met)", BundleView.composition(bundle));
+    }
+
+    @Test
     void print_emptyAndPopulatedBundles_haveCountsAndAccuratePersistenceGuidance() {
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         PrintStream original = System.out;
@@ -45,17 +64,20 @@ class BundleViewTest {
             assertTrue(output.toString(StandardCharsets.UTF_8).contains("add-bundle name/Camera kit"));
             output.reset();
             Bundle bundle = new Bundle("Kit\t\u001b[31m", "001");
+            Equipment camera = new Camera("Camera", "001", 1);
+            bundle.addEquipment(camera);
             BundleView.print(List.of(bundle));
             String text = output.toString(StandardCharsets.UTF_8);
             assertTrue(text.contains("Bundle 001: Kit\\u0009\\u001b[31m"));
-            assertTrue(text.contains("0 equipment items:"));
+            assertTrue(text.contains("1 equipment item:"));
+            assertTrue(text.contains("001 Camera (camera)"));
             assertTrue(text.contains("1 bundle."));
             assertTrue(text.contains("saved bundles are restored at startup"));
             assertTrue(text.contains("Successful membership removals are saved immediately."));
             assertFalse(text.contains("true"));
             assertFalse(text.contains("false"));
             assertFalse(text.contains("session-only"));
-            assertTrue(bundle.getEquipmentList().isEmpty());
+            assertEquals(1, bundle.getEquipmentList().size());
         } finally {
             System.setOut(original);
         }
