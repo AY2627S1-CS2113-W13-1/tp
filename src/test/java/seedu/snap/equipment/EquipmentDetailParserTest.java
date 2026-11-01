@@ -155,6 +155,16 @@ class EquipmentDetailParserTest {
     }
 
     @Test
+    void parse_textBeforeFirstField_throwsException() {
+        assertThrows(
+                EquipmentAdditionUnsuccessful.class,
+                () -> EquipmentDetailParser.parse(
+                        "unexpected sensor/APS-C",
+                        "camera",
+                        CAMERA_FIELDS));
+    }
+
+    @Test
     void parse_returnedMap_rejectsExternalModification()
             throws EquipmentAdditionUnsuccessful {
         Map<EquipmentDetailField, String> fields =
@@ -168,6 +178,65 @@ class EquipmentDetailParserTest {
                 () -> fields.put(
                         EquipmentDetailField.MOUNT,
                         "Canon RF"));
+    }
+
+    @Test
+    void getTextValue_returnsSuppliedValueOrDefault() {
+        Map<EquipmentDetailField, String> fields = Map.of(EquipmentDetailField.SENSOR, "APS-C");
+
+        assertEquals("APS-C", EquipmentDetailParser.getTextValue(fields, EquipmentDetailField.SENSOR));
+        assertEquals(CompatibilityText.UNSPECIFIED,
+                EquipmentDetailParser.getTextValue(fields, EquipmentDetailField.MOUNT));
+        assertThrows(AssertionError.class,
+                () -> EquipmentDetailParser.getTextValue(null, EquipmentDetailField.SENSOR));
+        assertThrows(AssertionError.class,
+                () -> EquipmentDetailParser.getTextValue(fields, null));
+    }
+
+    @Test
+    void getEnumValue_usesDefaultAndRejectsInvalidInternalArguments()
+            throws EquipmentAdditionUnsuccessful {
+        assertEquals(Camera.CameraDamage.NONE,
+                EquipmentDetailParser.getEnumValue(Map.of(), EquipmentDetailField.DAMAGE,
+                        Camera.CameraDamage.NONE, Camera.CameraDamage.class, "camera"));
+        assertThrows(AssertionError.class,
+                () -> EquipmentDetailParser.getEnumValue(null, EquipmentDetailField.DAMAGE,
+                        Camera.CameraDamage.NONE, Camera.CameraDamage.class, "camera"));
+        assertThrows(AssertionError.class,
+                () -> EquipmentDetailParser.getEnumValue(Map.of(), null,
+                        Camera.CameraDamage.NONE, Camera.CameraDamage.class, "camera"));
+        assertThrows(AssertionError.class,
+                () -> EquipmentDetailParser.getEnumValue(Map.of(), EquipmentDetailField.DAMAGE,
+                        null, Camera.CameraDamage.class, "camera"));
+        assertThrows(AssertionError.class,
+                () -> EquipmentDetailParser.getEnumValue(Map.of(), EquipmentDetailField.DAMAGE,
+                        Camera.CameraDamage.NONE, null, "camera"));
+        assertThrows(AssertionError.class,
+                () -> EquipmentDetailParser.getEnumValue(Map.of(), EquipmentDetailField.DAMAGE,
+                        Camera.CameraDamage.NONE, Camera.CameraDamage.class, " "));
+    }
+
+    @Test
+    void validateDamageRemarks_rejectsMissingInternalValues() {
+        assertThrows(AssertionError.class,
+                () -> EquipmentDetailParser.validateDamageRemarks(null, "remarks", "camera"));
+        assertThrows(AssertionError.class,
+                () -> EquipmentDetailParser.validateDamageRemarks(Camera.CameraDamage.NONE, null, "camera"));
+        assertThrows(AssertionError.class,
+                () -> EquipmentDetailParser.validateDamageRemarks(Camera.CameraDamage.NONE, "remarks", " "));
+    }
+
+    @Test
+    void parse_invalidConfiguration_throwsAssertionError() {
+        assertThrows(AssertionError.class,
+                () -> EquipmentDetailParser.parse("", "", CAMERA_FIELDS));
+        assertThrows(AssertionError.class,
+                () -> EquipmentDetailParser.parse("", "camera", null));
+        assertThrows(AssertionError.class,
+                () -> EquipmentDetailParser.parse("", "camera", List.of()));
+        assertThrows(AssertionError.class,
+                () -> EquipmentDetailParser.parse("", "camera",
+                        List.of(EquipmentDetailField.SENSOR, EquipmentDetailField.SENSOR)));
     }
 }
 
