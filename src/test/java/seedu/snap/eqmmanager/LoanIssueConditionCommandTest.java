@@ -47,7 +47,7 @@ class LoanIssueConditionCommandTest {
         addEquipmentAndLoan(manager);
         output.reset();
 
-        manager.executeInput("view loan/001");
+        manager.executeInput("loan-show L-id/001");
 
         String actual =
                 output.toString(StandardCharsets.UTF_8);
@@ -71,7 +71,7 @@ class LoanIssueConditionCommandTest {
 
         EqmManager restarted =
                 new EqmManager(temporaryDirectory);
-        restarted.executeInput("view loan/001");
+        restarted.executeInput("loan-show L-id/001");
 
         String actual =
                 output.toString(StandardCharsets.UTF_8);
@@ -89,7 +89,7 @@ class LoanIssueConditionCommandTest {
     void executeInput_unknownLoan_printsError() {
         EqmManager manager = new EqmManager(temporaryDirectory);
 
-        manager.executeInput("view loan/999");
+        manager.executeInput("loan-show L-id/999");
 
         assertEquals(
                 "[ERROR] No loan found for loan ID 999."
@@ -105,7 +105,7 @@ class LoanIssueConditionCommandTest {
 
         assertEquals(
                 "[ERROR] Invalid command format. Expected: "
-                        + "view loan/[LOAN ID]."
+                        + "loan-show L-id/[LOAN ID]."
                         + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
     }
@@ -137,7 +137,7 @@ class LoanIssueConditionCommandTest {
         String sequenceBefore = Files.readString(sequenceFile);
         output.reset();
 
-        manager.executeInput("view loan/001");
+        manager.executeInput("loan-show L-id/001");
 
         assertEquals(equipmentBefore, Files.readString(equipmentFile));
         assertEquals(loansBefore, Files.readString(loansFile));
@@ -147,13 +147,13 @@ class LoanIssueConditionCommandTest {
     /** Adds one camera and creates its first loan. */
     private void addEquipmentAndLoan(EqmManager manager) {
         manager.executeInput(
-                "add i/Test Camera id/001 "
+                "add-eqm name/Test Camera E-id/001 "
                         + "type/camera cond/6 "
                         + "sensor/Full frame "
                         + "damage/SENSOR_DAMAGE "
                         + "remarks/Handle carefully");
         manager.executeInput(
-                "loan id/001 b/101 "
+                "add-loan E-id/001 U-id/101 "
                         + "issued/01-10-26 due/20-10-26");
     }
 }

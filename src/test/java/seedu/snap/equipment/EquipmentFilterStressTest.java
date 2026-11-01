@@ -21,7 +21,7 @@ import org.junit.jupiter.api.io.TempDir;
 import seedu.snap.eqmmanager.EqmManager;
 import seedu.snap.exceptions.EquipmentFilteringUnsuccessful;
 
-/** Checks filter grammar, all field orders, large inputs, and a seeded independent matching model. */
+/** Checks filter-eqm grammar, all field orders, large inputs, and a seeded independent matching model. */
 class EquipmentFilterStressTest {
     @TempDir
     private Path temporaryDataDirectory;
@@ -30,26 +30,26 @@ class EquipmentFilterStressTest {
     void parse_unicodeSeparatorsAndBlankValues_handlesEachExplicitCase() throws Exception {
         Equipment camera = new Camera("Camera", "001", 1);
         for (String space : new String[]{" ", "\t", "\u2003", "\u00a0", "\u2007", "\u202f"}) {
-            EquipmentFilter filter = EquipmentFilter.parse("filter" + space + "id/001" + space + "cond/1-3");
+            EquipmentFilter filter = EquipmentFilter.parse("filter-eqm" + space + "E-id/001" + space + "cond/1-3");
             assertTrue(filter.matches(camera, false));
         }
         for (String blank : new String[]{"\u00a0", "\u2007", "\u202f", "\t\u00a0\u2003"}) {
-            for (String field : new String[]{"i/", "type/"}) {
+            for (String field : new String[]{"name/", "type/"}) {
                 assertThrows(EquipmentFilteringUnsuccessful.class,
-                        () -> EquipmentFilter.parse("filter " + field + blank));
+                        () -> EquipmentFilter.parse("filter-eqm " + field + blank));
             }
         }
     }
 
     @Test
     void parse_all120FieldOrders_keepTheSameMeaning() throws Exception {
-        checkPermutations(new String[]{"id/001", "i/camera", "type/camera", "cond/1-3", "status/available"}, 0);
+        checkPermutations(new String[]{"E-id/001", "name/camera", "type/camera", "cond/1-3", "status/available"}, 0);
     }
 
     /** Swaps fields recursively so every ordering is tested without a large handwritten input list. */
     private void checkPermutations(String[] fields, int position) throws Exception {
         if (position == fields.length) {
-            EquipmentFilter filter = EquipmentFilter.parse("filter " + String.join(" ", fields));
+            EquipmentFilter filter = EquipmentFilter.parse("filter-eqm " + String.join(" ", fields));
             assertTrue(filter.matches(new Camera("Camera", "001", 2), false));
             assertFalse(filter.matches(new Camera("Camera", "001", 2), true));
             assertFalse(filter.matches(new Camera("Camera", "001", 4), false));
@@ -90,13 +90,13 @@ class EquipmentFilterStressTest {
                 fields.add("type/" + type.toUpperCase(Locale.ROOT));
             }
             if (hasName) {
-                fields.add("i/" + fragment);
+                fields.add("name/" + fragment);
             }
             if (hasStatus) {
                 fields.add("status/" + (requiresLoaned ? "loaned" : "available"));
             }
             Collections.shuffle(fields, random);
-            EquipmentFilter filter = EquipmentFilter.parse("filter " + String.join(" ", fields));
+            EquipmentFilter filter = EquipmentFilter.parse("filter-eqm " + String.join(" ", fields));
             for (int index = 0; index < items.size(); index++) {
                 Equipment item = items.get(index);
                 boolean isLoaned = index % 3 == 0;
@@ -112,11 +112,11 @@ class EquipmentFilterStressTest {
     @Test
     void parse_seededTokenMutations_neverThrowsUnexpectedExceptions() throws Exception {
         Random random = new Random(2026);
-        String[] tokens = {"id/001", "id/000", "i/Camera", "type/camera", "cond/1-3", "status/available",
-            "cond/2147483648", "x", " ", "\u00a0", "i/", "\t", "\u0000", "id/card"};
+        String[] tokens = {"E-id/001", "E-id/000", "name/Camera", "type/camera", "cond/1-3", "status/available",
+            "cond/2147483648", "x", " ", "\u00a0", "name/", "\t", "\u0000", "E-id/card"};
         Equipment item = new Camera("Camera", "001", 1);
         for (int trial = 0; trial < 8_000; trial++) {
-            StringBuilder command = new StringBuilder("filter ");
+            StringBuilder command = new StringBuilder("filter-eqm ");
             for (int token = 0; token < 1 + random.nextInt(12); token++) {
                 command.append(tokens[random.nextInt(tokens.length)]).append(' ');
             }
@@ -131,8 +131,8 @@ class EquipmentFilterStressTest {
 
     @Test
     void parse_largeValuesAndRepeatedPrefixes_rejectsCleanly() {
-        for (String input : new String[]{"filter i/" + "A".repeat(100_000),
-            "filter " + "id/001 ".repeat(10_000), "filter cond/" + "9".repeat(100_000)}) {
+        for (String input : new String[]{"filter-eqm name/" + "A".repeat(100_000),
+            "filter-eqm " + "E-id/001 ".repeat(10_000), "filter-eqm cond/" + "9".repeat(100_000)}) {
             assertThrows(EquipmentFilteringUnsuccessful.class, () -> EquipmentFilter.parse(input));
         }
     }
@@ -144,10 +144,10 @@ class EquipmentFilterStressTest {
         try (PrintStream captured = new PrintStream(output, true, StandardCharsets.UTF_8)) {
             System.setOut(captured);
             EqmManager manager = new EqmManager(temporaryDataDirectory);
-            manager.executeInput("add i/Camera id/001 type/camera cond/1");
+            manager.executeInput("add-eqm name/Camera E-id/001 type/camera cond/1");
             for (String space : new String[]{" ", "\t", "\u2003", "\u00a0"}) {
                 output.reset();
-                manager.executeInput(space + "filter" + space + "id/001" + space);
+                manager.executeInput(space + "filter-eqm" + space + "E-id/001" + space);
                 assertTrue(output.toString(StandardCharsets.UTF_8).contains("Camera"));
             }
         } finally {

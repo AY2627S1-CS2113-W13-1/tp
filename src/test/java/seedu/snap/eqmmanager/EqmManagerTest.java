@@ -21,7 +21,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 /** Tests command routing and output for equipment additions and deletions. */
 class EqmManagerTest {
-    private static final String ADD_CAMERA = "add i/Canon EOS R10 id/001 type/camera cond/1";
+    private static final String ADD_CAMERA = "add-eqm name/Canon EOS R10 E-id/001 type/camera cond/1";
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
     private PrintStream originalOutput;
     @TempDir
@@ -42,15 +42,15 @@ class EqmManagerTest {
     void deleteEquipment_bundledItem_preservesInventoryAndCompletion() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory);
         manager.executeInput(ADD_CAMERA);
-        manager.executeInput("add i/Lens id/002 type/lens cond/1");
-        manager.executeInput("add i/Battery id/003 type/battery cond/1");
+        manager.executeInput("add-eqm name/Lens E-id/002 type/lens cond/1");
+        manager.executeInput("add-eqm name/Battery E-id/003 type/battery cond/1");
         manager.executeInput("add-bundle name/Camera kit");
-        manager.executeInput("add-to-bundle id/001 001 002 003");
+        manager.executeInput("bundle-add-eqm B-id/001 001 002 003");
         String saved = Files.readString(temporaryDirectory.resolve("equipment.txt"));
         output.reset();
 
-        manager.executeInput("delete item/001");
-        manager.executeInput("list bundles");
+        manager.executeInput("eqm-delete E-id/001");
+        manager.executeInput("list-bundle");
 
         String actual = output.toString(StandardCharsets.UTF_8);
         assertTrue(actual.contains("Cannot delete item ID 001 while it belongs to a bundle."));
@@ -64,13 +64,13 @@ class EqmManagerTest {
         EqmManager manager = new EqmManager(temporaryDirectory);
         manager.executeInput(ADD_CAMERA);
         manager.executeInput("add-bundle name/Camera kit");
-        manager.executeInput("add-to-bundle id/001 001");
-        manager.executeInput("bye");
+        manager.executeInput("bundle-add-eqm B-id/001 001");
+        manager.executeInput("exit");
 
         output.reset();
         EqmManager restarted = new EqmManager(temporaryDirectory);
-        restarted.executeInput("remove-from-bundle id/001 001");
-        restarted.executeInput("delete item/001");
+        restarted.executeInput("bundle-remove-eqm B-id/001 001");
+        restarted.executeInput("eqm-delete E-id/001");
 
         String actual = output.toString(StandardCharsets.UTF_8);
         assertTrue(actual.contains("Equipment ID 001 removed from bundle 001 successfully."));
@@ -81,7 +81,7 @@ class EqmManagerTest {
 
         output.reset();
         EqmManager afterRestart = new EqmManager(temporaryDirectory);
-        afterRestart.executeInput("list bundles");
+        afterRestart.executeInput("list-bundle");
         assertFalse(output.toString(StandardCharsets.UTF_8).contains("missing equipment"));
     }
 
@@ -91,8 +91,8 @@ class EqmManagerTest {
         manager.executeInput(ADD_CAMERA);
         output.reset();
 
-        manager.executeInput("add i/Tripod id/001 type/tripod cond/5");
-        manager.executeInput("add i/Tripod id/002 type/tripod cond/5");
+        manager.executeInput("add-eqm name/Tripod E-id/001 type/tripod cond/5");
+        manager.executeInput("add-eqm name/Tripod E-id/002 type/tripod cond/5");
 
         assertEquals("[ERROR] Item ID 001 already exists." + System.lineSeparator()
                 + "[OK] Equipment 002 added." + System.lineSeparator()
@@ -107,14 +107,14 @@ class EqmManagerTest {
         manager.executeInput(ADD_CAMERA);
         output.reset();
         String[] commands = {
-            "add i/Tripod id/002",
-            "add i/Tripod id/002 type/tripod cond/11",
-            "add i/Tripodid/002 type/tripod cond/5",
-            "add i/Tripod i/Lens id/002 type/tripod cond/5",
-            "add i/\u2003 id/002 type/tripod cond/5",
-            "add i/Tripod id/001 type/tripod cond/5"
+            "add-eqm name/Tripod E-id/002",
+            "add-eqm name/Tripod E-id/002 type/tripod cond/11",
+            "add-eqm name/Tripodid/002 type/tripod cond/5",
+            "add-eqm name/Tripod name/Lens E-id/002 type/tripod cond/5",
+            "add-eqm name/\u2003 E-id/002 type/tripod cond/5",
+            "add-eqm name/Tripod E-id/001 type/tripod cond/5"
         };
-        String formatError = "Invalid format. Use: add i/[ITEM] id/[ITEM ID] type/[TYPE] cond/[CONDITION]";
+        String formatError = "Invalid format. Use: add-eqm name/[ITEM] E-id/[ITEM ID] type/[TYPE] cond/[CONDITION]";
         String[] errors = {
             formatError, "Condition must be a whole number from 1 to 10.", formatError, formatError,
             "Item name must contain 1 to 100 characters.", "Item ID 001 already exists."
@@ -125,14 +125,14 @@ class EqmManagerTest {
                     output.toString(StandardCharsets.UTF_8), commands[i]);
             output.reset();
         }
-        manager.executeInput("add i/Tripod id/002 type/tripod cond/5");
+        manager.executeInput("add-eqm name/Tripod E-id/002 type/tripod cond/5");
         assertEquals("[OK] Equipment 002 added." + System.lineSeparator()
                 + "  Name: \"Tripod\"" + System.lineSeparator()
                 + "  Type: tripod | Condition: 5 | Status: Available" + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
         output.reset();
 
-        manager.executeInput("list");
+        manager.executeInput("list-eqm");
         String actual = output.toString(StandardCharsets.UTF_8);
         assertTrue(actual.contains("| 001 | Canon EOS R10"));
         assertTrue(actual.contains("| 002 | Tripod"));
@@ -143,20 +143,20 @@ class EqmManagerTest {
     @Test
     void addEquipment_explicitSubtypeDetails_showsSavedDetails() {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("add i/Camera id/001 type/CAMERA cond/7 sensor/Full frame damage/sensor_damage");
-        manager.executeInput("add i/Lens id/002 type/lens cond/6 zoom/24 to 70 mm damage/scratched_glass");
-        manager.executeInput("add i/Battery id/003 type/battery cond/5 capacity/2000 mAh damage/swelling");
-        manager.executeInput("add i/Tripod id/004 type/tripod cond/4 thread/Quarter inch damage/bent_leg");
+        manager.executeInput("add-eqm name/Camera E-id/001 type/CAMERA cond/7 sensor/Full frame damage/sensor_damage");
+        manager.executeInput("add-eqm name/Lens E-id/002 type/lens cond/6 zoom/24 to 70 mm damage/scratched_glass");
+        manager.executeInput("add-eqm name/Battery E-id/003 type/battery cond/5 capacity/2000 mAh damage/swelling");
+        manager.executeInput("add-eqm name/Tripod E-id/004 type/tripod cond/4 thread/Quarter inch damage/bent_leg");
         output.reset();
 
-        manager.executeInput("list");
+        manager.executeInput("list-eqm");
 
         String table = output.toString(StandardCharsets.UTF_8);
         assertEquals(4, table.lines().filter(line -> line.contains("Available")).count());
         assertTrue(table.contains("4 equipment items."));
         output.reset();
         for (String id : java.util.List.of("001", "002", "003", "004")) {
-            manager.executeInput("show id/" + id);
+            manager.executeInput("eqm-show E-id/" + id);
         }
         String details = output.toString(StandardCharsets.UTF_8);
         assertTrue(details.contains("Sensor format: Full frame"));
@@ -171,10 +171,10 @@ class EqmManagerTest {
     @Test
     void addEquipment_withRemarks_displaysAndPersistsRemarks() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("add i/Lens id/001 type/lens cond/3 remarks/Handle with care");
+        manager.executeInput("add-eqm name/Lens E-id/001 type/lens cond/3 remarks/Handle with care");
         output.reset();
 
-        manager.executeInput("show id/001");
+        manager.executeInput("eqm-show E-id/001");
 
         String details = output.toString(StandardCharsets.UTF_8);
         assertTrue(details.contains("Equipment 001"));
@@ -190,7 +190,7 @@ class EqmManagerTest {
         manager.executeInput(ADD_CAMERA);
         output.reset();
 
-        manager.executeInput("delete item/001");
+        manager.executeInput("eqm-delete E-id/001");
 
         assertEquals("[OK] Equipment 001 \"Canon EOS R10\" deleted." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
@@ -205,11 +205,11 @@ class EqmManagerTest {
         String[] invalidCommands = {
             "delete",
             "delete camera/001",
-            "delete item/1",
-            "delete item/000",
-            "delete item/1000",
-            "delete item/abc",
-            "delete item/001 extra"
+            "eqm-delete E-id/1",
+            "eqm-delete E-id/000",
+            "eqm-delete E-id/1000",
+            "eqm-delete E-id/abc",
+            "eqm-delete E-id/001 extra"
         };
 
         for (String command : invalidCommands) {
@@ -226,7 +226,7 @@ class EqmManagerTest {
         manager.executeInput(ADD_CAMERA);
         output.reset();
 
-        manager.executeInput("delete item/999");
+        manager.executeInput("eqm-delete E-id/999");
 
         assertEquals("[ERROR] Equipment ID 999 does not exist." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
@@ -236,10 +236,10 @@ class EqmManagerTest {
     void deleteEquipment_repeatedCommand_printsMissingIdError() {
         EqmManager manager = new EqmManager(temporaryDirectory);
         manager.executeInput(ADD_CAMERA);
-        manager.executeInput("delete item/001");
+        manager.executeInput("eqm-delete E-id/001");
         output.reset();
 
-        manager.executeInput("delete item/001");
+        manager.executeInput("eqm-delete E-id/001");
 
         assertEquals("[ERROR] Equipment ID 001 does not exist." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
@@ -249,11 +249,11 @@ class EqmManagerTest {
     void deleteEquipment_afterInvalidCommands_stillDeletesEquipment() {
         EqmManager manager = new EqmManager(temporaryDirectory);
         manager.executeInput(ADD_CAMERA);
-        manager.executeInput("delete item/000");
-        manager.executeInput("delete item/999");
+        manager.executeInput("eqm-delete E-id/000");
+        manager.executeInput("eqm-delete E-id/999");
         output.reset();
 
-        manager.executeInput("delete item/001");
+        manager.executeInput("eqm-delete E-id/001");
 
         assertEquals("[OK] Equipment 001 \"Canon EOS R10\" deleted." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
@@ -263,12 +263,12 @@ class EqmManagerTest {
     void deleteEquipment_sameNameDifferentIds_deletesOnlyRequestedId() {
         EqmManager manager = new EqmManager(temporaryDirectory);
         manager.executeInput(ADD_CAMERA);
-        manager.executeInput("add i/Canon EOS R10 id/002 type/camera cond/5");
+        manager.executeInput("add-eqm name/Canon EOS R10 E-id/002 type/camera cond/5");
         output.reset();
 
-        manager.executeInput("delete item/001");
-        manager.executeInput("delete item/001");
-        manager.executeInput("delete item/002");
+        manager.executeInput("eqm-delete E-id/001");
+        manager.executeInput("eqm-delete E-id/001");
+        manager.executeInput("eqm-delete E-id/002");
 
         assertEquals("[OK] Equipment 001 \"Canon EOS R10\" deleted." + System.lineSeparator()
                 + "[ERROR] Equipment ID 001 does not exist." + System.lineSeparator()
@@ -292,7 +292,7 @@ class EqmManagerTest {
     void bye_withoutMutations_createsAllStorageFiles() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory);
 
-        manager.executeInput("bye");
+        manager.executeInput("exit");
 
         Path equipmentFile = temporaryDirectory.resolve("equipment.txt");
         Path loansFile = temporaryDirectory.resolve("loans.txt");
@@ -309,7 +309,7 @@ class EqmManagerTest {
     void deleteLoan_failedSave_keepsEquipmentLoanedUntilSuccessfulRetry() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory);
         manager.executeInput(ADD_CAMERA);
-        manager.executeInput("loan id/001 b/002 issued/01-10-26 due/02-10-26");
+        manager.executeInput("add-loan E-id/001 U-id/002 issued/01-10-26 due/02-10-26");
         Path loansFile = temporaryDirectory.resolve("loans.txt");
         Files.delete(loansFile);
         Files.createDirectory(loansFile);
@@ -317,8 +317,8 @@ class EqmManagerTest {
         Files.writeString(sentinel, "keep loan data");
         output.reset();
 
-        manager.executeInput("delete loan/001");
-        manager.executeInput("delete item/001");
+        manager.executeInput("loan-delete L-id/001");
+        manager.executeInput("eqm-delete E-id/001");
 
         String rejected = output.toString(StandardCharsets.UTF_8);
         assertTrue(rejected.contains("Could not save loan deletion:"));
@@ -329,8 +329,8 @@ class EqmManagerTest {
         Files.delete(loansFile);
         output.reset();
 
-        manager.executeInput("delete loan/001");
-        manager.executeInput("filter id/001 status/available");
+        manager.executeInput("loan-delete L-id/001");
+        manager.executeInput("filter-eqm E-id/001 status/available");
 
         String recovered = output.toString(StandardCharsets.UTF_8);
         assertTrue(recovered.contains("[OK] Loan 001 deleted."));
@@ -338,7 +338,7 @@ class EqmManagerTest {
         assertEquals("", Files.readString(loansFile));
         output.reset();
         EqmManager restarted = new EqmManager(temporaryDirectory);
-        restarted.executeInput("filter id/001 status/available");
+        restarted.executeInput("filter-eqm E-id/001 status/available");
         assertTrue(output.toString(StandardCharsets.UTF_8).contains("Canon EOS R10"));
     }
 
@@ -346,7 +346,7 @@ class EqmManagerTest {
     void bye_saveFailure_reportsBothFiles() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory);
         manager.executeInput(ADD_CAMERA);
-        manager.executeInput("loan id/001 b/002 issued/01-10-26 due/02-10-26");
+        manager.executeInput("add-loan E-id/001 U-id/002 issued/01-10-26 due/02-10-26");
 
         Path equipmentFile = temporaryDirectory.resolve("equipment.txt");
         Path loansFile = temporaryDirectory.resolve("loans.txt");
@@ -358,7 +358,7 @@ class EqmManagerTest {
         Files.writeString(loansFile.resolve("keep.txt"), "keep loan data");
         output.reset();
 
-        manager.executeInput("bye");
+        manager.executeInput("exit");
 
         String message = output.toString(StandardCharsets.UTF_8);
         assertTrue(message.contains("Could not save data: equipment.txt:"));
@@ -372,7 +372,7 @@ class EqmManagerTest {
         EqmManager manager = new EqmManager(temporaryDirectory);
         output.reset();
 
-        manager.executeInput("list overdue");
+        manager.executeInput("list-loan-overdue");
 
         assertEquals(
                 "Overdue loans" + System.lineSeparator() + "-------------" + System.lineSeparator()
@@ -385,7 +385,7 @@ class EqmManagerTest {
         EqmManager manager = new EqmManager(temporaryDirectory);
         manager.executeInput(ADD_CAMERA);
         manager.executeInput(
-                "loan id/001 b/002 issued/01-01-20 due/02-01-20");
+                "add-loan E-id/001 U-id/002 issued/01-01-20 due/02-01-20");
 
         String savedEquipment = Files.readString(
                 temporaryDirectory.resolve("equipment.txt"));
@@ -393,7 +393,7 @@ class EqmManagerTest {
                 temporaryDirectory.resolve("loans.txt"));
         output.reset();
 
-        manager.executeInput("list overdue");
+        manager.executeInput("list-loan-overdue");
 
         String actual = output.toString(StandardCharsets.UTF_8);
         assertTrue(actual.contains("ITEM ID"));
@@ -425,7 +425,7 @@ class EqmManagerTest {
         EqmManager manager = new EqmManager(temporaryDirectory);
         output.reset();
 
-        manager.executeInput("list overdue");
+        manager.executeInput("list-loan-overdue");
 
         assertEquals(
                 "Overdue loans" + System.lineSeparator() + "-------------" + System.lineSeparator()
@@ -442,16 +442,36 @@ class EqmManagerTest {
                 new EqmManager(temporaryDirectory, clock);
         manager.executeInput(ADD_CAMERA);
         manager.executeInput(
-                "loan id/001 b/002 "
+                "add-loan E-id/001 U-id/002 "
                         + "issued/24-10-26 due/25-10-26");
         output.reset();
 
-        manager.executeInput("list overdue");
+        manager.executeInput("list-loan-overdue");
 
         assertEquals(
                 "Overdue loans" + System.lineSeparator() + "-------------" + System.lineSeparator()
                         + "No overdue loans found." + System.lineSeparator() + "0 loans." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void oldInteractiveCommandKeywords_areRejected() {
+        EqmManager manager = new EqmManager(temporaryDirectory);
+        String[] oldCommands = {
+            "add i/Camera id/001 type/camera cond/1", "list", "show id/001", "delete item/001",
+            "filter type/camera", "update id/001 name/New", "maintain id/001 date/27-10-26 work/Repair outcome/Done",
+            "loan id/001 b/002 issued/01-10-26 due/02-10-26", "return loan/001 serviceable/yes damage/NONE",
+            "delete loan/001", "update loan/001 b/002", "list loans", "list borrower/002", "view loan/001",
+            "list overdue", "history id/001", "add-to-bundle id/001 001", "remove-from-bundle id/001 001",
+            "list bundles", "history bundle/id/001", "bye"
+        };
+
+        for (String command : oldCommands) {
+            output.reset();
+            manager.executeInput(command);
+            assertEquals("[ERROR] Command not recognised. Type help for available commands."
+                    + System.lineSeparator(), output.toString(StandardCharsets.UTF_8), command);
+        }
     }
 
     // @@author

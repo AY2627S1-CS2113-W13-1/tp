@@ -19,7 +19,7 @@ class LoanUpdateTest {
     @Test
     void parse_allFieldsInAnyOrder_returnsValidatedValues() throws LoanUpdateUnsuccessful {
         LoanUpdate update = LoanUpdate.parse(
-                "update loan/007 due/15-10-26 id/003 b/004 issued/10-10-26");
+                "loan-update L-id/007 due/15-10-26 E-id/003 U-id/004 issued/10-10-26");
 
         assertEquals("007", update.loanId());
         assertEquals("003", update.itemId());
@@ -34,7 +34,7 @@ class LoanUpdateTest {
 
     @Test
     void parse_partialFields_leavesOmittedValuesUnset() throws LoanUpdateUnsuccessful {
-        LoanUpdate update = LoanUpdate.parse("update loan/007 b/004");
+        LoanUpdate update = LoanUpdate.parse("loan-update L-id/007 U-id/004");
 
         assertEquals("007", update.loanId());
         assertNull(update.itemId());
@@ -45,8 +45,8 @@ class LoanUpdateTest {
 
     @Test
     void parse_borrowerBoundaryValues_acceptsDocumentedRange() throws LoanUpdateUnsuccessful {
-        LoanUpdate zero = LoanUpdate.parse("update loan/001 b/000");
-        LoanUpdate maximum = LoanUpdate.parse("update loan/001 b/999");
+        LoanUpdate zero = LoanUpdate.parse("loan-update L-id/001 U-id/000");
+        LoanUpdate maximum = LoanUpdate.parse("loan-update L-id/001 U-id/999");
 
         assertEquals("000", zero.borrowerId());
         assertEquals("999", maximum.borrowerId());
@@ -59,10 +59,11 @@ class LoanUpdateTest {
     }
 
     private static Stream<String> invalidCommands() {
-        return Stream.of(null, "", "update", "update loan/001", "update item/001 b/002",
-                "update loan/000 b/002", "update loan/01 b/002", "update loan/001 id/000",
-                "update loan/001 b/00", "update loan/001 id/002 id/003", "update loan/001 unknown/002",
-                "update loan/001 due/31-02-26", "update loan/001 issued/20-10-26 due/19-10-26",
-                "update loan/001 b/002\n due/20-10-26");
+        return Stream.of(null, "", "eqm-update", "loan-update L-id/001", "eqm-update item/001 U-id/002",
+                "loan-update L-id/000 U-id/002", "loan-update L-id/01 U-id/002", "loan-update L-id/001 E-id/000",
+                "loan-update L-id/001 U-id/00", "loan-update L-id/001 E-id/002 E-id/003",
+                "loan-update L-id/001 unknown/002",
+                "loan-update L-id/001 due/31-02-26", "loan-update L-id/001 issued/20-10-26 due/19-10-26",
+                "loan-update L-id/001 U-id/002\n due/20-10-26");
     }
 }

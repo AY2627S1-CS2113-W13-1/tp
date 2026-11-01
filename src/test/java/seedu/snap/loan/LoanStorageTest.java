@@ -70,7 +70,7 @@ class LoanStorageTest {
         assertTrue(history.isReturned());
         history.setReturned(true);
         assertThrows(IllegalStateException.class, () -> history.setReturned(false));
-        handler.deleteLoan("delete loan/001");
+        handler.deleteLoan("loan-delete L-id/001");
         assertTrue(replacement.isLoaned());
         assertEquals(2, handler.getLoanCount());
         assertTrue(Files.readString(file).contains("id/999"));
@@ -131,7 +131,7 @@ class LoanStorageTest {
     @Test
     void load_replacesEquipmentAndLoans_detachesOldReferences() throws Exception {
         EquipmentHandler equipment = new EquipmentHandler(temporaryDirectory.resolve("equipment.txt"));
-        Equipment previousItem = equipment.addEquipment("add i/Camera id/001 type/camera cond/5");
+        Equipment previousItem = equipment.addEquipment("add-eqm name/Camera E-id/001 type/camera cond/5");
         LoanHandler handler = new LoanHandler(equipment, temporaryDirectory.resolve("loans.txt"));
         Loan previousLoan = handler.addLoan(LOAN);
 
@@ -180,7 +180,7 @@ class LoanStorageTest {
         Files.writeString(destination.resolve("keep.txt"), "keep this record");
 
         LoanDeletionUnsuccessful error = assertThrows(LoanDeletionUnsuccessful.class,
-                () -> handler.deleteLoan("delete loan/001"));
+                () -> handler.deleteLoan("loan-delete L-id/001"));
         assertTrue(error.getMessage().startsWith("Could not save loan deletion:"));
 
         assertTrue(camera.isLoaned());
@@ -199,14 +199,14 @@ class LoanStorageTest {
         LoanHandler handler = new LoanHandler(equipment, destination);
         Loan history = handler.addLoan(LOAN);
         history.setReturned(true);
-        Loan active = handler.addLoan("loan id/001 b/003 issued/03-10-26 due/04-10-26");
+        Loan active = handler.addLoan("add-loan E-id/001 U-id/003 issued/03-10-26 due/04-10-26");
         Files.delete(destination);
         Files.createDirectory(destination);
         Path sentinel = destination.resolve("keep.txt");
         Files.writeString(sentinel, "keep this record");
 
         LoanDeletionUnsuccessful error = assertThrows(LoanDeletionUnsuccessful.class,
-                () -> handler.deleteLoan("delete loan/001"));
+                () -> handler.deleteLoan("loan-delete L-id/001"));
 
         assertTrue(error.getMessage().startsWith("Could not save loan deletion:"));
         assertEquals(List.of(history, active), handler.getLoanList());
@@ -216,7 +216,7 @@ class LoanStorageTest {
         Files.delete(sentinel);
         Files.delete(destination);
 
-        assertSame(history, handler.deleteLoan("delete loan/001"));
+        assertSame(history, handler.deleteLoan("loan-delete L-id/001"));
         assertEquals(List.of(active), handler.getLoanList());
         assertTrue(camera.isLoaned());
         List<Loan> saved = LoanStorage.load(destination);
@@ -230,7 +230,7 @@ class LoanStorageTest {
     private EquipmentHandler inventoryWithItems(String... ids) throws EquipmentAdditionUnsuccessful {
         EquipmentHandler equipment = new EquipmentHandler();
         for (String id : ids) {
-            equipment.addEquipment("add i/Camera " + id + " id/" + id + " type/camera cond/5");
+            equipment.addEquipment("add-eqm name/Camera E-id/" + id + " type/camera cond/5");
         }
         return equipment;
     }

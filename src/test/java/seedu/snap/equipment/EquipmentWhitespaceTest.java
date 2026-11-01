@@ -16,15 +16,15 @@ class EquipmentWhitespaceTest {
     @Test
     void addEquipment_whitespaceOnlyNamesAndTypes_preservesInventory() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
-        Equipment original = handler.addEquipment("add i/Camera id/001 type/camera cond/1");
+        Equipment original = handler.addEquipment("add-eqm name/Camera E-id/001 type/camera cond/1");
         for (String space : SPACES) {
             assertThrows(EquipmentAdditionUnsuccessful.class,
-                    () -> handler.addEquipment("add i/" + space + " id/002 type/camera cond/1"));
+                    () -> handler.addEquipment("add-eqm name/" + space + " E-id/002 type/camera cond/1"));
             assertThrows(EquipmentAdditionUnsuccessful.class,
-                    () -> handler.addEquipment("add i/Tripod id/002 type/" + space + " cond/1"));
+                    () -> handler.addEquipment("add-eqm name/Tripod E-id/002 type/" + space + " cond/1"));
             assertEquals(List.of(original), handler.getEquipmentList());
         }
-        handler.addEquipment("add i/Tripod id/002 type/tripod cond/1");
+        handler.addEquipment("add-eqm name/Tripod E-id/002 type/tripod cond/1");
         assertEquals(2, handler.getEquipmentList().size());
     }
 
@@ -32,8 +32,8 @@ class EquipmentWhitespaceTest {
     void addEquipment_unicodeFieldEdges_trimsEdgesAndPreservesInternalSpaces() throws Exception {
         for (String space : SPACES) {
             EquipmentHandler handler = new EquipmentHandler();
-            Equipment item = handler.addEquipment("add" + space + "i/" + space + "Film" + space + "Camera"
-                    + space + "id/001" + space + "type/" + space + "camera" + space + "cond/1" + space);
+            Equipment item = handler.addEquipment("add-eqm" + space + "name/" + space + "Film" + space + "Camera"
+                    + space + "E-id/001" + space + "type/" + space + "camera" + space + "cond/1" + space);
             assertEquals("Film" + space + "Camera", item.getItemName());
             assertEquals("camera", item.getType());
             assertEquals(1, item.getCondition());
@@ -45,11 +45,12 @@ class EquipmentWhitespaceTest {
         EquipmentHandler handler = new EquipmentHandler();
         for (String space : SPACES) {
             assertThrows(EquipmentAdditionUnsuccessful.class,
-                    () -> handler.addEquipment("add i/Camera id/" + space + "999 id/001 type/camera cond/1"));
+                    () -> handler.addEquipment("add-eqm name/Camera E-id/" + space + "999 E-id/001 "
+                            + "type/camera cond/1"));
             assertEquals(List.of(), handler.getEquipmentList());
         }
-        assertEquals("USB id/card reader",
-                handler.addEquipment("add i/USB id/card reader id/001 type/tripod cond/1").getItemName());
+        assertEquals("USB E-id/card reader",
+                handler.addEquipment("add-eqm name/USB E-id/card reader E-id/001 type/tripod cond/1").getItemName());
     }
 
     @Test

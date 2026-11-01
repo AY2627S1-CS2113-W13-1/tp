@@ -119,7 +119,7 @@ class EquipmentStorageTest {
     void load_invalidSubtypeDetails_reportsLineAndPreservesCurrentInventory() throws Exception {
         Path file = temporaryDirectory.resolve("equipment.txt");
         EquipmentHandler handler = new EquipmentHandler(file);
-        Equipment original = handler.addEquipment("add i/Original camera id/001 type/camera cond/1");
+        Equipment original = handler.addEquipment("add-eqm name/Original camera E-id/001 type/camera cond/1");
         Files.writeString(file, "add i/Camera id/001 type/camera cond/1\n"
                 + "add i/Lens id/002 type/lens cond/5 damage/SHUTTER_FAULT\n");
 
@@ -137,7 +137,7 @@ class EquipmentStorageTest {
         EquipmentHandler handler = new EquipmentHandler(destination);
 
         assertThrows(EquipmentAdditionUnsuccessful.class,
-                () -> handler.addEquipment("add i/Camera id/001 type/camera cond/5 sensor/Full frame"));
+                () -> handler.addEquipment("add-eqm name/Camera E-id/001 type/camera cond/5 sensor/Full frame"));
 
         assertTrue(handler.getEquipmentList().isEmpty());
         assertEquals("keep this record", Files.readString(destination.resolve("keep.txt")));

@@ -29,8 +29,8 @@ class BackupIntegrationTest {
         originalOutput = System.out;
         System.setOut(new PrintStream(output, true, StandardCharsets.UTF_8));
         manager = new EqmManager(temporaryDirectory.resolve("data"));
-        manager.executeInput("add i/Camera id/001 type/camera cond/4 sensor/APS-C");
-        manager.executeInput("loan id/001 b/111 issued/01-10-26 due/02-10-26");
+        manager.executeInput("add-eqm name/Camera E-id/001 type/camera cond/4 sensor/APS-C");
+        manager.executeInput("add-loan E-id/001 U-id/111 issued/01-10-26 due/02-10-26");
         output.reset();
     }
 
@@ -79,7 +79,7 @@ class BackupIntegrationTest {
 
         assertTrue(printed().contains("Invalid format"));
         output.reset();
-        manager.executeInput("list loans b/111");
+        manager.executeInput("list-loan-borrower U-id/111");
         assertTrue(printed().contains("001"));
     }
 

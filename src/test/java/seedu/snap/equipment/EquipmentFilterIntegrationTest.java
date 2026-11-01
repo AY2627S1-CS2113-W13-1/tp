@@ -31,15 +31,16 @@ class EquipmentFilterIntegrationTest {
     void apply_allSubclasses_preservesObjectsDetailsAndSavedRecords() throws Exception {
         Path file = temporaryDirectory.resolve("equipment.txt");
         EquipmentHandler equipment = new EquipmentHandler(file);
-        equipment.addEquipment("add i/Camera id/001 type/camera cond/1 sensor/full frame damage/SENSOR_DAMAGE");
-        equipment.addEquipment("add i/Lens id/002 type/lens cond/2 zoom/24-70mm damage/SCRATCHED_GLASS");
-        equipment.addEquipment("add i/Battery id/003 type/battery cond/3 capacity/2000mAh damage/SWELLING");
-        equipment.addEquipment("add i/Tripod id/004 type/tripod cond/4 thread/1-4 inch damage/BENT_LEG");
+        equipment.addEquipment("add-eqm name/Camera E-id/001 type/camera cond/1 sensor/full frame "
+                + "damage/SENSOR_DAMAGE");
+        equipment.addEquipment("add-eqm name/Lens E-id/002 type/lens cond/2 zoom/24-70mm damage/SCRATCHED_GLASS");
+        equipment.addEquipment("add-eqm name/Battery E-id/003 type/battery cond/3 capacity/2000mAh damage/SWELLING");
+        equipment.addEquipment("add-eqm name/Tripod E-id/004 type/tripod cond/4 thread/1-4 inch damage/BENT_LEG");
         List<Equipment> original = List.copyOf(equipment.getEquipmentList());
         String saved = Files.readString(file);
         LoanHandler loans = new LoanHandler(equipment);
 
-        List<Equipment> matches = EquipmentFilter.parse("filter status/available cond/1-4")
+        List<Equipment> matches = EquipmentFilter.parse("filter-eqm status/available cond/1-4")
                 .apply(equipment.getEquipmentList(), loans);
 
         assertEquals(original, matches);
@@ -84,30 +85,30 @@ class EquipmentFilterIntegrationTest {
     @Test
     void apply_returnedHistoryAndActiveLoan_preservesAvailabilityAndDeletionChecks() throws Exception {
         EquipmentHandler equipment = new EquipmentHandler();
-        Equipment camera = equipment.addEquipment("add i/Camera id/001 type/camera cond/1 sensor/full frame");
+        Equipment camera = equipment.addEquipment("add-eqm name/Camera E-id/001 type/camera cond/1 sensor/full frame");
         LoanHandler loans = new LoanHandler(equipment);
-        Loan returned = loans.addLoan("loan id/001 b/002 issued/01-10-26 due/02-10-26");
+        Loan returned = loans.addLoan("add-loan E-id/001 U-id/002 issued/01-10-26 due/02-10-26");
         returned.setReturned(true);
-        EquipmentFilter available = EquipmentFilter.parse("filter status/available");
-        EquipmentFilter loaned = EquipmentFilter.parse("filter status/loaned");
+        EquipmentFilter available = EquipmentFilter.parse("filter-eqm status/available");
+        EquipmentFilter loaned = EquipmentFilter.parse("filter-eqm status/loaned");
         assertEquals(List.of(camera), available.apply(equipment.getEquipmentList(), loans));
 
-        Loan active = loans.addLoan("loan id/001 b/003 issued/03-10-26 due/04-10-26");
-        loans.deleteLoan("delete loan/001");
+        Loan active = loans.addLoan("add-loan E-id/001 U-id/003 issued/03-10-26 due/04-10-26");
+        loans.deleteLoan("loan-delete L-id/001");
 
         assertTrue(available.apply(equipment.getEquipmentList(), loans).isEmpty());
         assertSame(camera, loaned.apply(equipment.getEquipmentList(), loans).getFirst());
         assertTrue(camera.isLoaned());
         assertEquals(List.of(active), loans.getLoanList());
-        assertThrows(EquipmentDeletionUnsuccessful.class, () -> equipment.deleteEquipment("delete item/001"));
+        assertThrows(EquipmentDeletionUnsuccessful.class, () -> equipment.deleteEquipment("eqm-delete E-id/001"));
         assertThrows(LoanAdditionUnsuccessful.class,
-                () -> loans.addLoan("loan id/001 b/004 issued/05-10-26 due/06-10-26"));
+                () -> loans.addLoan("add-loan E-id/001 U-id/004 issued/05-10-26 due/06-10-26"));
         assertEquals("sensor/full frame damage/NONE", camera.getDetails());
 
         active.setReturned(true);
         assertFalse(camera.isLoaned());
         assertTrue(loaned.apply(equipment.getEquipmentList(), loans).isEmpty());
         assertSame(camera, available.apply(equipment.getEquipmentList(), loans).getFirst());
-        assertSame(camera, equipment.deleteEquipment("delete item/001"));
+        assertSame(camera, equipment.deleteEquipment("eqm-delete E-id/001"));
     }
 }
