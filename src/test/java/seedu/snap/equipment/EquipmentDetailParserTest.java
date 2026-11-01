@@ -214,6 +214,9 @@ class EquipmentDetailParserTest {
         assertThrows(AssertionError.class,
                 () -> EquipmentDetailParser.getEnumValue(Map.of(), EquipmentDetailField.DAMAGE,
                         Camera.CameraDamage.NONE, Camera.CameraDamage.class, " "));
+        assertThrows(AssertionError.class,
+                () -> EquipmentDetailParser.getEnumValue(Map.of(), EquipmentDetailField.DAMAGE,
+                        Camera.CameraDamage.NONE, Camera.CameraDamage.class, null));
     }
 
     @Test
@@ -224,12 +227,16 @@ class EquipmentDetailParserTest {
                 () -> EquipmentDetailParser.validateDamageRemarks(Camera.CameraDamage.NONE, null, "camera"));
         assertThrows(AssertionError.class,
                 () -> EquipmentDetailParser.validateDamageRemarks(Camera.CameraDamage.NONE, "remarks", " "));
+        assertThrows(AssertionError.class,
+                () -> EquipmentDetailParser.validateDamageRemarks(Camera.CameraDamage.NONE, "remarks", null));
     }
 
     @Test
     void parse_invalidConfiguration_throwsAssertionError() {
         assertThrows(AssertionError.class,
                 () -> EquipmentDetailParser.parse("", "", CAMERA_FIELDS));
+        assertThrows(AssertionError.class,
+                () -> EquipmentDetailParser.parse("", null, CAMERA_FIELDS));
         assertThrows(AssertionError.class,
                 () -> EquipmentDetailParser.parse("", "camera", null));
         assertThrows(AssertionError.class,
