@@ -352,7 +352,8 @@ list instead would change the order used by later `list loans` requests. The que
 Visible identifiers are stored in their typed form: equipment records use `id/E001`, loan records use
 `loanId/L001 id/E001 b/U002`, bundles use `id/B001 items/E001~<record-uuid>`, and the loan sequence uses
 `nextLoanId/L002`. Borrower IDs use the `U000` to `U999` range; permanent equipment record UUIDs remain
-unprefixed. Command input accepts only these canonical forms.
+unprefixed. Command input accepts either casing for the typed prefix and normalises it to the canonical uppercase
+form.
 
 The loaders still accept legacy bare numeric values because existing data must remain usable. They infer the
 identifier type from its storage field, normalize the value in memory and write the canonical prefix on the next

@@ -154,8 +154,10 @@ public class MaintenanceHandler {
             throw new MaintenanceRecordUnsuccessful(COMMAND_FORMAT);
         }
 
-        String itemId = matcher.group(1);
-        if (!Identifier.isValid(itemId, Identifier.Type.EQUIPMENT)) {
+        String itemId;
+        try {
+            itemId = Identifier.normalize(matcher.group(1), Identifier.Type.EQUIPMENT);
+        } catch (IllegalArgumentException exception) {
             throw new MaintenanceRecordUnsuccessful("Item ID must be from E001 to E999.");
         }
         LocalDate date;

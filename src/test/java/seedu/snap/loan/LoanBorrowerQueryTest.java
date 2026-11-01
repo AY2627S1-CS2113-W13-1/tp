@@ -21,6 +21,13 @@ class LoanBorrowerQueryTest {
     }
 
     @Test
+    void parse_lowercaseBorrowerId_returnsCanonicalValue() throws Exception {
+        LoanBorrowerQuery query = LoanBorrowerQuery.parse("list borrower/u002");
+
+        assertEquals("U002", query.borrowerId());
+    }
+
+    @Test
     void parse_memberAlias_returnsBorrowerId() throws Exception {
         LoanBorrowerQuery query = LoanBorrowerQuery.parse("  list member/U007  ");
 

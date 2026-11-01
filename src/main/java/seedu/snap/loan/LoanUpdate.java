@@ -95,12 +95,13 @@ record LoanUpdate(String loanId, String itemId, String borrowerId,
     /** Parses a typed identifier while excluding the reserved all-zero value where applicable. */
     private static String parseIdentifier(String value, String name, Identifier.Type type)
             throws LoanUpdateUnsuccessful {
-        if (!Identifier.isValid(value, type)) {
+        try {
+            return Identifier.normalize(value, type);
+        } catch (IllegalArgumentException exception) {
             String lowerBound = type == Identifier.Type.BORROWER ? type.prefix() + "000" : type.prefix() + "001";
             throw new LoanUpdateUnsuccessful(name + " must be from " + lowerBound + " to "
                     + type.prefix() + "999.");
         }
-        return value;
     }
 
     /** Parses a strict date in the format documented for loan commands. */

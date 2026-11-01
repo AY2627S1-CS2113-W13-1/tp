@@ -47,6 +47,23 @@ public final class Identifier {
                 && (type == Type.BORROWER || !value.endsWith("000"));
     }
 
+    /** Normalises a user-supplied typed identifier to its uppercase canonical form. */
+    public static String normalize(String value, Type type) {
+        if (type == null) {
+            throw new IllegalArgumentException("Identifier type must not be null.");
+        }
+        if (value == null || value.length() != 4
+                || Character.toUpperCase(value.charAt(0)) != type.prefix
+                || !value.substring(1).matches("[0-9]{3}")) {
+            throw new IllegalArgumentException("Invalid " + type.displayName + " identifier: " + value);
+        }
+        String canonical = type.prefix + value.substring(1);
+        if (!isValid(canonical, type)) {
+            throw new IllegalArgumentException("Invalid " + type.displayName + " identifier: " + value);
+        }
+        return canonical;
+    }
+
     /** Returns whether a value is a legacy three-digit identifier suitable for migration. */
     public static boolean isLegacy(String value) {
         return value != null && value.matches("[0-9]{3}");
@@ -57,8 +74,10 @@ public final class Identifier {
         if (type == null) {
             throw new IllegalArgumentException("Identifier type must not be null.");
         }
-        if (isValid(value, type)) {
-            return value;
+        try {
+            return normalize(value, type);
+        } catch (IllegalArgumentException exception) {
+            // Continue below for the numeric format accepted only in legacy storage.
         }
         if (isLegacy(value) && (type == Type.BORROWER || !value.equals("000"))) {
             return type.prefix + value;
@@ -90,6 +109,7 @@ public final class Identifier {
         if (value == null || expected == null || value.length() != 4 || !value.substring(1).matches("[0-9]{3}")) {
             return false;
         }
-        return value.charAt(0) != expected.prefix && "ELBU".indexOf(value.charAt(0)) >= 0;
+        char prefix = Character.toUpperCase(value.charAt(0));
+        return prefix != expected.prefix && "ELBU".indexOf(prefix) >= 0;
     }
 }

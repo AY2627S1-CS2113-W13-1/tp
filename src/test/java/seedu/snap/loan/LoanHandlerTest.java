@@ -69,6 +69,17 @@ public class LoanHandlerTest {
     }
 
     @Test
+    void addLoan_lowercaseIds_normalisesStoredValues() throws LoanAdditionUnsuccessful {
+        LoanHandler loanHandler = new LoanHandler(equipment);
+
+        Loan loan = loanHandler.addLoan("loan id/e001 b/u002 issued/01-10-26 due/02-10-26");
+
+        assertEquals("L001", loan.getLoanId());
+        assertEquals("E001", loan.getItemId());
+        assertEquals("U002", loan.getBorrowerId());
+    }
+
+    @Test
     void addLoan_unknownEquipment_preservesInventoryAvailability() {
         LoanHandler loanHandler = new LoanHandler(equipment);
 

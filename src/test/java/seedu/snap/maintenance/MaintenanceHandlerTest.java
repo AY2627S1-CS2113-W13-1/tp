@@ -46,6 +46,18 @@ class MaintenanceHandlerTest {
     }
 
     @Test
+    void addMaintenanceRecord_lowercaseId_bindsToCanonicalEquipment() throws Exception {
+        EquipmentHandler equipment = new EquipmentHandler();
+        Equipment item = equipment.addEquipment(ADD_CAMERA);
+        MaintenanceHandler handler = new MaintenanceHandler(equipment);
+
+        MaintenanceRecord record = handler.addMaintenanceRecord(
+                "maintain id/e001 date/27-10-26 work/Checked outcome/Completed");
+
+        assertEquals(item.getRecordId(), record.getEquipmentRecordId());
+    }
+
+    @Test
     void addMaintenanceRecord_invalidCommand_preservesRecords() throws Exception {
         EquipmentHandler equipment = new EquipmentHandler();
         equipment.addEquipment(ADD_CAMERA);

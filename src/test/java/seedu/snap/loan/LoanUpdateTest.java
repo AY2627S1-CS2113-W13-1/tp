@@ -33,6 +33,16 @@ class LoanUpdateTest {
     }
 
     @Test
+    void parse_lowercaseIds_normalisesValues() throws LoanUpdateUnsuccessful {
+        LoanUpdate update = LoanUpdate.parse(
+                "update loan/l007 due/15-10-26 id/e003 b/u004 issued/10-10-26");
+
+        assertEquals("L007", update.loanId());
+        assertEquals("E003", update.itemId());
+        assertEquals("U004", update.borrowerId());
+    }
+
+    @Test
     void parse_partialFields_leavesOmittedValuesUnset() throws LoanUpdateUnsuccessful {
         LoanUpdate update = LoanUpdate.parse("update loan/L007 b/U004");
 

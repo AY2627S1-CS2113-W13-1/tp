@@ -27,8 +27,8 @@ public class EquipmentHandler {
     private static final String ADD_COMMAND = "add";
     private static final String ADD_FORMAT_ERROR = "Invalid format. Use: add i/[ITEM] id/[ITEM ID] "
             + "type/[TYPE] cond/[CONDITION]";
-    private static final Pattern DELETE_PATTERN = Pattern.compile("delete\\s+item/(E[0-9]{3})");
-    private static final Pattern SHOW_PATTERN = Pattern.compile("(?U)show\\s+id/(E[0-9]{3})");
+    private static final Pattern DELETE_PATTERN = Pattern.compile("delete\\s+item/([Ee][0-9]{3})");
+    private static final Pattern SHOW_PATTERN = Pattern.compile("(?U)show\\s+id/([Ee][0-9]{3})");
     private static final String ITEM_MARKER = "i/";
     private static final String ID_MARKER = "id/";
     private static final String TYPE_MARKER = "type/";
@@ -242,14 +242,20 @@ public class EquipmentHandler {
      * @return the matching equipment, or null when no match exists
      */
     public Equipment getEquipmentById(String itemId) {
+        String canonicalItemId;
+        try {
+            canonicalItemId = normalizeItemId(itemId);
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
         for (Equipment equipment : inventory) {
-            if (equipment.getItemId().equals(itemId)) {
+            if (equipment.getItemId().equals(canonicalItemId)) {
                 logger.log(Level.INFO, "Found {0} with item ID {1}.",
-                        new Object[] {equipment.getType(), itemId});
+                        new Object[] {equipment.getType(), canonicalItemId});
                 return equipment;
             }
         }
-        logger.log(Level.WARNING, "No equipment found for item ID {0}.", itemId);
+        logger.log(Level.WARNING, "No equipment found for item ID {0}.", canonicalItemId);
         return null;
     }
 
@@ -346,6 +352,11 @@ public class EquipmentHandler {
         String itemName = EquipmentFields.trimWhitespace(
                 addDetails.substring(itemIndex + ITEM_MARKER.length(), idIndex));
         String id = EquipmentFields.trimWhitespace(addDetails.substring(idIndex + ID_MARKER.length(), typeIndex));
+        try {
+            id = normalizeItemId(id);
+        } catch (IllegalArgumentException exception) {
+            throw new EquipmentAdditionUnsuccessful("Item ID must be from E001 to E999.");
+        }
         String type = EquipmentFields.trimWhitespace(
                 addDetails.substring(typeIndex + TYPE_MARKER.length(), conditionIndex));
         int detailsIndex = findDetailsStart(addDetails, conditionValueStart, remarksIndex);
@@ -546,13 +557,18 @@ public class EquipmentHandler {
      */
     private String parseDeleteItemId(String input) throws EquipmentDeletionUnsuccessful {
         Matcher matcher = input == null ? null : DELETE_PATTERN.matcher(input.trim());
-        if (matcher == null || !matcher.matches()
-                || !Identifier.isValid(matcher.group(1), Identifier.Type.EQUIPMENT)) {
+        if (matcher == null || !matcher.matches()) {
             logger.fine("Equipment deletion rejected: invalid command syntax.");
             throw new EquipmentDeletionUnsuccessful(
                     "Invalid delete syntax. ITEM ID must be from E001 to E999.");
         }
-        return matcher.group(1);
+        try {
+            return normalizeItemId(matcher.group(1));
+        } catch (IllegalArgumentException exception) {
+            logger.fine("Equipment deletion rejected: invalid item ID.");
+            throw new EquipmentDeletionUnsuccessful(
+                    "Invalid delete syntax. ITEM ID must be from E001 to E999.");
+        }
     }
 
     /**
@@ -572,13 +588,18 @@ public class EquipmentHandler {
     /** Validates an exact item-detail command and prints full values without saving or changing records. */
     public void showEquipment(String input) throws EquipmentViewingUnsuccessful {
         Matcher matcher = input == null ? null : SHOW_PATTERN.matcher(EquipmentFields.trimWhitespace(input));
-        if (matcher == null || !matcher.matches()
-                || !Identifier.isValid(matcher.group(1), Identifier.Type.EQUIPMENT)) {
+        if (matcher == null || !matcher.matches()) {
             throw new EquipmentViewingUnsuccessful("Invalid format. Use: show id/[ITEM ID], from E001 to E999.");
         }
-        Equipment item = getEquipmentById(matcher.group(1));
+        String itemId;
+        try {
+            itemId = normalizeItemId(matcher.group(1));
+        } catch (IllegalArgumentException exception) {
+            throw new EquipmentViewingUnsuccessful("Invalid format. Use: show id/[ITEM ID], from E001 to E999.");
+        }
+        Equipment item = getEquipmentById(itemId);
         if (item == null) {
-            throw new EquipmentViewingUnsuccessful("Item ID " + matcher.group(1) + " does not exist.");
+            throw new EquipmentViewingUnsuccessful("Item ID " + itemId + " does not exist.");
         }
         EquipmentView.printDetails(item);
     }
@@ -626,6 +647,8 @@ public class EquipmentHandler {
                     EquipmentFields.NAME_FIELD, EquipmentFields.TYPE_FIELD,
                     EquipmentFields.CONDITION_FIELD);
             String id = fields.get(EquipmentFields.ID_FIELD);
+            fields.put(EquipmentFields.ID_FIELD, normalizeItemId(id));
+            id = fields.get(EquipmentFields.ID_FIELD);
             if (!Equipment.isValidItemId(id)) {
                 throw new EquipmentUpdateUnsuccessful("Item ID must be from E001 to E999.");
             }
@@ -695,5 +718,14 @@ public class EquipmentHandler {
                 : "Updates must preserve Item ID";
         logger.log(Level.FINE, "Updated equipment with item ID {0}", target.getItemId());
         return target;
+    }
+
+    /** Converts a user-supplied equipment ID to the uppercase value used by the model. */
+    private static String normalizeItemId(String itemId) {
+        try {
+            return Identifier.normalize(itemId, Identifier.Type.EQUIPMENT);
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("Item ID must be from E001 to E999.", exception);
+        }
     }
 }

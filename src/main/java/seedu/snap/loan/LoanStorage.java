@@ -183,11 +183,21 @@ final class LoanStorage {
         if (loan.getLoanId() == null) {
             throw new IOException("Saved loans must have a loan ID.");
         }
+        String loanId;
+        String itemId;
+        String borrowerId;
+        try {
+            loanId = Identifier.normalize(loan.getLoanId(), Identifier.Type.LOAN);
+            itemId = Identifier.normalize(loan.getItemId(), Identifier.Type.EQUIPMENT);
+            borrowerId = Identifier.normalize(loan.getBorrowerId(), Identifier.Type.BORROWER);
+        } catch (IllegalArgumentException exception) {
+            throw new IOException("Saved loan identifiers must use their canonical uppercase formats.", exception);
+        }
 
         String record =
-                "loan loanId/" + loan.getLoanId()
-                        + " id/" + loan.getItemId()
-                        + " b/" + loan.getBorrowerId()
+                "loan loanId/" + loanId
+                        + " id/" + itemId
+                        + " b/" + borrowerId
                         + " issued/"
                         + DATE_FORMATTER.format(loan.getIssuedDate())
                         + " due/"
@@ -311,7 +321,7 @@ final class LoanStorage {
             throw new IOException("Invalid loan sequence file.");
         }
         String value = lines.getFirst().substring("nextLoanId/".length());
-        if (value.startsWith("L")) {
+        if (value.length() > 0 && Character.toUpperCase(value.charAt(0)) == 'L') {
             value = value.substring(1);
         }
         try {
@@ -340,8 +350,11 @@ final class LoanStorage {
             return false;
         }
         List<String> lines = Files.readAllLines(sequenceFile, StandardCharsets.UTF_8);
-        return lines.size() == 1 && lines.getFirst().startsWith("nextLoanId/")
-                && !lines.getFirst().substring("nextLoanId/".length()).startsWith("L");
+        if (lines.size() != 1 || !lines.getFirst().startsWith("nextLoanId/")) {
+            return false;
+        }
+        String value = lines.getFirst().substring("nextLoanId/".length());
+        return !value.startsWith("L");
     }
 
     /** Result of loading records and their next monotonic identifier. */

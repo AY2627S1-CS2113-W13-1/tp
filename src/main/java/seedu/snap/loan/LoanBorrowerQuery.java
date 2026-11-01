@@ -9,12 +9,14 @@ import seedu.snap.exceptions.LoanBorrowerUnsuccessful;
 /** Represents a validated command for finding equipment held by one borrower. */
 public record LoanBorrowerQuery(String borrowerId) {
     private static final Pattern COMMAND = Pattern.compile(
-            "(?U)\\Alist\\s+(?:borrower|member)/(U[0-9]{3})\\z");
+            "(?U)\\Alist\\s+(?:borrower|member)/([Uu][0-9]{3})\\z");
 
     /** Creates a query after validating the borrower's typed identifier. */
     public LoanBorrowerQuery {
-        if (borrowerId == null || !Identifier.isValid(borrowerId, Identifier.Type.BORROWER)) {
-            throw new IllegalArgumentException("Borrower ID must be from U000 to U999.");
+        try {
+            borrowerId = Identifier.normalize(borrowerId, Identifier.Type.BORROWER);
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("Borrower ID must be from U000 to U999.", exception);
         }
     }
 

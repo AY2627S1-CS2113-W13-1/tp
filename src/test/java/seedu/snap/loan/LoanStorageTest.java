@@ -71,6 +71,24 @@ class LoanStorageTest {
     }
 
     @Test
+    void load_lowercaseIdentifiers_migratesAndPersistsUppercaseValues() throws Exception {
+        EquipmentHandler equipment = inventoryWithItems("001");
+        Path file = temporaryDirectory.resolve("loans.txt");
+        Path sequence = temporaryDirectory.resolve("loan-sequence.txt");
+        Files.writeString(file, "loan loanId/l001 id/e001 b/u002 issued/01-10-26 due/02-10-26\n");
+        Files.writeString(sequence, "nextLoanId/l002\n");
+
+        LoanHandler handler = new LoanHandler(equipment, file, sequence);
+        handler.loadFromStorage();
+
+        assertEquals("L001", handler.getLoanList().getFirst().getLoanId());
+        assertEquals("E001", handler.getLoanList().getFirst().getItemId());
+        assertEquals("U002", handler.getLoanList().getFirst().getBorrowerId());
+        assertTrue(Files.readString(file).contains("loanId/L001 id/E001 b/U002"));
+        assertEquals("nextLoanId/L002", Files.readString(sequence).trim());
+    }
+
+    @Test
     void load_legacyAndCanonicalLoanIds_collidingAfterMigration_rejectsFile() throws Exception {
         EquipmentHandler equipment = inventoryWithItems("001");
         Path file = temporaryDirectory.resolve("loans.txt");

@@ -30,6 +30,13 @@ class EquipmentAdditionTest {
     }
 
     @Test
+    void addEquipment_lowercaseId_normalisesStoredValue() throws EquipmentAdditionUnsuccessful {
+        Equipment item = new EquipmentHandler().addEquipment(command("Camera", "e001", "camera", "1"));
+
+        assertEquals("E001", item.getItemId());
+    }
+
+    @Test
     void addEquipment_withoutRemarks_usesEmptyDefault() throws EquipmentAdditionUnsuccessful {
         Equipment item = new EquipmentHandler().addEquipment(command("Camera", "001", "camera", "1"));
 
@@ -161,7 +168,7 @@ class EquipmentAdditionTest {
     void addEquipment_invalidIds_preservesInventory() throws EquipmentAdditionUnsuccessful {
         EquipmentHandler handler = seededInventory();
         String[] ids = {"", "000", "0", "01", "0001", "1000", "-01", "+01", "1.0", "abc", "0 02",
-            "\u0660\u0660\u0662", "L001", "B001", "U001", "e001"};
+            "\u0660\u0660\u0662", "L001", "B001", "U001"};
         for (String id : ids) {
             assertRejected(handler, command("Camera", id, "camera", "1"), "Item ID must be from E001 to E999.");
         }

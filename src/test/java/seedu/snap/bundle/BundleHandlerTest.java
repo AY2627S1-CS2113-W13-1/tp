@@ -99,6 +99,19 @@ class BundleHandlerTest {
     }
 
     @Test
+    void bundleOperations_lowercaseIds_normaliseStoredValues() throws BundleAdditionUnsuccessful {
+        Bundle bundle = bundleHandler.addBundle("add-bundle name/Travel Kit");
+
+        List<String> messages = bundleHandler.addItemsToBundle("add-to-bundle id/b001 e001 e002 e005");
+
+        assertEquals(3, messages.size());
+        assertTrue(messages.stream().allMatch(message -> message.contains("B001")));
+        assertEquals("B001", bundle.getBundleId());
+        assertEquals(List.of("E001", "E002", "E005"),
+                bundle.getEquipmentList().stream().map(Equipment::getItemId).toList());
+    }
+
+    @Test
     void addItemsToBundle_rejectsCategoryLimitsAndReportsEachResult()
             throws BundleAdditionUnsuccessful {
         Bundle bundle = bundleHandler.addBundle("add-bundle name/Travel Kit");

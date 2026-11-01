@@ -53,6 +53,17 @@ class EquipmentStorageTest {
     }
 
     @Test
+    void load_lowercaseItemId_migratesAndPersistsUppercaseValue() throws IOException {
+        Path file = temporaryDirectory.resolve("equipment.txt");
+        Files.writeString(file, "add i/Camera id/e001 type/camera cond/1\n");
+
+        List<Equipment> loaded = EquipmentStorage.load(file);
+
+        assertEquals("E001", loaded.getFirst().getItemId());
+        assertTrue(Files.readString(file).contains("id/E001"));
+    }
+
+    @Test
     void load_legacyAndCanonicalIds_collidingAfterMigration_rejectsFile() throws IOException {
         Path file = temporaryDirectory.resolve("equipment.txt");
         Files.writeString(file, "add i/Legacy camera id/001 type/camera cond/1\n"

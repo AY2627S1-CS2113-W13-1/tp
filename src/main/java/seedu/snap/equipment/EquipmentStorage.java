@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import seedu.snap.Identifier;
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 
 /** Loads and saves equipment records in a readable UTF-8 text file. */
@@ -20,7 +21,8 @@ final class EquipmentStorage {
     private static final String RECORD_ID_PREFIX = "recordId/";
     /** Storage-only metadata appears before the add record so free-form fields remain unambiguous. */
     private static final String SERVICEABILITY_PREFIX = "serviceable/";
-    private static final Pattern LEGACY_ITEM_ID = Pattern.compile("(?U)(\\bid/)([0-9]{3})(?=\\s+type/)");
+    private static final Pattern NON_CANONICAL_ITEM_ID = Pattern.compile(
+            "(?U)(\\bid/)([Ee]?)([0-9]{3})(?=\\s+type/)");
 
     private EquipmentStorage() {
         // Utility class; do not instantiate.
@@ -81,17 +83,18 @@ final class EquipmentStorage {
 
     /** Rewrites only the actual add-record item ID, leaving free-form name text untouched. */
     private static String normalizeLegacyItemId(String line) {
-        Matcher matcher = LEGACY_ITEM_ID.matcher(line);
+        Matcher matcher = NON_CANONICAL_ITEM_ID.matcher(line);
         int idStart = -1;
         int idEnd = -1;
         while (matcher.find()) {
             idStart = matcher.start(2);
-            idEnd = matcher.end(2);
+            idEnd = matcher.end(3);
         }
         if (idStart < 0) {
             return line;
         }
-        return line.substring(0, idStart) + "E" + line.substring(idStart, idEnd) + line.substring(idEnd);
+        return line.substring(0, idStart) + "E" + line.substring(matcher.start(3), idEnd)
+                + line.substring(idEnd);
     }
 
     /** Reads permanent identity metadata before parsing older serviceability or add record formats. */
@@ -158,10 +161,11 @@ final class EquipmentStorage {
 
     /** Adds permanent identity and serviceability metadata before the add record, preserving free-form field values. */
     private static String toStorageLine(Equipment equipment) {
+        String itemId = Identifier.normalize(equipment.getItemId(), Identifier.Type.EQUIPMENT);
         String record = RECORD_ID_PREFIX + equipment.getRecordId() + "\t"
                 + SERVICEABILITY_PREFIX + (equipment.isServiceable() ? "yes" : "no") + "\tadd i/"
                 + equipment.getItemName()
-                + " id/" + equipment.getItemId()
+                + " id/" + itemId
                 + " type/" + equipment.getType()
                 + " cond/" + equipment.getCondition()
                 + " " + equipment.getDetails();

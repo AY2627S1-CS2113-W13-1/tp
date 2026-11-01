@@ -36,6 +36,7 @@ class IdentifierTest {
         assertEquals("B003", Identifier.migrate("003", Identifier.Type.BUNDLE));
         assertEquals("U000", Identifier.migrate("000", Identifier.Type.BORROWER));
         assertEquals("E004", Identifier.migrate("E004", Identifier.Type.EQUIPMENT));
+        assertEquals("E004", Identifier.migrate("e004", Identifier.Type.EQUIPMENT));
     }
 
     @Test
@@ -59,5 +60,21 @@ class IdentifierTest {
                 () -> Identifier.format(1000, Identifier.Type.BORROWER));
         assertThrows(IllegalArgumentException.class,
                 () -> Identifier.number("E001", null));
+    }
+
+    @Test
+    void normalize_acceptsLowercasePrefixAndReturnsUppercaseValue() {
+        assertEquals("E001", Identifier.normalize("e001", Identifier.Type.EQUIPMENT));
+        assertEquals("L002", Identifier.normalize("l002", Identifier.Type.LOAN));
+        assertEquals("B003", Identifier.normalize("b003", Identifier.Type.BUNDLE));
+        assertEquals("U000", Identifier.normalize("u000", Identifier.Type.BORROWER));
+    }
+
+    @Test
+    void normalize_rejectsWrongTypeAndReservedZero() {
+        assertThrows(IllegalArgumentException.class,
+                () -> Identifier.normalize("l001", Identifier.Type.EQUIPMENT));
+        assertThrows(IllegalArgumentException.class,
+                () -> Identifier.normalize("e000", Identifier.Type.EQUIPMENT));
     }
 }

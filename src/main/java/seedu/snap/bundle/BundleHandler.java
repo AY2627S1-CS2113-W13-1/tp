@@ -441,7 +441,9 @@ public class BundleHandler {
         String selector = normalized.substring(HISTORY_COMMAND_PREFIX.length()).trim();
         if (selector.startsWith("id/")) {
             String id = selector.substring("id/".length()).trim();
-            if (!Identifier.isValid(id, Identifier.Type.BUNDLE)) {
+            try {
+                id = Identifier.normalize(id, Identifier.Type.BUNDLE);
+            } catch (IllegalArgumentException exception) {
                 throw new BundleHistoryUnsuccessful("Bundle ID must be from B001 to B999.");
             }
             return new BundleSelector(id, null);
@@ -476,21 +478,23 @@ public class BundleHandler {
             throw new BundleAdditionUnsuccessful("Bundle ID must use the id/B001 to id/B999 format.");
         }
         String bundleId = argument.substring(ID_MARKER.length());
-        if (!Identifier.isValid(bundleId, Identifier.Type.BUNDLE)) {
+        try {
+            return Identifier.normalize(bundleId, Identifier.Type.BUNDLE);
+        } catch (IllegalArgumentException exception) {
             throw new BundleAdditionUnsuccessful("Bundle ID must be from B001 to B999.");
         }
-        return bundleId;
     }
 
     /** Validates an equipment ID before a bundle operation can look it up. */
     private static String parseEquipmentId(String value) throws BundleAdditionUnsuccessful {
-        if (!Identifier.isValid(value, Identifier.Type.EQUIPMENT)) {
+        try {
+            return Identifier.normalize(value, Identifier.Type.EQUIPMENT);
+        } catch (IllegalArgumentException exception) {
             if (Identifier.isMismatched(value, Identifier.Type.EQUIPMENT)) {
                 throw new BundleAdditionUnsuccessful("Expected an equipment ID beginning with E: " + value + ".");
             }
             throw new BundleAdditionUnsuccessful("Equipment ID must be from E001 to E999.");
         }
-        return value;
     }
 
     private String failureMessage(String itemId, String reason) {

@@ -83,6 +83,7 @@ public final class Help {
 
                 Equipment IDs use E001-E999, loan IDs use L001-L999, and bundle IDs use B001-B999.
                 Borrower IDs use U000-U999, with U standing for user.
+                ID prefixes are case-insensitive in commands; listings and saved data always use uppercase IDs.
                 Equipment names: 1-%d characters; condition: %d-%d; remarks: 0-%d characters after trimming.
                 Maintenance work: 1-%d characters; outcomes: 1-%d characters. Both must remain on one line.
                 Type details: 1-100 characters. Type details and remarks must remain on one line.

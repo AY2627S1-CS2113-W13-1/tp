@@ -74,6 +74,26 @@ class BundleStorageTest {
     }
 
     @Test
+    void load_lowercaseIdentifiers_migratesAndPersistsUppercaseValues() throws Exception {
+        EquipmentHandler equipment = new EquipmentHandler();
+        equipment.addEquipment("add i/Camera id/E001 type/camera cond/5 sensor/Full frame");
+        String recordId = equipment.getEquipmentList().getFirst().getRecordId();
+        Path file = temporaryDirectory.resolve("bundles.txt");
+        String encodedName = Base64.getUrlEncoder().withoutPadding()
+                .encodeToString("Lowercase kit".getBytes(StandardCharsets.UTF_8));
+        Files.writeString(file, "bundle id/b001 name64/" + encodedName
+                + " items/e001~" + recordId + System.lineSeparator());
+
+        BundleHandler handler = new BundleHandler(equipment, file);
+        handler.loadFromStorage();
+        handler.saveToStorage();
+
+        assertEquals("B001", handler.getBundleList().getFirst().getBundleId());
+        assertTrue(Files.readString(file).contains("id/B001"));
+        assertTrue(Files.readString(file).contains("items/E001~" + recordId));
+    }
+
+    @Test
     void load_legacyAndCanonicalBundleIds_collidingAfterMigration_rejectsFile() throws Exception {
         Path file = temporaryDirectory.resolve("bundles.txt");
         String encodedName = Base64.getUrlEncoder().withoutPadding()

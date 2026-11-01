@@ -87,6 +87,15 @@ class LoanReturnTest {
     }
 
     @Test
+    void returnLoan_lowercaseLoanId_isAcceptedAndDisplayedCanonically() throws Exception {
+        assertSame(original, loans.returnLoan(
+                "return loan/l001 serviceable/yes damage/NONE remarks/Checked at counter"));
+
+        assertTrue(original.isReturned());
+        assertEquals("L001", original.getLoanId());
+    }
+
+    @Test
     void returnLoan_changedConditionAssessmentAndReloan_snapshotsSurviveRestart()
             throws Exception {
         EquipmentConditionSnapshot firstSnapshot =

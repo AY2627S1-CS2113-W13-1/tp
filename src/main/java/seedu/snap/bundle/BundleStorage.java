@@ -55,8 +55,8 @@ final class BundleStorage {
                     throw new IllegalArgumentException("Duplicate bundle ID " + bundle.bundleId() + ".");
                 }
                 loaded.add(bundle);
-                migrated |= line.matches("(?s).*\\bid/[0-9]{3}(?:\\s|$).*")
-                        || line.matches("(?s).*items/[0-9]{3}~.*");
+                migrated |= line.matches("(?s).*\\bid/(?:[0-9]{3}|b[0-9]{3})(?:\\s|$).*")
+                        || line.matches("(?s).*items/(?:[0-9]{3}|e[0-9]{3})~.*");
             } catch (IllegalArgumentException exception) {
                 throw new IOException("Invalid bundle record on line " + lineNumber + ": "
                         + exception.getMessage(), exception);
@@ -85,15 +85,18 @@ final class BundleStorage {
 
     /** Converts a bundle to a single-line record with a URL-safe encoded name. */
     private static String toStorageLine(Bundle bundle) throws IOException {
-        if (!isValidBundleId(bundle.getBundleId())) {
-            throw new IOException("Bundle ID must be from B001 to B999.");
+        String bundleId;
+        try {
+            bundleId = Identifier.normalize(bundle.getBundleId(), Identifier.Type.BUNDLE);
+        } catch (IllegalArgumentException exception) {
+            throw new IOException("Bundle ID must be from B001 to B999.", exception);
         }
         String encodedName = Base64.getUrlEncoder().withoutPadding()
                 .encodeToString(bundle.getBundleName().getBytes(StandardCharsets.UTF_8));
         String items = bundle.getEquipmentList().stream()
                 .map(BundleStorage::toStoredItem)
                 .collect(Collectors.joining(","));
-        return RECORD_PREFIX + " " + ID_PREFIX + bundle.getBundleId() + " "
+        return RECORD_PREFIX + " " + ID_PREFIX + bundleId + " "
                 + NAME_PREFIX + encodedName + " " + ITEMS_PREFIX + items;
     }
 
@@ -101,9 +104,8 @@ final class BundleStorage {
     private static String toStoredItem(Equipment item) {
         assert item != null : "Saved bundle equipment must not be null";
         assert isValidRecordId(item.getRecordId()) : "Saved equipment must have a canonical record ID";
-        assert Identifier.isValid(item.getItemId(), Identifier.Type.EQUIPMENT)
-                : "Saved equipment must have a typed equipment ID";
-        return item.getItemId() + ITEM_SEPARATOR + item.getRecordId();
+        String itemId = Identifier.normalize(item.getItemId(), Identifier.Type.EQUIPMENT);
+        return itemId + ITEM_SEPARATOR + item.getRecordId();
     }
 
     /** Parses and validates one persisted bundle record. */
@@ -179,10 +181,6 @@ final class BundleStorage {
         } catch (IllegalArgumentException exception) {
             throw new IllegalArgumentException("Bundle ID must be from B001 to B999.", exception);
         }
-    }
-
-    private static boolean isValidBundleId(String id) {
-        return Identifier.isValid(id, Identifier.Type.BUNDLE);
     }
 
     private static boolean isValidRecordId(String id) {

@@ -75,10 +75,11 @@ each command from the previous section.
 Help text wraps at 100 columns. A long displayed format or example can span several rows; enter each command
 on one line. Unrecognised-command errors point to `help`.
 
-Use uppercase typed identifiers exactly as displayed: equipment `E001`-`E999`, loans `L001`-`L999`, bundles
-`B001`-`B999`, and borrowers/users `U000`-`U999`. Bare numeric IDs, lowercase prefixes and another identifier
-type are rejected in commands. Existing saved files with older bare numeric IDs are migrated automatically and
-written in the typed format when the data is next saved.
+Typed identifiers use equipment `E001`-`E999`, loans `L001`-`L999`, bundles `B001`-`B999`, and
+borrowers/users `U000`-`U999`. ID prefixes are case-insensitive in commands, so lowercase forms such as `e001`
+are accepted and normalised. Bare numeric IDs and another identifier type are rejected. Listings and saved files
+always use uppercase IDs. Existing saved files with older bare numeric IDs are migrated automatically and written
+in the typed format when the data is next saved.
 
 Every help request, including an unknown topic, leaves equipment, loans, bundles, maintenance, availability, identifiers and
 saved records unchanged. You can then enter another command normally. Help does not save data or end the session.

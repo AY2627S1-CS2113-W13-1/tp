@@ -10,7 +10,7 @@ import seedu.snap.exceptions.LoanReturnUnsuccessful;
 record LoanReturn(String loanId, boolean serviceable, String damage, String remarks) {
     private static final String FORMAT = "Invalid format. Use: return loan/[LOAN ID] "
             + "serviceable/[yes|no] damage/[DAMAGE|none] [remarks/[REMARKS]].";
-    private static final Pattern COMMAND = Pattern.compile("(?U)\\A\\s*return\\s+loan/(L[0-9]{3})"
+    private static final Pattern COMMAND = Pattern.compile("(?U)\\A\\s*return\\s+loan/([Ll][0-9]{3})"
             + "\\s+serviceable/((?i:yes|no))\\s+damage/([A-Za-z_]+)(?:\\s+remarks/(.*))?\\s*\\z");
 
     /** Parses the required assessment and defaults omitted final remarks to empty text. */
@@ -22,10 +22,13 @@ record LoanReturn(String loanId, boolean serviceable, String damage, String rema
         if (!match.matches()) {
             throw new LoanReturnUnsuccessful(FORMAT);
         }
-        if (!Identifier.isValid(match.group(1), Identifier.Type.LOAN)) {
+        String loanId;
+        try {
+            loanId = Identifier.normalize(match.group(1), Identifier.Type.LOAN);
+        } catch (IllegalArgumentException exception) {
             throw new LoanReturnUnsuccessful("Loan ID must be from L001 to L999.");
         }
-        return new LoanReturn(match.group(1), match.group(2).equalsIgnoreCase("yes"),
+        return new LoanReturn(loanId, match.group(2).equalsIgnoreCase("yes"),
                 match.group(3), match.group(4) == null ? "" : match.group(4));
     }
 }

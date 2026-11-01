@@ -40,7 +40,7 @@ public class LoanHandler {
     private static final Logger logger = Logger.getLogger(LoanHandler.class.getName());
     private static final String LOAN_COMMAND_FORMAT = "Invalid command format. Use: loan id/[ITEM ID] "
             + "b/[BORROWER ID] [issued/DD-MM-YY] due/[DD-MM-YY]. Omitted issued/ uses today's date.";
-    private static final Pattern HISTORY_COMMAND = Pattern.compile("(?U)\\Ahistory\\s+id/(E[0-9]{3})\\z");
+    private static final Pattern HISTORY_COMMAND = Pattern.compile("(?U)\\Ahistory\\s+id/([Ee][0-9]{3})\\z");
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-uu")
             .withResolverStyle(ResolverStyle.STRICT);
 
@@ -530,10 +530,11 @@ public class LoanHandler {
             throw idFormatError(prefix, alternatePrefix, name, type);
         }
 
-        if (!Identifier.isValid(value, type)) {
+        try {
+            return Identifier.normalize(value, type);
+        } catch (IllegalArgumentException exception) {
             throw idFormatError(prefix, alternatePrefix, name, type);
         }
-        return value;
     }
 
     /**
@@ -545,11 +546,12 @@ public class LoanHandler {
      */
     private String parseDeleteLoanId(String argument) throws LoanDeletionUnsuccessful {
         String loanId = argument.substring("loan/".length());
-        if (!Identifier.isValid(loanId, Identifier.Type.LOAN)) {
+        try {
+            return Identifier.normalize(loanId, Identifier.Type.LOAN);
+        } catch (IllegalArgumentException exception) {
             throw new LoanDeletionUnsuccessful("Invalid loan ID \"" + loanId
                     + "\". Loan ID must be exactly L001 to L999.");
         }
-        return loanId;
     }
 
     /** Creates an identifier-format error that names the required type prefix. */
@@ -723,7 +725,9 @@ public class LoanHandler {
 
         String loanId =
                 arguments[1].substring("loan/".length());
-        if (!Identifier.isValid(loanId, Identifier.Type.LOAN)) {
+        try {
+            return Identifier.normalize(loanId, Identifier.Type.LOAN);
+        } catch (IllegalArgumentException exception) {
             throw new LoanViewingUnsuccessful(
                     "Invalid loan ID \""
                             + loanId
@@ -731,7 +735,6 @@ public class LoanHandler {
                             + "L001 to L999.");
         }
 
-        return loanId;
     }
 
     /** Finds the unique loan matching an ID without modifying it. */
@@ -898,8 +901,12 @@ public class LoanHandler {
     private static String parseHistoryItemId(String input) throws LoanHistoryUnsuccessful {
         if (input != null && !input.matches("(?s).*\\R.*")) {
             Matcher matcher = HISTORY_COMMAND.matcher(input.replaceAll("(?U)^\\s+|\\s+$", ""));
-            if (matcher.matches() && Identifier.isValid(matcher.group(1), Identifier.Type.EQUIPMENT)) {
-                return matcher.group(1);
+            if (matcher.matches()) {
+                try {
+                    return Identifier.normalize(matcher.group(1), Identifier.Type.EQUIPMENT);
+                } catch (IllegalArgumentException exception) {
+                    // Fall through to the standard history format error.
+                }
             }
         }
         throw new LoanHistoryUnsuccessful("Invalid format. Use: history id/[ITEM ID], from E001 to E999.");
