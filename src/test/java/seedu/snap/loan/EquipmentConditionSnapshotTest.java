@@ -10,6 +10,7 @@ import seedu.snap.equipment.Battery;
 import seedu.snap.equipment.Battery.BatteryDamage;
 import seedu.snap.equipment.Camera;
 import seedu.snap.equipment.Camera.CameraDamage;
+import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.Lens;
 import seedu.snap.equipment.Lens.LensDamage;
 import seedu.snap.equipment.Tripod;
@@ -146,6 +147,21 @@ class EquipmentConditionSnapshotTest {
                         5,
                         "NONE",
                         "First line\nSecond line"));
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new EquipmentConditionSnapshot(
+                        "camera", 5, "NONE", null));
+    }
+
+    @Test
+    void constructor_oversizedRequiredField_throwsException() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new EquipmentConditionSnapshot(
+                        "C".repeat(EquipmentConditionSnapshot.MAX_TYPE_LENGTH + 1),
+                        5,
+                        "NONE",
+                        ""));
     }
 
     @Test
@@ -236,6 +252,14 @@ class EquipmentConditionSnapshotTest {
     }
 
     @Test
+    void fromEquipment_unsupportedEquipment_throwsException() {
+        Equipment unsupported = new UnsupportedEquipment();
+
+        assertThrows(IllegalArgumentException.class,
+                () -> EquipmentConditionSnapshot.fromEquipment(unsupported));
+    }
+
+    @Test
     void equals_sameFields_returnsTrue() {
         EquipmentConditionSnapshot first =
                 new EquipmentConditionSnapshot(
@@ -270,6 +294,35 @@ class EquipmentConditionSnapshotTest {
                         "Ready");
 
         assertNotEquals(first, second);
+        assertEquals(first, first);
+        assertNotEquals(first, null);
+        assertNotEquals(first, "not a snapshot");
+
+        assertNotEquals(first, new EquipmentConditionSnapshot("lens", 5, "NONE", "Ready"));
+        assertNotEquals(first, new EquipmentConditionSnapshot("camera", 5, "SHUTTER_FAULT", "Ready"));
+        assertNotEquals(first, new EquipmentConditionSnapshot("camera", 5, "NONE", "Different"));
+    }
+
+    /** Minimal unsupported subtype used to exercise snapshot type rejection. */
+    private static final class UnsupportedEquipment extends Equipment {
+        private UnsupportedEquipment() {
+            super("Unsupported", "999", 1);
+        }
+
+        @Override
+        public String getType() {
+            return "unsupported";
+        }
+
+        @Override
+        public String getDetails() {
+            return "";
+        }
+
+        @Override
+        protected void applyDamageAssessment(Equipment assessed) {
+            // No damage state exists for this unsupported test subtype.
+        }
     }
 }
 
