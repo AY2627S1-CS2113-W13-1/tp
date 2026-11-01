@@ -73,6 +73,8 @@ public class LoanHandlerTest {
     @Test
     void constructorAndReadOnlyOperations_validateInternalArguments() throws Exception {
         assertThrows(AssertionError.class, () -> new LoanHandler(null));
+        assertThrows(IllegalArgumentException.class,
+                () -> new LoanHandler(equipment, null, null, null));
         LoanHandler loanHandler = new LoanHandler(equipment);
 
         loanHandler.loadFromStorage();
