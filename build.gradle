@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'application'
     id 'checkstyle'
+    id 'jacoco'
     id 'com.gradleup.shadow' version '9.5.1'
 }
 
@@ -38,6 +39,46 @@ test {
         showStandardStreams = false
     }
 }
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+
+jacocoTestCoverageVerification {
+    dependsOn test
+    violationRules {
+        rule {
+            element = 'CLASS'
+            includes = [
+                    'seedu.snap.bundle.BundleHandler',
+                    'seedu.snap.eqmmanager.EqmManager',
+                    'seedu.snap.equipment.EquipmentFields',
+                    'seedu.snap.equipment.EquipmentFilter',
+                    'seedu.snap.equipment.EquipmentHandler',
+                    'seedu.snap.equipment.EquipmentStorage',
+                    'seedu.snap.loan.LoanBorrowerQuery',
+                    'seedu.snap.loan.LoanHandler',
+                    'seedu.snap.loan.LoanReturn',
+                    'seedu.snap.loan.LoanUpdate',
+                    'seedu.snap.maintenance.MaintenanceHandler',
+                    'seedu.snap.ui.BundleView',
+                    'seedu.snap.ui.EquipmentView',
+                    'seedu.snap.ui.Help'
+            ]
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.95
+            }
+        }
+    }
+}
+
+check.dependsOn jacocoTestCoverageVerification
 
 application {
     mainClass = 'seedu.snap.Main'
