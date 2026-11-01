@@ -30,6 +30,22 @@ class MaintenanceHandlerTest {
     private Path temporaryDirectory;
 
     @Test
+    void constructor_nullDependencies_rejectsInvalidSetup() {
+        assertThrows(IllegalArgumentException.class, () -> new MaintenanceHandler(null));
+        assertThrows(IllegalArgumentException.class,
+                () -> new MaintenanceHandler(new EquipmentHandler(), null, null));
+    }
+
+    @Test
+    void loadFromStorage_inMemoryHandler_leavesRecordsEmpty() throws Exception {
+        MaintenanceHandler handler = new MaintenanceHandler(new EquipmentHandler());
+
+        handler.loadFromStorage();
+
+        assertTrue(handler.getMaintenanceRecords().isEmpty());
+    }
+
+    @Test
     void addMaintenanceRecord_validCommand_bindsToPhysicalEquipment() throws Exception {
         EquipmentHandler equipment = new EquipmentHandler();
         Equipment item = equipment.addEquipment(ADD_CAMERA);
@@ -52,9 +68,11 @@ class MaintenanceHandlerTest {
         MaintenanceHandler handler = new MaintenanceHandler(equipment);
 
         String[] invalidCommands = {
+            null,
             "maintain",
             "maintain id/001 date/27-10-26 work/Repair",
             "maintain id/000 date/27-10-26 work/Repair outcome/Completed",
+            "maintain id/abc date/27-10-26 work/Repair outcome/Completed",
             "maintain id/001 date/31-02-26 work/Repair outcome/Completed",
             "maintain id/001 date/27-10-26 work/ outcome/Completed",
             "maintain id/001 date/27-10-26 work/Repair outcome/"
