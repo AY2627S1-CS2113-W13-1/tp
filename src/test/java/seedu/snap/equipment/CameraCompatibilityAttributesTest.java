@@ -15,7 +15,7 @@ public class CameraCompatibilityAttributesTest {
     @Test
     void existingConstructor_missingCompatibilityFields_usesUnspecifiedDefaults() {
         Camera camera = new Camera(
-                "Canon R50", "001", 8,
+                "Canon R50", "E001", 8,
                 "APS-C", Camera.CameraDamage.NONE, "");
 
         assertEquals(CompatibilityText.UNSPECIFIED, camera.getLensMount());
@@ -88,7 +88,7 @@ public class CameraCompatibilityAttributesTest {
             String lensMount, String tripodThread, String batteryType) {
         return new Camera(
                 "Canon R50",
-                "001",
+                "E001",
                 8,
                 "APS-C",
                 Camera.CameraDamage.NONE,

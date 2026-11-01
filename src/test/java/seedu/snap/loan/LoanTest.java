@@ -83,10 +83,7 @@ public class LoanTest {
     private Loan createLoan(LocalDateTime dueDateTime) {
         LocalDateTime issuedDateTime =
                 dueDateTime.minusDays(5);
-        return new Loan(
-                "001",
-                "001",
-                "002",
+        return new Loan("L001", "E001", "U002",
                 issuedDateTime,
                 dueDateTime);
     }

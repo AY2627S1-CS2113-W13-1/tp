@@ -81,7 +81,8 @@ public final class Help {
 
                 Commands and field prefixes use exact lowercase spelling. Use spaces as shown in each format.
 
-                Equipment, loan and bundle IDs: exactly three digits, 001-999. Borrower IDs: 000-999.
+                Equipment IDs use E001-E999, loan IDs use L001-L999, and bundle IDs use B001-B999.
+                Borrower IDs use U000-U999, with U standing for user.
                 Equipment names: 1-%d characters; condition: %d-%d; remarks: 0-%d characters after trimming.
                 Maintenance work: 1-%d characters; outcomes: 1-%d characters. Both must remain on one line.
                 Type details: 1-100 characters. Type details and remarks must remain on one line.
@@ -101,7 +102,7 @@ public final class Help {
                         ADD EQUIPMENT
                         Format: add i/<NAME> id/<ID> type/<TYPE> cond/<N> [TYPE DETAIL] [damage/<DAMAGE>] \
                         [remarks/<TEXT>]
-                        Example: add i/Canon EOS R10 id/001 type/camera cond/1 sensor/APS-C mount/Canon RF damage/NONE
+                        Example: add i/Canon EOS R10 id/E001 type/camera cond/1 sensor/APS-C mount/Canon RF damage/NONE
                         Name, unused Item ID, type and condition are required, in that order.
 
                         Type and damage values are case-insensitive. Use the field and damage list for the type:
@@ -135,8 +136,8 @@ public final class Help {
                 new CommandHelp("show", "Equipment", lineEndings("""
                         SHOW EQUIPMENT
                         Format: show id/<ID>
-                        Example: show id/001
-                        Requires an existing Item ID from 001 to 999. Extra fields are not accepted.
+                        Example: show id/E001
+                        Requires an existing Item ID from E001 to E999. Extra fields are not accepted.
                         Shows the full name, type, numeric condition, status, serviceability and active Loan ID.
                         Includes all subtype and compatibility fields, damage and remarks, without truncation.
                         Long values wrap onto indented lines; (none) marks an empty value.
@@ -146,7 +147,7 @@ public final class Help {
                 new CommandHelp("delete item", "Equipment", lineEndings("""
                         DELETE EQUIPMENT
                         Format: delete item/<ID>
-                        Example: delete item/001
+                        Example: delete item/E001
                         Requires an existing Item ID. Active loans and bundle membership block deletion.
 
                         Existing loans remain in list loans; a replacement using this Item ID has separate history.
@@ -154,7 +155,7 @@ public final class Help {
                 new CommandHelp("loan", "Loans", lineEndings("""
                         ADD LOAN
                         Format: loan id/<ITEM ID> b/<BORROWER ID> [issued/<DD-MM-YY>] due/<DD-MM-YY>
-                        Example: loan id/001 b/002 issued/24-10-26 due/31-10-26
+                        Example: loan id/E001 b/U002 issued/24-10-26 due/31-10-26
                         Item ID, borrower ID and due/ are required. Keep the displayed field order.
 
                         Omitted issued/ defaults to today's date in the application's local time zone, at midnight.
@@ -162,13 +163,13 @@ public final class Help {
 
                         Equipment must exist, be serviceable and have no active loan.
 
-                        Loan IDs are assigned automatically from 001 to 999 and are never reused after deletion.
+                        Loan IDs are assigned automatically from L001 to L999 and are never reused after deletion.
                         Success shows the assigned Loan ID, item ID and name, borrower, issue date and due date.
                         """)),
                 new CommandHelp("return", "Loans", lineEndings(String.format(Locale.ROOT, """
                         RETURN EQUIPMENT
                         Format: return loan/<LOAN ID> serviceable/<yes|no> damage/<DAMAGE> [remarks/<TEXT>]
-                        Example: return loan/001 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair
+                        Example: return loan/L001 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair
                         Requires an active Loan ID and explicit serviceable/ and damage/ assessment, in that order.
                         Serviceable yes/no and subtype damage values are case-insensitive; use NONE for no damage.
 
@@ -195,7 +196,7 @@ public final class Help {
                 new CommandHelp("delete loan", "Loans", lineEndings("""
                         DELETE LOAN
                         Format: delete loan/<LOAN ID>
-                        Example: delete loan/001
+                        Example: delete loan/L001
                         Removes one loan record and its history. Deleting an active loan releases its equipment.
 
                         Deleting returned history leaves newer active loans unchanged. Deleted IDs are never reused.
@@ -204,7 +205,7 @@ public final class Help {
                         UPDATE LOAN
                         Format: update loan/<LOAN ID> [id/<ITEM ID>] [b/<BORROWER ID>] \
                         [issued/<DD-MM-YY>] [due/<DD-MM-YY>]
-                        Example: update loan/001 id/002 b/007 due/07-11-26
+                        Example: update loan/L001 id/E002 b/U007 due/07-11-26
                         Requires one existing active Loan ID and at least one update field,
                         in any order, each prefix once.
                         The Loan ID remains unchanged; omitted fields retain their current values.
@@ -225,7 +226,7 @@ public final class Help {
                 new CommandHelp("view loan", "Loans", lineEndings("""
                         VIEW LOAN ISSUE CONDITION
                         Format: view loan/<LOAN ID>
-                        Example: view loan/001
+                        Example: view loan/L001
                         Shows the equipment type, condition, damage and remarks recorded when the loan was issued.
                         If update loan assigns another item, this shows the replacement's condition at reassignment.
                         Legacy loans without a saved snapshot report that the issue condition was not recorded.
@@ -234,9 +235,9 @@ public final class Help {
                 new CommandHelp("list borrower", "Loans", lineEndings("""
                         EQUIPMENT HELD BY MEMBER
                         Format: list borrower/<BORROWER ID>
-                        Example: list borrower/002
+                        Example: list borrower/U002
                         Format: list member/<MEMBER ID>
-                        Example: list member/002
+                        Example: list member/U002
                         The equivalent alias list member/<MEMBER ID> is also accepted.
                         Shows only active equipment held by the selected borrower, with loan details.
                         Returned loans and loans held by other borrowers are excluded.
@@ -257,7 +258,7 @@ public final class Help {
                 new CommandHelp("history", "Loans", lineEndings("""
                         ITEM LOAN HISTORY
                         Format: history id/<ITEM ID>
-                        Example: history id/001
+                        Example: history id/E001
                         Requires an existing Item ID. Includes its physical item's active and returned loans.
                         Sorted by issue date, earliest first, then Loan ID. Reused Item IDs keep separate histories.
                         Uses the same dates, states, columns and result counts as list loans.
@@ -280,7 +281,7 @@ public final class Help {
                 new CommandHelp("update", "Equipment", lineEndings("""
                         UPDATE EQUIPMENT
                         Format: update id/<ID> [i/<NAME>] [type/<TYPE>] [cond/<N>]
-                        Example: update id/001 i/Studio camera cond/5
+                        Example: update id/E001 i/Studio camera cond/5
                         Requires an existing Item ID and at least one update field, in any order, each prefix once.
 
                         Omitted fields retain their current values. Type is fixed; type/ must match the current type,
@@ -290,7 +291,7 @@ public final class Help {
                 new CommandHelp("maintain", "Equipment", lineEndings(String.format(Locale.ROOT, """
                         RECORD MAINTENANCE
                         Format: maintain id/<ITEM ID> date/<DD-MM-YY> work/<DESCRIPTION> outcome/<OUTCOME>
-                        Example: maintain id/001 date/27-10-26 work/Replaced battery outcome/Completed
+                        Example: maintain id/E001 date/27-10-26 work/Replaced battery outcome/Completed
                         Requires an existing Item ID, a valid maintenance date that is not in the future,
                         a non-empty work description and outcome, in the displayed field order.
                         Work descriptions and outcomes are trimmed and cannot contain tabs or line breaks.
@@ -305,7 +306,7 @@ public final class Help {
                         CREATE BUNDLE
                         Format: add-bundle name/<NAME>
                         Example: add-bundle name/Studio kit
-                        Requires a name of 1-100 characters. Bundle IDs are assigned automatically, 001-999.
+                        Requires a name of 1-100 characters. Bundle IDs are assigned automatically, B001-B999.
                         Names must be unique; name comparisons are case-sensitive.
 
                         Save new bundles and additions with bye before exiting.
@@ -314,7 +315,7 @@ public final class Help {
                 new CommandHelp("add-to-bundle", "Bundles", lineEndings("""
                         ADD EQUIPMENT TO BUNDLE
                         Format: add-to-bundle id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]
-                        Example: add-to-bundle id/001 001 002 003
+                        Example: add-to-bundle id/B001 E001 E002 E003
                         Requires an existing bundle and at least one existing, serviceable, unloaned equipment item.
                         An item may appear only once per bundle. Each requested Item ID receives its own result.
                         Results use [OK] or [ERROR], followed by totals and the resulting bundle composition.
@@ -332,7 +333,7 @@ public final class Help {
                 new CommandHelp("remove-from-bundle", "Bundles", lineEndings("""
                         REMOVE EQUIPMENT FROM BUNDLE
                         Format: remove-from-bundle id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]
-                        Example: remove-from-bundle id/001 001
+                        Example: remove-from-bundle id/B001 E001
                         Requires an existing bundle and at least one Item ID. Each ID receives its own result.
                         Removes the requested memberships without deleting the equipment. This can make an item
                         eligible for deletion after it has been removed from every bundle.
@@ -350,7 +351,7 @@ public final class Help {
                 new CommandHelp("history bundle", "Bundles", lineEndings("""
                         BUNDLE LOAN HISTORY
                         Format: history bundle/id/<BUNDLE ID>
-                        Example: history bundle/id/001
+                        Example: history bundle/id/B001
                         Format: history bundle/name/<NAME>
                         Example: history bundle/name/Studio kit
                         Includes active and returned loans for every equipment item in the selected bundle.

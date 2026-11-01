@@ -44,9 +44,9 @@ class LoanBorrowerHandlerTest {
     @BeforeEach
     void setUp() throws Exception {
         equipment = new EquipmentHandler(temporaryDirectory.resolve("equipment.txt"));
-        camera = equipment.addEquipment("add i/Camera id/001 type/camera cond/4");
-        tripod = equipment.addEquipment("add i/Tripod id/002 type/tripod cond/5");
-        lens = equipment.addEquipment("add i/Lens id/003 type/lens cond/5");
+        camera = equipment.addEquipment("add i/Camera id/E001 type/camera cond/4");
+        tripod = equipment.addEquipment("add i/Tripod id/E002 type/tripod cond/5");
+        lens = equipment.addEquipment("add i/Lens id/E003 type/lens cond/5");
         loanFile = temporaryDirectory.resolve("loans.txt");
         loans = new LoanHandler(equipment, loanFile);
         logHandler = new RecordingHandler();
@@ -67,14 +67,14 @@ class LoanBorrowerHandlerTest {
         Loan matching = addLoan("001", "002", "01-10-26", "10-10-26");
         Loan otherBorrower = addLoan("002", "003", "01-10-26", "10-10-26");
 
-        List<Loan> result = loans.getActiveLoansForBorrower("list borrower/002");
+        List<Loan> result = loans.getActiveLoansForBorrower("list borrower/U002");
 
         assertEquals(List.of(matching), result);
         assertSame(matching, result.getFirst());
         assertFalse(result.contains(otherBorrower));
         assertTrue(camera.isLoaned());
         assertTrue(tripod.isLoaned());
-        assertTrue(logHandler.containsFormatted(Level.INFO, "Viewed 1 active loan(s) for borrower ID 002."));
+        assertTrue(logHandler.containsFormatted(Level.INFO, "Viewed 1 active loan(s) for borrower ID U002."));
     }
 
     @Test
@@ -84,7 +84,7 @@ class LoanBorrowerHandlerTest {
         Loan firstActive = addLoan("002", "002", "03-10-26", "04-10-26");
         Loan secondActive = addLoan("003", "002", "05-10-26", "06-10-26");
 
-        List<Loan> result = loans.getActiveLoansForBorrower("list member/002");
+        List<Loan> result = loans.getActiveLoansForBorrower("list member/U002");
 
         assertEquals(List.of(firstActive, secondActive), result);
         assertFalse(result.contains(returned));
@@ -94,13 +94,13 @@ class LoanBorrowerHandlerTest {
     @Test
     void getActiveLoansForBorrower_unknownBorrower_reportsClearError() {
         LoanBorrowerUnsuccessful error = assertThrows(LoanBorrowerUnsuccessful.class,
-                () -> loans.getActiveLoansForBorrower("list borrower/999"));
+                () -> loans.getActiveLoansForBorrower("list borrower/U999"));
 
-        assertEquals("No member found for borrower ID 999.", error.getMessage());
+        assertEquals("No member found for borrower ID U999.", error.getMessage());
         assertEquals(0, loans.getLoanCount());
         assertFalse(camera.isLoaned());
         assertTrue(logHandler.containsFormatted(Level.WARNING,
-                "Borrower loan query found no borrower with ID 999."));
+                "Borrower loan query found no borrower with ID U999."));
     }
 
     @Test
@@ -108,12 +108,12 @@ class LoanBorrowerHandlerTest {
         Loan returned = addLoan("001", "002", "01-10-26", "02-10-26");
         loans.returnLoan("return loan/" + returned.getLoanId() + " serviceable/yes damage/NONE remarks/");
 
-        List<Loan> result = loans.getActiveLoansForBorrower("list borrower/002");
+        List<Loan> result = loans.getActiveLoansForBorrower("list borrower/U002");
 
         assertTrue(result.isEmpty());
         assertTrue(returned.isReturned());
         assertFalse(camera.isLoaned());
-        assertTrue(logHandler.containsFormatted(Level.INFO, "Viewed 0 active loan(s) for borrower ID 002."));
+        assertTrue(logHandler.containsFormatted(Level.INFO, "Viewed 0 active loan(s) for borrower ID U002."));
     }
 
     @Test
@@ -123,11 +123,11 @@ class LoanBorrowerHandlerTest {
         String savedEquipment = Files.readString(temporaryDirectory.resolve("equipment.txt"));
         String savedSequence = Files.readString(temporaryDirectory.resolve("loan-sequence.txt"));
 
-        List<Loan> result = loans.getActiveLoansForBorrower("list borrower/002");
+        List<Loan> result = loans.getActiveLoansForBorrower("list borrower/U002");
 
         assertThrows(UnsupportedOperationException.class, () -> result.add(matching));
         assertEquals(List.of(matching), loans.getLoanList());
-        assertEquals("002", loans.getNextLoanId());
+        assertEquals("L002", loans.getNextLoanId());
         assertEquals(savedLoans, Files.readString(loanFile));
         assertEquals(savedEquipment, Files.readString(temporaryDirectory.resolve("equipment.txt")));
         assertEquals(savedSequence, Files.readString(temporaryDirectory.resolve("loan-sequence.txt")));
@@ -140,12 +140,12 @@ class LoanBorrowerHandlerTest {
                 () -> loans.getActiveLoansForBorrower("list borrower/abc"));
 
         assertTrue(logHandler.containsFormatted(Level.WARNING,
-                "Borrower loan query rejected: Invalid format. Use: list borrower/[BORROWER ID], from 000 to 999."));
+                "Borrower loan query rejected: Invalid format. Use: list borrower/[BORROWER ID], from U000 to U999."));
     }
 
     /** Adds a persisted loan with fixed dates so each selection case is deterministic. */
     private Loan addLoan(String itemId, String borrowerId, String issued, String due) throws Exception {
-        return loans.addLoan("loan id/" + itemId + " b/" + borrowerId
+        return loans.addLoan("loan id/E" + itemId + " b/U" + borrowerId
                 + " issued/" + issued + " due/" + due);
     }
 
