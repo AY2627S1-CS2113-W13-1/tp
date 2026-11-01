@@ -30,6 +30,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
+import seedu.snap.exceptions.EquipmentViewingUnsuccessful;
 
 /** Tests equipment command parsing, insertion, and deletion. */
 class EquipmentHandlerTest {
@@ -697,6 +698,25 @@ class EquipmentHandlerTest {
 
         assertThrows(IllegalArgumentException.class,
                 () -> handler.prepareReturnAssessment(unknown, true, "NONE", ""));
+    }
+
+    @Test
+    void prepareReturnAssessment_requiresEquipmentAndDamage() throws Exception {
+        EquipmentHandler handler = new EquipmentHandler();
+        Equipment camera = handler.addEquipment("add i/Camera id/001 type/camera cond/1");
+
+        assertThrows(IllegalArgumentException.class,
+                () -> handler.prepareReturnAssessment(null, true, "NONE", ""));
+        assertThrows(IllegalArgumentException.class,
+                () -> handler.prepareReturnAssessment(camera, true, null, ""));
+    }
+
+    @Test
+    void showEquipment_invalidCommands_areRejected() throws Exception {
+        EquipmentHandler handler = new EquipmentHandler();
+
+        assertThrows(EquipmentViewingUnsuccessful.class, () -> handler.showEquipment(null));
+        assertThrows(EquipmentViewingUnsuccessful.class, () -> handler.showEquipment("show id/000"));
     }
 
     @Test
