@@ -30,11 +30,11 @@ The help menu alone cannot establish that every executable command has documenta
 
 | Area | Commands and help topics checked |
 | --- | --- |
-| Equipment | `add`, `list`, `show`, `delete item`, `filter`, `update`, `maintain` |
-| Loans | `loan`, `return`, `delete loan`, `update loan`, `list loans`, `list borrower`, `view loan`, `list overdue`, `history` |
-| Bundles | `add-bundle`, `add-to-bundle`, `remove-from-bundle`, `list bundles`, `history bundle` |
-| General | `backup`, `restore`, `help`, `bye` |
-| Alternate forms | `list member`, both bundle-history selectors, `help`, `help <COMMAND>`, `help all` and unknown topics |
+| Equipment | `add-eqm`, `list-eqm`, `eqm-show`, `eqm-delete`, `filter-eqm`, `eqm-update`, `eqm-maintain`, `eqm-loan-history` |
+| Loans | `add-loan`, `loan-return`, `loan-delete`, `loan-update`, `list-loan`, `list-loan-borrower`, `loan-show`, `list-loan-overdue` |
+| Bundles | `add-bundle`, `bundle-add-eqm`, `bundle-remove-eqm`, `list-bundle`, `bundle-history` |
+| General | `backup`, `restore`, `help`, `exit` |
+| Alternate forms | both bundle-history selectors, `help`, `help <COMMAND>`, `help all` and unknown topics |
 
 For each command, compare field spelling and order, required and optional fields, defaults, accepted
 values, conditional restrictions and examples. Damage choices are still generated from the four
@@ -42,7 +42,7 @@ equipment subtype enums. Examples require suitable existing records; they are no
 
 The automated checks cover:
 
-* Help content, menu completeness, the borrower alias, wrapping and subtype-specific damage lists.
+* Help content, menu completeness, rejection of the old borrower alias, wrapping and subtype-specific damage lists.
 * Execution of every displayed help example through `EqmManager` with isolated records and a fixed clock,
   including the updated success messages, shared loan columns, dates, states and result counts from #140.
 * Repeated help requests against populated, empty and blocked storage, comparing equipment, loans,
