@@ -107,9 +107,9 @@ Use a separate working folder with an empty inventory to reproduce these results
 in order; later reference examples use different Item IDs.
 
 ```text
-add-eqm name/Demo camera E-id/010 type/camera cond/1
+add-eqm name/Demo camera e/010 type/camera cond/1
 filter-eqm type/camera cond/1-3 status/available
-eqm-update E-id/010 cond/5
+eqm-update e/010 cond/5
 filter-eqm type/camera cond/1-3 status/available
 ```
 
@@ -120,9 +120,9 @@ The first filter displays item `010`. The update changes its condition to `5`, s
 
 ## Recording maintenance: `eqm-maintain`
 
-Format: `eqm-maintain E-id/<ITEM ID> date/<DD-MM-YY> work/<DESCRIPTION> outcome/<OUTCOME>`
+Format: `eqm-maintain e/<ITEM ID> date/<DD-MM-YY> work/<DESCRIPTION> outcome/<OUTCOME>`
 
-Example: `eqm-maintain E-id/001 date/27-10-26 work/Replaced battery outcome/Completed`
+Example: `eqm-maintain e/001 date/27-10-26 work/Replaced battery outcome/Completed`
 
 This records completed maintenance work for an existing equipment item. The `ITEM ID` must identify an item in the
 current inventory. The date must use `DD-MM-YY` and cannot be later than today's date. Both `DESCRIPTION` and
@@ -140,9 +140,9 @@ A successful command shows an `[OK]` label, the Item ID and name, maintenance da
 
 ## Adding equipment: `add-eqm`
 
-Format: `add-eqm name/<NAME> E-id/<ITEM ID> type/<TYPE> cond/<CONDITION> [TYPE DETAIL] [damage/<DAMAGE>] [remarks/<REMARKS>]`
+Format: `add-eqm name/<NAME> e/<ITEM ID> type/<TYPE> cond/<CONDITION> [TYPE DETAIL] [damage/<DAMAGE>] [remarks/<REMARKS>]`
 
-Example: `add-eqm name/Canon EOS R10 E-id/001 type/camera cond/1 remarks/Handle with care`
+Example: `add-eqm name/Canon EOS R10 e/001 type/camera cond/1 remarks/Handle with care`
 
 * `NAME` contains 1 to 100 characters after trimming surrounding whitespace. Whitespace-only names,
   including nonbreaking spaces, are rejected.
@@ -165,8 +165,8 @@ For example, with Item ID `001` already present:
 
 | Command | Error |
 | --- | --- |
-| `add-eqm name/Lens E-id/001 type/lens cond/3` | `Item ID 001 already exists.` |
-| `add-eqm name/Tripod E-id/002 type/tripod cond/11` | `Condition must be a whole number from 1 to 10.` |
+| `add-eqm name/Lens e/001 type/lens cond/3` | `Item ID 001 already exists.` |
+| `add-eqm name/Tripod e/002 type/tripod cond/11` | `Condition must be a whole number from 1 to 10.` |
 
 Rejected additions and failed saves leave the existing equipment unchanged. Correct the input or storage
 problem and enter the command again.
@@ -202,26 +202,26 @@ After `cond/`, you can add the fields for the equipment type, followed by
 Examples:
 
 ```text
-add-eqm name/Canon EOS R10 E-id/006 type/camera cond/1 sensor/APS-C mount/Canon RF thread/1/4"-20 battery/Li-ion damage/NONE
-add-eqm name/Standard Zoom E-id/002 type/lens cond/2 zoom/24-70 mm mount/Canon RF sensor/APS-C damage/NONE
-add-eqm name/Spare Battery E-id/003 type/battery cond/3 capacity/2000 mAh battery/Li-ion damage/NONE
-add-eqm name/Travel Tripod E-id/004 type/tripod cond/2 thread/1/4"-20 damage/NONE
-add-eqm name/Backup Camera E-id/005 type/camera cond/5 damage/OTHER remarks/Damaged control dial
+add-eqm name/Canon EOS R10 e/006 type/camera cond/1 sensor/APS-C mount/Canon RF thread/1/4"-20 battery/Li-ion damage/NONE
+add-eqm name/Standard Zoom e/002 type/lens cond/2 zoom/24-70 mm mount/Canon RF sensor/APS-C damage/NONE
+add-eqm name/Spare Battery e/003 type/battery cond/3 capacity/2000 mAh battery/Li-ion damage/NONE
+add-eqm name/Travel Tripod e/004 type/tripod cond/2 thread/1/4"-20 damage/NONE
+add-eqm name/Backup Camera e/005 type/camera cond/5 damage/OTHER remarks/Damaged control dial
 ```
 
 ### Names and field markers
 
 Names may contain spaces and slashes. A field prefix after whitespace normally starts another field;
-`E-id/card`-like text is an exception when it appears within a name.
+`e/card`-like text is an exception when it appears within a name.
 
 | Name fragment | Allowed? | Explanation |
 | --- | --- | --- |
-| `USB E-id/card reader` | Yes | The nonnumeric `E-id/card` fragment stays in the name. |
+| `USB e/card reader` | Yes | The nonnumeric `e/card` fragment stays in the name. |
 | `fluid/head tripod` | Yes | A slash within a word does not start a field. |
-| `Spare E-id/001 camera` | No | Numeric ID-like fragments are reserved for the actual Item ID. |
+| `Spare e/001 camera` | No | Numeric ID-like fragments are reserved for the actual Item ID. |
 | `Camera type/lens` | No | `type/` starts a type field after whitespace. |
 
-For `add-eqm`, the actual `E-id/` is the last one before `type/`. Earlier ID-like name fragments cannot start
+For `add-eqm`, the actual `e/` is the last one before `type/`. Earlier ID-like name fragments cannot start
 with whitespace, a digit, `+` or `-`. Required fields appear once, in the documented order.
 Optional prefixes such as `sensor/` and `remarks/` are recognised only after `cond/`, so
 `Camera sensor/cleaning kit` is a valid name. The first `remarks/` after the condition begins the final
@@ -243,9 +243,9 @@ Vertical bars in table values appear as `\u007c` to keep the columns separate. U
 
 ## Viewing full equipment details: `eqm-show`
 
-Format: `eqm-show E-id/<ITEM ID>`
+Format: `eqm-show e/<ITEM ID>`
 
-Example: `eqm-show E-id/001`
+Example: `eqm-show e/001`
 
 Use an existing three-digit Item ID from `001` to `999`. The command displays the complete name, type, numeric
 condition, status, serviceability, active Loan ID, all subtype and compatibility fields, damage and remarks.
@@ -256,14 +256,14 @@ Tabs and control characters appear as visible escapes, such as `\t`, so that sto
 layout. The stored values are preserved. Extra fields, repeated IDs, invalid IDs and unknown items produce a
 clear error. Equipment listings, filters and detail requests leave records, identifiers and saved data unchanged.
 
-`eqm-show` describes the equipment's current state. Use `loan-show L-id/<LOAN ID>` for its condition when a particular
+`eqm-show` describes the equipment's current state. Use `loan-show l/<LOAN ID>` for its condition when a particular
 add-loan was issued, and `list-loan` to see borrower IDs and loan dates.
 
 ## Deleting equipment: `eqm-delete`
 
-Format: `eqm-delete E-id/<ITEM ID>`
+Format: `eqm-delete e/<ITEM ID>`
 
-Example: `eqm-delete E-id/001`
+Example: `eqm-delete e/001`
 
 The item is deleted immediately and a success message is printed. The deleted ID can then be used for another item.
 
@@ -297,11 +297,11 @@ A returned loan cannot be made active again. To borrow the same item again, crea
 
 ## Loaning out equipment: `add-loan`
 
-Format: `add-loan E-id/<ITEM ID> U-id/<BORROWER ID> [issued/<DD-MM-YY>] due/<DD-MM-YY>`
+Format: `add-loan e/<ITEM ID> u/<BORROWER ID> [issued/<DD-MM-YY>] due/<DD-MM-YY>`
 
-Example: `add-loan E-id/001 U-id/002 issued/01-10-26 due/08-10-26`
+Example: `add-loan e/001 u/002 issued/01-10-26 due/08-10-26`
 
-Example with the issue date omitted: `add-loan E-id/001 U-id/002 due/31-12-99`. Replace the due date with the intended
+Example with the issue date omitted: `add-loan e/001 u/002 due/31-12-99`. Replace the due date with the intended
 deadline on or after today.
 
 * `ITEM ID` is the three-digit identifier of existing equipment, from `001` to `999`. The item must be `Available`.
@@ -344,9 +344,9 @@ An empty list displays `No loans recorded. Type help list-loan for the command f
 
 ## Viewing equipment held by a borrower: `list-loan-borrower`
 
-Format: `list-loan-borrower U-id/<BORROWER ID>`
+Format: `list-loan-borrower u/<BORROWER ID>`
 
-Example: `list-loan-borrower U-id/002`.
+Example: `list-loan-borrower u/002`.
 
 Use exactly three digits from `000` to `999`. The result shows only equipment currently held by that borrower,
 with its loan details. Returned loans are excluded. An unknown borrower or one with no active loans produces
@@ -355,9 +355,9 @@ Dates, states and columns match `list-loan`. Results end with a loan count, incl
 
 ## Viewing the issue-time equipment condition: `loan-show`
 
-Format: `loan-show L-id/<LOAN ID>`
+Format: `loan-show l/<LOAN ID>`
 
-Example: `loan-show L-id/001`
+Example: `loan-show l/001`
 
 Use an existing loan ID from `001` to `999`. This displays the equipment type, numeric condition, damage and remarks captured when that loan was issued. The snapshot describes the equipment at issue time, not its current condition.
 
@@ -370,9 +370,9 @@ This is a read-only command. It does not change equipment, loans, availability o
 
 ## Viewing an item's loan history: `eqm-loan-history`
 
-Format: `eqm-loan-history E-id/<ITEM ID>`
+Format: `eqm-loan-history e/<ITEM ID>`
 
-Example: `eqm-loan-history E-id/001`
+Example: `eqm-loan-history e/001`
 
 Use an existing Item ID from `001` to `999`. The history includes both active and returned loans for the
 equipment currently registered under that ID. Each row shows the loan ID, borrower, issue date, due date and
@@ -408,19 +408,19 @@ This is a read-only command. It does not modify loan records, equipment availabi
 
 ## Returning equipment: `loan-return`
 
-Format: `loan-return L-id/<LOAN ID> serviceable/<yes|no> damage/<DAMAGE> [remarks/<REMARKS>]`
+Format: `loan-return l/<LOAN ID> serviceable/<yes|no> damage/<DAMAGE> [remarks/<REMARKS>]`
 
 Examples:
 
 ```text
-loan-return L-id/001 serviceable/yes damage/none remarks/Checked on return
-loan-return L-id/002 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair
-loan-return L-id/003 serviceable/yes damage/none
-loan-return L-id/004 serviceable/no damage/OTHER remarks/Mounting plate damaged
+loan-return l/001 serviceable/yes damage/none remarks/Checked on return
+loan-return l/002 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair
+loan-return l/003 serviceable/yes damage/none
+loan-return l/004 serviceable/no damage/OTHER remarks/Mounting plate damaged
 ```
 
 * Use the loan ID from `list-loan`, from `001` to `999`. It must identify an active loan.
-* `L-id/`, `serviceable/` and `damage/` are required, once each and in the displayed order.
+* `l/`, `serviceable/` and `damage/` are required, once each and in the displayed order.
   The complete command must be on one line.
 * `serviceable/yes` or `serviceable/no` is a mandatory condition assessment. These values are case-insensitive.
   The assessment determines whether the equipment may be borrowed again; damage alone does not decide this.
@@ -448,9 +448,9 @@ Changing its numeric condition with `eqm-update` does not remove the unserviceab
 
 ## Deleting a loan: `loan-delete`
 
-Format: `loan-delete L-id/<LOAN ID>`
+Format: `loan-delete l/<LOAN ID>`
 
-Example: `loan-delete L-id/001`
+Example: `loan-delete l/001`
 
 Use the loan ID shown by `list-loan`, from `001` to `999`. This selects one record even when the same item
 has been borrowed more than once. The value is a loan ID, not an equipment ID. Issue-date arguments are no longer
@@ -467,22 +467,22 @@ newer active loan and the equipment's `Loaned` status unchanged.
 
 ## Updating loan details: `loan-update`
 
-Format: `loan-update L-id/<LOAN ID> [E-id/<ITEM ID>] [U-id/<BORROWER ID>] [issued/<DD-MM-YY>] [due/<DD-MM-YY>]`
+Format: `loan-update l/<LOAN ID> [e/<ITEM ID>] [u/<BORROWER ID>] [issued/<DD-MM-YY>] [due/<DD-MM-YY>]`
 
 Example:
 
 ```text
-loan-update L-id/001 U-id/007 due/07-11-26
-loan-update L-id/001 E-id/002 U-id/007 issued/03-10-26 due/07-11-26
+loan-update l/001 u/007 due/07-11-26
+loan-update l/001 e/002 u/007 issued/03-10-26 due/07-11-26
 ```
 
 Use the unique loan ID shown by `list-loan`. Supply at least one field to update, in any order, once each.
 The loan ID remains unchanged, and omitted fields retain their current values. The supported fields are:
 
-* `E-id/` changes the equipment assigned to the active loan. The replacement must exist, be serviceable and have
+* `e/` changes the equipment assigned to the active loan. The replacement must exist, be serviceable and have
   no active loan. The previous item is released, and the snapshot is replaced with the replacement item's current
   assessment. Supplying the current Item ID keeps the existing assignment and snapshot.
-* `U-id/` changes the three-digit borrower ID.
+* `u/` changes the three-digit borrower ID.
 * `issued/` changes the issue date.
 * `due/` changes the due date.
 
@@ -496,13 +496,13 @@ restarting the application.
 
 ## Filtering equipment: `filter-eqm`
 
-Format: `filter-eqm [E-id/<ITEM ID>] [name/<NAME>] [type/<TYPE>] [cond/<CONDITION>] [status/<STATUS>]`
+Format: `filter-eqm [e/<ITEM ID>] [name/<NAME>] [type/<TYPE>] [cond/<CONDITION>] [status/<STATUS>]`
 
 Examples:
 
 * `filter-eqm type/camera cond/1-3 status/available`
 * `filter-eqm name/canon`
-* `filter-eqm E-id/001`
+* `filter-eqm e/001`
 * `filter-eqm status/loaned`
 
 Supply at least one filter, in any order. Each prefix can appear only once, and every supplied criterion must match.
@@ -510,7 +510,7 @@ For example, the first command above finds cameras that are both available and w
 
 | Field | Matching rule |
 | --- | --- |
-| `E-id/` | Exact three-digit Item ID from `001` to `999`. |
+| `e/` | Exact three-digit Item ID from `001` to `999`. |
 | `name/` | Part of the name, ignoring case; spaces are allowed. |
 | `type/` | Full type name, ignoring case: `camera`, `lens`, `battery` or `tripod`. |
 | `cond/` | One value from `1` to `10`, or an inclusive range such as `1-3`. |
@@ -524,18 +524,18 @@ An unrecognised type, such as `type/microphone`, produces no matches.
 The [name and field-marker rules](#names-and-field-markers) also apply here. Empty or repeated fields are rejected. Filtering leaves equipment
 unchanged and prints matches in inventory order, or `No equipment matches the filters.` when none match.
 Matching rows use the same compact columns and truncation rules as `list-eqm`, followed by a result count.
-Use `eqm-show E-id/<ITEM ID>` for full values. A filter with no matches shows a count of zero and a clear message.
+Use `eqm-show e/<ITEM ID>` for full values. A filter with no matches shows a count of zero and a clear message.
 An invalid filter also leaves equipment and loan records unchanged; correct the filter and try again.
 See the [worked example](#equipment-worked-example) for a query with known results.
 
 ## Updating equipment: `eqm-update`
 
-Format: `eqm-update E-id/<ITEM ID> [name/<NAME>] [type/<TYPE>] [cond/<CONDITION>]`
+Format: `eqm-update e/<ITEM ID> [name/<NAME>] [type/<TYPE>] [cond/<CONDITION>]`
 
 Examples:
 
-* `eqm-update E-id/001 cond/5`
-* `eqm-update E-id/001 name/Film Camera cond/5`
+* `eqm-update e/001 cond/5`
+* `eqm-update e/001 name/Film Camera cond/5`
 
 Supply an existing ID and at least one of `name/`, `type/`, or `cond/`. Fields may appear in any order, once each.
 The ID stays fixed and omitted details keep their current values. Names contain 1-100 characters after trimming;
@@ -552,8 +552,8 @@ With `001` registered as a camera, these commands are rejected:
 
 | Command | Error |
 | --- | --- |
-| `eqm-update E-id/001 name/Film Camera cond/11` | `Condition must be a whole number from 1 to 10.` |
-| `eqm-update E-id/001 type/lens` | `Equipment type cannot be changed. Item ID 001 must remain camera.` |
+| `eqm-update e/001 name/Film Camera cond/11` | `Condition must be a whole number from 1 to 10.` |
+| `eqm-update e/001 type/lens` | `Equipment type cannot be changed. Item ID 001 must remain camera.` |
 
 The [name and field-marker rules](#names-and-field-markers) apply. `status/` cannot be updated manually.
 Invalid commands or failed saves leave all existing details unchanged. In the first rejected example,
@@ -576,9 +576,9 @@ restarts. Bundle IDs continue from the highest restored ID. Equipment and loans 
 
 ## Adding equipment to a bundle: `bundle-add-eqm`
 
-Format: `bundle-add-eqm B-id/<BUNDLE ID> <EQUIPMENT ID> [<EQUIPMENT ID> ...]`
+Format: `bundle-add-eqm b/<BUNDLE ID> <EQUIPMENT ID> [<EQUIPMENT ID> ...]`
 
-Example: `bundle-add-eqm B-id/001 001 002 003`
+Example: `bundle-add-eqm b/001 001 002 003`
 
 The bundle must exist. Supply one or more equipment IDs, separated by spaces. Each requested item gets
 its own success or error message. Valid items are added even if another requested item is rejected.
@@ -613,9 +613,9 @@ Updating a bundled item's name or condition also updates the item shown in the b
 
 ## Removing equipment from a bundle: `bundle-remove-eqm`
 
-Format: `bundle-remove-eqm B-id/<BUNDLE ID> <EQUIPMENT ID> [<EQUIPMENT ID> ...]`
+Format: `bundle-remove-eqm b/<BUNDLE ID> <EQUIPMENT ID> [<EQUIPMENT ID> ...]`
 
-Example: `bundle-remove-eqm B-id/001 001`
+Example: `bundle-remove-eqm b/001 001`
 
 The bundle must exist. Each requested equipment ID is removed independently, and an equipment item can be
 deleted only after it has been removed from every bundle that contains it. Successful membership removals are
@@ -639,9 +639,9 @@ at startup.
 
 ## Viewing a bundle's loan history: `bundle-history`
 
-Format: `bundle-history B-id/<BUNDLE ID>` or `bundle-history name/<NAME>`
+Format: `bundle-history b/<BUNDLE ID>` or `bundle-history name/<NAME>`
 
-Examples: `bundle-history B-id/001` and `bundle-history name/Travel Kit`
+Examples: `bundle-history b/001` and `bundle-history name/Travel Kit`
 
 Select a bundle by ID, or by its exact case-sensitive name. If several bundles share that name, use the ID.
 This displays all active and returned loans for every physical equipment item currently in the selected bundle,
@@ -671,7 +671,7 @@ Saved equipment records use the four supported types and retain their type-speci
 Existing records of supported types without optional fields are also accepted, using `unspecified` and `NONE`.
 Records created before remarks were supported may omit the `remarks/` field; they load with empty remarks.
 Records with `damage/OTHER` require non-empty remarks; invalid saved records are reported when loaded.
-Remarks are shown by `eqm-show E-id/<ITEM ID>` and are restored when the application starts again.
+Remarks are shown by `eqm-show e/<ITEM ID>` and are restored when the application starts again.
 Saved records may start with `serviceable/yes` or `serviceable/no`, followed by a tab and the add record.
 This prefix is storage metadata, not an add-command field. Older records without the prefix are serviceable.
 New records also start with `recordId/` and a permanent equipment identifier, followed by a tab before
@@ -756,27 +756,27 @@ Successful changes start with `[OK]`; rejected commands and save failures start 
 | Show the compact command menu | `help` |
 | Show one command's format, example and defaults | `help <command>` |
 | Show the complete command reference | `help all` |
-| Add equipment | `add-eqm name/<NAME> E-id/<ITEM ID> type/<TYPE> cond/<CONDITION>` with optional details, damage and remarks |
-| Delete equipment | `eqm-delete E-id/<ITEM ID>` |
-| Add loan | `add-loan E-id/<ITEM ID> U-id/<BORROWER ID> [issued/<DD-MM-YY>] due/<DD-MM-YY>` |
-| Return equipment | `loan-return L-id/<LOAN ID> serviceable/<VALUE> damage/<DAMAGE> [remarks/<REMARKS>]` |
-| Delete loan | `loan-delete L-id/<LOAN ID>` |
-| Update loan | `loan-update L-id/<LOAN ID> [E-id/<ITEM ID>] [U-id/<BORROWER ID>] [issued/<DD-MM-YY>] [due/<DD-MM-YY>]` |
+| Add equipment | `add-eqm name/<NAME> e/<ITEM ID> type/<TYPE> cond/<CONDITION>` with optional details, damage and remarks |
+| Delete equipment | `eqm-delete e/<ITEM ID>` |
+| Add loan | `add-loan e/<ITEM ID> u/<BORROWER ID> [issued/<DD-MM-YY>] due/<DD-MM-YY>` |
+| Return equipment | `loan-return l/<LOAN ID> serviceable/<VALUE> damage/<DAMAGE> [remarks/<REMARKS>]` |
+| Delete loan | `loan-delete l/<LOAN ID>` |
+| Update loan | `loan-update l/<LOAN ID> [e/<ITEM ID>] [u/<BORROWER ID>] [issued/<DD-MM-YY>] [due/<DD-MM-YY>]` |
 | List equipment | `list-eqm` |
-| Show full equipment details | `eqm-show E-id/<ITEM ID>` |
+| Show full equipment details | `eqm-show e/<ITEM ID>` |
 | List loans | `list-loan` |
-| View a borrower's current equipment | `list-loan-borrower U-id/<BORROWER ID>` |
-| View issue-time equipment condition | `loan-show L-id/<LOAN ID>` |
+| View a borrower's current equipment | `list-loan-borrower u/<BORROWER ID>` |
+| View issue-time equipment condition | `loan-show l/<LOAN ID>` |
 | Back up equipment and loan records | `backup path/<DIRECTORY>` |
 | Restore equipment and loan records | `restore path/<DIRECTORY>` |
-| View item loan history | `eqm-loan-history E-id/<ITEM ID>` |
-| View bundle loan history | `bundle-history B-id/<BUNDLE ID>` or `bundle-history name/<NAME>` |
-| Record maintenance work | `eqm-maintain E-id/<ITEM ID> date/<DD-MM-YY> work/<DESCRIPTION> outcome/<OUTCOME>` |
+| View item loan history | `eqm-loan-history e/<ITEM ID>` |
+| View bundle loan history | `bundle-history b/<BUNDLE ID>` or `bundle-history name/<NAME>` |
+| Record maintenance work | `eqm-maintain e/<ITEM ID> date/<DD-MM-YY> work/<DESCRIPTION> outcome/<OUTCOME>` |
 | List overdue loans | `list-loan-overdue` |
-| Filter equipment | `filter-eqm [E-id/<ITEM ID>] [name/<NAME>] [type/<TYPE>] [cond/<CONDITION>] [status/<STATUS>]` |
-| Update equipment | `eqm-update E-id/<ITEM ID> [name/<NAME>] [type/<TYPE>] [cond/<CONDITION>]` |
+| Filter equipment | `filter-eqm [e/<ITEM ID>] [name/<NAME>] [type/<TYPE>] [cond/<CONDITION>] [status/<STATUS>]` |
+| Update equipment | `eqm-update e/<ITEM ID> [name/<NAME>] [type/<TYPE>] [cond/<CONDITION>]` |
 | Create bundle | `add-bundle name/<NAME>` |
-| Add equipment to bundle | `bundle-add-eqm B-id/<BUNDLE ID> <EQUIPMENT ID> [<EQUIPMENT ID> ...]` |
-| Remove equipment from bundle | `bundle-remove-eqm B-id/<BUNDLE ID> <EQUIPMENT ID> [<EQUIPMENT ID> ...]` |
+| Add equipment to bundle | `bundle-add-eqm b/<BUNDLE ID> <EQUIPMENT ID> [<EQUIPMENT ID> ...]` |
+| Remove equipment from bundle | `bundle-remove-eqm b/<BUNDLE ID> <EQUIPMENT ID> [<EQUIPMENT ID> ...]` |
 | List bundles | `list-bundle` |
 | Exit | `exit` |

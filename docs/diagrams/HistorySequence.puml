@@ -8,7 +8,7 @@ participant ":EqmManager" as Manager
 participant ":LoanHandler" as Handler
 participant ":EquipmentHandler" as Inventory
 
-Manager -> Handler: viewLoanHistory("eqm-loan-history E-id/001")
+Manager -> Handler: viewLoanHistory("eqm-loan-history e/001")
 activate Handler
 Handler -> Handler: getLoanHistory(input)
 activate Handler
