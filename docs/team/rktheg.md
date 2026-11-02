@@ -10,9 +10,9 @@ title: Kaushal Rajesh - Project Portfolio
 snAp is a Java 25 command-line application for photography clubs to manage equipment and borrowing records.
 It tracks equipment details, availability, loans, returns and reusable bundles, with records retained across sessions.
 
-My main contributions are equipment addition and validation, availability tracking, filtering, equipment updates
-and shared diagnostic logging. I focused on rejecting invalid commands without changing existing records and
-keeping equipment references consistent when an item is borrowed or updated.
+My main contributions are equipment addition and validation, availability tracking, filtering, equipment updates,
+immutable loan return condition assessments and shared diagnostic logging. I focused on defensive validation,
+safe persistent-state updates and maintaining referential integrity across borrowing and equipment lifecycles.
 
 ## Summary of Contributions
 
@@ -20,82 +20,76 @@ keeping equipment references consistent when an item is borrowed or updated.
 
 ### Enhancements implemented
 
-- **Equipment addition and validation:** Implemented adding equipment, then strengthened parsing and rejected
-  duplicate Item IDs, missing or repeated prefixes, invalid conditions and Unicode-only blank input. Preserved
-  legitimate names such as `USB id/card reader`. Added regression tests for boundaries, inventory preservation,
-  ID reuse and recovery after rejection.
+- **Equipment addition and validation:** Implemented equipment addition with strict field validation, rejecting duplicate
+  Item IDs, missing/repeated prefixes, invalid conditions and blank inputs. Preserved legitimate names containing reserved
+  tokens (e.g. `USB id/card reader`). Added regression tests for boundaries, inventory preservation and rejection recovery.
   ([#14](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/14),
   [#39](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/39))
-- **Equipment availability:** Connected loans to existing equipment, prevented double borrowing and blocked
-  deletion of borrowed items. Added ownership checks so an old loan cannot release equipment reserved by a
-  newer loan. The original work is in [#57](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/57);
-  it reached master through the later
-  [equipment integration](https://github.com/AY2627S1-CS2113-W13-1/tp/commit/f4541074947055d0ab673625764ed08e27fe34af).
-- **Equipment filtering:** Implemented combined filters for Item ID, partial name, type, condition and
-  availability. Condition ranges include both endpoints. Matching preserves inventory order and returns
-  original equipment references without changing records. Stress tests cover all 120 field orders and
-  generated queries across 999 items. ([#58](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/58))
-- **Equipment updates:** Allowed corrections without deleting and recreating equipment. The Item ID stays
-  fixed, all values are validated and the proposed inventory is saved before the original object changes. Updates preserve its
-  subtype, details, availability and loan/bundle references. Tests cover failed saves, restarts, rejected type
-  changes and repeated operations. ([#59](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/59))
-- **Shared logging and assertions:** Implemented `AppLogging` so feature loggers share rotating files and
-  cleanup. Handled logging setup I/O failures with a warning so commands can continue. Added equipment
-  invariants and tests for shared diagnostics, cleanup and validation with assertions enabled and disabled.
+- **Equipment availability tracking:** Connected loan lifecycles to physical equipment, preventing double borrowing and
+  blocking deletion of loaned items. Added ownership checks ensuring old loans cannot release items reserved by newer loans.
+  ([#57](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/57),
+  [commit](https://github.com/AY2627S1-CS2113-W13-1/tp/commit/f4541074947055d0ab673625764ed08e27fe34af))
+- **Multi-criteria equipment filtering:** Implemented combined filters across Item ID, partial name, type, condition range
+  (inclusive) and availability. Preserves inventory order and returns original references without mutating state.
+  Stress-tested across all 120 field orders and queries on 999 items.
+  ([#58](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/58))
+- **Safe equipment updates:** Enabled field updates without deleting and recreating equipment. Validates all inputs and
+  persists the proposed state to disk before mutating live memory, preserving subtype details, availability and loan/bundle
+  associations with rollback on failure. ([#59](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/59))
+- **Shared logging and assertions:** Implemented `AppLogging` with rotating file handlers and safe error recovery. Added
+  core equipment invariants and tests verifying diagnostics across assertion modes.
   ([#30](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/30))
-- **Immutable loan return assessments:** Extended each loan to retain separate issue-time and return-time
-  condition snapshots, including serviceability, without consulting mutable current equipment. Added compatible
-  storage codecs, legacy-record handling, command output and regression coverage for restarts, Item ID reuse,
-  failed saves and repeated borrowing.
+- **Immutable loan return assessments:** Extended loans with independent issue and return condition snapshots (including
+  serviceability) stored with the loan record, decoupled from mutable equipment. Added backward-compatible codecs,
+  legacy-record tolerance, and regression tests for Item ID reuse and failed-save rollbacks.
   ([#166](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/166))
 
-### Documentation
+### Contributions to the User Guide
 
-- **User Guide:** Contributed the equipment-addition restrictions and examples, equipment availability,
-  [filtering](../UserGuide.md#filtering-equipment-filter) and
-  [updates](../UserGuide.md#updating-equipment-update), including condition ranges, rejected commands and
-  preservation of existing records. Evidence is in the feature PRs above.
-- **Loan-assessment documentation:** Updated the
-  [return](../UserGuide.md#returning-equipment-return) and
-  [loan-assessment](../UserGuide.md#comparing-a-loans-condition-assessments-view-loan) guidance, and documented
-  [per-loan condition preservation](../DeveloperGuide.md#preserving-condition-assessments-for-each-loan) in the
-  DG. Added the sequence diagram showing immutable return condition persistence ([#166](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/166), merged)
-  and the object diagram illustrating copied snapshot ownership across Item ID reuse ([#168](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/168)).
-- **Developer Guide:** Documented [equipment management](../DeveloperGuide.md#equipment-management), covering
-  the shared inventory, addition, availability, filtering and updates, plus logging and assertions. Explained
-  validation, save failures, design choices and testing. Added the application architecture, shared class
-  diagram, command sequences, availability states and logging lifecycle, with editable PlantUML sources
-  and SVG images. Introduced shared PlantUML styling and consistent UML visibility notation.
+- Documented commands, options, examples and constraints for equipment addition, availability,
+  [filtering](../UserGuide.md#filtering-equipment-filter) and [updates](../UserGuide.md#updating-equipment-update).
+- Added guidance for [loan returns](../UserGuide.md#returning-equipment-return) and
+  [condition comparison](../UserGuide.md#comparing-a-loans-condition-assessments-view-loan).
+- Contributed error-recovery guidance, worked examples and data-transfer instructions.
+  ([#131](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/131),
+  [#161](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/161))
+
+### Contributions to the Developer Guide
+
+- Documented [Equipment Management](../DeveloperGuide.md#equipment-management),
+  [per-loan condition preservation](../DeveloperGuide.md#preserving-condition-assessments-for-each-loan), and shared logging.
+  Explained defensive validation, safe persistence patterns, design alternatives and verification paths.
+- **UML Diagrams contributed/updated:** Architecture diagram, shared Class diagram, Equipment Addition, Filtering,
+  Availability, Update sequences, Return condition sequence, and Snapshot object diagram. Established shared PlantUML styling
+  (`style.puml`) and UML notation conventions.
   ([#80](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/80),
+  [#82](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/82),
   [#88](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/88),
-  [#82](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/82), all merged)
-- **Guide review fixes:** Added a worked example and recovery guidance to the UG, and updated diagrams to
-  current code. Completed the DG acknowledgements, scope, user stories, glossary and a verified manual test
-  path, and refined seven NFRs.
-  ([#131](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/131), merged)
-- **Architecture consistency review:** Reconciled the DG with the implemented maintenance feature, corrected
-  component responsibilities and storage descriptions, simplified duplicated prose and updated the architecture
-  source and rendered diagram.
-  ([#152](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/152), merged)
-- **Cross-feature DG peer review:** Reviewed the existing loan-issuance and backup/restore designs, audited the
-  diagram sources, added focused loan-issuance, restore and loan-assessment diagrams, and tightened the user stories
-  and manual-testing path.
-  This is documentation and verification work for features implemented by their original contributors, not a
-  claim of implementation ownership. ([#168](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/168))
+  [#152](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/152),
+  [#166](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/166),
+  [#168](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/168))
+- Maintained core DG sections: scope, user stories, NFRs, glossary and manual testing paths.
 
-### Team tasks and reviews
+### Contributions to team-based tasks
 
-- **Issue tracking:** Created and maintained the
-  [addition-validation](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/38),
-  [filtering](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/47) and
-  [equipment-update](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/48) issues, including scope,
-  assignees, priorities and labels.
-- **Deadline coordination:** Kept the team on track with project deadlines by reminding members about
-  upcoming deliverables and following up on progress.
-- Renamed the packaged application JAR to `snAp.jar` and removed a redundant equipment insertion helper.
-  ([#35](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/35),
-  [#23](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/23))
-- Reviewed loan addition and suggested invalid-date and ID tests
-  ([review](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/18#pullrequestreview-5477271046)).
-  Reviewed listing assertions/logging and suggested logging tests
-  ([review](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/41#pullrequestreview-5564131119)).
+- **Project management & milestones:** Created and structured milestone user stories and tracking issues
+  ([#38](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/38),
+  [#44](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/44)–[#56](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/56));
+  monitored deadlines and coordinated team deliverables.
+- **Build and packaging:** Configured Gradle build packaging for `snAp.jar` and eliminated dead code.
+  ([#23](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/23),
+  [#35](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/35))
+
+### Review/mentoring contributions
+
+- **PRs reviewed with deep technical feedback and bug catches:**
+  - [#170](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/170): Caught fatal `IllegalStateException` crash in `EquipmentStorage.java:96` and supplied exact fix; detected parser delimiter logic flaws in `isNameIdText`; flagged Checkstyle naming violations and broken assertion tests.
+  - [#171](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/171): Prevented branch rebase regression that would revert PRs #158, #162, #166 and #172; flagged 19 failing tests and resolved command naming inconsistencies.
+  - [#127](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/127): Advised on separating validation vs I/O exceptions, physical ID reuse tests and documentation.
+  - [#172](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/172) & [#174](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/174): Reviewed UML sequence/class diagrams, corrected DG text, and resolved merge conflicts.
+  - Reviewed availability invariants, null safety and test coverage on [#18](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/18), [#31](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/31), [#41](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/41), [#73](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/73), [#119](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/119), [#158](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/158).
+
+### Contributions beyond the project team
+
+- Reviewed Developer Guide architecture diagrams and component abstractions for team W10-3 (NUS BudgetBites)
+  ([#10](https://github.com/NUS-CS2113-AY2627-S1/tp/pull/10)).
