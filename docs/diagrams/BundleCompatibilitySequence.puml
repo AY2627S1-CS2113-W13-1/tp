@@ -1,0 +1,62 @@
+@startuml BundleCompatibilitySequence
+!include style.puml
+hide footbox
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 170
+
+participant ":EqmManager" as Manager
+participant ":BundleHandler" as Handler
+participant ":EquipmentHandler" as Inventory
+participant "bundle:Bundle" as Bundle
+participant "EquipmentCompatibility" as Compatibility <<utility>>
+participant "BundleStorage" as Storage <<utility>>
+
+Manager -> Handler: addItemsToBundleWithResults(input)
+activate Handler
+Handler -> Handler: parse arguments and findBundle(bundleId)
+loop each requested equipment ID in command order
+    Handler -> Inventory: getEquipmentById(itemId)
+    Inventory --> Handler: candidate or null
+    alt missing, loaned, unserviceable, duplicate or category limit
+        Handler -> Handler: itemResult(... failure)
+    else candidate passes basic validation
+        Handler -> Handler: findIncompatibleEquipment(bundle, candidate)
+        loop each existing bundle item
+            Handler -> Compatibility: compare(candidate, existingItem)
+            Compatibility --> Handler: compatibility result
+            alt INCOMPATIBLE
+                Handler -> Handler: remember first conflicting item
+            else COMPATIBLE, UNKNOWN or NOT_APPLICABLE
+                Handler -> Handler: continue checking bundle members
+            end
+        end
+        alt incompatible item found
+            Handler -> Handler: itemResult(... failure)
+        else no incompatible item found
+            Handler -> Bundle: addEquipment(candidate)
+            Bundle --> Handler: membership added
+            Handler -> Handler: itemResult(... success)
+            note right of Bundle
+            This successful membership is now part of the
+            bundle, so later candidates in the same command
+            are checked against it.
+            end note
+        end
+    end
+end
+Handler --> Manager: unmodifiable ItemResult list
+deactivate Handler
+Manager -> Manager: reportBundleResults(results, "added")
+
+opt later command-loop save, such as bye
+    Manager -> Handler: saveToStorage()
+    Handler -> Storage: save(storageFile, bundles)
+    Storage --> Handler: saved
+end
+
+note over Manager, Storage
+Each requested ID produces one result. A rejected candidate does not
+stop later IDs. Additions change the in-memory bundle immediately;
+the bundle file is written during the normal exit save.
+end note
+@enduml

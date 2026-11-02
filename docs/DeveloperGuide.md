@@ -205,6 +205,18 @@ application, saving and restart.
 both camera-lens fields, reversed insertion order, candidates supplied together, missing compatibility data and
 equipment pairs without a compatibility relationship. Existing bundle tests verify all previous validation rules.
 
+[![Bundle compatibility sequence: validate each candidate, compare it with current members and retain partial success.](images/BundleCompatibilitySequence.svg)](images/BundleCompatibilitySequence.svg)
+
+*Figure 17. Bundle additions validate each requested item independently and check successful earlier additions.*
+
+[PlantUML source](diagrams/BundleCompatibilitySequence.puml)
+
+The sequence shows the order used by `BundleHandler.addItemsToBundleWithResults(...)`. Basic inventory and bundle
+rules run before compatibility comparison. Only `INCOMPATIBLE` blocks an otherwise valid candidate; `UNKNOWN` and
+`NOT_APPLICABLE` allow processing to continue. Successful additions are immediately visible to later candidates,
+while `reportBundleResults(...)` still emits one result for every requested ID. The membership is persisted by the
+normal bundle save on exit rather than by the validation loop itself.
+
 ### Returning equipment with an assessment
 
 #### Purpose and responsibilities
