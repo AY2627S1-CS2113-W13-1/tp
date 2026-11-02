@@ -2,6 +2,8 @@ package seedu.snap.loan;
 
 import seedu.snap.equipment.Equipment;
 
+// @@author rktheg
+
 /** Immutable condition and serviceability recorded for one completed loan. */
 public record LoanReturnAssessment(EquipmentConditionSnapshot condition, boolean serviceable) {
     /** Rejects a missing assessment rather than inventing historical condition information. */
@@ -17,3 +19,6 @@ public record LoanReturnAssessment(EquipmentConditionSnapshot condition, boolean
                 assessed.isServiceable());
     }
 }
+
+
+// @@author

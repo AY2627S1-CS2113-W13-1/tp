@@ -14,6 +14,8 @@ import java.util.logging.Logger;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+// @@author rktheg
+
 /** Tests cleanup after failure without touching the application's log directory. */
 class AppLoggingTest {
     @TempDir
@@ -42,3 +44,6 @@ class AppLoggingTest {
         }
     }
 }
+
+
+// @@author

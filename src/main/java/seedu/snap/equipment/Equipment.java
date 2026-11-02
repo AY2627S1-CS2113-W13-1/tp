@@ -114,10 +114,12 @@ public abstract class Equipment {
      */
     public abstract String getDetails();
 
+    // @@author rktheg
     /** Returns whether this item currently has an active loan. */
     public boolean isLoaned() {
         return isLoaned;
     }
+    // @@author
 
     /** Returns whether this equipment can be loaned after any active loan has ended. */
     public boolean isServiceable() {

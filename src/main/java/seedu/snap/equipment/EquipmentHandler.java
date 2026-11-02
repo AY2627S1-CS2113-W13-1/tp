@@ -77,6 +77,7 @@ public class EquipmentHandler {
                 new Object[]{inventory.size(), storageFile});
     }
 
+    // @@author rktheg
     /**
      * Adds equipment when the command contains valid details.
      *
@@ -103,6 +104,7 @@ public class EquipmentHandler {
         logger.log(Level.FINE, "Added equipment with item ID {0}", equipment.getItemId());
         return equipment;
     }
+    // @@author
 
     /**
      * Returns the inventory for listing or inspecting stored equipment.
@@ -624,6 +626,7 @@ public class EquipmentHandler {
         EquipmentView.printDetails(item);
     }
 
+    // @@author rktheg
     /** Rejects duplicate IDs before saving or changing the current inventory. */
     private void ensureUniqueItemId(Equipment item) throws EquipmentAdditionUnsuccessful {
         for (Equipment existing : inventory) {
@@ -632,6 +635,7 @@ public class EquipmentHandler {
             }
         }
     }
+    // @@author
 
     /** Saves a candidate list first, so a failed write cannot add an item only in memory. */
     private void saveAddition(Equipment item) throws EquipmentAdditionUnsuccessful {
