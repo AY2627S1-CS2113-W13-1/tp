@@ -35,7 +35,7 @@ The overdue-loan design includes:
 | Source | Design illustrated |
 | --- | --- |
 | [OverdueLoanClasses.puml](OverdueLoanClasses.puml) | Relationships between command routing, selection and the loan-owned overdue rule. |
-| [OverdueLoanSequence.puml](OverdueLoanSequence.puml) | One-date evaluation and read-only display flow for `list overdue`. |
+| [OverdueLoanSequence.puml](OverdueLoanSequence.puml) | One-date evaluation and read-only display flow for `loan-list-overdue`. |
 
 The maintenance and backup designs include:
 

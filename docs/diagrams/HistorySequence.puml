@@ -33,7 +33,7 @@ else selected history contains loans
     Handler -> Handler: printLoans(history)
 end
 opt returned loans for this Item ID have no permanent identity
-    Handler -> Handler: print omission note directing user to list-loan
+    Handler -> Handler: print omission note directing user to loan-list
 end
 Handler --> Manager: display completed
 deactivate Handler

@@ -22,7 +22,7 @@ To run from a terminal in the project folder:
 | Run tests and Checkstyle | `.\gradlew.bat clean check --no-daemon` | `./gradlew clean check --no-daemon` |
 | Build the JAR | `.\gradlew.bat shadowJar` | `./gradlew shadowJar` |
 
-The application opens with a command menu. Enter `help` to see it again, `help add-loan` for one command,
+The application opens with a command menu. Enter `help` to see it again, `help loan-add` for one command,
 or `help all` for the complete reference. Full command names are recommended for new users; short aliases are
 available for experienced or power users after the longer names become cumbersome. Enter `exit` to save and exit.
 

@@ -30,9 +30,9 @@ The help menu alone cannot establish that every executable command has documenta
 
 | Area | Commands and help topics checked |
 | --- | --- |
-| Equipment | `add-eqm`, `list-eqm`, `eqm-show`, `eqm-delete`, `filter-eqm`, `eqm-update`, `eqm-maintain`, `eqm-loan-history` |
-| Loans | `add-loan`, `loan-return`, `loan-delete`, `loan-update`, `list-loan`, `list-loan-borrower`, `loan-show`, `list-loan-overdue` |
-| Bundles | `add-bundle`, `bundle-add-eqm`, `bundle-remove-eqm`, `list-bundle`, `bundle-history` |
+| Equipment | `eqm-add`, `eqm-list`, `eqm-show`, `eqm-delete`, `eqm-filter`, `eqm-update`, `eqm-maintain`, `eqm-loan-history` |
+| Loans | `loan-add`, `loan-return`, `loan-delete`, `loan-update`, `loan-list`, `loan-view`, `loan-show`, `loan-list-borrower`, `loan-list-overdue` |
+| Bundles | `bundle-create`, `bundle-add-eqm`, `bundle-remove-eqm`, `bundle-list`, `bundle-history` |
 | General | `backup`, `restore`, `help`, `exit` |
 | Alternate forms | both bundle-history selectors, `help`, `help <COMMAND>`, `help all` and unknown topics |
 
@@ -46,9 +46,9 @@ discoverable form for new users.
 
 | Area | Canonical command -> alias |
 | --- | --- |
-| Equipment | `add-eqm` -> `ae`, `list-eqm` -> `le`, `eqm-show` -> `es`, `eqm-delete` -> `ed`, `filter-eqm` -> `fe`, `eqm-update` -> `eu`, `eqm-maintain` -> `em`, `eqm-loan-history` -> `elh` |
-| Loans | `add-loan` -> `al`, `loan-return` -> `lr`, `loan-delete` -> `ld`, `loan-update` -> `lu`, `list-loan` -> `ll`, `loan-show` -> `ls`, `list-loan-borrower` -> `llb`, `list-loan-overdue` -> `llo` |
-| Bundles | `add-bundle` -> `ab`, `bundle-add-eqm` -> `bae`, `bundle-remove-eqm` -> `bre`, `list-bundle` -> `lb`, `bundle-history` -> `bh` |
+| Equipment | `eqm-add` -> `ae`, `eqm-list` -> `le`, `eqm-show` -> `es`, `eqm-delete` -> `ed`, `eqm-filter` -> `fe`, `eqm-update` -> `eu`, `eqm-maintain` -> `em`, `eqm-loan-history` -> `elh` |
+| Loans | `loan-add` -> `al`, `loan-return` -> `lr`, `loan-delete` -> `ld`, `loan-update` -> `lu`, `loan-list` -> `ll`, `loan-view` -> `lv`, `loan-show` -> `ls`, `loan-list-borrower` -> `llb`, `loan-list-overdue` -> `llo` |
+| Bundles | `bundle-create` -> `ab`, `bundle-add-eqm` -> `bae`, `bundle-remove-eqm` -> `bre`, `bundle-list` -> `lb`, `bundle-history` -> `bh` |
 | General | `backup` -> `bk`, `restore` -> `rs`, `help` -> `h`, `exit` -> `x` |
 
 The automated checks cover:

@@ -4,7 +4,7 @@ hide footbox
 skinparam sequenceMessageAlign center
 skinparam maxMessageSize 220
 
-title add-eqm name/Camera e/001 type/camera cond/1
+title eqm-add name/Camera e/001 type/camera cond/1
 
 participant ":EqmManager" as Manager
 participant ":EquipmentHandler" as Handler

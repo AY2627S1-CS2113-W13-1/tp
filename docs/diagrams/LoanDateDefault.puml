@@ -9,7 +9,7 @@ participant ":LoanHandler" as Handler
 participant "LocalDate" as Date <<Java API>>
 participant "LoanStorage" as Store <<utility>>
 
-Manager -> Handler: addLoan("add-loan e/001 u/002 due/31-10-26")
+Manager -> Handler: addLoan("loan-add e/001 u/002 due/31-10-26")
 activate Handler
 Handler -> Handler: parseLoanCommand(input)
 activate Handler
