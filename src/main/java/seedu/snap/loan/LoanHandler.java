@@ -669,7 +669,7 @@ public class LoanHandler {
 
     // @@author
 
-    // @@author Rohita-29
+    // @@author
 
     /**
      * Compares immutable issue and return assessments for one loan without reading current equipment.
@@ -733,6 +733,8 @@ public class LoanHandler {
     private static String assessmentRemarks(EquipmentConditionSnapshot snapshot, String missing) {
         return snapshot == null ? missing : snapshot.getRemarks().isEmpty() ? "None" : snapshot.getRemarks();
     }
+
+    // @@author Rohita-29
 
     /**
      * Displays the issue-time equipment condition for one loan.

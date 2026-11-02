@@ -64,6 +64,37 @@ class EquipmentStorageTest {
     }
 
     @Test
+    void load_canonicalRecordWithIdLikeRemarks_preservesRemarksAndSavedBytes() throws Exception {
+        Path file = temporaryDirectory.resolve("equipment.txt");
+        EquipmentHandler handler = new EquipmentHandler(file);
+        handler.addEquipment(
+                "eqm-add name/Camera e/E001 type/camera cond/1 "
+                        + "remarks/Keep literal id/123 type/camera");
+        String savedRecord = Files.readString(file);
+
+        Equipment loaded = EquipmentStorage.load(file).getFirst();
+
+        assertEquals("Keep literal id/123 type/camera", loaded.getRemarks());
+        assertEquals(savedRecord, Files.readString(file));
+    }
+
+    @Test
+    void load_legacyRecordWithIdLikeRemarks_migratesIdAndPreservesRemarks() throws IOException {
+        Path file = temporaryDirectory.resolve("equipment.txt");
+        Files.writeString(file,
+                "add i/Camera id/001 type/camera cond/1 "
+                        + "remarks/Keep literal id/123 type/camera");
+
+        Equipment loaded = EquipmentStorage.load(file).getFirst();
+        String migratedRecord = Files.readString(file);
+
+        assertEquals("E001", loaded.getItemId());
+        assertEquals("Keep literal id/123 type/camera", loaded.getRemarks());
+        assertTrue(migratedRecord.contains("id/E001 type/camera"));
+        assertTrue(migratedRecord.contains("remarks/Keep literal id/123 type/camera"));
+    }
+
+    @Test
     void load_collidingLegacyAndCanonicalIds_rejectsFile() throws IOException {
         Path file = temporaryDirectory.resolve("equipment.txt");
         Files.writeString(file, "add i/Legacy camera id/001 type/camera cond/1\n"
