@@ -1554,17 +1554,17 @@ Start the JAR in a new folder with no `data/` directory. This check does not use
 the main test path above.
 
 ```text
-add i/Photography club camera reserved for outdoor event assignments id/001 type/camera cond/2 sensor/APS-C mount/Canon RF thread/1/4 inch battery/Li-ion remarks/Keep the lens cap and labelled shoulder strap with this camera when it is returned to the equipment cupboard.
-list
-show id/001
-bye
+eqm-add name/Photography club camera reserved for outdoor event assignments e/E001 type/camera cond/2 sensor/APS-C mount/Canon RF thread/1/4 inch battery/Li-ion remarks/Keep the lens cap and labelled shoulder strap with this camera when it is returned to the equipment cupboard.
+eqm-list
+eqm-show e/E001
+exit
 ```
 
-The addition succeeds. `list` shows one available camera and shortens its name with `...`.
-`show id/001` displays the complete name and remarks, wrapping long text without removing any characters.
+The addition succeeds. `eqm-list` shows one available camera and shortens its name with `...`.
+`eqm-show e/E001` displays the complete name and remarks, wrapping long text without removing any characters.
 It also shows condition `2`, status `Available`, serviceability `yes`, active Loan ID `(none)`, sensor format
 `APS-C`, lens mount `Canon RF`, tripod thread `1/4 inch`, battery type `Li-ion` and damage `NONE`.
-Neither query changes the item. Restart in this same folder and repeat `show id/001`; all values must match.
+Neither query changes the item. Restart in this same folder and repeat `eqm-show e/E001`; all values must match.
 
 ### Bundle compatibility in a separate folder
 
@@ -1572,23 +1572,23 @@ Start the JAR in another new folder with no `data/` directory. This check has fo
 bundle of its own, so its IDs do not affect either earlier test folder.
 
 ```text
-add i/RF camera id/001 type/camera cond/1 sensor/APS-C mount/Canon RF battery/Li-ion
-add i/F mount lens id/002 type/lens cond/2 mount/Nikon F sensor/APS-C
-add i/RF lens id/003 type/lens cond/2 mount/Canon RF sensor/APS-C
-add i/Spare battery id/004 type/battery cond/3 battery/Li-ion
-add-bundle name/Compatibility kit
-add-to-bundle id/001 001 002 003 004
-list bundles
-show id/002
-bye
+eqm-add name/RF camera e/E001 type/camera cond/1 sensor/APS-C mount/Canon RF battery/Li-ion
+eqm-add name/F mount lens e/E002 type/lens cond/2 mount/Nikon F sensor/APS-C
+eqm-add name/RF lens e/E003 type/lens cond/2 mount/Canon RF sensor/APS-C
+eqm-add name/Spare battery e/E004 type/battery cond/3 battery/Li-ion
+bundle-create name/Compatibility kit
+bundle-add-eqm b/B001 E001 E002 E003 E004
+bundle-list
+eqm-show e/E002
+exit
 ```
 
 All four additions and bundle creation succeed. Adding the items produces three successful memberships
-and one failure: lens `002` is rejected because its `Nikon F` mount conflicts with camera `001`'s `Canon RF`
+and one failure: lens `E002` is rejected because its `Nikon F` mount conflicts with camera `E001`'s `Canon RF`
 mount. The compatible lens and battery are still accepted after that rejection.
-`list bundles` shows one complete bundle containing exactly `001`, `003` and `004`. `show id/002` confirms
-that the rejected lens remains in the inventory and is still `Available`. After `bye`, restart in this
-same folder and run `list bundles` again; the same three memberships and complete composition must remain.
+`bundle-list` shows one complete bundle containing exactly `E001`, `E003` and `E004`. `eqm-show e/E002` confirms
+that the rejected lens remains in the inventory and is still `Available`. After `exit`, restart in this
+same folder and run `bundle-list` again; the same three memberships and complete composition must remain.
 
 ### Logging and input recovery
 
