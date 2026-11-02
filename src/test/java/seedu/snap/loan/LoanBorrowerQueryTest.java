@@ -11,6 +11,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import seedu.snap.exceptions.LoanBorrowerUnsuccessful;
 
+// @@author MatthewLeon888
 /** Tests strict parsing of commands that query equipment held by a borrower. */
 class LoanBorrowerQueryTest {
     @Test
@@ -68,3 +69,4 @@ class LoanBorrowerQueryTest {
                 "loan-list-borrower u/U001\n");
     }
 }
+// @@author

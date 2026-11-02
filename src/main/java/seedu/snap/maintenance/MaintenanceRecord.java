@@ -3,6 +3,8 @@ package seedu.snap.maintenance;
 import java.time.LocalDate;
 import java.util.UUID;
 
+// @@author MatthewLeon888
+
 /**
  * Represents one completed maintenance activity for a physical equipment item.
  *
@@ -108,3 +110,5 @@ public final class MaintenanceRecord {
                 && !work.contains("\t") && !outcome.contains("\t");
     }
 }
+
+// @@author

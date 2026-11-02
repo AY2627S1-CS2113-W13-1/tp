@@ -15,6 +15,8 @@ import java.util.regex.Pattern;
 import seedu.snap.Identifier;
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 
+// @@author MatthewLeon888
+
 /** Loads and saves equipment records in a readable UTF-8 text file. */
 final class EquipmentStorage {
     /** Permanent physical-item identity appears before any existing storage metadata. */
@@ -83,7 +85,13 @@ final class EquipmentStorage {
 
     /** Rewrites only the actual add-record item ID, leaving free-form name text untouched. */
     private static String normalizeLegacyItemId(String line) {
+        int conditionIndex = line.indexOf(" cond/");
+        if (conditionIndex < 0) {
+            return line;
+        }
+
         Matcher matcher = NON_CANONICAL_ITEM_ID.matcher(line);
+        matcher.region(0, conditionIndex);
         int idStart = -1;
         int numberStart = -1;
         int idEnd = -1;
@@ -177,3 +185,5 @@ final class EquipmentStorage {
         return record;
     }
 }
+
+// @@author

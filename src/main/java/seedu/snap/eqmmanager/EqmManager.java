@@ -295,6 +295,7 @@ public class EqmManager {
 
     // @@author
 
+    // @@author MatthewLeon888
     /** Creates a backup and displays either its destination or the safe failure message. */
     private void createBackup(String input) {
         try {
@@ -322,6 +323,7 @@ public class EqmManager {
             ConsoleOutput.error(exception.getMessage());
         }
     }
+    // @@author
 
     /** Displays the outcome of a loan deletion. */
     private void deleteLoan(String input) {
@@ -424,6 +426,7 @@ public class EqmManager {
         }
     }
 
+    // @@author MatthewLeon888
     /** Displays the outcome of recording a maintenance activity. */
     private void recordMaintenance(String input) {
         try {
@@ -441,6 +444,7 @@ public class EqmManager {
             ConsoleOutput.error(exception.getMessage());
         }
     }
+    // @@author
 
     /** Displays the selected equipment's borrowing history or its validation error. */
     private void viewLoanHistory(String input) {
@@ -451,6 +455,7 @@ public class EqmManager {
         }
     }
 
+    // @@author MatthewLeon888
     /** Displays the selected bundle's active and returned loan history. */
     private void viewBundleLoanHistory(String input) {
         try {
@@ -459,7 +464,9 @@ public class EqmManager {
             ConsoleOutput.error(exception.getMessage());
         }
     }
+    // @@author
 
+    // @@author MatthewLeon888
     /** Displays the active equipment currently held by one borrower or its validation error. */
     private void viewActiveLoansForBorrower(String input) {
         try {
@@ -468,6 +475,7 @@ public class EqmManager {
             ConsoleOutput.error(exception.getMessage());
         }
     }
+    // @@author
 
     // @@author rktheg
     /** Displays matching equipment or the filter error. */

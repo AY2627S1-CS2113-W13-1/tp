@@ -28,6 +28,7 @@ import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.LoanUpdateUnsuccessful;
 
+// @@author MatthewLeon888
 /** Tests validated loan updates, equipment ownership and save-before-mutate behaviour. */
 class LoanUpdateHandlerTest {
     private static final Logger LOAN_LOGGER = Logger.getLogger(LoanHandler.class.getName());
@@ -307,3 +308,4 @@ class LoanUpdateHandlerTest {
         }
     }
 }
+// @@author

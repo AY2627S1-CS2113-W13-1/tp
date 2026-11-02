@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+// @@author MatthewLeon888
 /** Tests command routing and user-facing output for editing loan details. */
 class LoanUpdateIntegrationTest {
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -156,3 +157,4 @@ class LoanUpdateIntegrationTest {
         assertFalse(actual.contains("Issue remarks: Handle carefully"));
     }
 }
+// @@author

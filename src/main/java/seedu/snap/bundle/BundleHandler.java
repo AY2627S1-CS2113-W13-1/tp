@@ -267,6 +267,7 @@ public class BundleHandler {
         BundleView.print(getBundleList());
     }
 
+    // @@author MatthewLeon888
     /**
      * Selects all loans for every physical item in a bundle.
      *
@@ -306,6 +307,7 @@ public class BundleHandler {
         String subject = "bundle " + bundle.getBundleId() + " (" + bundle.getBundleName() + ")";
         loans.printLoans(history, "Loan history for " + subject, "No loan history for " + subject + ".");
     }
+    // @@author
 
     /**
      * Validates and adds one equipment ID to a bundle.

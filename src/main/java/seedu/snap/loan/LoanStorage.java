@@ -17,6 +17,8 @@ import java.util.logging.Logger;
 import seedu.snap.Identifier;
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 
+// @@author MatthewLeon888
+
 /** Loads and saves loan records in a readable UTF-8 text file. */
 final class LoanStorage {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-uu");
@@ -412,3 +414,5 @@ final class LoanStorage {
         }
     }
 }
+
+// @@author
