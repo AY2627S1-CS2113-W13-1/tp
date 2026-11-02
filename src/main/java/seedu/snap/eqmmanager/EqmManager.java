@@ -391,7 +391,6 @@ public class EqmManager {
         }
     }
 
-    // @@author rktheg
     /** Displays the outcome of equipment addition. */
     private void addEquipment(String input) {
         try {
@@ -401,8 +400,6 @@ public class EqmManager {
             ConsoleOutput.error(e.getMessage());
         }
     }
-    // @@author
-
     /** Displays the outcome of loan addition. */
     private void addLoan(String input) {
         // @@author Yi An
@@ -477,7 +474,6 @@ public class EqmManager {
     }
     // @@author
 
-    // @@author rktheg
     /** Displays matching equipment or the filter error. */
     private void filterEquipment(String input) {
         try {
@@ -498,8 +494,6 @@ public class EqmManager {
             ConsoleOutput.error(e.getMessage());
         }
     }
-    // @@author
-
     /** Displays the outcome of a loan-detail update. */
     private void updateLoan(String input) {
         try {

@@ -22,8 +22,6 @@ import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.LoanReturnUnsuccessful;
 
-// @@author rktheg
-
 /** Verifies per-loan assessments across reuse, rejected returns and failed persistence. */
 class LoanReturnAssessmentTest {
     private static final String LOAN = "loan-add e/E001 u/U002 issued/01-10-26 due/20-10-26";
@@ -236,6 +234,3 @@ class LoanReturnAssessmentTest {
         loans.loadFromStorage();
     }
 }
-
-
-// @@author

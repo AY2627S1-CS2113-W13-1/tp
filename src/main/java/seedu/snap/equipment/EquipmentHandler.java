@@ -424,7 +424,6 @@ public class EquipmentHandler {
         return Math.min(firstIndex, secondIndex);
     }
 
-    // @@author rktheg
     /** Finds the last ID prefix before the type field, allowing earlier id/card-like name text. */
     private static int findIdFieldMarker(String details, int typeIndex, String idMarker) {
         int idIndex = findFieldMarker(details, idMarker, 0);
@@ -457,8 +456,6 @@ public class EquipmentHandler {
             }
         }
     }
-    // @@author
-
     /** Validates extracted values and creates the correct equipment subclass. */
     private static Equipment createValidatedEquipment(
             String itemName,
@@ -519,7 +516,6 @@ public class EquipmentHandler {
                         + "camera, lens, battery or tripod.");
     }
 
-    // @@author rktheg
     /** Shares value rules between addition and updates before either changes the inventory. */
     private static void validateEquipmentDetails(String itemName, String id, String type, String conditionString)
             throws EquipmentAdditionUnsuccessful {
@@ -536,8 +532,6 @@ public class EquipmentHandler {
             throw new EquipmentAdditionUnsuccessful("Condition must be a whole number from 1 to 10.");
         }
     }
-    // @@author
-
     /** Validates remarks before they are stored in an equipment object or written to disk. */
     private static void validateRemarks(String remarks) throws EquipmentAdditionUnsuccessful {
         if (remarks == null || remarks.length() > Equipment.MAX_REMARKS_LENGTH
@@ -547,7 +541,6 @@ public class EquipmentHandler {
         }
     }
 
-    // @@author rktheg
     /**
      * Finds a field prefix at the start or after whitespace, ignoring prefix-like text inside words.
      * The starting index also allows callers to detect repeated prefixes.
@@ -574,8 +567,6 @@ public class EquipmentHandler {
                 && firstCharacter != '+' && firstCharacter != '-'
                 && !EquipmentFields.isTypedItemId(details, valueIndex);
     }
-    // @@author
-
     /**
      * Extracts and validates the item ID from a delete command.
      *
@@ -657,7 +648,6 @@ public class EquipmentHandler {
         // @@author
     }
 
-    // @@author rktheg
     /** Checks that prefixes before the actual ID belong to textual name fragments. */
     private static int skipNameIdFragments(String details, int firstIndex, int idIndex, String idMarker,
             String formatError)
@@ -671,9 +661,6 @@ public class EquipmentHandler {
         }
         return currentIndex;
     }
-    // @@author
-
-    // @@author rktheg
     /** Updates supplied details together while preserving identity and inventory order. */
     public Equipment updateEquipment(String input) throws EquipmentUpdateUnsuccessful {
         try {
@@ -753,8 +740,6 @@ public class EquipmentHandler {
         logger.log(Level.FINE, "Updated equipment with item ID {0}", target.getItemId());
         return target;
     }
-    // @@author
-
     /** Converts a user-supplied equipment ID to the uppercase value used by the model. */
     private static String normalizeItemId(String itemId) {
         try {

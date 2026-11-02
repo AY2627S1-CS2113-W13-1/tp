@@ -9,8 +9,6 @@ import org.junit.jupiter.api.Test;
 
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 
-// @@author rktheg
-
 /** Checks that ordinary and nonbreaking whitespace follow the same equipment field rules. */
 class EquipmentWhitespaceTest {
     private static final String[] SPACES = {"\u00a0", "\u2007", "\u202f", "\u2003", "\t", " "};
@@ -62,6 +60,3 @@ class EquipmentWhitespaceTest {
         }
     }
 }
-
-
-// @@author

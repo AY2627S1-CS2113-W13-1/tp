@@ -21,8 +21,6 @@ import org.junit.jupiter.api.io.TempDir;
 import seedu.snap.eqmmanager.EqmManager;
 import seedu.snap.exceptions.EquipmentFilteringUnsuccessful;
 
-// @@author rktheg
-
 /** Checks filter grammar, all field orders, large inputs, and a seeded independent matching model. */
 class EquipmentFilterStressTest {
     @TempDir
@@ -157,6 +155,3 @@ class EquipmentFilterStressTest {
         }
     }
 }
-
-
-// @@author

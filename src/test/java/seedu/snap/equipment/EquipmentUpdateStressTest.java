@@ -18,8 +18,6 @@ import org.junit.jupiter.api.io.TempDir;
 import seedu.snap.eqmmanager.EqmManager;
 import seedu.snap.exceptions.EquipmentUpdateUnsuccessful;
 
-// @@author rktheg
-
 /** Exercises update parsing and verifies thousands of commands against independent expected values. */
 class EquipmentUpdateStressTest {
     @TempDir
@@ -166,6 +164,3 @@ class EquipmentUpdateStressTest {
         }
     }
 }
-
-
-// @@author

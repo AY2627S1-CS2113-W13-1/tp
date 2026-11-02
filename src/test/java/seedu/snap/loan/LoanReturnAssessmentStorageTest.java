@@ -18,8 +18,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import seedu.snap.equipment.EquipmentHandler;
 
-// @@author rktheg
-
 /** Tests return-snapshot storage, compatibility and rejection of damaged history. */
 class LoanReturnAssessmentStorageTest {
     private static final String RECORD = "loan loanId/L001 id/E001 b/U002 issued/01-10-26 due/20-10-26 ";
@@ -169,6 +167,3 @@ class LoanReturnAssessmentStorageTest {
         }
     }
 }
-
-
-// @@author

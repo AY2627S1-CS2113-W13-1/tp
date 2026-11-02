@@ -217,7 +217,6 @@ final class LoanStorage {
         if (snapshot != null) {
             record += " "
                     + EquipmentConditionSnapshotCodec.encode(snapshot);
-            // @@author rktheg
             if (loan.getIssueServiceability() != null) {
                 record += " issueServiceable/" + (loan.getIssueServiceability() ? "yes" : "no");
             }
@@ -226,7 +225,6 @@ final class LoanStorage {
         if (loan.getReturnAssessment() != null) {
             record += " " + LoanReturnAssessmentCodec.encode(loan.getReturnAssessment());
         }
-        // @@author
         return record;
     }
 
@@ -273,7 +271,6 @@ final class LoanStorage {
         if (nextField < fields.length && fields[nextField].startsWith("issueType/")) {
             issueConditionSnapshot = EquipmentConditionSnapshotCodec.decode(fields, nextField);
             nextField += EquipmentConditionSnapshotCodec.FIELD_COUNT;
-            // @@author rktheg
             if (nextField < fields.length && fields[nextField].startsWith("issueServiceable/")) {
                 String value = parseField(fields[nextField++], "issueServiceable/");
                 if (!value.equals("yes") && !value.equals("no")) {
@@ -295,8 +292,6 @@ final class LoanStorage {
             }
             nextField += LoanReturnAssessmentCodec.FIELD_COUNT;
         }
-        // @@author
-
         if (nextField != fields.length) {
             throw new IllegalArgumentException(
                     "Unexpected optional loan storage fields.");
