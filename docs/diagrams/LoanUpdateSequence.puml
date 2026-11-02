@@ -1,0 +1,117 @@
+@startuml LoanUpdateSequence
+!include style.puml
+hide footbox
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 200
+
+participant ":EqmManager" as Manager
+participant ":LoanHandler" as Handler
+participant "LoanUpdate" as Update <<record>>
+participant "loan:Loan" as Loan
+participant "EquipmentConditionSnapshot" as Snapshot <<value>>
+participant "LoanStorage" as Store <<utility>>
+participant "current:Equipment" as Current
+participant "replacement:Equipment" as Replacement
+
+Manager -> Handler: updateLoan(input)
+Handler -> Update: parse(input)
+Update --> Handler: validated update, or LoanUpdateUnsuccessful
+break malformed or unsupported command
+    Handler --> Manager: LoanUpdateUnsuccessful
+    Manager -> Manager: display update error
+end
+
+Handler -> Handler: findLoanForUpdate(update.loanId())
+break missing or non-unique Loan ID
+    Handler --> Manager: LoanUpdateUnsuccessful
+    Manager -> Manager: display update error
+end
+Handler -> Loan: isReturned()
+Loan --> Handler: returned status
+break loan has already been returned
+    Handler --> Manager: LoanUpdateUnsuccessful
+    Manager -> Manager: display update error
+end
+
+Handler -> Handler: findEquipment(loan.getItemId())
+break current Item ID is missing or ambiguous
+    Handler --> Manager: LoanUpdateUnsuccessful
+    Manager -> Manager: display update error
+end
+Handler -> Loan: ownsEquipment(current)
+Loan --> Handler: ownership result
+break ownership validation fails
+    Handler --> Manager: LoanUpdateUnsuccessful
+    Manager -> Manager: display update error
+end
+note over Handler, Loan
+Ownership requires the same equipment object, loaned flag,
+active Loan ID and permanent equipment record ID.
+All rejection paths stop before saving or changing live records.
+end note
+
+alt item field supplied
+    Handler -> Handler: findEquipment(update.itemId())
+    note right of Handler
+    If this is a different object, require no
+    active loan and serviceable equipment.
+    end note
+    break missing, ambiguous, loaned or unserviceable replacement
+        Handler --> Manager: LoanUpdateUnsuccessful
+        Manager -> Manager: display update error
+    end
+else item field omitted
+    Handler -> Handler: use current as replacement
+end
+
+Handler -> Handler: fill omitted borrower and dates
+break issuedDate is after dueDate
+    Handler --> Manager: LoanUpdateUnsuccessful
+    Manager -> Manager: display update error
+end
+Handler -> Loan: updatedCopy(..., replacement)
+alt same equipment object
+    note right of Loan
+    Preserve issueConditionSnapshot and the
+    separate Loan.issueServiceability field.
+    end note
+else replacement equipment object
+    Loan -> Snapshot: fromEquipment(replacement)
+    Snapshot --> Loan: type, condition, damage and remarks
+    Loan -> Replacement: isServiceable()
+    Replacement --> Loan: serviceability
+    note right of Loan
+    Store serviceability separately in
+    the proposal's issueServiceability field.
+    EquipmentConditionSnapshot has no serviceability field.
+    end note
+end
+Loan --> Handler: detached loan proposal
+Handler -> Handler: copy loans and replace the matching record
+Handler -> Store: save(... proposedLoans, ... nextLoanNumber)
+alt save fails
+    Store --> Handler: IOException
+    Handler --> Manager: LoanUpdateUnsuccessful
+    Manager -> Manager: display update error
+    note over Handler, Loan
+    No live loan fields or equipment loan flags
+    have changed before persistence succeeds.
+    end note
+else save succeeds
+    Store --> Handler: saved
+    Handler -> Loan: applyUpdate(proposal, replacement)
+    alt replacement differs from current
+        Loan -> Current: setLoanId(null)
+        Loan -> Replacement: setLoanId(loanId)
+    else same equipment object
+        Loan -> Current: setLoanId(loanId)
+    end
+    Handler --> Manager: updated loan
+    Manager -> Manager: display update success
+    note over Loan, Replacement
+    The original Loan object, Loan ID and loan count are retained.
+    Only after saving does applyUpdate copy the proposal's fields
+    and bind the replacement, releasing the old item if necessary.
+    end note
+end
+@enduml

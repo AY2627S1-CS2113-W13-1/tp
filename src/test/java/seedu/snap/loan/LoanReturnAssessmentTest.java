@@ -24,7 +24,7 @@ import seedu.snap.exceptions.LoanReturnUnsuccessful;
 
 /** Verifies per-loan assessments across reuse, rejected returns and failed persistence. */
 class LoanReturnAssessmentTest {
-    private static final String LOAN = "loan-add e/001 u/002 issued/01-10-26 due/20-10-26";
+    private static final String LOAN = "loan-add e/E001 u/U002 issued/01-10-26 due/20-10-26";
     private EquipmentHandler equipment;
     private LoanHandler loans;
     private Equipment item;
@@ -42,7 +42,7 @@ class LoanReturnAssessmentTest {
         loanFile = directory.resolve("loans.txt");
         sequenceFile = directory.resolve("loan-sequence.txt");
         equipment = new EquipmentHandler(equipmentFile);
-        item = equipment.addEquipment("eqm-add name/Camera e/001 type/camera cond/2 remarks/At issue");
+        item = equipment.addEquipment("eqm-add name/Camera e/E001 type/camera cond/2 remarks/At issue");
         loans = new LoanHandler(equipment, loanFile, sequenceFile);
         first = loans.addLoan(LOAN);
     }
@@ -52,7 +52,7 @@ class LoanReturnAssessmentTest {
     void returnLoan_explicitRating_recordsAssessmentAndUpdatesSameEquipment(int rating) throws Exception {
         assertNull(first.getReturnAssessment());
 
-        assertSame(first, loans.returnLoan("loan-return l/001 serviceable/no damage/SENSOR_DAMAGE cond/"
+        assertSame(first, loans.returnLoan("loan-return l/L001 serviceable/no damage/SENSOR_DAMAGE cond/"
                 + rating + " remarks/Repair needed"));
 
         assertSame(item, equipment.getEquipmentList().getFirst());
@@ -64,7 +64,7 @@ class LoanReturnAssessmentTest {
         assertEquals(new LoanReturnAssessment(
                 new EquipmentConditionSnapshot("camera", rating, "SENSOR_DAMAGE", "Repair needed"), false),
                 first.getReturnAssessment());
-        assertEquals("002", loans.getNextLoanId());
+        assertEquals("L002", loans.getNextLoanId());
         reload();
         assertEquals(rating, equipment.getEquipmentList().getFirst().getCondition());
         assertEquals(first.getReturnAssessment(), loans.getLoanList().getFirst().getReturnAssessment());
@@ -72,8 +72,8 @@ class LoanReturnAssessmentTest {
 
     @Test
     void returnLoan_omittedRating_capturesCurrentRatingRatherThanIssueRating() throws Exception {
-        equipment.updateEquipment("eqm-update e/001 cond/6");
-        loans.returnLoan("loan-return l/001 serviceable/yes damage/NONE");
+        equipment.updateEquipment("eqm-update e/E001 cond/6");
+        loans.returnLoan("loan-return l/L001 serviceable/yes damage/NONE");
 
         assertEquals(2, first.getIssueConditionSnapshot().getCondition());
         assertEquals(6, first.getReturnAssessment().condition().getCondition());
@@ -82,12 +82,12 @@ class LoanReturnAssessmentTest {
 
     @Test
     void returnLoan_laterUpdatesAndReturns_preserveEachAssessmentAcrossRestarts() throws Exception {
-        loans.returnLoan("loan-return l/001 serviceable/yes damage/SHUTTER_FAULT cond/4 remarks/First return");
+        loans.returnLoan("loan-return l/L001 serviceable/yes damage/SHUTTER_FAULT cond/4 remarks/First return");
         LoanReturnAssessment firstReturn = first.getReturnAssessment();
-        equipment.updateEquipment("eqm-update e/001 cond/6");
+        equipment.updateEquipment("eqm-update e/E001 cond/6");
         Loan second = loans.addLoan(LOAN);
-        loans.returnLoan("loan-return l/002 serviceable/no damage/SENSOR_DAMAGE cond/9 remarks/Second return");
-        equipment.updateEquipment("eqm-update e/001 cond/10");
+        loans.returnLoan("loan-return l/L002 serviceable/no damage/SENSOR_DAMAGE cond/9 remarks/Second return");
+        equipment.updateEquipment("eqm-update e/E001 cond/10");
 
         reload();
         Loan restoredFirst = loans.getLoanList().get(0);
@@ -105,17 +105,17 @@ class LoanReturnAssessmentTest {
 
     @Test
     void returnLoan_deletedEquipmentAndReusedItemId_doNotChangeOldAssessment() throws Exception {
-        loans.returnLoan("loan-return l/001 serviceable/yes damage/NONE cond/3 remarks/Original camera");
+        loans.returnLoan("loan-return l/L001 serviceable/yes damage/NONE cond/3 remarks/Original camera");
         LoanReturnAssessment snapshot = first.getReturnAssessment();
-        equipment.deleteEquipment("eqm-delete e/001");
-        equipment.addEquipment("eqm-add name/Replacement e/001 type/lens cond/8");
+        equipment.deleteEquipment("eqm-delete e/E001");
+        equipment.addEquipment("eqm-add name/Replacement e/E001 type/lens cond/8");
         loans.addLoan(LOAN);
-        loans.returnLoan("loan-return l/002 serviceable/yes damage/NONE cond/7 remarks/New lens");
+        loans.returnLoan("loan-return l/L002 serviceable/yes damage/NONE cond/7 remarks/New lens");
 
         reload();
         assertEquals(snapshot, loans.getLoanList().getFirst().getReturnAssessment());
         assertEquals("lens", loans.getLoanList().getLast().getReturnAssessment().condition().getEquipmentType());
-        assertEquals(List.of(loans.getLoanList().getLast()), loans.getLoanHistory("eqm-loan-history e/001"));
+        assertEquals(List.of(loans.getLoanList().getLast()), loans.getLoanHistory("eqm-loan-history e/E001"));
     }
 
     @ParameterizedTest
@@ -127,7 +127,7 @@ class LoanReturnAssessmentTest {
         String sequenceBefore = Files.readString(sequenceFile);
 
         assertThrows(LoanReturnUnsuccessful.class, () -> loans.returnLoan(
-                "loan-return l/001 serviceable/no damage/SENSOR_DAMAGE cond/" + rating + " remarks/Rejected"));
+                "loan-return l/L001 serviceable/no damage/SENSOR_DAMAGE cond/" + rating + " remarks/Rejected"));
 
         assertNull(first.getReturnAssessment());
         assertFalse(first.isReturned());
@@ -136,7 +136,7 @@ class LoanReturnAssessmentTest {
         assertEquals(equipmentBefore, Files.readString(equipmentFile));
         assertEquals(loansBefore, Files.readString(loanFile));
         assertEquals(sequenceBefore, Files.readString(sequenceFile));
-        loans.returnLoan("loan-return l/001 serviceable/yes damage/NONE cond/3");
+        loans.returnLoan("loan-return l/L001 serviceable/yes damage/NONE cond/3");
         assertEquals(3, first.getReturnAssessment().condition().getCondition());
     }
 
@@ -158,7 +158,7 @@ class LoanReturnAssessmentTest {
         Files.writeString(sentinel, "keep");
 
         assertThrows(LoanReturnUnsuccessful.class, () -> loans.returnLoan(
-                "loan-return l/001 serviceable/no damage/SENSOR_DAMAGE cond/10 remarks/Retry later"));
+                "loan-return l/L001 serviceable/no damage/SENSOR_DAMAGE cond/10 remarks/Retry later"));
 
         assertNull(first.getReturnAssessment());
         assertFalse(first.isReturned());
@@ -174,7 +174,7 @@ class LoanReturnAssessmentTest {
         assertEquals(loansBefore, Files.readString(loanFile));
         assertEquals(sequenceBefore, Files.readString(sequenceFile));
 
-        loans.returnLoan("loan-return l/001 serviceable/no damage/SENSOR_DAMAGE cond/10 remarks/Retry later");
+        loans.returnLoan("loan-return l/L001 serviceable/no damage/SENSOR_DAMAGE cond/10 remarks/Retry later");
         reload();
         assertNotNull(loans.getLoanList().getFirst().getReturnAssessment());
         assertEquals(10, loans.getLoanList().getFirst().getReturnAssessment().condition().getCondition());
@@ -210,10 +210,10 @@ class LoanReturnAssessmentTest {
 
     @Test
     void returnLoan_reassignedEquipment_comparesReplacementIssueAndReturnSnapshots() throws Exception {
-        Equipment replacement = equipment.addEquipment("eqm-add name/Lens e/002 type/lens cond/3");
-        loans.updateLoan("loan-update l/001 e/002");
+        Equipment replacement = equipment.addEquipment("eqm-add name/Lens e/E002 type/lens cond/3");
+        loans.updateLoan("loan-update l/L001 e/E002");
 
-        loans.returnLoan("loan-return l/001 serviceable/yes damage/NONE cond/7 remarks/Assessed lens");
+        loans.returnLoan("loan-return l/L001 serviceable/yes damage/NONE cond/7 remarks/Assessed lens");
 
         assertEquals("lens", first.getIssueConditionSnapshot().getEquipmentType());
         assertEquals(3, first.getIssueConditionSnapshot().getCondition());

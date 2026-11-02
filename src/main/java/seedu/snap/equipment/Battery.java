@@ -37,7 +37,7 @@ public class Battery extends Equipment {
      * Creates a battery with unspecified details and no recorded damage.
      *
      * @param name name of the battery
-     * @param id three-digit equipment ID
+     * @param id typed equipment ID from E001 to E999
      * @param condition condition of the battery from 1 to 10
      */
     public Battery(String name, String id, int condition) {
@@ -53,7 +53,7 @@ public class Battery extends Equipment {
      * Creates a battery with its existing type-specific details.
      *
      * @param name name of the battery
-     * @param id three-digit equipment ID
+     * @param id typed equipment ID from E001 to E999
      * @param condition condition of the battery from 1 to 10
      * @param capacity battery capacity description
      * @param damage damage recorded for the battery
@@ -71,7 +71,7 @@ public class Battery extends Equipment {
      * Creates a battery with type-specific details and optional remarks.
      *
      * @param name name of the battery
-     * @param id three-digit equipment ID
+     * @param id typed equipment ID from E001 to E999
      * @param condition condition of the battery from 1 to 10
      * @param capacity battery capacity description
      * @param damage damage recorded for the battery
@@ -100,7 +100,7 @@ public class Battery extends Equipment {
      * Creates a battery with all compatibility attributes.
      *
      * @param name name of the battery
-     * @param id three-digit equipment ID
+     * @param id typed equipment ID from E001 to E999
      * @param condition condition of the battery from 1 to 10
      * @param capacity battery capacity description
      * @param damage damage recorded for the battery

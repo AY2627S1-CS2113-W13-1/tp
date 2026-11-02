@@ -5,6 +5,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
+import seedu.snap.Identifier;
+
 /**
  * Represents an item of equipment in the inventory.
  *
@@ -21,14 +23,12 @@ public abstract class Equipment {
     public static final int MAX_CONDITION = 10;
     /** Maximum number of characters allowed in a single-line equipment remark. */
     public static final int MAX_REMARKS_LENGTH = 200;
-    private static final String ITEM_ID_PATTERN = "[0-9]{3}";
-    private static final String RESERVED_ITEM_ID = "000";
     private static final Pattern BLANK_TEXT = Pattern.compile("\\s*", Pattern.UNICODE_CHARACTER_CLASS);
 
     private static final Logger logger = Logger.getLogger(Equipment.class.getName());
     private String itemName;
     private final String itemId;
-    /** Permanent identity of this physical item; the visible three-digit Item ID may later be reused. */
+    /** Permanent identity of this physical item; the visible typed Item ID may later be reused. */
     private String recordId = UUID.randomUUID().toString();
     private int condition;
     private boolean isLoaned = false;
@@ -44,7 +44,7 @@ public abstract class Equipment {
      * Callers must validate user input before construction; assertions detect programming mistakes.
      *
      * @param name Name of the equipment.
-     * @param id Three-digit equipment ID.
+     * @param id Typed equipment ID from E001 to E999.
      * @param condition Condition of the equipment from 1 to 10.
      */
     protected Equipment(String name, String id, int condition) {
@@ -55,14 +55,14 @@ public abstract class Equipment {
      * Creates an equipment item with optional remarks.
      *
      * @param name Name of the equipment.
-     * @param id Three-digit equipment ID.
+     * @param id Typed equipment ID from E001 to E999.
      * @param condition Condition of the equipment from 1 to 10.
      * @param remarks Optional single-line remarks, up to 200 characters.
      */
     protected Equipment(String name, String id, int condition, String remarks) {
         assert hasText(name) && name.length() <= MAX_NAME_LENGTH
                 : "Equipment name must contain 1 to 100 characters";
-        assert isValidItemId(id) : "Equipment ID must be from 001 to 999";
+        assert isValidItemId(id) : "Equipment ID must be from E001 to E999";
         assert condition >= MIN_CONDITION && condition <= MAX_CONDITION
                 : "Equipment condition must be from 1 to 10";
         assert remarks != null && remarks.length() <= MAX_REMARKS_LENGTH
@@ -162,7 +162,8 @@ public abstract class Equipment {
 
     /** Associates this item with a validated loan identifier and updates availability together. */
     public void setLoanId(String loanId) {
-        assert loanId == null || isValidItemId(loanId) : "Loan ID must be from 001 to 999";
+        assert loanId == null || Identifier.isValid(loanId, Identifier.Type.LOAN)
+                : "Loan ID must be from L001 to L999";
         setLoaned(loanId != null);
         this.loanId = loanId;
     }
@@ -194,9 +195,9 @@ public abstract class Equipment {
         return value != null && !BLANK_TEXT.matcher(value).matches();
     }
 
-    /** Checks the three-digit Item ID range, excluding the reserved all-zero ID. */
+    /** Checks the typed Item ID range, excluding the reserved all-zero ID. */
     static boolean isValidItemId(String id) {
-        return id != null && id.matches(ITEM_ID_PATTERN) && !id.equals(RESERVED_ITEM_ID);
+        return Identifier.isValid(id, Identifier.Type.EQUIPMENT);
     }
 
     /** Applies validated name and condition together, preserving subtype, details, ID, and loan state. */

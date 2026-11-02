@@ -8,7 +8,7 @@ participant ":EqmManager" as Manager
 participant ":LoanHandler" as Handler
 participant ":EquipmentHandler" as Inventory
 
-Manager -> Handler: viewLoanHistory("eqm-loan-history e/001")
+Manager -> Handler: viewLoanHistory("eqm-loan-history e/E001")
 activate Handler
 Handler -> Handler: getLoanHistory(input)
 activate Handler
@@ -18,7 +18,7 @@ end note
 Handler -> Inventory: getEquipmentList()
 Inventory --> Handler: current inventory
 note right of Handler
-findEquipment("001") requires one match.
+findEquipment("E001") requires one match.
 Use that item's permanent record ID.
 end note
 loop each managed loan

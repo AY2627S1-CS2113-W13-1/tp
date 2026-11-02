@@ -94,7 +94,7 @@ class HelpExamplesIntegrationTest {
         if (command.equals("restore")) {
             manager.executeInput("backup path/" + backupDirectory);
             assertTrue(printed().contains("Backup created successfully"));
-            manager.executeInput("eqm-add name/Added after backup e/004 type/tripod cond/1");
+            manager.executeInput("eqm-add name/Added after backup e/E004 type/tripod cond/1");
             field(manager, "equipment", EquipmentHandler.class).saveToStorage();
         }
         output.reset();
@@ -158,21 +158,21 @@ class HelpExamplesIntegrationTest {
         if (command.equals("eqm-add")) {
             return manager;
         }
-        manager.executeInput("eqm-add name/Camera e/001 type/camera cond/1 sensor/APS-C mount/Canon RF");
-        manager.executeInput("eqm-add name/Battery e/002 type/battery cond/2 capacity/2000mAh");
-        manager.executeInput("eqm-add name/Lens e/003 type/lens cond/3 zoom/24-70mm mount/Canon RF sensor/APS-C");
+        manager.executeInput("eqm-add name/Camera e/E001 type/camera cond/1 sensor/APS-C mount/Canon RF");
+        manager.executeInput("eqm-add name/Battery e/E002 type/battery cond/2 capacity/2000mAh");
+        manager.executeInput("eqm-add name/Lens e/E003 type/lens cond/3 zoom/24-70mm mount/Canon RF sensor/APS-C");
         if (Set.of("bundle-add-eqm", "bundle-remove-eqm", "bundle-list", "bundle-history", "restore")
                 .contains(command)) {
             manager.executeInput("bundle-create name/Studio kit");
             if (!command.equals("bundle-add-eqm")) {
-                manager.executeInput("bundle-add-eqm b/001 001 002 003");
+                manager.executeInput("bundle-add-eqm b/B001 E001 E002 E003");
             }
         }
         if (Set.of("loan-return", "loan-delete", "loan-update", "loan-list", "loan-view", "loan-show",
                 "loan-list-borrower",
                 "loan-list-overdue", "eqm-loan-history", "bundle-history", "backup", "restore")
                 .contains(command)) {
-            manager.executeInput("loan-add e/001 u/002 issued/24-10-26 due/27-10-26");
+            manager.executeInput("loan-add e/E001 u/U002 issued/24-10-26 due/27-10-26");
         }
         field(manager, "equipment", EquipmentHandler.class).saveToStorage();
         field(manager, "loans", LoanHandler.class).saveToStorage();
@@ -183,28 +183,28 @@ class HelpExamplesIntegrationTest {
     /** Checks successful results instead of merely accepting any response from the router. */
     private static String expectedResult(String command) {
         return switch (command) {
-        case "eqm-add" -> "[OK] Equipment 001 added.";
-        case "eqm-delete" -> "[OK] Equipment 001 \"Camera\" deleted.";
-        case "loan-add" -> "[OK] Loan 001 issued.";
-        case "loan-return" -> "[OK] Loan 001 returned.";
-        case "loan-delete" -> "[OK] Loan 001 deleted.";
-        case "loan-update" -> "[OK] Loan 001 updated.";
+        case "eqm-add" -> "[OK] Equipment E001 added.";
+        case "eqm-delete" -> "[OK] Equipment E001 \"Camera\" deleted.";
+        case "loan-add" -> "[OK] Loan L001 issued.";
+        case "loan-return" -> "[OK] Loan L001 returned.";
+        case "loan-delete" -> "[OK] Loan L001 deleted.";
+        case "loan-update" -> "[OK] Loan L001 updated.";
         case "eqm-list" -> "3 equipment items.";
         case "eqm-filter" -> "1 equipment item.";
-        case "eqm-show" -> "Equipment 001";
+        case "eqm-show" -> "Equipment E001";
         case "loan-list" -> "LOAN ID";
-        case "loan-view" -> "Loan 001 condition assessments";
-        case "loan-show" -> "Loan 001 issue-time condition:";
-        case "loan-list-borrower" -> "Equipment currently held by borrower ID 002:";
+        case "loan-view" -> "Loan L001 condition assessments";
+        case "loan-show" -> "Loan L001 issue-time condition:";
+        case "loan-list-borrower", "list member" -> "Equipment currently held by borrower ID U002:";
         case "loan-list-overdue" -> "Overdue";
-        case "eqm-loan-history" -> "Loan history for item ID 001";
-        case "eqm-update" -> "[OK] Equipment 001 updated.";
+        case "eqm-loan-history" -> "Loan history for item ID E001";
+        case "eqm-update" -> "[OK] Equipment E001 updated.";
         case "eqm-maintain" -> "Maintenance recorded successfully.";
-        case "bundle-create" -> "[OK] Bundle 001 \"Studio kit\" created.";
-        case "bundle-add-eqm" -> "Equipment ID 003 added to bundle 001 successfully.";
-        case "bundle-remove-eqm" -> "Equipment ID 001 removed from bundle 001 successfully.";
+        case "bundle-create" -> "[OK] Bundle B001 \"Studio kit\" created.";
+        case "bundle-add-eqm" -> "Equipment ID E003 added to bundle B001 successfully.";
+        case "bundle-remove-eqm" -> "Equipment ID E001 removed from bundle B001 successfully.";
         case "bundle-list" -> "Studio kit";
-        case "bundle-history" -> "Loan history for bundle 001 (Studio kit)";
+        case "bundle-history" -> "Loan history for bundle B001 (Studio kit)";
         case "backup" -> "Backup created successfully";
         case "restore" -> "Backup restored successfully";
         case "help" -> "snAp command";
@@ -218,7 +218,7 @@ class HelpExamplesIntegrationTest {
         LoanHandler loans = field(manager, "loans", LoanHandler.class);
         BundleHandler bundles = field(manager, "bundles", BundleHandler.class);
         switch (command) {
-        case "eqm-add" -> assertEquals("Canon EOS R10", equipment.getEquipmentById("001").getItemName());
+        case "eqm-add" -> assertEquals("Canon EOS R10", equipment.getEquipmentById("E001").getItemName());
         case "eqm-delete" -> assertEquals(2, equipment.getEquipmentList().size());
         case "eqm-list" -> {
             assertTrue(printed().contains("Camera"));
@@ -232,22 +232,22 @@ class HelpExamplesIntegrationTest {
         }
         case "loan-list", "loan-list-borrower", "loan-list-overdue", "eqm-loan-history", "bundle-history" -> {
             assertTrue(printed().contains("| LOAN ID | ITEM ID | BORROWER ID | ISSUED   | DUE      | STATE"));
-            assertTrue(printed().contains("| 001     | 001     | 002         | 24-10-26 | 27-10-26 | Overdue"));
+            assertTrue(printed().contains("| L001    | E001    | U002        | 24-10-26 | 27-10-26 | Overdue"));
             assertTrue(printed().contains("1 loan."));
         }
-        case "loan-add" -> assertTrue(equipment.getEquipmentById("001").isLoaned());
+        case "loan-add" -> assertTrue(equipment.getEquipmentById("E001").isLoaned());
         case "loan-return" -> assertTrue(loans.getLoanList().getFirst().isReturned());
         case "loan-delete" -> assertTrue(loans.getLoanList().isEmpty());
         case "loan-update" -> {
-            assertEquals("002", loans.getLoanList().getFirst().getItemId());
-            assertEquals("007", loans.getLoanList().getFirst().getBorrowerId());
+            assertEquals("E002", loans.getLoanList().getFirst().getItemId());
+            assertEquals("U007", loans.getLoanList().getFirst().getBorrowerId());
         }
-        case "eqm-update" -> assertEquals("Studio camera", equipment.getEquipmentById("001").getItemName());
+        case "eqm-update" -> assertEquals("Studio camera", equipment.getEquipmentById("E001").getItemName());
         case "eqm-maintain" -> assertEquals(1,
                 field(manager, "maintenance", MaintenanceHandler.class).getMaintenanceRecords().size());
         case "bundle-create" -> assertEquals("Studio kit", bundles.getBundleList().getFirst().getBundleName());
         case "bundle-add-eqm" -> assertTrue(bundles.getBundleList().getFirst().isComplete());
-        case "bundle-remove-eqm" -> assertFalse(bundles.containsEquipmentId("001"));
+        case "bundle-remove-eqm" -> assertFalse(bundles.containsEquipmentId("E001"));
         case "backup" -> assertTrue(Files.isRegularFile(backupDirectory.resolve("backup-manifest.txt")));
         case "restore" -> {
             assertEquals(3, equipment.getEquipmentList().size());

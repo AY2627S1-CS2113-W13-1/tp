@@ -35,30 +35,30 @@ class BundleLoanHistoryIntegrationTest {
     @Test
     void historyBundleCommand_displaysActiveAndReturnedLoans() {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("eqm-add name/Camera e/001 type/camera cond/5 sensor/Full frame");
-        manager.executeInput("eqm-add name/Battery e/002 type/battery cond/5 capacity/2000 mAh");
+        manager.executeInput("eqm-add name/Camera e/E001 type/camera cond/5 sensor/Full frame");
+        manager.executeInput("eqm-add name/Battery e/E002 type/battery cond/5 capacity/2000 mAh");
         manager.executeInput("bundle-create name/Travel Kit");
-        manager.executeInput("bundle-add-eqm b/001 001 002");
-        manager.executeInput("loan-add e/001 u/111 issued/01-10-26 due/02-10-26");
-        manager.executeInput("loan-add e/002 u/222 issued/03-10-26 due/04-10-26");
-        manager.executeInput("loan-return l/002 serviceable/yes damage/NONE");
+        manager.executeInput("bundle-add-eqm b/B001 E001 E002");
+        manager.executeInput("loan-add e/E001 u/U111 issued/01-10-26 due/02-10-26");
+        manager.executeInput("loan-add e/E002 u/U222 issued/03-10-26 due/04-10-26");
+        manager.executeInput("loan-return l/L002 serviceable/yes damage/NONE");
         output.reset();
 
-        manager.executeInput("bundle-history b/001");
+        manager.executeInput("bundle-history b/B001");
 
         String printed = output.toString(StandardCharsets.UTF_8);
-        assertTrue(printed.contains("Loan history for bundle 001 (Travel Kit)"));
-        assertTrue(printed.contains("111"));
-        assertTrue(printed.contains("222"));
+        assertTrue(printed.contains("Loan history for bundle B001 (Travel Kit)"));
+        assertTrue(printed.contains("U111"));
+        assertTrue(printed.contains("U222"));
         assertTrue(printed.contains("STATE"));
-        assertTrue(printed.indexOf("111") < printed.indexOf("222"));
+        assertTrue(printed.indexOf("U111") < printed.indexOf("U222"));
     }
 
     @Test
     void historyBundleCommand_reportsUnknownBundle() {
         EqmManager manager = new EqmManager(temporaryDirectory);
 
-        manager.executeInput("bundle-history b/001");
+        manager.executeInput("bundle-history b/B001");
 
         String printed = output.toString(StandardCharsets.UTF_8);
         assertTrue(printed.contains("requested bundle does not exist"));
@@ -68,13 +68,13 @@ class BundleLoanHistoryIntegrationTest {
     @Test
     void historyBundleCommand_survivesRestartWithBundleAndLoanPersistence() {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("eqm-add name/Camera e/001 type/camera cond/5 sensor/Full frame");
-        manager.executeInput("eqm-add name/Battery e/002 type/battery cond/5 capacity/2000 mAh");
+        manager.executeInput("eqm-add name/Camera e/E001 type/camera cond/5 sensor/Full frame");
+        manager.executeInput("eqm-add name/Battery e/E002 type/battery cond/5 capacity/2000 mAh");
         manager.executeInput("bundle-create name/Travel Kit");
-        manager.executeInput("bundle-add-eqm b/001 001 002");
-        manager.executeInput("loan-add e/001 u/111 issued/01-10-26 due/02-10-26");
-        manager.executeInput("loan-add e/002 u/222 issued/03-10-26 due/04-10-26");
-        manager.executeInput("loan-return l/002 serviceable/yes damage/NONE");
+        manager.executeInput("bundle-add-eqm b/B001 E001 E002");
+        manager.executeInput("loan-add e/E001 u/U111 issued/01-10-26 due/02-10-26");
+        manager.executeInput("loan-add e/E002 u/U222 issued/03-10-26 due/04-10-26");
+        manager.executeInput("loan-return l/L002 serviceable/yes damage/NONE");
         manager.executeInput("exit");
         output.reset();
 
@@ -82,9 +82,9 @@ class BundleLoanHistoryIntegrationTest {
         restarted.executeInput("bundle-history name/Travel Kit");
 
         String printed = output.toString(StandardCharsets.UTF_8);
-        assertTrue(printed.contains("Loan history for bundle 001 (Travel Kit)"));
-        assertTrue(printed.contains("111"));
-        assertTrue(printed.contains("222"));
-        assertTrue(printed.indexOf("111") < printed.indexOf("222"));
+        assertTrue(printed.contains("Loan history for bundle B001 (Travel Kit)"));
+        assertTrue(printed.contains("U111"));
+        assertTrue(printed.contains("U222"));
+        assertTrue(printed.indexOf("U111") < printed.indexOf("U222"));
     }
 }

@@ -47,14 +47,14 @@ class LoanIssueConditionCommandTest {
         addEquipmentAndLoan(manager);
         output.reset();
 
-        manager.executeInput("loan-show l/001");
+        manager.executeInput("loan-show l/L001");
 
         String actual =
                 output.toString(StandardCharsets.UTF_8);
         assertTrue(
                 actual.contains(
-                        "Loan 001 issue-time condition:"));
-        assertTrue(actual.contains("Item ID: 001"));
+                        "Loan L001 issue-time condition:"));
+        assertTrue(actual.contains("Item ID: E001"));
         assertTrue(actual.contains("Type: camera"));
         assertTrue(actual.contains("Condition: 6"));
         assertTrue(actual.contains("Damage: SENSOR_DAMAGE"));
@@ -71,13 +71,13 @@ class LoanIssueConditionCommandTest {
 
         EqmManager restarted =
                 new EqmManager(temporaryDirectory);
-        restarted.executeInput("loan-show l/001");
+        restarted.executeInput("loan-show l/L001");
 
         String actual =
                 output.toString(StandardCharsets.UTF_8);
         assertTrue(
                 actual.contains(
-                        "Loan 001 issue-time condition:"));
+                        "Loan L001 issue-time condition:"));
         assertTrue(actual.contains("Condition: 6"));
         assertTrue(actual.contains("Damage: SENSOR_DAMAGE"));
         assertTrue(
@@ -89,10 +89,10 @@ class LoanIssueConditionCommandTest {
     void executeInput_unknownLoan_printsError() {
         EqmManager manager = new EqmManager(temporaryDirectory);
 
-        manager.executeInput("loan-show l/999");
+        manager.executeInput("loan-show l/L999");
 
         assertEquals(
-                "[ERROR] No loan found for loan ID 999."
+                "[ERROR] No loan found for loan ID L999."
                         + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
     }
@@ -101,7 +101,7 @@ class LoanIssueConditionCommandTest {
     void executeInput_invalidViewCommand_printsFormatError() {
         EqmManager manager = new EqmManager(temporaryDirectory);
 
-        manager.executeInput("loan-show item/001");
+        manager.executeInput("loan-show item/E001");
 
         assertEquals(
                 "[ERROR] Invalid command format. Expected: "
@@ -116,7 +116,7 @@ class LoanIssueConditionCommandTest {
         addEquipmentAndLoan(manager);
         output.reset();
 
-        manager.executeInput("loan-show\tl/001");
+        manager.executeInput("loan-show l/L001");
 
         assertTrue(
                 output.toString(StandardCharsets.UTF_8)
@@ -137,7 +137,7 @@ class LoanIssueConditionCommandTest {
         String sequenceBefore = Files.readString(sequenceFile);
         output.reset();
 
-        manager.executeInput("loan-show l/001");
+        manager.executeInput("loan-show l/L001");
 
         assertEquals(equipmentBefore, Files.readString(equipmentFile));
         assertEquals(loansBefore, Files.readString(loansFile));
@@ -147,13 +147,13 @@ class LoanIssueConditionCommandTest {
     /** Adds one camera and creates its first loan. */
     private void addEquipmentAndLoan(EqmManager manager) {
         manager.executeInput(
-                "eqm-add name/Test Camera e/001 "
+                "eqm-add name/Test Camera e/E001 "
                         + "type/camera cond/6 "
                         + "sensor/Full frame "
                         + "damage/SENSOR_DAMAGE "
                         + "remarks/Handle carefully");
         manager.executeInput(
-                "loan-add e/001 u/101 "
+                "loan-add e/E001 u/U101 "
                         + "issued/01-10-26 due/20-10-26");
     }
 }

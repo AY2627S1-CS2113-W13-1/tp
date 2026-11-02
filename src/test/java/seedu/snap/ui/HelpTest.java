@@ -38,45 +38,43 @@ class HelpTest {
         return Stream.of(
                 Arguments.of("eqm-add", "eqm-add name/<NAME> e/<ID> type/<TYPE> cond/<N>"
                         + " [TYPE DETAIL] [damage/<DAMAGE>] [remarks/<TEXT>]",
-                        "eqm-add name/Canon EOS R10 e/001 type/camera cond/1 "
+                        "eqm-add name/Canon EOS R10 e/E001 type/camera cond/1 "
                                 + "sensor/APS-C mount/Canon RF damage/NONE"),
                 Arguments.of("eqm-list", "eqm-list", "eqm-list"),
-                Arguments.of("eqm-show", "eqm-show e/<ID>", "eqm-show e/001"),
-                Arguments.of("eqm-delete", "eqm-delete e/<ID>", "eqm-delete e/001"),
-                Arguments.of("loan-add", "loan-add e/<ITEM ID> u/<BORROWER ID> "
-                                + "[issued/<DD-MM-YY>] due/<DD-MM-YY>",
-                        "loan-add e/001 u/002 issued/24-10-26 due/31-10-26"),
-                Arguments.of("loan-return", "loan-return l/<LOAN ID> serviceable/<yes|no> "
-                                + "damage/<DAMAGE> [cond/<N>] [remarks/<TEXT>]",
-                        "loan-return l/001 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair"),
-                Arguments.of("loan-delete", "loan-delete l/<LOAN ID>", "loan-delete l/001"),
+                Arguments.of("eqm-show", "eqm-show e/<ID>", "eqm-show e/E001"),
+                Arguments.of("eqm-delete", "eqm-delete e/<ID>", "eqm-delete e/E001"),
+                Arguments.of("loan-add", "loan-add e/<ITEM ID> u/<BORROWER ID> [issued/<DD-MM-YY>] due/<DD-MM-YY>",
+                        "loan-add e/E001 u/U002 issued/24-10-26 due/31-10-26"),
+                Arguments.of("loan-return", "loan-return l/<LOAN ID> serviceable/<yes|no> damage/<DAMAGE> "
+                        + "[cond/<N>] [remarks/<TEXT>]",
+                        "loan-return l/L001 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair"),
+                Arguments.of("loan-delete", "loan-delete l/<LOAN ID>", "loan-delete l/L001"),
                 Arguments.of("loan-update", "loan-update l/<LOAN ID> [e/<ITEM ID>] [u/<BORROWER ID>]"
                                 + " [issued/<DD-MM-YY>] [due/<DD-MM-YY>]",
-                        "loan-update l/001 e/002 u/007 due/07-11-26"),
+                        "loan-update l/L001 e/E002 u/U007 due/07-11-26"),
                 Arguments.of("loan-list", "loan-list", "loan-list"),
-                Arguments.of("loan-view", "loan-view l/<LOAN ID>", "loan-view l/001"),
-                Arguments.of("loan-show", "loan-show l/<LOAN ID>", "loan-show l/001"),
+                Arguments.of("loan-view", "loan-view l/<LOAN ID>", "loan-view l/L001"),
                 Arguments.of("backup", "backup path/<DIRECTORY>", "backup path/backups/session-1"),
                 Arguments.of("restore", "restore path/<DIRECTORY>", "restore path/backups/session-1"),
-                Arguments.of("loan-list-borrower", "loan-list-borrower u/<BORROWER ID>",
-                        "loan-list-borrower u/002"),
+                Arguments.of("loan-list-borrower", "loan-list-borrower u/<BORROWER ID>", "loan-list-borrower u/U002"),
+                Arguments.of("loan-list-borrower", "loan-list-borrower u/<BORROWER ID>", "loan-list-borrower u/U002"),
                 Arguments.of("loan-list-overdue", "loan-list-overdue", "loan-list-overdue"),
-                Arguments.of("eqm-loan-history", "eqm-loan-history e/<ITEM ID>", "eqm-loan-history e/001"),
+                Arguments.of("eqm-loan-history", "eqm-loan-history e/<ITEM ID>", "eqm-loan-history e/E001"),
                 Arguments.of("eqm-filter", "eqm-filter [e/<ID>] [name/<NAME>] [type/<TYPE>] "
-                                + "[cond/<N|MIN-MAX>] [status/<STATUS>]",
+                        + "[cond/<N|MIN-MAX>] [status/<STATUS>]",
                         "eqm-filter type/camera cond/1-3 status/available"),
                 Arguments.of("eqm-maintain", "eqm-maintain e/<ITEM ID> date/<DD-MM-YY> "
-                                + "work/<DESCRIPTION> outcome/<OUTCOME>",
-                        "eqm-maintain e/001 date/27-10-26 work/Replaced battery outcome/Completed"),
+                        + "work/<DESCRIPTION> outcome/<OUTCOME>",
+                        "eqm-maintain e/E001 date/27-10-26 work/Replaced battery outcome/Completed"),
                 Arguments.of("eqm-update", "eqm-update e/<ID> [name/<NAME>] [type/<TYPE>] [cond/<N>]",
-                        "eqm-update e/001 name/Studio camera cond/5"),
+                        "eqm-update e/E001 name/Studio camera cond/5"),
                 Arguments.of("bundle-create", "bundle-create name/<NAME>", "bundle-create name/Studio kit"),
                 Arguments.of("bundle-add-eqm", "bundle-add-eqm b/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]",
-                        "bundle-add-eqm b/001 001 002 003"),
+                        "bundle-add-eqm b/B001 E001 E002 E003"),
                 Arguments.of("bundle-remove-eqm", "bundle-remove-eqm b/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]",
-                        "bundle-remove-eqm b/001 001"),
+                        "bundle-remove-eqm b/B001 E001"),
                 Arguments.of("bundle-list", "bundle-list", "bundle-list"),
-                Arguments.of("bundle-history", "bundle-history b/<BUNDLE ID>", "bundle-history b/001"),
+                Arguments.of("bundle-history", "bundle-history b/<BUNDLE ID>", "bundle-history b/B001"),
                 Arguments.of("bundle-history", "bundle-history name/<NAME>", "bundle-history name/Studio kit"),
                 Arguments.of("help", "help", "help"),
                 Arguments.of("exit", "exit", "exit"));
@@ -102,7 +100,7 @@ class HelpTest {
         String prose = normaliseWhitespace(text);
         assertTrue(prose.contains("<VALUE> is a placeholder. [field/<VALUE>] is optional."));
         assertTrue(prose.contains("Commands and field prefixes use exact lowercase spelling."));
-        assertTrue(prose.contains("001-999. Borrower IDs: 000-999."));
+        assertTrue(prose.contains("Borrower IDs use U000-U999, with U standing for user."));
         commandExamples().forEach(arguments -> {
             String otherTopic = (String) arguments.get()[0];
             String otherFormat = (String) arguments.get()[1];
@@ -261,9 +259,9 @@ class HelpTest {
     /** Supplies misspellings, partial topics and aliases that must not select a command guide. */
     private static Stream<String> unknownTopics() {
         return Stream.of("unknown", "HELP", "ADD", "helpall", "helpful", "equipment", "loans", "bundles",
-                "delete", "list loan", "list items", "loan-list extra", "view", "loan-show l/001", "loan-view extra",
-                "bundle-history b/001", "bundle-history name/Studio kit", "bundle-remove-eqm b/001 001",
-                "help add", "all extra");
+                "delete", "list loan", "list items", "loan-list extra", "view", "loan-view l/L001", "view loan extra",
+                "bundle-history b/B001", "bundle-history name/Studio kit", "bundle-remove-eqm b/B001 E001",
+                "help eqm-add", "all extra");
     }
 
     @ParameterizedTest
@@ -325,7 +323,7 @@ class HelpTest {
 
         assertTrue(text.contains("<VALUE> is a placeholder. [field/<VALUE>] is optional."));
         assertTrue(text.contains("Commands and field prefixes use exact lowercase spelling."));
-        assertTrue(text.contains("001-999. Borrower IDs: 000-999."));
+        assertTrue(text.contains("Borrower IDs use U000-U999, with U standing for user."));
         assertTrue(text.contains("Equipment names: 1-" + Equipment.MAX_NAME_LENGTH));
         assertTrue(text.contains("condition: " + Equipment.MIN_CONDITION + "-" + Equipment.MAX_CONDITION));
         assertTrue(text.contains("remarks: 0-" + Equipment.MAX_REMARKS_LENGTH + " characters after trimming."));
@@ -370,7 +368,7 @@ class HelpTest {
         assertTrue(text.contains("local time zone, at midnight."));
         assertTrue(text.contains("Issue date must be on or before the required due date."));
         assertTrue(text.contains("be serviceable and have no active loan."));
-        assertTrue(text.contains("Loan IDs are assigned automatically from 001 to 999"));
+        assertTrue(text.contains("Loan IDs are assigned automatically from L001 to L999"));
         assertTrue(text.contains("explicit serviceable/ and damage/ assessment"));
         assertTrue(text.contains("Remarks/ must be last. For OTHER, provide non-empty text after trimming."));
         assertTrue(text.contains("For other damage values, omitted or empty remarks clear prior notes."));

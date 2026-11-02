@@ -32,8 +32,8 @@ class LoanAssessmentIntegrationTest {
         System.setOut(new PrintStream(output, true, StandardCharsets.UTF_8));
         data = directory.resolve("data");
         manager = new EqmManager(data);
-        manager.executeInput("eqm-add name/Camera e/001 type/camera cond/2 remarks/Before issue");
-        manager.executeInput("loan-add e/001 u/002 issued/01-10-26 due/20-10-26");
+        manager.executeInput("eqm-add name/Camera e/E001 type/camera cond/2 remarks/Before issue");
+        manager.executeInput("loan-add e/E001 u/U002 issued/01-10-26 due/20-10-26");
         output.reset();
     }
 
@@ -44,15 +44,15 @@ class LoanAssessmentIntegrationTest {
 
     @Test
     void view_returnedLoan_comparesBothAssessmentsAfterRestartWithoutChangingFiles() throws Exception {
-        manager.executeInput("loan-return l/001 serviceable/no damage/SENSOR_DAMAGE cond/8 remarks/Needs repair");
-        manager.executeInput("eqm-update e/001 cond/5");
+        manager.executeInput("loan-return l/L001 serviceable/no damage/SENSOR_DAMAGE cond/8 remarks/Needs repair");
+        manager.executeInput("eqm-update e/E001 cond/5");
         manager = new EqmManager(data);
         List<Path> files = List.of(data.resolve("equipment.txt"), data.resolve("loans.txt"),
                 data.resolve("loan-sequence.txt"));
         List<String> before = files.stream().map(this::readFile).toList();
         output.reset();
 
-        manager.executeInput("loan-view l/001");
+        manager.executeInput("loan-view l/L001");
 
         String printed = printed();
         assertTrue(printed.contains("Status: Returned"));
@@ -67,15 +67,15 @@ class LoanAssessmentIntegrationTest {
 
     @Test
     void view_activeAndLegacyReturnedLoans_distinguishesMissingAssessmentFromPendingReturn() throws Exception {
-        manager.executeInput("loan-view l/001");
+        manager.executeInput("loan-view l/L001");
         assertTrue(printed().contains("Status: Active"));
         assertTrue(printed().contains("Condition | 2 | Not returned"));
-        Files.writeString(data.resolve("loans.txt"), "loan loanId/001 id/001 b/002 "
+        Files.writeString(data.resolve("loans.txt"), "loan loanId/L001 id/E001 b/U002 "
                 + "issued/01-10-26 due/20-10-26 returned/true\n");
         manager = new EqmManager(data);
         output.reset();
 
-        manager.executeInput("loan-view l/001");
+        manager.executeInput("loan-view l/L001");
 
         assertTrue(printed().contains("Status: Returned"));
         assertTrue(printed().contains("Condition | Not recorded | Not recorded"));
@@ -88,14 +88,14 @@ class LoanAssessmentIntegrationTest {
         Files.writeString(loansFile, Files.readString(loansFile).replace(" issueServiceable/yes", ""));
         manager = new EqmManager(data);
         output.reset();
-        manager.executeInput("loan-view l/001");
+        manager.executeInput("loan-view l/L001");
         assertTrue(printed().contains("Condition | 2 | Not returned"));
         assertTrue(printed().contains("Serviceable | Not recorded | Not returned"));
 
-        manager.executeInput("loan-return l/001 serviceable/yes damage/NONE cond/4");
+        manager.executeInput("loan-return l/L001 serviceable/yes damage/NONE cond/4");
         manager = new EqmManager(data);
         output.reset();
-        manager.executeInput("loan-view l/001");
+        manager.executeInput("loan-view l/L001");
 
         assertTrue(printed().contains("Serviceable | Not recorded | Yes"));
         assertTrue(printed().contains("Condition | 2 | 4"));
@@ -104,21 +104,21 @@ class LoanAssessmentIntegrationTest {
     @Test
     void return_invalidRatingAndRepeatedReturn_preserveOriginalAssessmentAndRecover() throws Exception {
         String before = readFile(data.resolve("loans.txt"));
-        manager.executeInput("loan-return l/001 serviceable/yes damage/NONE cond/11 remarks/Rejected");
+        manager.executeInput("loan-return l/L001 serviceable/yes damage/NONE cond/11 remarks/Rejected");
         assertTrue(printed().contains("Return condition must be a whole number from 1 to 10"));
         assertEquals(before, readFile(data.resolve("loans.txt")));
-        manager.executeInput("loan-return l/001 serviceable/yes damage/NONE cond/4 remarks/Recorded");
-        manager.executeInput("loan-add e/001 u/003 issued/21-10-26 due/22-10-26");
+        manager.executeInput("loan-return l/L001 serviceable/yes damage/NONE cond/4 remarks/Recorded");
+        manager.executeInput("loan-add e/E001 u/U003 issued/21-10-26 due/22-10-26");
         String saved = readFile(data.resolve("loans.txt"));
         output.reset();
 
-        manager.executeInput("loan-return l/001 serviceable/no damage/SENSOR_DAMAGE cond/10 remarks/Rejected");
+        manager.executeInput("loan-return l/L001 serviceable/no damage/SENSOR_DAMAGE cond/10 remarks/Rejected");
 
         assertTrue(printed().contains("already been returned"));
         assertEquals(saved, readFile(data.resolve("loans.txt")));
-        manager.executeInput("loan-return l/002 serviceable/no damage/SENSOR_DAMAGE cond/8 remarks/Later assessment");
+        manager.executeInput("loan-return l/L002 serviceable/no damage/SENSOR_DAMAGE cond/8 remarks/Later assessment");
         output.reset();
-        manager.executeInput("loan-view l/001");
+        manager.executeInput("loan-view l/L001");
         assertTrue(printed().contains("Condition | 2 | 4"));
         assertTrue(printed().contains("Return remarks: Recorded"));
         assertFalse(printed().contains("Later assessment"));
@@ -126,12 +126,12 @@ class LoanAssessmentIntegrationTest {
 
     @Test
     void backupAndRestore_preservePerLoanAssessmentsAndNextId() throws Exception {
-        manager.executeInput("loan-return l/001 serviceable/yes damage/NONE cond/4 remarks/First return");
+        manager.executeInput("loan-return l/L001 serviceable/yes damage/NONE cond/4 remarks/First return");
         Path backup = directory.resolve("backup");
         manager.executeInput("backup path/" + backup);
         assertTrue(printed().contains("Backup created successfully"));
-        manager.executeInput("loan-add e/001 u/003 issued/21-10-26 due/22-10-26");
-        manager.executeInput("loan-return l/002 serviceable/no damage/SENSOR_DAMAGE cond/8 remarks/Later return");
+        manager.executeInput("loan-add e/E001 u/U003 issued/21-10-26 due/22-10-26");
+        manager.executeInput("loan-return l/L002 serviceable/no damage/SENSOR_DAMAGE cond/8 remarks/Later return");
         output.reset();
 
         manager.executeInput("restore path/" + backup);
@@ -139,12 +139,12 @@ class LoanAssessmentIntegrationTest {
         assertTrue(printed().contains("Backup restored successfully"));
         manager = new EqmManager(data);
         output.reset();
-        manager.executeInput("loan-view l/001");
+        manager.executeInput("loan-view l/L001");
         assertTrue(printed().contains("Condition | 2 | 4"));
         assertTrue(printed().contains("Return remarks: First return"));
-        manager.executeInput("loan-view l/002");
-        assertTrue(printed().contains("No loan found for loan ID 002"));
-        assertEquals("nextLoanId/002", readFile(data.resolve("loan-sequence.txt")).strip());
+        manager.executeInput("loan-view l/L002");
+        assertTrue(printed().contains("No loan found for loan ID L002"));
+        assertEquals("nextLoanId/L002", readFile(data.resolve("loan-sequence.txt")).strip());
     }
 
     @Test

@@ -49,20 +49,20 @@ class LoanIssueConditionViewTest {
             throws Exception {
         EquipmentHandler equipment = new EquipmentHandler();
         equipment.addEquipment(
-                "eqm-add name/Test Camera e/001 type/camera cond/6 "
+                "eqm-add name/Test Camera e/E001 type/camera cond/6 "
                         + "sensor/Full frame "
                         + "damage/SENSOR_DAMAGE "
                         + "remarks/Handle carefully");
         LoanHandler handler = new LoanHandler(equipment);
         handler.addLoan(
-                "loan-add e/001 u/101 "
+                "loan-add e/E001 u/U101 "
                         + "issued/01-10-26 due/20-10-26");
         output.reset();
 
-        handler.viewLoanAssessments("loan-view l/001");
+        handler.viewLoanAssessments("loan-view l/L001");
 
         String actual = output.toString(StandardCharsets.UTF_8).replaceAll(" +", " ");
-        assertTrue(actual.contains("Loan 001 condition assessments (Item ID: 001)"));
+        assertTrue(actual.contains("Loan L001 condition assessments (Item ID: E001)"));
         assertTrue(actual.contains("Status: Active"));
         assertTrue(actual.contains("Type | camera | Not returned"));
         assertTrue(actual.contains("Condition | 6 | Not returned"));
@@ -76,15 +76,15 @@ class LoanIssueConditionViewTest {
             throws Exception {
         EquipmentHandler equipment = new EquipmentHandler();
         equipment.addEquipment(
-                "eqm-add name/Test Camera e/001 "
+                "eqm-add name/Test Camera e/E001 "
                         + "type/camera cond/6");
         LoanHandler handler = new LoanHandler(equipment);
         handler.addLoan(
-                "loan-add e/001 u/101 "
+                "loan-add e/E001 u/U101 "
                         + "issued/01-10-26 due/20-10-26");
         output.reset();
 
-        handler.viewLoanAssessments("loan-view l/001");
+        handler.viewLoanAssessments("loan-view l/L001");
 
         assertTrue(
                 output.toString(StandardCharsets.UTF_8)
@@ -98,28 +98,28 @@ class LoanIssueConditionViewTest {
                 temporaryDirectory.resolve("loans.txt");
         Files.writeString(
                 loanFile,
-                "loan loanId/001 id/001 b/101 "
+                "loan loanId/L001 id/E001 b/U101 "
                         + "issued/01-10-26 due/20-10-26 "
                         + "returned/false\n");
 
         EquipmentHandler equipment = new EquipmentHandler();
         equipment.addEquipment(
-                "eqm-add name/Test Camera e/001 "
+                "eqm-add name/Test Camera e/E001 "
                         + "type/camera cond/6");
         LoanHandler handler =
                 new LoanHandler(equipment, loanFile);
         handler.loadFromStorage();
         output.reset();
-        handler.viewLoanAssessments("loan-view l/001");
+        handler.viewLoanAssessments("loan-view l/L001");
 
         String actual = output.toString(StandardCharsets.UTF_8).replaceAll(" +", " ");
         assertTrue(actual.contains("Status: Active"));
         assertTrue(actual.contains("Condition | Not recorded | Not returned"));
         assertTrue(actual.contains("Issue remarks: Not recorded"));
         output.reset();
-        handler.viewLoanIssueCondition("loan-show l/001");
+        handler.viewLoanIssueCondition("loan-show l/L001");
         assertTrue(output.toString(StandardCharsets.UTF_8).contains(
-                "Loan 001 issue-time condition: Not recorded"));
+                "Loan L001 issue-time condition: Not recorded"));
 
     }
 
@@ -130,7 +130,7 @@ class LoanIssueConditionViewTest {
             "loan-show l/000", "loan-show l/abc"}) {
             assertThrows(LoanViewingUnsuccessful.class, () -> handler.viewLoanIssueCondition(input));
             assertTrue(handler.getLoanList().isEmpty());
-            assertEquals("001", handler.getNextLoanId());
+            assertEquals("L001", handler.getNextLoanId());
         }
     }
 
@@ -143,7 +143,7 @@ class LoanIssueConditionViewTest {
                 assertThrows(
                         LoanViewingUnsuccessful.class,
                         () -> handler.viewLoanAssessments(
-                                "loan-view item/001"));
+                                "view item/E001"));
 
         assertEquals(
                 "Invalid command format. Expected: "
@@ -164,7 +164,7 @@ class LoanIssueConditionViewTest {
 
         assertEquals(
                 "Invalid loan ID \"01\". Loan ID must be "
-                        + "exactly three digits from 001 to 999.",
+                        + "exactly L001 to L999.",
                 exception.getMessage());
     }
 
@@ -177,10 +177,10 @@ class LoanIssueConditionViewTest {
                 assertThrows(
                         LoanViewingUnsuccessful.class,
                         () -> handler.viewLoanAssessments(
-                                "loan-view l/999"));
+                                "loan-view l/L999"));
 
         assertEquals(
-                "No loan found for loan ID 999.",
+                "No loan found for loan ID L999.",
                 exception.getMessage());
     }
 }

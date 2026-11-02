@@ -83,7 +83,9 @@ public final class Help {
                 Full command names are recommended for new users and discoverability. Short aliases are provided for
                 experienced or power users who find the full names cumbersome after learning the command set.
 
-                Equipment, loan and bundle IDs: exactly three digits, 001-999. Borrower IDs: 000-999.
+                Equipment IDs use E001-E999, loan IDs use L001-L999, and bundle IDs use B001-B999.
+                Borrower IDs use U000-U999, with U standing for user.
+                ID prefixes are case-insensitive in commands; listings and saved data always use uppercase IDs.
                 Equipment names: 1-%d characters; condition: %d-%d; remarks: 0-%d characters after trimming.
                 Maintenance work: 1-%d characters; outcomes: 1-%d characters. Both must remain on one line.
                 Type details: 1-100 characters. Type details and remarks must remain on one line.
@@ -103,7 +105,7 @@ public final class Help {
                         EQM-ADD
                         Format: eqm-add name/<NAME> e/<ID> type/<TYPE> cond/<N> [TYPE DETAIL] [damage/<DAMAGE>] \
                         [remarks/<TEXT>]
-                        Example: eqm-add name/Canon EOS R10 e/001 type/camera cond/1 sensor/APS-C \
+                        Example: eqm-add name/Canon EOS R10 e/E001 type/camera cond/1 sensor/APS-C \
                         mount/Canon RF damage/NONE
                         Name, unused Item ID, type and condition are required, in that order.
 
@@ -139,8 +141,8 @@ public final class Help {
                 new CommandHelp("eqm-show", "Equipment", lineEndings("""
                         EQM-SHOW
                         Format: eqm-show e/<ID>
-                        Example: eqm-show e/001
-                        Requires an existing Item ID from 001 to 999. Extra fields are not accepted.
+                        Example: eqm-show e/E001
+                        Requires an existing Item ID from E001 to E999. Extra fields are not accepted.
                         Shows the full name, type, numeric condition, status, serviceability and active Loan ID.
                         Includes all subtype and compatibility fields, damage and remarks, without truncation.
                         Long values wrap onto indented lines; (none) marks an empty value.
@@ -150,7 +152,7 @@ public final class Help {
                 new CommandHelp("eqm-delete", "Equipment", lineEndings("""
                         EQM-DELETE
                         Format: eqm-delete e/<ID>
-                        Example: eqm-delete e/001
+                        Example: eqm-delete e/E001
                         Requires an existing Item ID. Active loans and bundle membership block deletion.
 
                         Existing loans remain in loan-list; a replacement using this Item ID has separate history.
@@ -158,7 +160,7 @@ public final class Help {
                 new CommandHelp("loan-add", "Loans", lineEndings("""
                         LOAN-ADD
                         Format: loan-add e/<ITEM ID> u/<BORROWER ID> [issued/<DD-MM-YY>] due/<DD-MM-YY>
-                        Example: loan-add e/001 u/002 issued/24-10-26 due/31-10-26
+                        Example: loan-add e/E001 u/U002 issued/24-10-26 due/31-10-26
                         Item ID, borrower ID and due/ are required. Keep the displayed field order.
 
                         Omitted issued/ defaults to today's date in the application's local time zone, at midnight.
@@ -166,13 +168,13 @@ public final class Help {
 
                         Equipment must exist, be serviceable and have no active loan.
 
-                        Loan IDs are assigned automatically from 001 to 999 and are never reused after deletion.
+                        Loan IDs are assigned automatically from L001 to L999 and are never reused after deletion.
                         Success shows the assigned Loan ID, item ID and name, borrower, issue date and due date.
                         """)),
                 new CommandHelp("loan-return", "Loans", lineEndings(String.format(Locale.ROOT, """
                         LOAN-RETURN
                         Format: loan-return l/<LOAN ID> serviceable/<yes|no> damage/<DAMAGE> [cond/<N>] [remarks/<TEXT>]
-                        Example: loan-return l/001 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair
+                        Example: loan-return l/L001 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair
                         Requires an active Loan ID and explicit serviceable/ and damage/ assessment, in that order.
                         Serviceable yes/no and subtype damage values are case-insensitive; use NONE for no damage.
                         Optional cond/ sets a whole-number condition from 1 to 10.
@@ -201,7 +203,7 @@ public final class Help {
                 new CommandHelp("loan-delete", "Loans", lineEndings("""
                         LOAN-DELETE
                         Format: loan-delete l/<LOAN ID>
-                        Example: loan-delete l/001
+                        Example: loan-delete l/L001
                         Removes one loan record and its history. Deleting an active loan releases its equipment.
 
                         Deleting returned history leaves newer active loans unchanged. Deleted IDs are never reused.
@@ -210,7 +212,7 @@ public final class Help {
                         LOAN-UPDATE
                         Format: loan-update l/<LOAN ID> [e/<ITEM ID>] [u/<BORROWER ID>] \
                         [issued/<DD-MM-YY>] [due/<DD-MM-YY>]
-                        Example: loan-update l/001 e/002 u/007 due/07-11-26
+                        Example: loan-update l/L001 e/E002 u/U007 due/07-11-26
                         Requires one existing active Loan ID and at least one update field,
                         in any order, each prefix once.
                         The Loan ID remains unchanged; omitted fields retain their current values.
@@ -231,7 +233,7 @@ public final class Help {
                 new CommandHelp("loan-view", "Loans", lineEndings("""
                         VIEW LOAN CONDITION ASSESSMENTS
                         Format: loan-view l/<LOAN ID>
-                        Example: loan-view l/001
+                        Example: loan-view l/L001
                         Compares the saved issue and return type, condition, damage and remarks for one loan.
                         New loans record issue-time serviceability; both assessments keep their saved values.
                         Active loans show Not returned. Missing legacy assessments show Not recorded.
@@ -240,7 +242,7 @@ public final class Help {
                 new CommandHelp("loan-show", "Loans", lineEndings("""
                         LOAN-SHOW
                         Format: loan-show l/<LOAN ID>
-                        Example: loan-show l/001
+                        Example: loan-show l/L001
                         Shows the equipment type, condition, damage and remarks recorded when the loan was issued.
                         If loan-update assigns another item, this shows the replacement's condition at reassignment.
                         Legacy loans without a saved snapshot report that the issue condition was not recorded.
@@ -249,7 +251,7 @@ public final class Help {
                 new CommandHelp("loan-list-borrower", "Loans", lineEndings("""
                         LOAN-LIST-BORROWER
                         Format: loan-list-borrower u/<BORROWER ID>
-                        Example: loan-list-borrower u/002
+                        Example: loan-list-borrower u/U002
                         Shows only active equipment held by the selected borrower, with loan details.
                         Returned loans and loans held by other borrowers are excluded.
                         A borrower is known when at least one active or returned loan uses that ID.
@@ -269,7 +271,7 @@ public final class Help {
                 new CommandHelp("eqm-loan-history", "Equipment", lineEndings("""
                         EQM-LOAN-HISTORY
                         Format: eqm-loan-history e/<ITEM ID>
-                        Example: eqm-loan-history e/001
+                        Example: eqm-loan-history e/E001
                         Requires an existing Item ID. Includes its physical item's active and returned loans.
                         Sorted by issue date, earliest first, then Loan ID. Reused Item IDs keep separate histories.
                         Uses the same dates, states, columns and result counts as loan-list.
@@ -292,7 +294,7 @@ public final class Help {
                 new CommandHelp("eqm-update", "Equipment", lineEndings("""
                         EQM-UPDATE
                         Format: eqm-update e/<ID> [name/<NAME>] [type/<TYPE>] [cond/<N>]
-                        Example: eqm-update e/001 name/Studio camera cond/5
+                        Example: eqm-update e/E001 name/Studio camera cond/5
                         Requires an existing Item ID and at least one update field, in any order, each prefix once.
 
                         Omitted fields retain their current values. Type is fixed; type/ must match the current type,
@@ -302,7 +304,7 @@ public final class Help {
                 new CommandHelp("eqm-maintain", "Equipment", lineEndings(String.format(Locale.ROOT, """
                         EQM-MAINTAIN
                         Format: eqm-maintain e/<ITEM ID> date/<DD-MM-YY> work/<DESCRIPTION> outcome/<OUTCOME>
-                        Example: eqm-maintain e/001 date/27-10-26 work/Replaced battery outcome/Completed
+                        Example: eqm-maintain e/E001 date/27-10-26 work/Replaced battery outcome/Completed
                         Requires an existing Item ID, a valid maintenance date that is not in the future,
                         a non-empty work description and outcome, in the displayed field order.
                         Work descriptions and outcomes are trimmed and cannot contain tabs or line breaks.
@@ -317,7 +319,7 @@ public final class Help {
                         BUNDLE-CREATE
                         Format: bundle-create name/<NAME>
                         Example: bundle-create name/Studio kit
-                        Requires a name of 1-100 characters. Bundle IDs are assigned automatically, 001-999.
+                        Requires a name of 1-100 characters. Bundle IDs are assigned automatically, B001-B999.
                         Names must be unique; name comparisons are case-sensitive.
 
                         Save new bundles and additions with exit before exiting.
@@ -326,7 +328,7 @@ public final class Help {
                 new CommandHelp("bundle-add-eqm", "Bundles", lineEndings("""
                         BUNDLE-ADD-EQM
                         Format: bundle-add-eqm b/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]
-                        Example: bundle-add-eqm b/001 001 002 003
+                        Example: bundle-add-eqm b/B001 E001 E002 E003
                         Requires an existing bundle and at least one existing, serviceable, unloaned equipment item.
                         An item may appear only once per bundle. Each requested Item ID receives its own result.
                         Results use [OK] or [ERROR], followed by totals and the resulting bundle composition.
@@ -344,7 +346,7 @@ public final class Help {
                 new CommandHelp("bundle-remove-eqm", "Bundles", lineEndings("""
                         BUNDLE-REMOVE-EQM
                         Format: bundle-remove-eqm b/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]
-                        Example: bundle-remove-eqm b/001 001
+                        Example: bundle-remove-eqm b/B001 E001
                         Requires an existing bundle and at least one Item ID. Each ID receives its own result.
                         Removes the requested memberships without deleting the equipment. This can make an item
                         eligible for deletion after it has been removed from every bundle.
@@ -362,7 +364,7 @@ public final class Help {
                 new CommandHelp("bundle-history", "Bundles", lineEndings("""
                         BUNDLE-HISTORY
                         Format: bundle-history b/<BUNDLE ID>
-                        Example: bundle-history b/001
+                        Example: bundle-history b/B001
                         Format: bundle-history name/<NAME>
                         Example: bundle-history name/Studio kit
                         Includes active and returned loans for every equipment item in the selected bundle.

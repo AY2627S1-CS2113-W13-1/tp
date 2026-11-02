@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import seedu.snap.Identifier;
 import seedu.snap.equipment.Equipment;
 
 /** Represents a named group of equipment with a required composition. */
@@ -26,7 +27,7 @@ public class Bundle {
      * Creates an initially incomplete bundle.
      *
      * @param name bundle name
-     * @param id three-digit bundle ID
+     * @param id typed bundle ID from B001 to B999
      */
     public Bundle(String name, String id) {
         this.bundleName = name;
@@ -167,6 +168,6 @@ public class Bundle {
     /** @return whether the bundle identity is valid */
     private boolean hasValidIdentity() {
         return bundleName != null && !bundleName.isBlank() && bundleName.length() <= 100
-                && bundleId != null && bundleId.matches("[0-9]{3}") && !bundleId.equals("000");
+                && Identifier.isValid(bundleId, Identifier.Type.BUNDLE);
     }
 }

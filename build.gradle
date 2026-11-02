@@ -100,6 +100,57 @@ checkstyle {
     toolVersion = '14.1.0'
 }
 
+jacoco {
+    toolVersion = '0.8.15'
+}
+
+def typedIdentifierClasses = [
+        'seedu.snap.Identifier',
+        'seedu.snap.bundle.Bundle',
+        'seedu.snap.bundle.BundleHandler',
+        'seedu.snap.bundle.BundleStorage',
+        'seedu.snap.equipment.Battery',
+        'seedu.snap.equipment.Equipment',
+        'seedu.snap.equipment.EquipmentFilter',
+        'seedu.snap.equipment.EquipmentHandler',
+        'seedu.snap.equipment.EquipmentStorage',
+        'seedu.snap.equipment.Lens',
+        'seedu.snap.loan.Loan',
+        'seedu.snap.loan.LoanBorrowerQuery',
+        'seedu.snap.loan.LoanHandler',
+        'seedu.snap.loan.LoanReturn',
+        'seedu.snap.loan.LoanStorage',
+        'seedu.snap.loan.LoanUpdate',
+        'seedu.snap.maintenance.MaintenanceHandler',
+        'seedu.snap.ui.EquipmentView',
+        'seedu.snap.ui.Help'
+]
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+
+jacocoTestCoverageVerification {
+    dependsOn test
+    violationRules {
+        rule {
+            element = 'CLASS'
+            includes = typedIdentifierClasses
+            limit {
+                counter = 'LINE'
+                value = 'COVEREDRATIO'
+                minimum = 0.95
+            }
+        }
+    }
+}
+
+check.dependsOn jacocoTestCoverageVerification
+
 run {
     standardInput = System.in
     enableAssertions = true

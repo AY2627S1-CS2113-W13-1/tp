@@ -7,10 +7,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import seedu.snap.Identifier;
 import seedu.snap.equipment.CompatibilityResult;
 import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.EquipmentCompatibility;
@@ -36,6 +36,7 @@ public class BundleHandler {
     private final EquipmentHandler equipmentHandler;
     private final Path storageFile;
     private int nextBundleNumber = 1;
+    private boolean needsMigrationSave;
 
     /** Creates a bundle handler with its own equipment inventory. */
     public BundleHandler() {
@@ -76,7 +77,7 @@ public class BundleHandler {
         if (nextBundleNumber > 999) {
             throw new BundleAdditionUnsuccessful("No more bundle IDs are available this session.");
         }
-        String bundleId = String.format(Locale.ROOT, "%03d", nextBundleNumber);
+        String bundleId = Identifier.format(nextBundleNumber, Identifier.Type.BUNDLE);
         nextBundleNumber++;
         Bundle bundle = new Bundle(name, bundleId);
         bundles.add(bundle);
@@ -109,7 +110,8 @@ public class BundleHandler {
         if (storageFile == null) {
             return;
         }
-        List<BundleStorage.StoredBundle> storedBundles = BundleStorage.load(storageFile);
+        BundleStorage.LoadedBundles loadedBundles = BundleStorage.load(storageFile);
+        List<BundleStorage.StoredBundle> storedBundles = loadedBundles.bundles();
         ArrayList<Bundle> restoredBundles = new ArrayList<>();
         int highestBundleNumber = 0;
         for (BundleStorage.StoredBundle stored : storedBundles) {
@@ -129,12 +131,14 @@ public class BundleHandler {
                 bundle.addEquipment(item);
             }
             restoredBundles.add(bundle);
-            highestBundleNumber = Math.max(highestBundleNumber, Integer.parseInt(stored.bundleId()));
+            highestBundleNumber = Math.max(highestBundleNumber,
+                    Identifier.number(stored.bundleId(), Identifier.Type.BUNDLE));
         }
 
         bundles.clear();
         bundles.addAll(restoredBundles);
         nextBundleNumber = highestBundleNumber + 1;
+        needsMigrationSave = loadedBundles.migrated();
         assert bundles.size() == storedBundles.size() : "All saved bundles must be restored";
         LOGGER.log(Level.INFO, "Loaded {0} bundle(s) from {1}",
                 new Object[]{bundles.size(), storageFile});
@@ -142,10 +146,11 @@ public class BundleHandler {
 
     /** Saves the current bundle definitions when this handler has a backing file. */
     public void saveToStorage() throws IOException {
-        if (storageFile == null || bundles.isEmpty() && Files.notExists(storageFile)) {
+        if (storageFile == null || bundles.isEmpty() && Files.notExists(storageFile) && !needsMigrationSave) {
             return;
         }
         BundleStorage.save(storageFile, bundles);
+        needsMigrationSave = false;
         LOGGER.log(Level.FINE, "Saved {0} bundle(s) to {1}",
                 new Object[]{bundles.size(), storageFile});
     }
@@ -194,7 +199,7 @@ public class BundleHandler {
 
         ArrayList<ItemResult> messages = new ArrayList<>();
         for (int i = 2; i < arguments.length; i++) {
-            messages.add(addItemToBundle(bundle, arguments[i]));
+            messages.add(addItemToBundle(bundle, parseEquipmentId(arguments[i])));
         }
         assert messages.size() == arguments.length - 2 : "Every requested item must produce a result.";
         return Collections.unmodifiableList(messages);
@@ -230,7 +235,7 @@ public class BundleHandler {
         ArrayList<ItemResult> messages = new ArrayList<>();
         boolean membershipChanged = false;
         for (int index = 2; index < arguments.length; index++) {
-            String itemId = arguments[index];
+            String itemId = parseEquipmentId(arguments[index]);
             boolean wasMember = bundle.containsEquipmentId(itemId);
             messages.add(removeItemFromBundle(bundle, itemId));
             membershipChanged |= wasMember;
@@ -286,7 +291,7 @@ public class BundleHandler {
             history.addAll(loans.getLoanHistoryForEquipment(item));
         }
         history.sort(Comparator.comparing(Loan::getIssuedDate)
-                .thenComparingInt(loan -> Integer.parseInt(loan.getLoanId())));
+                .thenComparingInt(loan -> Identifier.number(loan.getLoanId(), Identifier.Type.LOAN)));
         assert history.stream().allMatch(loan -> loan != null) : "Bundle history must not contain null loans";
         LOGGER.log(Level.FINE, "Selected {0} history record(s) for bundle {1}.",
                 new Object[]{history.size(), bundle.getBundleId()});
@@ -436,8 +441,10 @@ public class BundleHandler {
         String selector = normalized.substring(HISTORY_COMMAND_PREFIX.length()).trim();
         if (selector.startsWith(ID_MARKER)) {
             String id = selector.substring(ID_MARKER.length()).trim();
-            if (!id.matches("[0-9]{3}") || id.equals("000")) {
-                throw new BundleHistoryUnsuccessful("Bundle ID must be from 001 to 999.");
+            try {
+                id = Identifier.normalize(id, Identifier.Type.BUNDLE);
+            } catch (IllegalArgumentException exception) {
+                throw new BundleHistoryUnsuccessful("Bundle ID must be from B001 to B999.");
             }
             return new BundleSelector(id, null);
         }
@@ -468,13 +475,26 @@ public class BundleHandler {
 
     private String parseBundleId(String argument) throws BundleAdditionUnsuccessful {
         if (!argument.startsWith(ID_MARKER)) {
-            throw new BundleAdditionUnsuccessful("Bundle ID must use the b/[three digits] format.");
+            throw new BundleAdditionUnsuccessful("Bundle ID must use the b/B001 to b/B999 format.");
         }
         String bundleId = argument.substring(ID_MARKER.length());
-        if (!bundleId.matches("[0-9]{3}") || bundleId.equals("000")) {
-            throw new BundleAdditionUnsuccessful("Bundle ID must be from 001 to 999.");
+        try {
+            return Identifier.normalize(bundleId, Identifier.Type.BUNDLE);
+        } catch (IllegalArgumentException exception) {
+            throw new BundleAdditionUnsuccessful("Bundle ID must be from B001 to B999.");
         }
-        return bundleId;
+    }
+
+    /** Validates an equipment ID before a bundle operation can look it up. */
+    private static String parseEquipmentId(String value) throws BundleAdditionUnsuccessful {
+        try {
+            return Identifier.normalize(value, Identifier.Type.EQUIPMENT);
+        } catch (IllegalArgumentException exception) {
+            if (Identifier.isMismatched(value, Identifier.Type.EQUIPMENT)) {
+                throw new BundleAdditionUnsuccessful("Expected an equipment ID beginning with E: " + value + ".");
+            }
+            throw new BundleAdditionUnsuccessful("Equipment ID must be from E001 to E999.");
+        }
     }
 
     private String failureMessage(String itemId, String reason) {

@@ -13,6 +13,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import seedu.snap.Identifier;
 import seedu.snap.equipment.Equipment;
 
 /** Loads and saves bundle definitions and their physical equipment references. */
@@ -34,13 +35,14 @@ final class BundleStorage {
      * @return parsed bundle definitions
      * @throws IOException if a record is malformed or the file cannot be read
      */
-    static List<StoredBundle> load(Path file) throws IOException {
+    static LoadedBundles load(Path file) throws IOException {
         if (Files.notExists(file)) {
-            return List.of();
+            return new LoadedBundles(List.of(), false);
         }
 
         List<StoredBundle> loaded = new ArrayList<>();
         Set<String> bundleIds = new HashSet<>();
+        boolean migrated = false;
         int lineNumber = 0;
         for (String line : Files.readAllLines(file, StandardCharsets.UTF_8)) {
             lineNumber++;
@@ -53,12 +55,14 @@ final class BundleStorage {
                     throw new IllegalArgumentException("Duplicate bundle ID " + bundle.bundleId() + ".");
                 }
                 loaded.add(bundle);
+                migrated |= line.matches("(?s).*\\bid/(?:[0-9]{3}|b[0-9]{3})(?:\\s|$).*")
+                        || line.matches("(?s).*items/(?:[0-9]{3}|e[0-9]{3})~.*");
             } catch (IllegalArgumentException exception) {
                 throw new IOException("Invalid bundle record on line " + lineNumber + ": "
                         + exception.getMessage(), exception);
             }
         }
-        return List.copyOf(loaded);
+        return new LoadedBundles(List.copyOf(loaded), migrated);
     }
 
     /** Saves bundle records through a temporary file before replacing the destination. */
@@ -81,15 +85,18 @@ final class BundleStorage {
 
     /** Converts a bundle to a single-line record with a URL-safe encoded name. */
     private static String toStorageLine(Bundle bundle) throws IOException {
-        if (!isValidBundleId(bundle.getBundleId())) {
-            throw new IOException("Bundle ID must be from 001 to 999.");
+        String bundleId;
+        try {
+            bundleId = Identifier.normalize(bundle.getBundleId(), Identifier.Type.BUNDLE);
+        } catch (IllegalArgumentException exception) {
+            throw new IOException("Bundle ID must be from B001 to B999.", exception);
         }
         String encodedName = Base64.getUrlEncoder().withoutPadding()
                 .encodeToString(bundle.getBundleName().getBytes(StandardCharsets.UTF_8));
         String items = bundle.getEquipmentList().stream()
                 .map(BundleStorage::toStoredItem)
                 .collect(Collectors.joining(","));
-        return RECORD_PREFIX + " " + ID_PREFIX + bundle.getBundleId() + " "
+        return RECORD_PREFIX + " " + ID_PREFIX + bundleId + " "
                 + NAME_PREFIX + encodedName + " " + ITEMS_PREFIX + items;
     }
 
@@ -97,14 +104,15 @@ final class BundleStorage {
     private static String toStoredItem(Equipment item) {
         assert item != null : "Saved bundle equipment must not be null";
         assert isValidRecordId(item.getRecordId()) : "Saved equipment must have a canonical record ID";
-        return item.getItemId() + ITEM_SEPARATOR + item.getRecordId();
+        String itemId = Identifier.normalize(item.getItemId(), Identifier.Type.EQUIPMENT);
+        return itemId + ITEM_SEPARATOR + item.getRecordId();
     }
 
     /** Parses and validates one persisted bundle record. */
     private static StoredBundle parseLine(String line) {
         String[] fields = line.split("\\s+", -1);
         if (fields.length != 4 || !RECORD_PREFIX.equals(fields[0])) {
-            throw new IllegalArgumentException("Expected: bundle id/NNN name64/[NAME] items/[ITEMS].");
+            throw new IllegalArgumentException("Expected: bundle id/BNNN name64/[NAME] items/[ITEMS].");
         }
 
         String bundleId = parseBundleId(fields[1]);
@@ -125,16 +133,23 @@ final class BundleStorage {
         Set<String> recordIds = new HashSet<>();
         for (String itemTextPart : itemText.split(",", -1)) {
             String[] identity = itemTextPart.split(ITEM_SEPARATOR, -1);
-            if (identity.length != 2 || !isValidItemId(identity[0]) || !isValidRecordId(identity[1])) {
+            if (identity.length != 2 || !isValidRecordId(identity[1])) {
                 throw new IllegalArgumentException("Bundle equipment references must use ID~record ID.");
             }
-            if (!itemIds.add(identity[0])) {
-                throw new IllegalArgumentException("Duplicate equipment ID " + identity[0] + " in bundle.");
+            String itemId;
+            try {
+                itemId = Identifier.migrate(identity[0], Identifier.Type.EQUIPMENT);
+            } catch (IllegalArgumentException exception) {
+                throw new IllegalArgumentException("Bundle equipment references must use E001 to E999.",
+                        exception);
+            }
+            if (!itemIds.add(itemId)) {
+                throw new IllegalArgumentException("Duplicate equipment ID " + itemId + " in bundle.");
             }
             if (!recordIds.add(identity[1])) {
                 throw new IllegalArgumentException("Duplicate equipment record ID " + identity[1] + " in bundle.");
             }
-            items.add(new StoredItem(identity[0], identity[1]));
+            items.add(new StoredItem(itemId, identity[1]));
         }
         return List.copyOf(items);
     }
@@ -161,18 +176,11 @@ final class BundleStorage {
             throw new IllegalArgumentException("Expected id/ bundle ID.");
         }
         String id = field.substring(ID_PREFIX.length());
-        if (!isValidBundleId(id)) {
-            throw new IllegalArgumentException("Bundle ID must be from 001 to 999.");
+        try {
+            return Identifier.migrate(id, Identifier.Type.BUNDLE);
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException("Bundle ID must be from B001 to B999.", exception);
         }
-        return id;
-    }
-
-    private static boolean isValidBundleId(String id) {
-        return id != null && id.matches("[0-9]{3}") && !id.equals("000");
-    }
-
-    private static boolean isValidItemId(String id) {
-        return id != null && id.matches("[0-9]{3}") && !id.equals("000");
     }
 
     private static boolean isValidRecordId(String id) {
@@ -182,6 +190,9 @@ final class BundleStorage {
             return false;
         }
     }
+
+    /** Parsed bundle metadata before it is linked to the current equipment objects. */
+    record LoadedBundles(List<StoredBundle> bundles, boolean migrated) { }
 
     /** Parsed bundle metadata before it is linked to the current equipment objects. */
     record StoredBundle(String bundleId, String bundleName, List<StoredItem> items) { }

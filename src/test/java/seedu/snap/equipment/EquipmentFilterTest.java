@@ -32,17 +32,33 @@ class EquipmentFilterTest {
 
     @BeforeEach
     void setUp() {
-        camera = new Camera("Canon Camera 相机", "001", 1);
-        tripod = new Tripod("Tripod", "999", 10);
+        camera = new Camera("Canon Camera 相机", "E001", 1);
+        tripod = new Tripod("Tripod", "E999", 10);
     }
 
     @Test
     void parse_idAndName_selectsMatchingEquipment() throws EquipmentFilteringUnsuccessful {
-        for (String input : new String[]{"eqm-filter e/001", "eqm-filter name/cAmErA", "eqm-filter name/相机"}) {
+        for (String input : new String[]{"eqm-filter e/E001", "eqm-filter name/cAmErA", "eqm-filter name/相机"}) {
             EquipmentFilter filter = EquipmentFilter.parse(input);
             assertTrue(filter.matches(camera, false), input);
             assertFalse(filter.matches(tripod, false), input);
         }
+    }
+
+    @Test
+    void parse_lowercaseId_selectsCanonicalEquipment() throws EquipmentFilteringUnsuccessful {
+        EquipmentFilter filter = EquipmentFilter.parse("eqm-filter e/e001");
+
+        assertTrue(filter.matches(camera, false));
+        assertFalse(filter.matches(tripod, false));
+    }
+
+    @Test
+    void parse_idAfterNameField_keepsBothFields() throws EquipmentFilteringUnsuccessful {
+        EquipmentFilter filter = EquipmentFilter.parse("eqm-filter name/Camera e/E001");
+
+        assertTrue(filter.matches(camera, false));
+        assertFalse(filter.matches(tripod, false));
     }
 
     @Test
@@ -82,7 +98,7 @@ class EquipmentFilterTest {
     @Test
     void parse_combinedFieldsInAnyOrder_requiresAllToMatch() throws EquipmentFilteringUnsuccessful {
         EquipmentFilter filter = EquipmentFilter.parse(
-                "eqm-filter status/AVAILABLE cond/1-3 type/camera e/001 name/canon");
+                "eqm-filter status/AVAILABLE cond/1-3 type/camera e/E001 name/canon");
         assertTrue(filter.matches(camera, false));
         assertFalse(filter.matches(camera, true));
         assertFalse(filter.matches(tripod, false));
@@ -90,8 +106,8 @@ class EquipmentFilterTest {
 
     @Test
     void parse_textPrefixes_preservesNames() throws EquipmentFilteringUnsuccessful {
-        for (String name : new String[]{"USB e/card reader", "fluid/head tripod", "mini/camera"}) {
-            Equipment item = new Tripod(name, "002", 2);
+        for (String name : new String[]{"USB id/card reader", "fluid/head tripod", "mini/camera"}) {
+            Equipment item = new Tripod(name, "E002", 2);
             assertTrue(EquipmentFilter.parse("eqm-filter name/" + name).matches(item, false));
         }
     }
@@ -99,13 +115,14 @@ class EquipmentFilterTest {
     @Test
     void parse_invalidCommands_rejectsEachExplicitCase() {
         String[] invalid = {
-            null, "", "eqm-filter", "eqm-filter ", "eqm-filter unknown/value", "eqm-filter rubbish e/001",
-            "eqm-filter e/001 e/002", "eqm-filter name/Camera name/Tripod", "eqm-filter type/a type/b",
+            null, "", "eqm-filter", "eqm-filter ", "eqm-filter unknown/value", "eqm-filter rubbish e/E001",
+            "eqm-filter e/E001 e/E002", "eqm-filter name/Camera name/Tripod", "eqm-filter type/a type/b",
             "eqm-filter cond/1 cond/2", "eqm-filter status/available status/loaned",
             "eqm-filter name/", "eqm-filter name/\u2003", "eqm-filter type/", "eqm-filter type/\u2003",
-            "eqm-filter status/", "eqm-filter e/000", "eqm-filter e/01", "eqm-filter e/1000",
-            "eqm-filter e/+01", "eqm-filter e/001 extra", "eqm-filter cond/0", "eqm-filter cond/11",
-            "eqm-filter cond/01", "eqm-filter cond/1.0", "eqm-filter cond/9-2",
+            "eqm-filter status/",
+            "eqm-filter e/E000", "eqm-filter e/01", "eqm-filter e/E1000", "eqm-filter e/+01", "eqm-filter e/E001 extra",
+            "eqm-filter cond/0", "eqm-filter cond/11", "eqm-filter cond/01", "eqm-filter cond/1.0",
+            "eqm-filter cond/9-2",
             "eqm-filter cond/1-11", "eqm-filter cond/-1", "eqm-filter cond/1-", "eqm-filter cond/1-3-5",
             "eqm-filter cond/2147483648", "eqm-filter cond/1 extra", "eqm-filter status/yes",
             "eqm-filter name/" + "a".repeat(101)
@@ -119,7 +136,7 @@ class EquipmentFilterTest {
     void parse_reservedIdSyntaxInsideName_rejectsMalformedAndDuplicateIds() {
         for (String suffix : new String[]{"", " ", "001", "+01", "-01", " 999"}) {
             assertThrows(EquipmentFilteringUnsuccessful.class,
-                    () -> EquipmentFilter.parse("eqm-filter e/001 name/Camera e/" + suffix), suffix);
+                    () -> EquipmentFilter.parse("eqm-filter e/E001 name/Camera e/" + suffix), suffix);
         }
     }
 
@@ -134,9 +151,9 @@ class EquipmentFilterTest {
             assertEquals(String.join(System.lineSeparator(), "Matching equipment", "No equipment matches the filters.",
                     "0 equipment items.", ""),
                     output.toString(StandardCharsets.UTF_8));
-            manager.executeInput("eqm-add name/Camera e/001 type/camera cond/1");
+            manager.executeInput("eqm-add name/Camera e/E001 type/camera cond/1");
             output.reset();
-            manager.executeInput("eqm-filter e/001");
+            manager.executeInput("eqm-filter e/E001");
             assertTrue(output.toString(StandardCharsets.UTF_8).contains("Camera"));
         } finally {
             System.setOut(original);
@@ -150,9 +167,9 @@ class EquipmentFilterTest {
         try (PrintStream captured = new PrintStream(output, true, StandardCharsets.UTF_8)) {
             System.setOut(captured);
             EqmManager manager = new EqmManager(temporaryDataDirectory);
-            manager.executeInput("eqm-add name/First Camera e/999 type/camera cond/1");
-            manager.executeInput("eqm-add name/Excluded Tripod e/002 type/tripod cond/5");
-            manager.executeInput("eqm-add name/Second Camera e/001 type/camera cond/10");
+            manager.executeInput("eqm-add name/First Camera e/E999 type/camera cond/1");
+            manager.executeInput("eqm-add name/Excluded Tripod e/E002 type/tripod cond/5");
+            manager.executeInput("eqm-add name/Second Camera e/E001 type/camera cond/10");
             output.reset();
             manager.executeInput("eqm-filter type/camera cond/1-10");
             String filtered = output.toString(StandardCharsets.UTF_8);
@@ -177,24 +194,24 @@ class EquipmentFilterTest {
         EqmManager manager = new EqmManager(temporaryDataDirectory);
         try (PrintStream captured = new PrintStream(output, true, StandardCharsets.UTF_8)) {
             System.setOut(captured);
-            manager.executeInput("eqm-add name/Lens e/998 type/lens cond/2");
+            manager.executeInput("eqm-add name/Lens e/E998 type/lens cond/2");
             output.reset();
-            manager.executeInput("eqm-filter e/998 status/available");
+            manager.executeInput("eqm-filter e/E998 status/available");
             assertTrue(output.toString(StandardCharsets.UTF_8).contains("Lens"));
-            manager.executeInput("loan-add e/998 u/002 issued/01-10-26 due/02-10-26");
+            manager.executeInput("loan-add e/E998 u/U002 issued/01-10-26 due/02-10-26");
             output.reset();
-            manager.executeInput("eqm-filter e/998 status/available");
+            manager.executeInput("eqm-filter e/E998 status/available");
             assertEquals(String.join(System.lineSeparator(), "Matching equipment", "No equipment matches the filters.",
                     "0 equipment items.", ""),
                     output.toString(StandardCharsets.UTF_8));
             output.reset();
-            manager.executeInput("eqm-filter e/998 status/loaned");
+            manager.executeInput("eqm-filter e/E998 status/loaned");
             assertTrue(output.toString(StandardCharsets.UTF_8).contains("Lens"));
-            manager.executeInput("loan-delete l/001");
+            manager.executeInput("loan-delete l/L001");
             output.reset();
-            manager.executeInput("eqm-filter e/998 status/available");
+            manager.executeInput("eqm-filter e/E998 status/available");
             assertTrue(output.toString(StandardCharsets.UTF_8).contains("Lens"));
-            manager.executeInput("eqm-delete e/998");
+            manager.executeInput("eqm-delete e/E998");
         } finally {
             System.setOut(original);
         }
@@ -205,7 +222,7 @@ class EquipmentFilterTest {
         Locale original = Locale.getDefault();
         try {
             Locale.setDefault(Locale.forLanguageTag("tr"));
-            Equipment item = new Camera("FILM", "002", 2);
+            Equipment item = new Camera("FILM", "E002", 2);
             assertTrue(EquipmentFilter.parse("eqm-filter name/film").matches(item, false));
         } finally {
             Locale.setDefault(original);
@@ -219,17 +236,17 @@ class EquipmentFilterTest {
         try (PrintStream captured = new PrintStream(output, true, StandardCharsets.UTF_8)) {
             System.setOut(captured);
             EqmManager manager = new EqmManager(temporaryDataDirectory);
-            manager.executeInput("eqm-add name/Camera e/001 type/camera cond/1");
+            manager.executeInput("eqm-add name/Camera e/E001 type/camera cond/1");
             output.reset();
             manager.executeInput("eqm-filter cond/9-1");
-            manager.executeInput("eqm-filter e/999");
-            manager.executeInput("eqm-filter e/001");
-            manager.executeInput("eqm-delete e/001");
+            manager.executeInput("eqm-filter e/E999");
+            manager.executeInput("eqm-filter e/E001");
+            manager.executeInput("eqm-delete e/E001");
             String text = output.toString(StandardCharsets.UTF_8);
             assertTrue(text.contains("The minimum condition must not exceed the maximum."));
             assertTrue(text.contains("No equipment matches the filters."));
             assertTrue(text.contains("Camera"));
-            assertTrue(text.contains("[OK] Equipment 001 \"Camera\" deleted."));
+            assertTrue(text.contains("[OK] Equipment E001 \"Camera\" deleted."));
         } finally {
             System.setOut(original);
         }
@@ -238,7 +255,7 @@ class EquipmentFilterTest {
     @Test
     void parse_nonbreakingWhitespaceAfterRepeatedId_rejectsNumericField() {
         for (String space : new String[]{"\u00a0", "\u2007", "\u202f", "\u2003", " "}) {
-            String command = "eqm-filter e/001 name/Camera e/" + space + "999";
+            String command = "eqm-filter e/E001 name/Camera e/" + space + "999";
             assertThrows(EquipmentFilteringUnsuccessful.class, () -> EquipmentFilter.parse(command));
         }
     }
