@@ -862,7 +862,9 @@ Duplicate IDs are rejected because replacing an existing entry could detach loan
 
 [![Equipment addition: reject an existing Item ID or save before appending a new item](images/EquipmentAdditionSequence.svg)](images/EquipmentAdditionSequence.svg)
 
+<!-- @@author holsoma -->
 *Figure 13. Equipment addition rejects duplicate Item IDs and saves new items before insertion.*
+<!-- @@author -->
 
 [PlantUML source](diagrams/EquipmentAdditionSequence.puml)
 
@@ -915,7 +917,9 @@ save files or consume identifiers.
 
 [![Equipment filtering: parse criteria, inspect current loans and display original matching items without saving](images/EquipmentFilterSequence.svg)](images/EquipmentFilterSequence.svg)
 
+<!-- @@author holsoma -->
 *Figure 14. Equipment filtering displays matching items without changing records or saved files.*
+<!-- @@author -->
 
 [PlantUML source](diagrams/EquipmentFilterSequence.puml)
 
@@ -960,7 +964,9 @@ For an existing camera `001`, `update id/001 i/Film Camera cond/5` follows this 
 
 [![Equipment update: validate and save the proposed inventory before changing the existing camera](images/equipment-update-sequence.svg)](images/equipment-update-sequence.svg)
 
+<!-- @@author holsoma -->
 *Figure 15. Equipment updates validate and save proposed details before changing the original object.*
+<!-- @@author -->
 
 [PlantUML source](diagrams/equipment-updates/equipment-update-sequence.puml)
 
@@ -1010,7 +1016,9 @@ diagnostics out of normal command output.
 
 [![Logging lifecycle: configure shared output, run the application and close the session](images/LoggingLifecycle.svg)](images/LoggingLifecycle.svg)
 
+<!-- @@author holsoma -->
 *Figure 16. Shared logging is configured at startup and closed when the application ends.*
+<!-- @@author -->
 
 [PlantUML source](diagrams/LoggingLifecycle.puml)
 
