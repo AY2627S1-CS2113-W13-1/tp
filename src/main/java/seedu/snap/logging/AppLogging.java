@@ -8,6 +8,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.logging.SimpleFormatter;
 
+// @@author rktheg
+
 /**
  * Owns the shared rotating log files for one application run.
  * Class loggers named with their full seedu.snap package inherit this configuration.
@@ -72,3 +74,6 @@ public final class AppLogging implements AutoCloseable {
         }
     }
 }
+
+
+// @@author

@@ -12,6 +12,8 @@ import org.junit.jupiter.api.io.TempDir;
 
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 
+// @@author rktheg
+
 /** Verifies that the addition refactoring preserves failure-safe saves and Unicode validation. */
 class EquipmentAdditionPersistenceTest {
     @TempDir
@@ -53,3 +55,6 @@ class EquipmentAdditionPersistenceTest {
         }
     }
 }
+
+
+// @@author

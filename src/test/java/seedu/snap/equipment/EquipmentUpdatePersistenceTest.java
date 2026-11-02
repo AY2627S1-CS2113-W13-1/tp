@@ -15,6 +15,8 @@ import org.junit.jupiter.api.io.TempDir;
 
 import seedu.snap.exceptions.EquipmentUpdateUnsuccessful;
 
+// @@author rktheg
+
 /** Verifies that updates preserve both equipment identity and failure-safe persistence. */
 class EquipmentUpdatePersistenceTest {
     @TempDir
@@ -79,3 +81,6 @@ class EquipmentUpdatePersistenceTest {
         assertTrue(Files.readString(file).contains("cond/5"));
     }
 }
+
+
+// @@author

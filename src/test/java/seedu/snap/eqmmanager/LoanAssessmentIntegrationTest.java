@@ -16,6 +16,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+// @@author rktheg
+
 /** Exercises the existing return and view commands with permanent per-loan condition records. */
 class LoanAssessmentIntegrationTest {
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -172,3 +174,6 @@ class LoanAssessmentIntegrationTest {
         }
     }
 }
+
+
+// @@author

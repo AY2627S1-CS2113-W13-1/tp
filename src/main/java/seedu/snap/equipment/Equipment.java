@@ -114,10 +114,12 @@ public abstract class Equipment {
      */
     public abstract String getDetails();
 
+    // @@author rktheg
     /** Returns whether this item currently has an active loan. */
     public boolean isLoaned() {
         return isLoaned;
     }
+    // @@author
 
     /** Returns whether this equipment can be loaned after any active loan has ended. */
     public boolean isServiceable() {
@@ -167,6 +169,7 @@ public abstract class Equipment {
         this.loanId = loanId;
     }
 
+    // @@author rktheg
     /** Updates availability when an associated loan changes status. */
     public void setLoaned(boolean isLoaned) {
         if (!isLoaned) {
@@ -184,11 +187,13 @@ public abstract class Equipment {
                 new Object[]{itemId, previousState ? "loaned" : "available",
                     isLoaned ? "loaned" : "available"});
     }
+    // @@author
 
     public int getCondition() {
         return condition;
     }
 
+    // @@author rktheg
     /** Checks required text consistently for ordinary and nonbreaking whitespace. */
     static boolean hasText(String value) {
         return value != null && !BLANK_TEXT.matcher(value).matches();
@@ -198,6 +203,7 @@ public abstract class Equipment {
     static boolean isValidItemId(String id) {
         return id != null && id.matches(ITEM_ID_PATTERN) && !id.equals(RESERVED_ITEM_ID);
     }
+    // @@author
 
     /** Applies validated name and condition together, preserving subtype, details, ID, and loan state. */
     public final void updateDetails(String itemName, int condition) {

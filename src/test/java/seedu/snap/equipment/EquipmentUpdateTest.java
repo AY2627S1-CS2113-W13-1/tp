@@ -21,6 +21,8 @@ import seedu.snap.eqmmanager.EqmManager;
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 import seedu.snap.exceptions.EquipmentUpdateUnsuccessful;
 
+// @@author rktheg
+
 /** Tests partial updates, input boundaries, rejected commands, and preservation of item identity. */
 class EquipmentUpdateTest {
     @TempDir
@@ -211,3 +213,6 @@ class EquipmentUpdateTest {
         }
     }
 }
+
+
+// @@author

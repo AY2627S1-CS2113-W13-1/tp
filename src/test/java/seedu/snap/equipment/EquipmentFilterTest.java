@@ -22,6 +22,8 @@ import seedu.snap.eqmmanager.EqmManager;
 import seedu.snap.exceptions.EquipmentFilteringUnsuccessful;
 import seedu.snap.loan.LoanHandler;
 
+// @@author rktheg
+
 /** Covers individual and combined filters, invalid fields, availability, and inventory preservation. */
 class EquipmentFilterTest {
     @TempDir
@@ -242,3 +244,6 @@ class EquipmentFilterTest {
         }
     }
 }
+
+
+// @@author

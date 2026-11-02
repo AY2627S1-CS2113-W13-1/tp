@@ -11,6 +11,8 @@ import java.util.logging.Logger;
 import seedu.snap.exceptions.EquipmentFilteringUnsuccessful;
 import seedu.snap.loan.LoanHandler;
 
+// @@author rktheg
+
 /** Selects equipment matching all supplied filters without changing the stored items. */
 public final class EquipmentFilter {
     private static final Logger logger = Logger.getLogger(EquipmentFilter.class.getName());
@@ -94,3 +96,6 @@ public final class EquipmentFilter {
         return matchesId && matchesName && matchesType && matchesCondition && matchesStatus;
     }
 }
+
+
+// @@author

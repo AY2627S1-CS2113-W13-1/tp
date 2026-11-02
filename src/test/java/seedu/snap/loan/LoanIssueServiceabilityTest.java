@@ -19,6 +19,8 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import seedu.snap.equipment.EquipmentHandler;
 
+// @@author rktheg
+
 /** Verifies captured issue serviceability and unknown values in older loan records. */
 class LoanIssueServiceabilityTest {
     private static final String RECORD = "loan loanId/001 id/001 b/002 issued/01-10-26 due/20-10-26 ";
@@ -127,3 +129,6 @@ class LoanIssueServiceabilityTest {
         assertThrows(IOException.class, () -> LoanStorage.load(file));
     }
 }
+
+
+// @@author

@@ -6,6 +6,8 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+// @@author rktheg
+
 /** Reads named equipment fields without losing spaces within names and types. */
 final class EquipmentFields {
     static final String ID_FIELD = "id";
@@ -100,3 +102,6 @@ final class EquipmentFields {
         }
     }
 }
+
+
+// @@author

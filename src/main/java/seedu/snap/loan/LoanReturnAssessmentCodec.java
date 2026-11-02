@@ -1,5 +1,7 @@
 package seedu.snap.loan;
 
+// @@author rktheg
+
 /** Encodes the optional per-loan return assessment without changing older issue-snapshot fields. */
 final class LoanReturnAssessmentCodec {
     static final int FIELD_COUNT = EquipmentConditionSnapshotCodec.FIELD_COUNT + 1;
@@ -29,3 +31,6 @@ final class LoanReturnAssessmentCodec {
         return new LoanReturnAssessment(condition, serviceability.equals(SERVICEABLE_PREFIX + "yes"));
     }
 }
+
+
+// @@author
