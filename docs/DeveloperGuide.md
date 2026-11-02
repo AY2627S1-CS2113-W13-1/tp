@@ -904,8 +904,8 @@ reuse, legacy files, restarts, backup/restore, read-only viewing and failed save
 
 ### Updating an active loan and reassigning equipment
 
-`loan-update l/001 u/003 due/31-10-26` changes borrower or date fields while keeping the active equipment object.
-Supplying an item field, such as `loan-update l/001 e/002`, requests a reassignment to another physical equipment
+`loan-update l/L001 u/U003 due/31-10-26` changes borrower or date fields while keeping the active equipment object.
+Supplying an item field, such as `loan-update l/L001 e/E002`, requests a reassignment to another physical equipment
 record. `LoanHandler.updateLoan(...)` parses the optional fields with `LoanUpdate.parse(...)`, finds exactly one
 active loan, verifies its current equipment ownership and rejects a missing, loaned or unserviceable replacement.
 This extends the [availability and loan ownership](#availability-and-loan-ownership) rules and the
@@ -926,7 +926,7 @@ Loan ID and replaces the matching entry in a copied loan list.
 
 [![Loan update sequence: validate a proposal, save it, then release the old equipment and bind a replacement.](images/LoanUpdateSequence.svg)](images/LoanUpdateSequence.svg)
 
-*Figure 15. Loan updates save a detached proposal before changing loan fields or equipment ownership.*
+*Figure 16. Loan updates save a detached proposal before changing loan fields or equipment ownership.*
 
 [PlantUML source](diagrams/LoanUpdateSequence.puml)
 
@@ -945,66 +945,10 @@ capture, permanent Loan ID preservation, failed saves and retry after failure.
 
 Equipment addition, filtering and updates use the same inventory. The shared model also tracks
 availability so borrowing and queries agree about which equipment can be used.
-Start with the shared model, then see [addition](#adding-equipment-and-rejecting-duplicate-item-ids),
-[filtering](#filtering-equipment-without-changing-records) or [updates](#updating-equipment-details).
-
-#### Shared equipment model
-
-`EquipmentHandler` owns the ordered inventory. Loans and bundles share its equipment objects, so they see
-the same details and availability. `getEquipmentList()` provides an unmodifiable view for queries and display;
-additions must go through validation and duplicate checks.
-
-[![Shared equipment classes: inventory ownership, filtering, field parsing, storage and a representative subtype](images/EquipmentClasses.svg)](images/EquipmentClasses.svg)
-
-*Figure 8. Equipment classes and their roles in inventory management.*
-
-[PlantUML source](diagrams/EquipmentClasses.puml)
-
-`Equipment` holds common identity, name, condition and availability state. `Camera` represents one
-concrete subtype; `Lens`, `Battery` and `Tripod` have the same inheritance relationship.
-`EquipmentFields` parses filter and update fields, while `EquipmentStorage` handles file access.
-The add command has its own ordered parser in `EquipmentHandler`.
-
-Solid arrows show stored references; dashed arrows show dependencies. `+`, `-` and `~` mean public,
-private and package-private; underlined operations are static and italic names are abstract.
-Minor fields, getters and the loan/bundle classes are omitted.
-
-##### Availability and loan ownership
-
-An active `Loan` refers to the original equipment object. The equipment records its loan ID and loaned
-flag together through `setLoanId(...)`. Constructing a proposed loan does not reserve the item:
-`LoanHandler.addLoan(...)` checks for an existing active loan, finds one available, serviceable item
-and saves before `Loan.attachEquipment(...)` publishes the association.
-
-[![Equipment availability: saved borrowing and return operations change the shared item's status](images/EquipmentAvailability.svg)](images/EquipmentAvailability.svg)
-
-*Figure 9. Equipment availability changes after successful borrowing and return operations.*
-
-[PlantUML source](diagrams/EquipmentAvailability.puml)
-
-The state diagram shows successful commands; loading and equipment deletion are omitted. With no active
-loan, serviceability decides between `Available` and `Unserviceable`. The integrated
-[return assessment](#returning-equipment-with-an-assessment) sets serviceability separately from numeric
-condition and damage. A name or condition update does not change it.
-
-A saved loan reassignment releases the old item and reserves the replacement through `Loan.applyUpdate(...)`.
-Both effects occur after the proposed loan records are saved. This also explains the reassignment transitions
-in the state diagram.
-
-`Loan.detachEquipment()` clears the item's loan ID only if that loan still owns it, then drops its
-reference. This stops an older loan from releasing an item borrowed under a newer loan. Returns and loan
-deletions save before detaching. Equipment deletion is blocked by the CLI's active-loan check and the
-handler's loaned-flag check; the CLI also checks bundle membership.
-
-Equipment loads before loans at startup. The loan loader validates active associations, clears old
-runtime links and reattaches accepted active loans. Rebuilding links avoids persisting a second loaned
-flag that could disagree with the loan records. `EquipmentAvailabilityTest` covers double borrowing,
-failed reservations, ownership guards, deletion and reborrowing; `MainTest` checks restart and loan-deletion
-behaviour. Return integration tests cover serviceability and save failures.
-
-Visible Item IDs range from `E001` to `E999` and may be reused after valid deletion. Loan IDs range from
-`L001` to `L999` and are never reused within a data set. Borrower IDs range from `U000` to `U999`.
-This identifier limit is separate from the inventory-capacity NFR.
+The [shared equipment model](#shared-equipment-model) and its availability state diagram explain inventory
+ownership and loan associations. The following sections focus on [addition](#adding-equipment-and-rejecting-duplicate-item-ids),
+[filtering](#filtering-equipment-without-changing-records) and [updates](#updating-equipment-details) without
+repeating those shared diagrams.
 
 #### Adding equipment and rejecting duplicate Item IDs
 
@@ -1015,12 +959,12 @@ and appends the item. `EqmManager` displays the outcome.
 
 Fields follow the order name, Item ID, type, condition, optional subtype details and final remarks.
 The parser recognises prefixes at field boundaries, including after Unicode whitespace, rather than
-splitting on every space. This preserves names such as `USB id/card reader` and `fluid/head tripod`.
-The last `id/` before `type/` identifies the Item ID; earlier fragments in the name cannot start with
+splitting on every space. This preserves names such as `USB e/card reader` and `fluid/head tripod`.
+The last `e/` before `type/` identifies the Item ID; earlier fragments in the name cannot start with
 whitespace, a digit, `+` or `-`. Typed ID-like fragments stay reserved to detect repeated fields.
 
 Subtype fields are parsed after `cond/`. The first `remarks/` starts the final literal field, so text such
-as `Check id/E001 adapter` is not mistaken for another ID. Subtype parsers handle their own attributes and
+as `Check e/E001 adapter` is not mistaken for another ID. Subtype parsers handle their own attributes and
 damage values, as described under compatibility attributes and optional fields.
 
 ##### Validation, uniqueness and publication
@@ -1029,7 +973,7 @@ Before construction, common validation checks a name of 1 to 100 characters, an 
 `E999`, a nonblank type and an integer condition written as `1` to `10`. Blank checks include Unicode
 whitespace and nonbreaking spaces. Only supported subtypes are constructed. Updates reuse these checks.
 
-IDs are compared with existing items using exact equality. A second `id/E001` is rejected even if its name
+IDs are compared with existing items using exact equality. A second `e/E001` is rejected even if its name
 or type differs; names may be shared when IDs differ. A deleted item's ID can be reused, but the replacement
 gets a new permanent record identity to keep physical-item histories separate.
 
@@ -1044,7 +988,7 @@ Duplicate IDs are rejected because replacing an existing entry could detach loan
 [![Equipment addition: reject an existing Item ID or save before appending a new item](images/EquipmentAdditionSequence.svg)](images/EquipmentAdditionSequence.svg)
 
 <!-- @@author holsoma -->
-*Figure 16. Equipment addition rejects duplicate Item IDs and saves new items before insertion.*
+*Figure 17. Equipment addition rejects duplicate Item IDs and saves new items before insertion.*
 <!-- @@author -->
 
 [PlantUML source](diagrams/EquipmentAdditionSequence.puml)
@@ -1065,13 +1009,13 @@ after a blocked save. Rejection checks inspect existing items as well as the inv
 `EqmManager` parses and applies an `EquipmentFilter`, then asks the equipment handler to display the
 matches. An empty result produces a no-matches message.
 `EquipmentFields.parse(...)` accepts fields in any order while rejecting empty, repeated or unsupported
-reserved fields. At least one field is required. Name fragments containing permitted `id/card`-like text
+reserved fields. At least one field is required. Name fragments containing permitted `e/card`-like text
 use the same field-boundary rules as equipment updates.
 
 | Criterion | Matching rule |
 | --- | --- |
-| `id/` | Exact Item ID from `E001` to `E999` |
-| `i/` | Case-insensitive substring of the equipment name |
+| `e/` | Exact Item ID from `E001` to `E999` |
+| `name/` | Case-insensitive substring of the equipment name |
 | `type/` | Case-insensitive equality with the equipment's full type |
 | `cond/` | One value or an inclusive ascending range within `1` to `10` |
 | `status/` | `available` or `loaned`, ignoring case |
@@ -1099,7 +1043,7 @@ save files or consume identifiers.
 [![Equipment filtering: parse criteria, inspect current loans and display original matching items without saving](images/EquipmentFilterSequence.svg)](images/EquipmentFilterSequence.svg)
 
 <!-- @@author holsoma -->
-*Figure 17. Equipment filtering displays matching items without changing records or saved files.*
+*Figure 18. Equipment filtering displays matching items without changing records or saved files.*
 <!-- @@author -->
 
 [PlantUML source](diagrams/EquipmentFilterSequence.puml)
@@ -1133,7 +1077,7 @@ match the existing type, ignoring case. A matching type alone is accepted, even 
 
 `EquipmentHandler.updateEquipment(...)` uses the same field parser as filtering. Fields may appear in any
 order; empty, repeated or unsupported reserved fields are rejected. An ID from `E001` to `E999`, exactly one
-matching item and at least one of `i/`, `type/` or `cond/` are required.
+matching item and at least one of `name/`, `type/` or `cond/` are required.
 
 Omitted values come from the target. Common validation is shared with addition, including the name and
 condition limits. A different type is rejected because changing subclasses would require conversion rules
@@ -1146,7 +1090,7 @@ For an existing camera `E001`, `eqm-update e/E001 name/Film Camera cond/5` follo
 [![Equipment update: validate and save the proposed inventory before changing the existing camera](images/equipment-update-sequence.svg)](images/equipment-update-sequence.svg)
 
 <!-- @@author holsoma -->
-*Figure 18. Equipment updates validate and save proposed details before changing the original object.*
+*Figure 19. Equipment updates validate and save proposed details before changing the original object.*
 <!-- @@author -->
 
 [PlantUML source](diagrams/equipment-updates/equipment-update-sequence.puml)
@@ -1204,7 +1148,7 @@ diagnostics out of normal command output.
 [![Logging lifecycle: configure shared output, run the application and close the session](images/LoggingLifecycle.svg)](images/LoggingLifecycle.svg)
 
 <!-- @@author holsoma -->
-*Figure 19. Shared logging is configured at startup and closed when the application ends.*
+*Figure 20. Shared logging is configured at startup and closed when the application ends.*
 <!-- @@author -->
 
 [PlantUML source](diagrams/LoggingLifecycle.puml)
@@ -1269,11 +1213,11 @@ The reference date is supplied to the method instead of being obtained directly 
 
 [![Overdue-loan classes: the manager delegates to a loan handler, which manages loans that own the overdue rule](images/OverdueLoanClasses.svg)](images/OverdueLoanClasses.svg)
 
-*Figure 20. Classes responsible for identifying and displaying overdue loans.*
+*Figure 21. Classes responsible for identifying and displaying overdue loans.*
 
 [PlantUML source](diagrams/OverdueLoanClasses.puml)
 
-Figure 20 focuses on the three classes that own command routing, selection and the overdue rule. The navigable
+Figure 21 focuses on the three classes that own command routing, selection and the overdue rule. The navigable
 associations show that one `EqmManager` delegates to one `LoanHandler`, which manages zero or more `Loan` objects.
 The temporary result collection and display utility are omitted because they do not change
 these responsibilities.
@@ -1284,11 +1228,11 @@ When the user enters `loan-list-overdue`, `EqmManager` obtains the current local
 
 [![Overdue-loan sequence: read one reference date, evaluate each managed loan and display the selected records](images/OverdueLoanSequence.svg)](images/OverdueLoanSequence.svg)
 
-*Figure 21. The `loan-list-overdue` command reuses one reference date and does not change managed records.*
+*Figure 22. The `loan-list-overdue` command reuses one reference date and does not change managed records.*
 
 [PlantUML source](diagrams/OverdueLoanSequence.puml)
 
-Figure 21 reuses the single reference date while the handler evaluates each managed loan. The `loop` represents
+Figure 22 reuses the single reference date while the handler evaluates each managed loan. The `loop` represents
 the managed collection, and the guarded `opt` fragment adds only matching loans. Display formatting is delegated
 to `LoanView`; diagnostic logging and individual print calls are omitted. The query performs no storage calls or
 model mutations.
@@ -1503,6 +1447,7 @@ loan-list
 loan-list-borrower u/U002
 loan-list-overdue
 loan-view l/L001
+loan-show l/L001
 loan-update l/L001 u/U003 due/03-01-20
 eqm-update e/E001 cond/6
 loan-view l/L001

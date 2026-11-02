@@ -219,7 +219,7 @@ Names may contain spaces and slashes. A field prefix after whitespace normally s
 | --- | --- | --- |
 | `USB e/card reader` | Yes | The nonnumeric `e/card` fragment stays in the name. |
 | `fluid/head tripod` | Yes | A slash within a word does not start a field. |
-| `Spare id/E001 camera` | No | Typed ID-like fragments are reserved for the actual Item ID. |
+| `Spare id/E001 camera` | Yes | `id/` is not an interactive command field and stays in the name. |
 | `Camera type/lens` | No | `type/` starts a type field after whitespace. |
 
 For `eqm-add`, the actual `e/` is the last one before `type/`. Earlier ID-like name fragments cannot start
@@ -380,6 +380,23 @@ Later equipment updates, returns and Item ID reuse do not change these saved ass
 removes its history. This read-only command does not change records or saved files. Invalid commands and unknown
 Loan IDs produce an error.
 
+## Viewing a loan's issue-time condition: `loan-show`
+
+Format: `loan-show l/<LOAN ID>`
+
+Example: `loan-show l/L001`. The short alias `ls l/L001` is also accepted.
+
+Use the Loan ID shown by `loan-list`. The command displays the equipment type, numeric condition, damage and
+remarks saved when that loan was issued. It shows only the issue-time assessment; use `loan-view` to compare the
+issue and return assessments.
+
+Reassigning an active loan to another item with `loan-update` replaces the issue assessment with the replacement
+item's current assessment. Changing only the borrower or dates keeps the existing assessment. Older loan records
+without a saved issue assessment report `Not recorded` rather than using the equipment's current details.
+
+This read-only command works for active and returned loans and does not change records or saved files. Invalid
+commands and unknown Loan IDs produce an error.
+
 ## Viewing an item's loan history: `eqm-loan-history`
 
 Format: `eqm-loan-history e/<ITEM ID>`
@@ -432,7 +449,7 @@ loan-return l/L004 serviceable/no damage/OTHER remarks/Mounting plate damaged
 ```
 
 * Use the loan ID from `loan-list`, from `L001` to `L999`. It must identify an active loan.
-* `loan/`, `serviceable/` and `damage/` are required, once each and in the displayed order.
+* `l/`, `serviceable/` and `damage/` are required, once each and in the displayed order.
   The complete command must be on one line.
 * `serviceable/yes` or `serviceable/no` is a mandatory condition assessment. These values are case-insensitive.
   The assessment determines whether the equipment may be borrowed again; damage alone does not decide this.
@@ -498,7 +515,7 @@ The loan ID remains unchanged, and omitted fields retain their current values. T
 * `e/` changes the equipment assigned to the active loan. The replacement must exist, be serviceable and have
   no active loan. The previous item is released, and the snapshot is replaced with the replacement item's current
   assessment. Supplying the current Item ID keeps the existing assignment and snapshot.
-* `b/` changes the typed borrower ID.
+* `u/` changes the typed borrower ID.
 * `issued/` changes the issue date.
 * `due/` changes the due date.
 
@@ -527,8 +544,8 @@ For example, the first command above finds cameras that are both available and w
 
 | Field | Matching rule |
 | --- | --- |
-| `id/` | Exact Item ID from `E001` to `E999`. |
-| `i/` | Part of the name, ignoring case; spaces are allowed. |
+| `e/` | Exact Item ID from `E001` to `E999`. |
+| `name/` | Part of the name, ignoring case; spaces are allowed. |
 | `type/` | Full type name, ignoring case: `camera`, `lens`, `battery` or `tripod`. |
 | `cond/` | One value from `1` to `10`, or an inclusive range such as `1-3`. |
 | `status/` | `available` or `loaned`, ignoring case. |
@@ -541,8 +558,8 @@ An unrecognised type, such as `type/microphone`, produces no matches.
 The [name and field-marker rules](#names-and-field-markers) also apply here. Empty or repeated fields are rejected. Filtering leaves equipment
 unchanged and prints matches in inventory order, or `No equipment matches the filters.` when none match.
 Matching rows use the same compact columns and truncation rules as `eqm-list`, followed by a result count.
-Use `eqm-show e/<ITEM ID>` for full values. A eqm-filter with no matches shows a count of zero and a clear message.
-An invalid eqm-filter also leaves equipment and loan records unchanged; correct the eqm-filter and try again.
+Use `eqm-show e/<ITEM ID>` for full values. An `eqm-filter` command with no matches shows a count of zero and a clear message.
+An invalid `eqm-filter` command also leaves equipment and loan records unchanged; correct it and try again.
 See the [worked example](#equipment-worked-example) for a query with known results.
 
 ## Updating equipment: `eqm-update`
