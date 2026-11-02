@@ -30,9 +30,9 @@ Help -> Output: print(command description)
 else unknown topic
 Help -> Output: print(error and compact menu)
 end
-Output --> User: requested help or topic error
+Help --> Manager: return
 deactivate Help
-Manager --> User: ready for the next command
+Manager --> User: command completed
 deactivate Manager
 note over Manager, Help
 No equipment, loan, bundle or storage handler is called.

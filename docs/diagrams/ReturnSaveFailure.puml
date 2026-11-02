@@ -8,17 +8,20 @@ participant ":LoanHandler" as Handler
 participant "LoanReturnStorage" as Store <<utility>>
 participant ":EquipmentHandler" as Inventory
 participant "LoanStorage" as Loans <<utility>>
-participant "snapshot:FileSnapshot" as Snapshot
 
 Handler -> Store: save(...)
 activate Store
 loop each configured file
-    Store -> Store: capture(snapshots, file)
+    Store -> Store: FileSnapshot.capture(file)
+    create participant "snapshot:FileSnapshot" as Snapshot
+    Store -> Snapshot: new(path, state, bytes)
+    Snapshot --> Store: snapshot
 end
 note right of Store
 Capture equipment, loans and sequence paths.
+Each loop iteration creates one FileSnapshot.
 Keep path state and any regular-file bytes
-in snapshots before any writes begin.
+before any writes begin.
 end note
 Store -> Inventory: saveReturnAssessment(...)
 Inventory --> Store: equipment saved

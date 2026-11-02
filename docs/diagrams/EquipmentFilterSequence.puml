@@ -15,6 +15,13 @@ participant ":LoanHandler" as Loans
 
 Manager -> Parsing : parse(input)
 activate Parsing
+Parsing -> Parsing : parse fields
+create Filter
+Parsing -> Filter : new(fields)
+activate Filter
+Filter -> Filter : validate()
+Filter --> Parsing : validated filter
+deactivate Filter
 Parsing --> Manager : filter
 deactivate Parsing
 Manager -> Manager : read inventory

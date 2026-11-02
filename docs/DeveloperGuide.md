@@ -16,11 +16,10 @@ title: Developer Guide
 - Image and icon sources, including the snAp logo and GitHub mark, are recorded in
   [asset sources](assets/SOURCES.txt) with the accompanying icon licence.
 
-**Version:** This guide describes the development implementation on `master`.
+**Version:** This guide documents the v2.1 development build on `master`; v2.1 has not yet been published.
 The latest published release is [v1.0](https://github.com/AY2627S1-CS2113-W13-1/tp/releases/tag/v1.0),
 whose [versioned source](https://github.com/AY2627S1-CS2113-W13-1/tp/tree/v1.0) contains the original equipment
-and loan commands. The architecture and enhancement sections below describe work for the next release;
-they are not a description of the v1.0 JAR.
+and loan commands. The implementation below therefore describes the current development build, not the v1.0 JAR.
 
 <a id="design--implementation"></a>
 
@@ -30,7 +29,9 @@ The following sections explain the architecture and implementation of equipment 
 returns, history, maintenance, optional fields, help, backup and restore, and shared logging.
 
 Diagrams omit minor helpers and repetitive calls; `...` omits parameters. Named and unnamed object lifelines
-use `item:Equipment` and `:Equipment` notation. Class and utility lifelines receive static calls.
+use `item:Equipment` and `:Equipment` notation. Class and utility lifelines receive static calls. Class diagrams
+show the relationships relevant to their section rather than every subtype, field or method; their captions and
+notes identify representative or intentionally omitted details.
 Action labels such as `display success` summarise local processing rather than additional Java methods.
 Select an SVG to view it at full size; editable PlantUML sources are linked below each figure.
 
@@ -114,6 +115,8 @@ With no active loan, serviceability decides between `Available` and `Unserviceab
 [return assessment](#returning-equipment-with-an-assessment) sets serviceability separately from numeric
 condition and damage. Loan reassignment saves proposed records before releasing the old item and reserving the
 replacement. Returns and deletions likewise save before detaching; loading rebuilds active associations from loans.
+`Unserviceable` is intentionally an absorbing state in the current implementation: recording maintenance does not
+change serviceability, and no repair command restores an item to `Available`.
 
 ### Equipment compatibility attributes
 
@@ -156,6 +159,13 @@ Known matching values produce `COMPATIBLE`. A known mismatch produces `INCOMPATI
 If a required value is `unspecified`, the result is `UNKNOWN`. For camera-and-lens comparison, a known mismatch
 takes precedence over an unknown value; the pair cannot be compatible when one known attribute conflicts.
 Comparisons ignore letter case because compatibility identifiers may be entered with different capitalisation.
+
+| Result | When it occurs | Blocks bundle addition? |
+| --- | --- | --- |
+| `COMPATIBLE` | All applicable, specified attributes match. | No |
+| `INCOMPATIBLE` | At least one known applicable attribute conflicts. | Yes |
+| `UNKNOWN` | A required comparison value is `unspecified` and no known mismatch exists. | No |
+| `NOT_APPLICABLE` | The pair has no defined compatibility relationship. | No |
 
 #### Bundle compatibility validation
 
@@ -316,9 +326,9 @@ it into `equipmentRecordId`. These stored values survive restarts. The class dia
 between that permanent identity and an active object reference; unrelated fields, subclasses and storage classes
 are omitted.
 
-[![History class diagram: handlers manage records; loans store the permanent equipment identity and an optional active reference.](images/EquipmentIdentity.svg)](images/EquipmentIdentity.svg)
+[![Equipment identity class diagram: handlers manage records; loans store the permanent equipment identity and an optional active reference.](images/EquipmentIdentity.svg)](images/EquipmentIdentity.svg)
 
-*Figure 6. History uses stored identity values, while an active loan also refers to an equipment object.*
+*Figure 6. Equipment identity separates stored history keys from an active equipment-object reference.*
 
 [PlantUML source](diagrams/EquipmentIdentity.puml)
 
@@ -381,6 +391,24 @@ check that failed migrations do not publish partial in-memory state. A retry mus
 saved by a successful equipment migration.
 
 ### Optional command fields and explicit defaults
+
+#### Prefix and identifier reference
+
+The same three-digit text can identify different records, so the surrounding prefix and command determine its
+meaning. The most easily confused identifier prefixes are:
+
+| Prefix | Value identified | Main uses |
+| --- | --- | --- |
+| `item/` | Item ID | `delete item/<ITEM ID>` |
+| `id/` | Item ID in equipment and loan commands; Bundle ID in bundle-membership commands | `add`, `show`, `loan`, `history`, `filter`, `update`, `maintain`, `add-to-bundle`, `remove-from-bundle` |
+| `loan/` | Loan ID | `return`, `delete loan`, `update loan`, `view loan` |
+| `b/` | Borrower ID | `loan`, `update loan` |
+| `borrower/` or `member/` | Borrower ID | current-loan queries |
+| `bundle/id/` | Bundle ID | bundle-history queries |
+| `bundle/name/` | Bundle name | bundle-history queries |
+
+Item IDs and Loan IDs range from `001` to `999`; Borrower IDs range from `000` to `999`. A Bundle ID is also
+three digits from `001` to `999`. The command-specific help remains authoritative for field order and optionality.
 
 #### Rules and responsibilities
 
@@ -451,6 +479,22 @@ return remarks, required assessments, and failed saves followed by successful re
 `DD-MM-YY` dates and a result count. Handlers retain responsibility for selecting and ordering records.
 The renderer receives one reference date from the handler's clock. It checks returned status first, then calls
 `Loan.isOverdue(LocalDate)` to distinguish `Overdue` from `Active`. It does not store or change a loan's state.
+
+For example, the compact views expose the identifiers and current states used by later commands:
+
+```text
+Equipment
+| ID  | NAME       | TYPE   | CONDITION | STATUS    |
+| 001 | Camera     | camera | 1         | Available |
+1 equipment item.
+
+Loans
+| LOAN ID | ITEM ID | BORROWER ID | ISSUED   | DUE      | STATE  |
+| 001     | 001     | 002         | 24-10-26 | 31-10-26 | Active |
+1 loan.
+```
+
+The real tables include fixed-width borders and padding; the example omits that decoration to emphasise the fields.
 
 `BundleView` displays each bundle and its members without a wide table. `Bundle.getMissingEquipmentTypes()`
 uses the existing type-count rules to explain incomplete composition. This does not add compatibility or
@@ -644,8 +688,10 @@ backup format and are not changed by the restore operation.
 
 #### Design choices and verification
 
-A checksum manifest detects tampering and incomplete copies. Staged validation rejects invalid backups before
-replacement; rollback attempts to recover the previous saved records if replacement fails. The backup covers only
+A checksum manifest detects corruption or changes to the copied data files only while the manifest itself remains
+unchanged; it is an integrity check, not protection against an attacker replacing both the files and their hashes.
+Staged validation rejects invalid backups before replacement; rollback attempts to recover the previous saved records
+if replacement fails. The backup covers only
 equipment, loans and the loan sequence. Restore clears bundles and their saved memberships, while maintenance
 history remains unchanged in its separate persistence file.
 
