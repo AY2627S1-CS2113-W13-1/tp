@@ -607,6 +607,15 @@ class EquipmentHandlerTest {
     }
 
     @Test
+    void deleteEquipment_lowercaseId_deletesCanonicalItem() throws Exception {
+        EquipmentHandler handler = new EquipmentHandler();
+        Equipment equipment = handler.addEquipment("add i/Canon EOS R10 id/E001 type/camera cond/1");
+
+        assertSame(equipment, handler.deleteEquipment("delete item/e001"));
+        assertTrue(handler.getEquipmentList().isEmpty());
+    }
+
+    @Test
     public void deleteEquipment_invalidCommands_throwExpectedErrors()
             throws EquipmentAdditionUnsuccessful {
         EquipmentHandler handler = new EquipmentHandler();

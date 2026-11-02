@@ -545,7 +545,8 @@ public class EquipmentHandler {
         }
         char firstCharacter = details.charAt(valueIndex);
         return !EquipmentFields.isWhitespace(firstCharacter) && !Character.isDigit(firstCharacter)
-                && firstCharacter != '+' && firstCharacter != '-';
+                && firstCharacter != '+' && firstCharacter != '-'
+                && !EquipmentFields.isTypedItemId(details, valueIndex);
     }
 
     /**

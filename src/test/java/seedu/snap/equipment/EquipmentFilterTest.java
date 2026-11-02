@@ -54,6 +54,14 @@ class EquipmentFilterTest {
     }
 
     @Test
+    void parse_idAfterNameField_keepsBothFields() throws EquipmentFilteringUnsuccessful {
+        EquipmentFilter filter = EquipmentFilter.parse("filter i/Camera id/E001");
+
+        assertTrue(filter.matches(camera, false));
+        assertFalse(filter.matches(tripod, false));
+    }
+
+    @Test
     void parse_type_usesFullCaseInsensitiveMatch() throws EquipmentFilteringUnsuccessful {
         assertTrue(EquipmentFilter.parse("filter type/CAMERA").matches(camera, false));
         assertFalse(EquipmentFilter.parse("filter type/cam").matches(camera, false));

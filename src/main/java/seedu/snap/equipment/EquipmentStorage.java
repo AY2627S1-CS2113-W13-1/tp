@@ -85,15 +85,17 @@ final class EquipmentStorage {
     private static String normalizeLegacyItemId(String line) {
         Matcher matcher = NON_CANONICAL_ITEM_ID.matcher(line);
         int idStart = -1;
+        int numberStart = -1;
         int idEnd = -1;
         while (matcher.find()) {
             idStart = matcher.start(2);
+            numberStart = matcher.start(3);
             idEnd = matcher.end(3);
         }
         if (idStart < 0) {
             return line;
         }
-        return line.substring(0, idStart) + "E" + line.substring(matcher.start(3), idEnd)
+        return line.substring(0, idStart) + "E" + line.substring(numberStart, idEnd)
                 + line.substring(idEnd);
     }
 

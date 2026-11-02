@@ -178,6 +178,14 @@ class EquipmentUpdateTest {
     }
 
     @Test
+    void updateEquipment_idAfterNameField_updatesTheRequestedItem() throws EquipmentUpdateUnsuccessful {
+        handler.updateEquipment("update i/Film Camera id/E001");
+
+        assertEquals("Film Camera", camera.getItemName());
+        assertEquals("E001", camera.getItemId());
+    }
+
+    @Test
     void executeInput_updateAndList_showsNewDetailsAndRecoversAfterError() {
         PrintStream original = System.out;
         ByteArrayOutputStream output = new ByteArrayOutputStream();
