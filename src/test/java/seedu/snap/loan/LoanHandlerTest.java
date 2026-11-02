@@ -39,7 +39,9 @@ public class LoanHandlerTest {
 
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
     private PrintStream originalOutput;
+    // @@author yarnieee
     private EquipmentHandler equipment;
+    // @@author
     @TempDir
     private Path temporaryDirectory;
 
@@ -55,11 +57,15 @@ public class LoanHandlerTest {
         System.setOut(originalOutput);
     }
 
+    // @@author yarnieee
     @Test
     public void addLoan_validLoan_keepsCountConsistent() throws LoanAdditionUnsuccessful {
+    // @@author
         LoanHandler loanHandler = new LoanHandler(equipment);
 
+        // @@author yarnieee
         loanHandler.addLoan(FIRST_LOAN);
+        // @@author
 
         assertEquals(1, loanHandler.getLoanCount());
         assertEquals(1, loanHandler.getLoanList().size());
@@ -80,7 +86,9 @@ public class LoanHandlerTest {
         for (Equipment item : equipment.getEquipmentList()) {
             assertFalse(item.isLoaned());
         }
+    // @@author yarnieee
     }
+    // @@author
 
     @Test
     void addLoan_zeroItemId_rejectsBeforeConstructionAndKeepsNextId() {
@@ -104,7 +112,9 @@ public class LoanHandlerTest {
         assertEquals("001", loan.getLoanId());
         assertEquals("001", equipment.getEquipmentList().getFirst().getLoanId());
         assertEquals("002", loanHandler.getNextLoanId());
+    // @@author yarnieee
     }
+    // @@author
 
     @Test
     public void persistence_addDeleteAndReload_preservesLoansAcrossHandlers() throws Exception {
@@ -182,7 +192,9 @@ public class LoanHandlerTest {
                 + "[OK] Equipment 002 \"Tripod\" deleted." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
         assertTrue(Files.readString(temporaryDirectory.resolve("loans.txt"))
+                // @@author yarnieee
                 .contains("loan loanId/001 id/001 b/002 issued/01-10-26 due/02-10-26 returned/false"));
+                // @@author
     }
 
     @Test
@@ -201,7 +213,9 @@ public class LoanHandlerTest {
                 + "  Type: battery | Condition: 3 | Status: Available" + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
         assertTrue(Files.readString(temporaryDirectory.resolve("loans.txt"))
+                // @@author yarnieee
                 .contains("loan loanId/001 id/001 b/002 issued/01-10-26 due/02-10-26 returned/true"));
+                // @@author
     }
 
     @Test
@@ -287,7 +301,9 @@ public class LoanHandlerTest {
                         "delete loan/999"));
 
         assertEquals(
+                // @@author yarnieee
                 "No loan found for loan ID 999.",
+                // @@author
                 exception.getMessage());
         assertEquals(1, loanHandler.getLoanCount());
         assertEquals(
@@ -307,7 +323,9 @@ public class LoanHandlerTest {
                         "delete loan/01"));
 
         assertEquals(
+                // @@author yarnieee
                 "Invalid loan ID \"01\". Loan ID must be exactly three digits from 001 to 999.",
+                // @@author
                 exception.getMessage());
         assertEquals(1, loanHandler.getLoanCount());
     }

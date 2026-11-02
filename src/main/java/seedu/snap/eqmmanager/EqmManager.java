@@ -1,4 +1,6 @@
+// @@author yarnieee
 package seedu.snap.eqmmanager;
+// @@author
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -9,20 +11,26 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+// @@author yarnieee
 import seedu.snap.equipment.Equipment;
 import seedu.snap.bundle.Bundle;
 import seedu.snap.bundle.BundleHandler;
+// @@author
 import seedu.snap.exceptions.BundleAdditionUnsuccessful;
 import seedu.snap.exceptions.BundleHistoryUnsuccessful;
 import seedu.snap.exceptions.BackupUnsuccessful;
 import seedu.snap.equipment.EquipmentFilter;
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
+// @@author yarnieee
 import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
+// @@author
 import seedu.snap.exceptions.EquipmentFilteringUnsuccessful;
 import seedu.snap.exceptions.EquipmentUpdateUnsuccessful;
 import seedu.snap.exceptions.EquipmentViewingUnsuccessful;
+// @@author yarnieee
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
+// @@author
 import seedu.snap.exceptions.LoanBorrowerUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 import seedu.snap.exceptions.LoanReturnUnsuccessful;
@@ -30,35 +38,45 @@ import seedu.snap.exceptions.LoanHistoryUnsuccessful;
 import seedu.snap.exceptions.LoanViewingUnsuccessful;
 import seedu.snap.exceptions.LoanUpdateUnsuccessful;
 import seedu.snap.loan.Loan;
+// @@author yarnieee
 import seedu.snap.loan.LoanHandler;
+// @@author
 import seedu.snap.exceptions.MaintenanceRecordUnsuccessful;
 import seedu.snap.maintenance.MaintenanceHandler;
 import seedu.snap.maintenance.MaintenanceRecord;
+// @@author yarnieee
 import seedu.snap.parser.Parser;
+// @@author
 import seedu.snap.ui.Help;
 import seedu.snap.ui.Welcome;
 import seedu.snap.ui.BundleView;
 import seedu.snap.ui.ConsoleOutput;
 import seedu.snap.ui.LoanView;
 
+// @@author yarnieee
 /** Coordinates command input and execution for the SNAP application. */
 public class EqmManager {
+// @@author
     private static final Logger logger = Logger.getLogger(EqmManager.class.getName());
     private final Parser parser;
     private final LoanHandler loans;
     private final EquipmentHandler equipment;
     private final MaintenanceHandler maintenance;
+    // @@author yarnieee
     private final BundleHandler bundles;
+    // @@author
     private final BackupHandler backups;
     private final Path dataDirectory;
     private final Clock clock;
     private String startupError;
     /** Equipment-and-loan backups cannot recover maintenance that failed to load at startup. */
     private boolean maintenanceLoadFailed;
+    // @@author yarnieee
     private boolean isRunning;
 
     /** Creates an equipment manager ready to accept commands. */
     public EqmManager() {
+    // @@author
         this(Path.of("data"));
     }
 
@@ -78,7 +96,9 @@ public class EqmManager {
             throw new IllegalArgumentException("Data directory must not be null.");
         }
         this.dataDirectory = dataDirectory.toAbsolutePath().normalize();
+        // @@author yarnieee
         this.parser = new Parser();
+        // @@author
         this.clock = clock;
         this.equipment = new EquipmentHandler(this.dataDirectory.resolve("equipment.txt"));
         this.loans = new LoanHandler(equipment, this.dataDirectory.resolve("loans.txt"),
@@ -113,6 +133,7 @@ public class EqmManager {
             logger.log(Level.SEVERE, "Could not load saved maintenance data", e);
         }
         this.startupError = loadErrors.isEmpty() ? null : String.join(System.lineSeparator(), loadErrors);
+        // @@author yarnieee
         this.isRunning = true;
     }
 
@@ -122,6 +143,7 @@ public class EqmManager {
      * @param input command to execute
      */
     public void executeInput(String input) {
+        // @@author
         String normalizedInput = input == null ? "" : input.replaceAll("(?U)^\\s+|\\s+$", "");
         if (normalizedInput.equals("restore") || normalizedInput.startsWith("restore ")) {
             restoreBackup(normalizedInput);
@@ -170,7 +192,9 @@ public class EqmManager {
         } else if (normalizedInput.equals("list overdue")) {
             viewOverdueLoans();
         } else if (normalizedInput.equals("list loans")) {
+            // @@author yarnieee
             loans.viewAllLoans();
+            // @@author
         } else if (normalizedInput.equals("add-bundle") || normalizedInput.startsWith("add-bundle ")) {
             addBundle(normalizedInput);
         } else if (normalizedInput.equals("add-to-bundle") || normalizedInput.startsWith("add-to-bundle ")) {
@@ -178,17 +202,27 @@ public class EqmManager {
         } else if (normalizedInput.matches("(?U)remove-from-bundle(?:\\s.*)?")) {
             removeItemsFromBundle(normalizedInput);
         } else if (normalizedInput.equals("list bundles")) {
+            // @@author yarnieee
             try {
+            // @@author
                 bundles.viewAllBundles(normalizedInput);
+            // @@author yarnieee
             } catch (BundleAdditionUnsuccessful e) {
+            // @@author
                 ConsoleOutput.error(e.getMessage());
+            // @@author yarnieee
             }
+            // @@author
         } else if (normalizedInput.equals("list") || normalizedInput.startsWith("list ")) {
             equipment.viewAllEquipment();
+        // @@author yarnieee
         } else {
+        // @@author
             ConsoleOutput.error("Command not recognised. Type help for available commands.");
+        // @@author yarnieee
         }
     }
+        // @@author
 
     /** Displays complete equipment values without changing records or performing a save. */
     private void showEquipment(String input) {
@@ -200,7 +234,9 @@ public class EqmManager {
     }
 
     /** Runs commands until bye or the end of input, preserving final saves and startup error protection. */
+    // @@author yarnieee
     public void run() {
+    // @@author
         if (startupError != null) {
             ConsoleOutput.error("Could not load saved data: " + startupError);
         } else {
@@ -211,10 +247,12 @@ public class EqmManager {
             Help.print();
         }
 
+        // @@author yarnieee
         // main process
         String input;
         while (isRunning) {
             input = parser.getInput();
+        // @@author
             if (input == null) {
                 isRunning = false;
                 if (startupError == null && !saveBeforeExit()) {
@@ -225,10 +263,14 @@ public class EqmManager {
             } else {
                 executeInput(input);
             }
+        // @@author yarnieee
         }
+        // @@author
 
         ConsoleOutput.success("Goodbye.");
+    // @@author yarnieee
     }
+    // @@author
 
     /**
      * Performs a final save for both data files before ending the session.
@@ -474,7 +516,9 @@ public class EqmManager {
         } catch (EquipmentUpdateUnsuccessful e) {
             ConsoleOutput.error(e.getMessage());
         }
+    // @@author yarnieee
     }
+    // @@author
 
     /** Displays the outcome of a loan-detail update. */
     private void updateLoan(String input) {
@@ -548,4 +592,6 @@ public class EqmManager {
     }
 
     // @@author
+// @@author yarnieee
 }
+// @@author

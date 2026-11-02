@@ -1,12 +1,16 @@
+// @@author yarnieee
 package seedu.snap.eqmmanager;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+// @@author
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+// @@author yarnieee
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+// @@author
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -14,19 +18,24 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 
+// @@author yarnieee
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+// @@author
 import org.junit.jupiter.api.io.TempDir;
 
 /** Tests command routing and output for equipment additions and deletions. */
+// @@author yarnieee
 class EqmManagerTest {
     private static final String ADD_CAMERA = "add i/Canon EOS R10 id/001 type/camera cond/1";
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
     private PrintStream originalOutput;
+// @@author
     @TempDir
     private Path temporaryDirectory;
 
+    // @@author yarnieee
     @BeforeEach
     void redirectOutput() {
         originalOutput = System.out;
@@ -37,6 +46,7 @@ class EqmManagerTest {
     void restoreOutput() {
         System.setOut(originalOutput);
     }
+    // @@author
 
     @Test
     void deleteEquipment_bundledItem_preservesInventoryAndCompletion() throws Exception {
@@ -184,27 +194,36 @@ class EqmManagerTest {
                 .contains("remarks/Handle with care"));
     }
 
+    // @@author yarnieee
     @Test
     void deleteEquipment_validCommand_printsSuccessMessage() {
+    // @@author
         EqmManager manager = new EqmManager(temporaryDirectory);
+        // @@author yarnieee
         manager.executeInput(ADD_CAMERA);
         output.reset();
 
         manager.executeInput("delete item/001");
+        // @@author
 
         assertEquals("[OK] Equipment 001 \"Canon EOS R10\" deleted." + System.lineSeparator(),
+                // @@author yarnieee
                 output.toString(StandardCharsets.UTF_8));
     }
 
     @Test
     void deleteEquipment_invalidCommands_printExpectedErrors() {
+                // @@author
         EqmManager manager = new EqmManager(temporaryDirectory);
+        // @@author yarnieee
         manager.executeInput(ADD_CAMERA);
         output.reset();
         String expectedMessage = "Invalid delete syntax. ITEM ID must be from 001 to 999.";
         String[] invalidCommands = {
             "delete",
+        // @@author
             "delete camera/001",
+            // @@author yarnieee
             "delete item/1",
             "delete item/000",
             "delete item/1000",
@@ -214,7 +233,9 @@ class EqmManagerTest {
 
         for (String command : invalidCommands) {
             manager.executeInput(command);
+            // @@author
             assertEquals("[ERROR] " + expectedMessage + System.lineSeparator(),
+                    // @@author yarnieee
                     output.toString(StandardCharsets.UTF_8), command);
             output.reset();
         }
@@ -222,15 +243,20 @@ class EqmManagerTest {
 
     @Test
     void deleteEquipment_unknownId_printsExpectedError() {
+                    // @@author
         EqmManager manager = new EqmManager(temporaryDirectory);
+        // @@author yarnieee
         manager.executeInput(ADD_CAMERA);
         output.reset();
 
         manager.executeInput("delete item/999");
+        // @@author
 
         assertEquals("[ERROR] Equipment ID 999 does not exist." + System.lineSeparator(),
+                // @@author yarnieee
                 output.toString(StandardCharsets.UTF_8));
     }
+                // @@author
 
     @Test
     void deleteEquipment_repeatedCommand_printsMissingIdError() {
@@ -455,4 +481,6 @@ class EqmManagerTest {
     }
 
     // @@author
+// @@author yarnieee
 }
+// @@author

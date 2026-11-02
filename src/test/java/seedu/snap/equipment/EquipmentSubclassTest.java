@@ -1,56 +1,76 @@
+// @@author yarnieee
 package seedu.snap.equipment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+// @@author
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.stream.Stream;
 
+// @@author yarnieee
 import org.junit.jupiter.api.Test;
+// @@author
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /** Tests the common state and type-specific details stored by equipment subclasses. */
+// @@author yarnieee
 class EquipmentSubclassTest {
     @Test
     void camera_hasCameraTypeAndCommonFields() {
+// @@author
         Camera equipment = new Camera("Canon EOS R10", "101", 8, "APS-C", Camera.CameraDamage.SENSOR_DAMAGE);
 
+        // @@author yarnieee
         assertEquals("camera", equipment.getType());
         assertCommonFields(equipment, "Canon EOS R10", "101", 8);
+        // @@author
         assertEquals("APS-C", equipment.getSensorFormat());
         assertEquals(Camera.CameraDamage.SENSOR_DAMAGE, equipment.getDamage());
         assertEquals("sensor/APS-C damage/SENSOR_DAMAGE", equipment.getDetails());
+    // @@author yarnieee
     }
 
     @Test
     void tripod_hasTripodTypeAndCommonFields() {
+    // @@author
         Tripod equipment = new Tripod("Manfrotto Tripod", "102", 7, "1/4 inch", Tripod.TripodDamage.BENT_LEG);
 
+        // @@author yarnieee
         assertEquals("tripod", equipment.getType());
         assertCommonFields(equipment, "Manfrotto Tripod", "102", 7);
+        // @@author
         assertEquals("1/4 inch", equipment.getThread());
         assertEquals(Tripod.TripodDamage.BENT_LEG, equipment.getDamage());
         assertEquals("thread/1/4 inch damage/BENT_LEG", equipment.getDetails());
+    // @@author yarnieee
     }
 
     @Test
     void lens_hasLensTypeAndCommonFields() {
+    // @@author
         Lens equipment = new Lens("Sigma Zoom Lens", "103", 9, "18-50 mm", Lens.LensDamage.SCRATCHED_GLASS);
 
+        // @@author yarnieee
         assertEquals("lens", equipment.getType());
+        // @@author
         assertCommonFields(equipment, "Sigma Zoom Lens", "103", 9);
         assertEquals("18-50 mm", equipment.getZoomRange());
         assertEquals(Lens.LensDamage.SCRATCHED_GLASS, equipment.getDamage());
         assertEquals("zoom/18-50 mm damage/SCRATCHED_GLASS", equipment.getDetails());
+    // @@author yarnieee
     }
 
     @Test
     void battery_hasBatteryTypeAndCommonFields() {
+    // @@author
         Battery equipment = new Battery("Canon Battery", "104", 6, "2130 mAh", Battery.BatteryDamage.SWELLING);
 
+        // @@author yarnieee
         assertEquals("battery", equipment.getType());
         assertCommonFields(equipment, "Canon Battery", "104", 6);
+        // @@author
         assertEquals("2130 mAh", equipment.getCapacity());
         assertEquals(Battery.BatteryDamage.SWELLING, equipment.getDamage());
         assertEquals("capacity/2130 mAh damage/SWELLING", equipment.getDetails());
@@ -148,6 +168,7 @@ class EquipmentSubclassTest {
     private static Stream<String> invalidAttributes() {
         return Stream.of(null, "", " ", "\t", "a".repeat(101), "full\nframe", "full\rframe",
                 "full\u0085frame", "full\u2028frame", "full\u2029frame");
+    // @@author yarnieee
     }
 
     private void assertCommonFields(Equipment equipment, String expectedName, String expectedId,
@@ -157,3 +178,4 @@ class EquipmentSubclassTest {
         assertEquals(expectedCondition, equipment.getCondition());
     }
 }
+    // @@author

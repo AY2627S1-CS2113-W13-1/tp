@@ -1,3 +1,4 @@
+// @@author yarnieee
 package seedu.snap.exceptions;
 
 /** Signals that a loan command could not be added. */
@@ -7,3 +8,4 @@ public class LoanAdditionUnsuccessful extends Exception {
         super(message);
     }
 }
+// @@author

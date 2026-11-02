@@ -1,8 +1,10 @@
 package seedu.snap.equipment;
 
 import java.util.UUID;
+// @@author yarnieee
 import java.util.logging.Level;
 import java.util.logging.Logger;
+// @@author
 import java.util.regex.Pattern;
 
 /**
@@ -12,7 +14,9 @@ import java.util.regex.Pattern;
  * field on this class. This keeps type-specific behaviour separate from the
  * common equipment properties.</p>
  */
+// @@author yarnieee
 public abstract class Equipment {
+// @@author
     /** Maximum number of characters accepted in an equipment name. */
     public static final int MAX_NAME_LENGTH = 100;
     /** Inclusive lower bound of the equipment condition scale. */
@@ -25,17 +29,23 @@ public abstract class Equipment {
     private static final String RESERVED_ITEM_ID = "000";
     private static final Pattern BLANK_TEXT = Pattern.compile("\\s*", Pattern.UNICODE_CHARACTER_CLASS);
 
+    // @@author yarnieee
     private static final Logger logger = Logger.getLogger(Equipment.class.getName());
+    // @@author
     private String itemName;
     private final String itemId;
     /** Permanent identity of this physical item; the visible three-digit Item ID may later be reused. */
     private String recordId = UUID.randomUUID().toString();
     private int condition;
+    // @@author yarnieee
     private boolean isLoaned = false;
+    // @@author
     /** Whether this item has passed the latest return assessment and can be loaned again. */
     private boolean isServiceable = true;
     /** Current active loan identifier, rebuilt from saved loan records rather than duplicated in equipment storage. */
+    // @@author yarnieee
     private String loanId;
+    // @@author
     /** Optional single-line remarks retained with this equipment record. */
     private String remarks;
 
@@ -47,7 +57,9 @@ public abstract class Equipment {
      * @param id Three-digit equipment ID.
      * @param condition Condition of the equipment from 1 to 10.
      */
+    // @@author yarnieee
     protected Equipment(String name, String id, int condition) {
+    // @@author
         this(name, id, condition, "");
     }
 
@@ -72,7 +84,9 @@ public abstract class Equipment {
         this.itemId = id;
         this.condition = condition;
         this.remarks = remarks.trim();
+        // @@author yarnieee
         assert hasValidState() : "Equipment fields must contain valid values.";
+        // @@author
     }
 
     public String getItemName() {
@@ -100,12 +114,14 @@ public abstract class Equipment {
         recordId = savedRecordId;
     }
 
+    // @@author yarnieee
     /**
      * Returns the canonical type represented by this equipment subclass.
      *
      * @return the equipment type
      */
     public abstract String getType();
+    // @@author
 
     /**
      * Returns the type-specific fields in add-command format for listing and saving.
@@ -156,12 +172,16 @@ public abstract class Equipment {
     }
 
     /** Returns the current active loan identifier, or null when no identified loan owns this item. */
+    // @@author yarnieee
     public String getLoanId() {
         return loanId;
     }
+    // @@author
 
     /** Associates this item with a validated loan identifier and updates availability together. */
+    // @@author yarnieee
     public void setLoanId(String loanId) {
+    // @@author
         assert loanId == null || isValidItemId(loanId) : "Loan ID must be from 001 to 999";
         setLoaned(loanId != null);
         this.loanId = loanId;
@@ -172,6 +192,7 @@ public abstract class Equipment {
         if (!isLoaned) {
             loanId = null;
         }
+        // @@author yarnieee
         assert itemId != null : "Equipment must have an ID before its availability changes";
         if (this.isLoaned == isLoaned) {
             logger.log(Level.FINE, "Equipment with item ID {0} remains {1}.",
@@ -179,10 +200,13 @@ public abstract class Equipment {
             return;
         }
         boolean previousState = this.isLoaned;
+        // @@author
         this.isLoaned = isLoaned;
+        // @@author yarnieee
         logger.log(Level.INFO, "Equipment with item ID {0} changed from {1} to {2}.",
                 new Object[]{itemId, previousState ? "loaned" : "available",
                     isLoaned ? "loaned" : "available"});
+        // @@author
     }
 
     public int getCondition() {
@@ -209,12 +233,14 @@ public abstract class Equipment {
         this.condition = condition;
     }
 
+    // @@author yarnieee
     /**
      * Checks the invariant shared by all equipment subclasses.
      *
      * @return true when all common equipment fields are valid
      */
     private boolean hasValidState() {
+    // @@author
         return hasText(itemName) && itemName.length() <= MAX_NAME_LENGTH
                 && isValidItemId(itemId)
                 && condition >= MIN_CONDITION && condition <= MAX_CONDITION
@@ -229,5 +255,7 @@ public abstract class Equipment {
      */
     public String getRemarks() {
         return remarks;
+    // @@author yarnieee
     }
+    // @@author
 }

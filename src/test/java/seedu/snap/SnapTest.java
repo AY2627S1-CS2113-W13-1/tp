@@ -1,4 +1,6 @@
+// @@author yarnieee
 package seedu.snap;
+// @@author
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

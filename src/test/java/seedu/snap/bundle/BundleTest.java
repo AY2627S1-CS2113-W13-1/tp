@@ -1,9 +1,12 @@
+// @@author yarnieee
 package seedu.snap.bundle;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+// @@author
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+// @@author yarnieee
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -11,8 +14,10 @@ import org.junit.jupiter.api.Test;
 import seedu.snap.equipment.Battery;
 import seedu.snap.equipment.Camera;
 import seedu.snap.equipment.Lens;
+// @@author
 import seedu.snap.equipment.Tripod;
 
+// @@author yarnieee
 /** Tests bundle identity, contents, and completion state. */
 class BundleTest {
     @Test
@@ -28,11 +33,13 @@ class BundleTest {
     @Test
     void addEquipment_meetsRequirements_marksBundleComplete() {
         Bundle bundle = new Bundle("Travel Kit", "001");
+// @@author
 
         bundle.addEquipment(new Camera("Camera", "001", 8, "Full frame", Camera.CameraDamage.NONE));
         bundle.addEquipment(new Battery("Battery", "002", 8, "2000 mAh", Battery.BatteryDamage.NONE));
         bundle.addEquipment(new Lens("Lens", "003", 8, "24 to 70 mm", Lens.LensDamage.NONE));
 
+        // @@author yarnieee
         assertTrue(bundle.isComplete());
         assertEquals(3, bundle.getEquipmentList().size());
     }
@@ -40,15 +47,18 @@ class BundleTest {
     @Test
     void addEquipment_afterCompletion_keepsBundleComplete() {
         Bundle bundle = new Bundle("Travel Kit", "001");
+        // @@author
         bundle.addEquipment(new Camera("Camera", "001", 8, "Full frame", Camera.CameraDamage.NONE));
         bundle.addEquipment(new Battery("Battery", "002", 8, "2000 mAh", Battery.BatteryDamage.NONE));
         bundle.addEquipment(new Lens("Lens", "003", 8, "24 to 70 mm", Lens.LensDamage.NONE));
 
         bundle.addEquipment(new Battery("Spare Battery", "004", 8, "1800 mAh", Battery.BatteryDamage.NONE));
 
+        // @@author yarnieee
         assertTrue(bundle.isComplete());
         assertEquals(4, bundle.getEquipmentList().size());
     }
+        // @@author
 
     @Test
     void removeEquipmentById_updatesContentsAndCompletion() {
@@ -102,4 +112,6 @@ class BundleTest {
         assertTrue(bundle.containsEquipmentId("001"));
         assertFalse(bundle.containsEquipmentId("002"));
     }
+// @@author yarnieee
 }
+// @@author

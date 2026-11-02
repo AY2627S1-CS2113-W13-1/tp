@@ -1,3 +1,4 @@
+// @@author yarnieee
 package seedu.snap.exceptions;
 
 /** Signals that a bundle command could not be completed. */
@@ -7,3 +8,4 @@ public class BundleAdditionUnsuccessful extends Exception {
         super(message);
     }
 }
+// @@author

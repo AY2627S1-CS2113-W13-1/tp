@@ -1,3 +1,4 @@
+// @@author yarnieee
 package seedu.snap.equipment;
 
 import java.util.logging.Level;
@@ -6,6 +7,7 @@ import java.util.logging.Logger;
 /** Represents a lens in the equipment inventory. */
 public class Lens extends Equipment {
     private static final String TYPE = "lens";
+// @@author
     private static final Logger LOGGER =
             Logger.getLogger(Lens.class.getName());
 
@@ -36,7 +38,9 @@ public class Lens extends Equipment {
 
     // @@author
 
+    // @@author yarnieee
     /**
+    // @@author
      * Creates a lens with unspecified details and no recorded damage.
      *
      * @param name name of the lens
@@ -145,10 +149,12 @@ public class Lens extends Equipment {
 
     // @@author
 
+    // @@author yarnieee
     @Override
     public String getType() {
         return TYPE;
     }
+    // @@author
 
     public String getZoomRange() {
         return zoomRange;
@@ -200,4 +206,6 @@ public class Lens extends Equipment {
     }
 
     // @@author
+// @@author yarnieee
 }
+// @@author
