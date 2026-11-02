@@ -1013,6 +1013,12 @@ after `run()` finishes or throws. Feature classes obtain loggers by full class n
 `Logger.getLogger(EquipmentHandler.class.getName())`; their names inherit the shared `seedu.snap`
 configuration.
 
+`Parser.getInput()` returns `null` when the console input stream ends. `EqmManager.run()` stops the loop
+and attempts the normal final save once, unless a startup loading error requires the saved files to remain
+untouched. A failed end-of-input save reports unsaved changes and returns without a successful goodbye;
+the manager cannot retry when there is no input. An explicit `bye` still keeps the loop running after a
+save failure so the user can resolve the problem and retry.
+
 The package logger and its `FileHandler` accept `FINER` and higher levels. `SimpleFormatter` writes
 under the working directory's `logs/` folder, with two rotating files, normally `snap.log.0` and
 `snap.log.1`, at approximately 1,000,000 bytes each. Append mode retains existing records across runs;
@@ -1085,9 +1091,31 @@ not returned AND due date is before reference date
 
 The reference date is supplied to the method instead of being obtained directly from the system clock. This keeps the model behaviour deterministic and independently testable.
 
+[![Overdue-loan classes: the manager delegates to a loan handler, which manages loans that own the overdue rule](images/OverdueLoanClasses.svg)](images/OverdueLoanClasses.svg)
+
+*Figure 14. Classes responsible for identifying and displaying overdue loans.*
+
+[PlantUML source](diagrams/OverdueLoanClasses.puml)
+
+Figure 14 focuses on the three classes that own command routing, selection and the overdue rule. The navigable
+associations show that one `EqmManager` delegates to one `LoanHandler`, which manages zero or more `Loan` objects.
+The temporary result collection and display utility are omitted because they do not change
+these responsibilities.
+
 #### Command execution
 
 When the user enters `list overdue`, `EqmManager` obtains the current local date using its configured `Clock` and passes that date to `LoanHandler`.
+
+[![Overdue-loan sequence: read one reference date, evaluate each managed loan and display the selected records](images/OverdueLoanSequence.svg)](images/OverdueLoanSequence.svg)
+
+*Figure 15. The `list overdue` command reuses one reference date and does not change managed records.*
+
+[PlantUML source](diagrams/OverdueLoanSequence.puml)
+
+Figure 15 reuses the single reference date while the handler evaluates each managed loan. The `loop` represents
+the managed collection, and the guarded `opt` fragment adds only matching loans. Display formatting is delegated
+to `LoanView`; diagnostic logging and individual print calls are omitted. The query performs no storage calls or
+model mutations.
 
 `LoanHandler` evaluates every stored loan using `Loan.isOverdue(referenceDate)`. Returned loans are excluded even when their due dates are in the past. Active loans due today or in the future are also excluded. Matching loans retain their existing order and are displayed by `LoanView` using the same columns as other loan lists:
 

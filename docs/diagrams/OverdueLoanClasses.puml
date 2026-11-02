@@ -1,0 +1,27 @@
+@startuml
+!include style.puml
+!pragma layout smetana
+skinparam linetype ortho
+skinparam nodesep 40
+skinparam ranksep 45
+
+class EqmManager {
+    - clock: Clock
+    - viewOverdueLoans(): void
+}
+
+class LoanHandler {
+    + getOverdueLoans(referenceDate: LocalDate): List<Loan>
+    + viewOverdueLoans(referenceDate: LocalDate): void
+}
+
+class Loan {
+    - dueDate: LocalDateTime
+    - isReturned: boolean
+    + isOverdue(referenceDate: LocalDate): boolean
+}
+
+EqmManager --> "1" LoanHandler : loans
+LoanHandler --> "0..*" Loan : manages
+
+@enduml
