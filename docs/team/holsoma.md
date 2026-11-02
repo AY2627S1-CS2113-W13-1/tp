@@ -13,7 +13,6 @@ bundles and maintenance. My work focused on returns, item history, command outpu
 ## Summary of Contributions
 
 **Code contributed:** [Individual Code Dashboard](https://NUS-CS2113-AY2627-S1.github.io/tp-dashboard/?search=holsoma&breakdown=true).
-**Evidence:** [All authored PRs](https://github.com/AY2627S1-CS2113-W13-1/tp/pulls?q=is%3Apr+author%3Aholsoma).
 
 ### Enhancements implemented
 
@@ -83,6 +82,3 @@ bundles and maintenance. My work focused on returns, item history, command outpu
 - **Beyond the team:** [Reviewed EduReserve's Developer Guide](https://github.com/NUS-CS2113-AY2627-S1/tp/pull/13#pullrequestreview-5678361644),
   flagging inconsistent command syntax, undocumented duplicate-booking validation and incorrect UML object
   creation and activation notation.
-
-Submitted list-validation work in [#164](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/164) was superseded
-by the team's command standardisation and was not merged.
