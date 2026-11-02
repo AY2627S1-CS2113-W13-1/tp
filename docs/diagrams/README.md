@@ -25,6 +25,13 @@ The equipment-management designs also include:
 | [equipment-update-sequence.puml](equipment-updates/equipment-update-sequence.puml) | Saving a proposal before changing the original equipment object. |
 | [LoggingLifecycle.puml](LoggingLifecycle.puml) | Logging setup, I/O fallback and session cleanup. |
 
+The overdue-loan design includes:
+
+| Source | Design illustrated |
+| --- | --- |
+| [OverdueLoanClasses.puml](OverdueLoanClasses.puml) | Relationships between command routing, selection and the loan-owned overdue rule. |
+| [OverdueLoanSequence.puml](OverdueLoanSequence.puml) | One-date evaluation and read-only display flow for `list overdue`. |
+
 The current images were rendered with [PlantUML](https://plantuml.com/download) 1.2026.9 and Java 25.
 From the repository root, replace `path/to/plantuml.jar` with your local JAR path and run, for example:
 

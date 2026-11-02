@@ -8,7 +8,7 @@ title: Rohita Reddy
 ## Overview
 
 snAp is a command-line application for photography clubs to manage equipment and borrowing records. It tracks
-equipment details, availability, loans, returns and reusable equipment bundles.
+equipment details, availability, loans, returns, maintenance and reusable equipment bundles.
 
 My work focused on preserving accurate loan history, validating equipment compatibility and making equipment
 and loan information easier to retrieve safely.
@@ -41,8 +41,6 @@ and loan information easier to retrieve safely.
   tests.
   ([PR #103](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/103))
 
-### Current v2.0 work
-
 - **Bundle compatibility validation:** Added checks that reject known camera-lens, camera-battery and
   camera-tripod mismatches while allowing unknown or unrelated comparisons. Multi-item commands retain
   per-item results and do not mutate a bundle for rejected items.
@@ -53,10 +51,12 @@ and loan information easier to retrieve safely.
 - **User Guide:** Documented loan deletion, overdue-loan listing, compatibility attributes, issue-time
   snapshots, expanded damage assessments and bundle compatibility rules with command formats, examples,
   defaults and error behaviour.
-- **Developer Guide:** Wrote the overdue-loan design and detailed the responsibilities, persistence,
-  backward-compatibility decisions and verification strategy for compatibility attributes and immutable
-  issue-time condition snapshots.
-  ([PR #85](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/85),
+- **Developer Guide:** Wrote the overdue-loan design and added focused class and sequence diagrams. Detailed the
+  responsibilities, persistence, backward-compatibility decisions and verification strategy for compatibility
+  attributes and immutable issue-time condition snapshots.
+  ([overdue class diagram](../images/OverdueLoanClasses.svg),
+  [overdue sequence diagram](../images/OverdueLoanSequence.svg),
+  [PR #85](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/85),
   [PR #100](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/100),
   [PR #101](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/101))
 
@@ -70,5 +70,11 @@ and loan information easier to retrieve safely.
   [PR #36](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/36),
   [PR #39](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/39),
   [PR #42](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/42))
+- Reviewed final-version backup and restore, compact equipment views, command feedback and Developer Guide changes.
+  Requested corrections where needed and verified the revisions before approval.
+  ([PR #118](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/118),
+  [PR #137](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/137),
+  [PR #140](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/140),
+  [PR #143](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/143))
 - Strengthened reviewed and authored changes with focused regression tests, cross-platform Gradle checks,
   legacy-record coverage and documentation that matches executable behaviour.
