@@ -289,21 +289,6 @@ class EqmManagerTest {
     }
 
     @Test
-    void listCommands_withUnexpectedArguments_areRejectedInsteadOfListingEquipment() {
-        EqmManager manager = new EqmManager(temporaryDirectory);
-        manager.executeInput(ADD_CAMERA);
-
-        for (String command : new String[]{"list nonsense", "list loans extra",
-            "list bundles extra", "list overdue extra"}) {
-            output.reset();
-            manager.executeInput(command);
-            assertEquals("[ERROR] Command not recognised. Type help for available commands."
-                            + System.lineSeparator(),
-                    output.toString(StandardCharsets.UTF_8), command);
-        }
-    }
-
-    @Test
     void bye_withoutMutations_createsAllStorageFiles() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory);
 

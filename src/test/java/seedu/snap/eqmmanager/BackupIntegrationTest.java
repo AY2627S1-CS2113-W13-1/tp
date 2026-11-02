@@ -73,17 +73,15 @@ class BackupIntegrationTest {
         assertFalse(Files.exists(backupDirectory.resolve("backup-manifest.txt")));
     }
 
-    // @@author holsoma
     @Test
     void backupCommand_invalidInput_reportsFormatAndKeepsApplicationUsable() {
         manager.executeInput("backup");
 
         assertTrue(printed().contains("Invalid format"));
         output.reset();
-        manager.executeInput("list loans");
+        manager.executeInput("list loans b/111");
         assertTrue(printed().contains("001"));
     }
-    // @@author
 
     /** Returns captured command output without relying on table spacing. */
     private String printed() {

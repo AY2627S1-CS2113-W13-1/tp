@@ -183,10 +183,8 @@ public class EqmManager {
             } catch (BundleAdditionUnsuccessful e) {
                 ConsoleOutput.error(e.getMessage());
             }
-            // @@author MatthewLeon888
-        } else if (normalizedInput.equals("list")) {
+        } else if (normalizedInput.equals("list") || normalizedInput.startsWith("list ")) {
             equipment.viewAllEquipment();
-            // @@author
         } else {
             ConsoleOutput.error("Command not recognised. Type help for available commands.");
         }
@@ -215,17 +213,10 @@ public class EqmManager {
 
         // main process
         String input;
-        // @@author Yi An
         while (isRunning) {
             input = parser.getInput();
-            if (input == null) {
-                saveBeforeExit();
-                isRunning = false;
-                break;
-            }
             executeInput(input);
         }
-        // @@author
 
         ConsoleOutput.success("Goodbye.");
     }
