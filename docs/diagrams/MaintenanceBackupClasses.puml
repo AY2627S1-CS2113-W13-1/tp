@@ -1,0 +1,113 @@
+@startuml MaintenanceBackupClasses
+!include style.puml
+!pragma layout smetana
+skinparam linetype ortho
+skinparam nodesep 25
+skinparam ranksep 35
+
+class EqmManager {
+    - equipment: EquipmentHandler
+    - loans: LoanHandler
+    - bundles: BundleHandler
+    - maintenanceLoadFailed: boolean
+    + executeInput(input: String): void
+    - recordMaintenance(input: String): void
+    - restoreBackup(input: String): void
+}
+
+class MaintenanceHandler {
+    - storageFile: Path
+    - clock: Clock
+    + addMaintenanceRecord(input): MaintenanceRecord
+    + loadFromStorage(): void
+    + saveToStorage(): void
+    - save(proposedRecords): void
+}
+
+class MaintenanceRecord <<final>> {
+    - equipmentRecordId: String
+    - maintenanceDate: LocalDate
+    - work: String
+    - outcome: String
+    + MaintenanceRecord(...)
+    + getEquipmentRecordId(): String
+}
+
+class MaintenanceStorage <<utility>> {
+    {static} ~ load(file: Path): List<MaintenanceRecord>
+    {static} ~ save(file, records): void
+}
+
+class BackupHandler <<package-private>> {
+    - dataDirectory: Path
+    ~ createBackup(input: String): Path
+    ~ restoreBackup(input: String): Path
+    {static} - validateSnapshot(snapshot): void
+    - replaceLiveData(snapshot): void
+    - reloadLiveState(): void
+    - rollbackLiveData(...): void
+}
+
+class EquipmentHandler {
+    - storageFile: Path
+    + getEquipmentById(itemId): Equipment
+    + loadFromStorage(): void
+}
+
+abstract class Equipment {
+    - itemId: String
+    - recordId: String
+    + getRecordId(): String
+}
+
+class LoanHandler {
+    - loans: ArrayList<Loan>
+    - storageFile: Path
+    - sequenceFile: Path
+    + getNextLoanId(): String
+    + loadFromStorage(): void
+}
+
+class BundleHandler {
+    - bundles: ArrayList<Bundle>
+    - storageFile: Path
+    + clearBundles(): void
+    + saveToStorage(): void
+    + loadFromStorage(): void
+}
+
+EqmManager --> "1" MaintenanceHandler : maintenance
+EqmManager --> "1" BackupHandler : backups
+MaintenanceHandler --> "0..*" MaintenanceRecord : records
+MaintenanceHandler ..> MaintenanceStorage : load / save
+MaintenanceHandler --> "1" EquipmentHandler : equipment
+MaintenanceStorage ..> MaintenanceRecord : creates / serialises
+EquipmentHandler --> "0..*" Equipment : inventory
+BackupHandler --> "1" EquipmentHandler : equipment
+BackupHandler --> "1" LoanHandler : loans
+BackupHandler --> "0..1" BundleHandler : bundles
+LoanHandler --> "1" EquipmentHandler : equipment
+BundleHandler --> "1" EquipmentHandler : equipmentHandler
+
+note bottom of MaintenanceRecord
+equipmentRecordId stores the UUID
+from Equipment.recordId.
+No Equipment object reference.
+end note
+
+note bottom of MaintenanceStorage
+Package-private; data/maintenance.txt.
+UTF-8, temporary file then replacement.
+end note
+
+note top of BackupHandler
+Includes equipment.txt, loans.txt,
+loan-sequence.txt, backup-manifest.txt.
+Excludes bundles.txt, maintenance.txt.
+end note
+
+note bottom of BundleHandler
+Restore clears and saves bundles.
+bundles.txt is captured for rollback.
+end note
+@enduml
