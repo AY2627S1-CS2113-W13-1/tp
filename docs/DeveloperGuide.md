@@ -874,6 +874,45 @@ reuse, legacy files, restarts, backup/restore, read-only viewing and failed save
 
 `LoanConditionSnapshotStorageTest` verifies direct save/load round trips, legacy records and malformed snapshot data. `LoanIssueConditionViewTest` covers handler-level output for recorded and missing snapshots, invalid and unknown loan IDs, and formatting. `LoanIssueConditionCommandTest` covers CLI routing, persistence across application restart, and that viewing leaves `equipment.txt`, `loans.txt` and `loan-sequence.txt` unchanged.
 
+### Updating an active loan and reassigning equipment
+
+`update loan/001 b/003 due/31-10-26` changes borrower or date fields while keeping the active equipment object.
+Supplying an item field, such as `update loan/001 id/002`, requests a reassignment to another physical equipment
+record. `LoanHandler.updateLoan(...)` parses the optional fields with `LoanUpdate.parse(...)`, finds exactly one
+active loan, verifies its current equipment ownership and rejects a missing, loaned or unserviceable replacement.
+This extends the [availability and loan ownership](#availability-and-loan-ownership) rules and the
+[issue-condition snapshots](#preserving-equipment-condition-when-a-loan-is-issued).
+
+An unknown or non-unique Loan ID is rejected by `findLoanForUpdate(...)`. A returned loan is rejected before
+equipment lookup, so its history cannot be edited. For an active loan, `findEquipment(...)` rejects a missing or
+ambiguous current Item ID. `Loan.ownsEquipment(...)` then requires the same equipment object, its loaned flag,
+the active Loan ID and the permanent equipment record ID to agree. A stale reference, cleared reservation or
+identity mismatch produces `LoanUpdateUnsuccessful` without saving or changing any live records.
+
+The handler fills omitted values from the current loan and creates a detached proposal with
+`Loan.updatedCopy(...)`. A same-item update keeps the existing issue-condition snapshot and serviceability. A
+reassignment captures the replacement's condition, damage and remarks in a new `EquipmentConditionSnapshot`,
+with issue serviceability stored separately in `Loan.issueServiceability`. `EquipmentConditionSnapshot` contains
+type, numeric condition, damage and remarks only; it has no serviceability field. The proposal keeps the original
+Loan ID and replaces the matching entry in a copied loan list.
+
+[![Loan update sequence: validate a proposal, save it, then release the old equipment and bind a replacement.](images/LoanUpdateSequence.svg)](images/LoanUpdateSequence.svg)
+
+*Figure 15. Loan updates save a detached proposal before changing loan fields or equipment ownership.*
+
+[PlantUML source](diagrams/LoanUpdateSequence.puml)
+
+`LoanHandler.save(...)` writes the proposed loans and unchanged next-loan counter before
+`Loan.applyUpdate(...)` changes the live loan. When the replacement differs, `applyUpdate(...)` clears the old
+equipment's loan ID and assigns the Loan ID to the replacement; metadata-only updates leave the association intact.
+A save failure therefore leaves the original borrower, dates, snapshot and equipment flags unchanged. A successful
+update preserves the Loan ID and loan count, while later views use the replacement's captured issue assessment.
+
+`LoanUpdateTest` covers optional fields, duplicate fields, date ordering and identifier boundaries.
+`LoanUpdateHandlerTest` covers returned-loan rejection and unchanged records after rejected updates.
+`LoanUpdateIntegrationTest` covers metadata-only updates, reassignment, replacement serviceability, snapshot
+capture, permanent Loan ID preservation, failed saves and retry after failure.
+
 ### Equipment management
 
 The shared model above supplies the inventory and availability rules for
