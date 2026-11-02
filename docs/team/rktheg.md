@@ -47,9 +47,9 @@ safe persistent-state updates and maintaining referential integrity across borro
 ### Contributions to the User Guide
 
 - Documented commands, options, examples and constraints for equipment addition, availability,
-  [filtering](../UserGuide.md#filtering-equipment-filter) and [updates](../UserGuide.md#updating-equipment-update).
-- Added guidance for [loan returns](../UserGuide.md#returning-equipment-return) and
-  [condition comparison](../UserGuide.md#comparing-a-loans-condition-assessments-view-loan).
+  [filtering](../UserGuide.md#filtering-equipment-eqm-filter) and [updates](../UserGuide.md#updating-equipment-eqm-update).
+- Added guidance for [loan returns](../UserGuide.md#returning-equipment-loan-return) and
+  [condition comparison](../UserGuide.md#comparing-a-loans-condition-assessments-loan-view).
 - Contributed error-recovery guidance, worked examples and data-transfer instructions.
   ([#131](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/131),
   [#161](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/161))
