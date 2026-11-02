@@ -4,6 +4,8 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
+// @@author Rohita-29
+
 /** Converts equipment-condition snapshots to and from storage fields. */
 final class EquipmentConditionSnapshotCodec {
     static final int FIELD_COUNT = 4;
@@ -135,3 +137,5 @@ final class EquipmentConditionSnapshotCodec {
         }
     }
 }
+
+// @@author
