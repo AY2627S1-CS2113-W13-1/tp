@@ -65,6 +65,7 @@ jacocoTestCoverageVerification {
                     'seedu.snap.loan.LoanReturn',
                     'seedu.snap.loan.LoanUpdate',
                     'seedu.snap.maintenance.MaintenanceHandler',
+                    'seedu.snap.parser.CommandAliases',
                     'seedu.snap.ui.BundleView',
                     'seedu.snap.ui.EquipmentView',
                     'seedu.snap.ui.Help'

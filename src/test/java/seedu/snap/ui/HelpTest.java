@@ -23,6 +23,7 @@ import seedu.snap.equipment.Camera;
 import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.Lens;
 import seedu.snap.equipment.Tripod;
+import seedu.snap.parser.CommandAliases;
 
 /** Checks the command guide covers executable syntax, meaningful defaults and important restrictions. */
 class HelpTest {
@@ -87,6 +88,7 @@ class HelpTest {
 
         assertTrue(labelledValues(text, "Format:").contains(format), format);
         assertTrue(labelledValues(text, "Example:").contains(example), example);
+        assertTrue(text.contains("Alias: " + CommandAliases.aliasFor(topic)), topic);
     }
 
     @ParameterizedTest
@@ -129,12 +131,21 @@ class HelpTest {
         assertEquals(4, menuRows.stream().filter(line -> line.matches("(?:Equipment|Loans|Bundles|General): .*"))
                 .count());
         List<String> menuTopics = menuRows.stream()
-                .flatMap(line -> Arrays.stream(line.substring(line.indexOf(':') + 1).strip().split("\\s*\\|\\s*")))
+                .filter(line -> line.contains(" ("))
+                .map(line -> {
+                    int colon = line.indexOf(':');
+                    return colon < 0 ? line.strip() : line.substring(colon + 1).strip();
+                })
+                .flatMap(line -> Arrays.stream(line.split("\\s*\\|\\s*")))
                 .map(String::strip)
+                .map(label -> label.substring(0, label.indexOf(" (")))
                 .filter(topic -> !topic.isEmpty())
                 .sorted().toList();
         assertEquals(TOPICS.stream().sorted().toList(), menuTopics,
                 "Each supported command must appear exactly once in the grouped menu.");
+        for (String topic : TOPICS) {
+            assertTrue(text.contains(topic + " (" + CommandAliases.aliasFor(topic) + ")"), topic);
+        }
         assertTrue(text.contains("help <COMMAND>"));
         assertTrue(text.contains("help all"));
         assertFalse(text.contains("sensor/<TEXT>"));
@@ -234,6 +245,9 @@ class HelpTest {
         assertEquals(Help.getText("list-bundle"), Help.getText(" \tlist-bundle\u00a0 "));
         assertEquals(Help.getText("bundle-history"), Help.getText(" \tbundle-history\u00a0 "));
         assertEquals(Help.getText("list-loan-borrower"), Help.getText(" \tlist-loan-borrower\u00a0 "));
+        for (String topic : TOPICS) {
+            assertEquals(Help.getText(topic), Help.getText(CommandAliases.aliasFor(topic)), topic);
+        }
         assertFalse(labelledValues(Help.getText("list-eqm"), "Format:").contains("list-loan"));
         assertFalse(labelledValues(Help.getText("eqm-delete"), "Format:").contains("loan-delete l/<LOAN ID>"));
         assertFalse(labelledValues(Help.getText("eqm-loan-history"), "Format:")
@@ -499,7 +513,7 @@ class HelpTest {
     void getText_borrowerLoans_explainsFilteringAliasesAndReadOnlyBehaviour() {
         String text = normaliseWhitespace(Help.getText());
 
-        assertTrue(text.contains("EQUIPMENT HELD BY MEMBER"));
+        assertTrue(text.contains("LIST-LOAN-BORROWER"));
         assertFalse(text.contains("list member"));
         assertTrue(text.contains("Shows only active equipment held by the selected borrower"));
         assertTrue(text.contains("Returned loans and loans held by other borrowers are excluded."));
@@ -519,6 +533,7 @@ class HelpTest {
         assertTrue(text.contains("Saves equipment, loans, maintenance records and bundles before exiting."));
         assertTrue(text.contains("A save failure keeps the application running;"));
         assertTrue(text.contains("fix the reported file problem and retry exit."));
+        assertTrue(proseFor("help").contains("either a full command name or its alias"));
         assertFalse(proseFor("help").contains("list member"));
         assertTrue(proseFor("exit").contains(
                 "After a startup loading error, exit exits without saving the failed data set."));
@@ -545,8 +560,7 @@ class HelpTest {
     /** Covers printed menu, reference, every command topic and representative invalid input. */
     private static Stream<String> printTopics() {
         return Stream.concat(Stream.of(null, "", " \t\u2003 ", "all", "unknown", "HELP", "list\u00a0loans",
-                "list member"),
-                TOPICS.stream());
+                "list member"), Stream.concat(TOPICS.stream(), TOPICS.stream().map(CommandAliases::aliasFor)));
     }
 
     @ParameterizedTest

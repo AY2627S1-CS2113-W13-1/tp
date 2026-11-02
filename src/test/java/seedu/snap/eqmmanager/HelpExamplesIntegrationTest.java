@@ -30,6 +30,7 @@ import seedu.snap.bundle.BundleHandler;
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.loan.LoanHandler;
 import seedu.snap.maintenance.MaintenanceHandler;
+import seedu.snap.parser.CommandAliases;
 import seedu.snap.ui.Help;
 
 /** Executes the displayed help examples through the real router with each example's prerequisites. */
@@ -71,6 +72,17 @@ class HelpExamplesIntegrationTest {
     @ParameterizedTest(name = "{0}")
     @MethodSource("examples")
     void helpExample_withRequiredRecords_executesSuccessfully(String example) throws Exception {
+        executeExample(example);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @MethodSource("aliasExamples")
+    void shortAlias_withRequiredRecords_executesSuccessfully(String example) throws Exception {
+        executeExample(example);
+    }
+
+    /** Executes a canonical or alias example through the real command router. */
+    private void executeExample(String example) throws Exception {
         String command = commandName(example);
         EqmManager manager = prepareExample(command);
         Path backupDirectory = temporaryDirectory.resolve("backups").resolve("session-1");
@@ -103,6 +115,14 @@ class HelpExamplesIntegrationTest {
         assertResultingRecords(manager, command, backupDirectory);
     }
 
+    /** Replaces the command token in each displayed example with its exact short alias. */
+    private static Stream<String> aliasExamples() {
+        return examples().map(example -> {
+            String command = commandName(example);
+            return CommandAliases.aliasFor(command) + example.substring(command.length());
+        });
+    }
+
     /** Rejoins wrapped examples exactly as users are instructed to enter them, stopping at the blank line. */
     private static Stream<String> examples() {
         List<String> examples = new ArrayList<>();
@@ -125,9 +145,10 @@ class HelpExamplesIntegrationTest {
 
     /** Matches the longest audited command name so specialised routes are distinct from list and update. */
     private static String commandName(String input) {
+        String canonicalInput = CommandAliases.normalizeInput(input);
         return ROUTED_COMMANDS.stream()
-                .filter(command -> input.equals(command) || input.startsWith(command + " ")
-                        || input.startsWith(command + "/"))
+                .filter(command -> canonicalInput.equals(command) || canonicalInput.startsWith(command + " ")
+                        || canonicalInput.startsWith(command + "/"))
                 .max((left, right) -> Integer.compare(left.length(), right.length())).orElseThrow();
     }
 
