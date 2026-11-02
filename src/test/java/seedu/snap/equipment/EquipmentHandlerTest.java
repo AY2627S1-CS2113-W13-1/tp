@@ -1,7 +1,9 @@
 package seedu.snap.equipment;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+// @@author yarnieee
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+// @@author
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -29,9 +31,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
+// @@author yarnieee
 import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
 
 /** Tests equipment command parsing, insertion, and deletion. */
+// @@author
 class EquipmentHandlerTest {
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
     private PrintStream originalOutput;
@@ -178,6 +182,7 @@ class EquipmentHandlerTest {
                 "add i/Canon EOS R10 id/001 type/camera cond/1");
 
         assertNotNull(equipment);
+        // @@author yarnieee
         assertInstanceOf(Camera.class, equipment);
     }
 
@@ -192,6 +197,7 @@ class EquipmentHandlerTest {
         assertInstanceOf(Battery.class, EquipmentHandler.parseEquipment(
                 "add i/Battery id/004 type/battery cond/4"));
     }
+        // @@author
 
     @Test
     void parseEquipment_mixedCaseTypes_normalisesTypeNames() throws EquipmentAdditionUnsuccessful {
@@ -291,10 +297,12 @@ class EquipmentHandlerTest {
         }
     }
 
+    // @@author yarnieee
     @Test
     public void parseEquipment_unsupportedType_throwsException() {
         assertThrows(EquipmentAdditionUnsuccessful.class, () -> EquipmentHandler.parseEquipment(
                 "add i/Flash id/001 type/flash cond/1"));
+    // @@author
     }
 
     @Test
@@ -464,6 +472,7 @@ class EquipmentHandlerTest {
         assertSame(equipment, handler.getEquipmentList().getFirst());
     }
 
+    // @@author yarnieee
     @Test
     public void deleteEquipment_validCommand_removesMatchingEquipment()
             throws EquipmentAdditionUnsuccessful, EquipmentDeletionUnsuccessful {
@@ -475,6 +484,7 @@ class EquipmentHandlerTest {
         assertEquals("001", deleted.getItemId());
         assertEquals(0, handler.getEquipmentList().size());
     }
+    // @@author
 
     @Test
     public void deleteEquipment_middleItem_preservesOtherEquipment()
@@ -593,65 +603,89 @@ class EquipmentHandlerTest {
         assertEquals(List.of(), handler.getEquipmentList());
     }
 
+    // @@author yarnieee
     @Test
     public void deleteEquipment_unknownId_keepsInventoryUnchanged()
             throws EquipmentAdditionUnsuccessful {
         EquipmentHandler handler = new EquipmentHandler();
+    // @@author
         Equipment equipment = handler.addEquipment("add i/Canon EOS R10 id/001 type/camera cond/1");
 
+        // @@author yarnieee
         EquipmentDeletionUnsuccessful exception = assertThrows(EquipmentDeletionUnsuccessful.class,
                 () -> handler.deleteEquipment("delete item/999"));
 
         assertEquals("Equipment ID 999 does not exist.", exception.getMessage());
+        // @@author
         assertEquals(List.of(equipment), handler.getEquipmentList());
+    // @@author yarnieee
     }
 
     @Test
+    // @@author
     public void deleteEquipment_invalidCommands_throwExpectedErrors()
+            // @@author yarnieee
             throws EquipmentAdditionUnsuccessful {
         EquipmentHandler handler = new EquipmentHandler();
+            // @@author
         Equipment equipment = handler.addEquipment("add i/Canon EOS R10 id/001 type/camera cond/1");
 
+        // @@author yarnieee
         String expectedMessage = "Invalid delete syntax. ITEM ID must be from 001 to 999.";
         String[] invalidCommands = {
+        // @@author
             "",
             "   ",
+            // @@author yarnieee
             "delete",
             "delete loan/001",
             "delete item/1",
+            // @@author
             "delete item/01",
             "delete item/-01",
             "delete item/+01",
+            // @@author yarnieee
             "delete item/000",
             "delete item/1000",
             "delete item/abc",
+            // @@author
             "delete item/001 extra",
             "delete item/001 item/002",
             "delete item/ 001",
             "delete item/",
             "deleteitem/001",
             "DELETE item/001"
+        // @@author yarnieee
         };
         for (String command : invalidCommands) {
             EquipmentDeletionUnsuccessful exception = assertThrows(EquipmentDeletionUnsuccessful.class,
                     () -> handler.deleteEquipment(command), command);
             assertEquals(expectedMessage, exception.getMessage(), command);
+        // @@author
             assertEquals(List.of(equipment), handler.getEquipmentList(), command);
+        // @@author yarnieee
         }
     }
 
     @Test
+        // @@author
     public void deleteEquipment_nullCommand_throwsExpectedError()
+            // @@author yarnieee
             throws EquipmentAdditionUnsuccessful {
         EquipmentHandler handler = new EquipmentHandler();
+            // @@author
         Equipment equipment = handler.addEquipment("add i/Canon EOS R10 id/001 type/camera cond/1");
 
+        // @@author yarnieee
         EquipmentDeletionUnsuccessful exception = assertThrows(EquipmentDeletionUnsuccessful.class,
                 () -> handler.deleteEquipment(null));
 
         assertEquals("Invalid delete syntax. ITEM ID must be from 001 to 999.", exception.getMessage());
+        // @@author
         assertEquals(List.of(equipment), handler.getEquipmentList());
+    // @@author yarnieee
     }
+    // @@author
 
     @Test
     void viewAllEquipment_emptyInventory_printsCountAndValidExample() {

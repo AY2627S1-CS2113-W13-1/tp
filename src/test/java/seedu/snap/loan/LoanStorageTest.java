@@ -240,7 +240,9 @@ class LoanStorageTest {
         Path destination = temporaryDirectory.resolve("loans.txt");
         Files.createDirectory(destination);
         Files.writeString(destination.resolve("keep.txt"), "keep this record");
+        // @@author yarnieee
         Loan loan = new Loan("001", "001", "002", LocalDateTime.of(2026, 10, 1, 0, 0),
+        // @@author
                 LocalDateTime.of(2026, 10, 2, 0, 0));
 
         assertThrows(IOException.class, () -> LoanStorage.save(destination, List.of(loan)));

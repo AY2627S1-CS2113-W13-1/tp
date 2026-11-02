@@ -80,14 +80,18 @@ class MainTest {
                 + "delete loan/001\ndelete loan/999\nbye\n", true);
         assertTrue(output.contains("[OK] Equipment 001 added."));
         assertTrue(output.contains("[OK] Loan 001 deleted."));
+        // @@author yarnieee
         assertTrue(output.contains("No loan found for loan ID 999."));
+        // @@author
         assertFalse(output.contains("Added equipment with item ID"));
         assertFalse(output.contains("Deleted loan 001 for item ID"));
         assertFalse(output.contains("WARNING:"));
         assertFalse(output.contains("INFO:"));
         String logs = Files.readString(temporaryDirectory.resolve("logs/snap.log.0"));
+        // @@author yarnieee
         for (String message : new String[]{"Added equipment with item ID 001", "Deleted loan 001 for item ID 001",
             "No loan found for loan ID 999"}) {
+        // @@author
             assertEquals(1L, logs.lines().filter(line -> line.contains(message)).count());
         }
     }
@@ -105,7 +109,9 @@ class MainTest {
         assertTrue(Files.readString(temporaryDirectory.resolve("data/equipment.txt"))
                 .contains("add i/Camera id/001 type/camera cond/1 sensor/Full frame damage/SHUTTER_FAULT"));
         assertTrue(Files.readString(temporaryDirectory.resolve("data/loans.txt"))
+                // @@author yarnieee
                 .contains("loan loanId/001 id/001 b/002 issued/01-10-26 due/02-10-26 returned/false"));
+                // @@author
 
         String secondRun = runApplication("list\nlist loans\nshow id/001\nbye\n", true);
 

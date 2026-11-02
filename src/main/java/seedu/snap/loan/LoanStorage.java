@@ -8,21 +8,27 @@ import java.nio.file.StandardCopyOption;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+// @@author yarnieee
 import java.util.HashSet;
+// @@author
 import java.util.List;
 import java.util.Locale;
+// @@author yarnieee
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+// @@author
 
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 
 /** Loads and saves loan records in a readable UTF-8 text file. */
 final class LoanStorage {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-uu");
+    // @@author yarnieee
     private static final Logger logger = Logger.getLogger(LoanStorage.class.getName());
     private static final int FIRST_LOAN_NUMBER = 1;
     private static final int MAX_LOAN_NUMBER = 999;
+    // @@author
 
     private LoanStorage() {
         // Utility class; do not instantiate.
@@ -38,14 +44,18 @@ final class LoanStorage {
      * @throws IOException if the file cannot be read or contains an invalid record
      */
     static List<Loan> load(Path file) throws IOException {
+        // @@author yarnieee
         return load(file, null).loans();
     }
 
     /** Loads loans and the next monotonic identifier from their persistence files. */
     static LoadedLoans load(Path file, Path sequenceFile) throws IOException {
         List<LoanRecord> records = new ArrayList<>();
+        // @@author
         if (Files.notExists(file)) {
+            // @@author yarnieee
             return new LoadedLoans(List.of(), readNextLoanNumber(sequenceFile, FIRST_LOAN_NUMBER), false);
+            // @@author
         }
 
         int lineNumber = 0;
@@ -55,21 +65,26 @@ final class LoanStorage {
                 continue;
             }
             try {
+                // @@author yarnieee
                 records.add(parseRecord(line.trim()));
+                // @@author
             } catch (LoanAdditionUnsuccessful | IllegalArgumentException exception) {
                 throw new IOException("Invalid loan record on line " + lineNumber + ": "
                         + exception.getMessage(), exception);
             }
         }
 
+        // @@author yarnieee
         Set<String> explicitLoanIds = new HashSet<>();
         for (LoanRecord record : records) {
             if (record.loanId() != null && !explicitLoanIds.add(record.loanId())) {
                 throw new IOException("Duplicate loan ID " + record.loanId() + ".");
             }
         }
+        // @@author
 
         int migrationNumber = readNextLoanNumber(sequenceFile, FIRST_LOAN_NUMBER);
+        // @@author yarnieee
         List<Loan> loaded = new ArrayList<>();
         Set<String> allLoanIds = new HashSet<>();
         for (LoanRecord record : records) {
@@ -88,6 +103,7 @@ final class LoanStorage {
             if (!allLoanIds.add(loanId)) {
                 throw new IOException("Duplicate loan ID " + loanId + ".");
             }
+        // @@author
             Loan loan =
                     new Loan(
                             loanId,
@@ -97,6 +113,7 @@ final class LoanStorage {
                             record.dueDate(),
                             record.equipmentRecordId(),
                             record.issueConditionSnapshot());
+            // @@author yarnieee
             loan.setReturned(record.returned());
             loaded.add(loan);
         }
@@ -113,10 +130,12 @@ final class LoanStorage {
         }
         boolean migrated = records.stream().anyMatch(record -> record.loanId() == null);
         return new LoadedLoans(loaded, nextLoanNumber, migrated);
+            // @@author
     }
 
     /** Saves records through a temporary file before replacing the destination. */
     static void save(Path file, List<Loan> loans) throws IOException {
+        // @@author yarnieee
         save(file, loans, null, FIRST_LOAN_NUMBER);
     }
 
@@ -147,6 +166,7 @@ final class LoanStorage {
 
     /** Saves only the loan records to a temporary replacement file. */
     private static void saveLoanFile(Path file, List<Loan> loans) throws IOException {
+        // @@author
         Path parent = file.toAbsolutePath().getParent();
         Files.createDirectories(parent);
         Path temporaryFile = Files.createTempFile(parent, "loans-", ".tmp");
@@ -163,6 +183,7 @@ final class LoanStorage {
         }
     }
 
+    // @@author yarnieee
     /** Saves the monotonic next-ID value through a temporary replacement file. */
     private static void saveSequenceFile(Path file, int nextLoanNumber) throws IOException {
         Path parent = file.toAbsolutePath().getParent();
@@ -176,12 +197,15 @@ final class LoanStorage {
             Files.deleteIfExists(temporaryFile);
         }
     }
+    // @@author
 
     /** Converts a loan into a readable, reloadable text record. */
+    // @@author yarnieee
     private static String toStorageLine(Loan loan) throws IOException {
         if (loan.getLoanId() == null) {
             throw new IOException("Saved loans must have a loan ID.");
         }
+    // @@author
 
         String record =
                 "loan loanId/" + loan.getLoanId()
@@ -208,11 +232,14 @@ final class LoanStorage {
     }
 
     /** Parses records with optional return status, equipment identity and issue snapshot. */
+    // @@author yarnieee
     private static LoanRecord parseRecord(String line) throws LoanAdditionUnsuccessful {
         String[] fields = line.split("\\s+");
         boolean hasLoanId = fields.length >= 2 && fields[1].startsWith("loanId/");
         int expectedMinimumFields = hasLoanId ? 6 : 5;
+    // @@author
         if (fields.length < expectedMinimumFields
+                // @@author yarnieee
                 || !fields[0].equals("loan")) {
             throw new IllegalArgumentException("Expected loanId/NNN id/NNN b/NNN issued/DD-MM-YY due/DD-MM-YY.");
         }
@@ -227,11 +254,14 @@ final class LoanStorage {
                 + " issued/" + issuedText + " due/" + dueText);
 
         boolean returned = false;
+                // @@author
         int nextField = expectedMinimumFields;
 
         if (nextField < fields.length && fields[nextField].startsWith("returned/")) {
             returned = parseReturnedField(fields[nextField++]);
+        // @@author yarnieee
         }
+        // @@author
 
         String equipmentRecordId = null;
         if (nextField < fields.length
@@ -262,7 +292,9 @@ final class LoanStorage {
                     "Unexpected optional loan storage fields.");
         }
 
+        // @@author yarnieee
         return new LoanRecord(loanId, parsed.getItemId(), parsed.getBorrowerId(),
+        // @@author
                 parsed.getIssuedDate(), parsed.getDueDate(), returned,
                 equipmentRecordId, issueConditionSnapshot);
     }
@@ -276,6 +308,7 @@ final class LoanStorage {
                     "Expected returned/true or returned/false.");
         }
         return Boolean.parseBoolean(returnedValue);
+    // @@author yarnieee
     }
 
     private static String parseLoanIdField(String field) {
@@ -315,11 +348,15 @@ final class LoanStorage {
     }
 
     private static String formatLoanId(int loanNumber) {
+    // @@author
         return String.format(Locale.ROOT, "%03d", loanNumber);
+    // @@author yarnieee
     }
 
     private static String formatSequenceNumber(int loanNumber) {
+    // @@author
         return String.format(Locale.ROOT, "%03d", loanNumber);
+    // @@author yarnieee
     }
 
     private static boolean isValidLoanId(String loanId) {
@@ -331,13 +368,17 @@ final class LoanStorage {
     }
 
     private record LoanRecord(String loanId, String itemId, String borrowerId,
+    // @@author
             java.time.LocalDateTime issuedDate, java.time.LocalDateTime dueDate, boolean returned,
             String equipmentRecordId,
             EquipmentConditionSnapshot issueConditionSnapshot) {
+    // @@author yarnieee
     }
+    // @@author
 
     /** Captures a file before replacement so failed loan and return saves can be rolled back. */
     record FileSnapshot(Path path, boolean existed, boolean regularFile, byte[] contents) {
+        // @@author yarnieee
         static FileSnapshot capture(Path path) throws IOException {
             boolean exists = Files.exists(path);
             boolean regular = exists && Files.isRegularFile(path);
@@ -347,12 +388,15 @@ final class LoanStorage {
 
         void restore() throws IOException {
             if (existed && regularFile) {
+        // @@author
                 if (!Files.isRegularFile(path) || !Arrays.equals(Files.readAllBytes(path), contents)) {
                     Files.write(path, contents);
                 }
+            // @@author yarnieee
             } else if (!existed && Files.exists(path) && Files.isRegularFile(path)) {
                 Files.delete(path);
             }
         }
     }
+            // @@author
 }

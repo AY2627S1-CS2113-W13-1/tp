@@ -1,40 +1,59 @@
+// @@author yarnieee
 package seedu.snap.bundle;
+// @@author
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+// @@author yarnieee
 import java.util.ArrayList;
 import java.util.Collections;
+// @@author
 import java.util.Comparator;
+// @@author yarnieee
 import java.util.List;
+// @@author
 import java.util.Locale;
+// @@author yarnieee
 import java.util.logging.Level;
 import java.util.logging.Logger;
+// @@author
 
 import seedu.snap.equipment.CompatibilityResult;
+// @@author yarnieee
 import seedu.snap.equipment.Equipment;
+// @@author
 import seedu.snap.equipment.EquipmentCompatibility;
+// @@author yarnieee
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.BundleAdditionUnsuccessful;
+// @@author
 import seedu.snap.exceptions.BundleHistoryUnsuccessful;
 import seedu.snap.loan.Loan;
 import seedu.snap.loan.LoanHandler;
 import seedu.snap.ui.BundleView;
 
 /** Parses bundle commands and stores bundles for the current session and saved data. */
+// @@author yarnieee
 public class BundleHandler {
     private static final String ADD_BUNDLE_COMMAND = "add-bundle";
     private static final String ADD_TO_BUNDLE_COMMAND = "add-to-bundle";
+// @@author
     private static final String REMOVE_FROM_BUNDLE_COMMAND = "remove-from-bundle";
+    // @@author yarnieee
     private static final String LIST_BUNDLES_COMMAND = "list bundles";
+    // @@author
     private static final String HISTORY_COMMAND_PREFIX = "history bundle/";
+    // @@author yarnieee
     private static final String NAME_MARKER = "name/";
     private static final String ID_MARKER = "id/";
     private static final Logger LOGGER = Logger.getLogger(BundleHandler.class.getName());
 
     private final ArrayList<Bundle> bundles = new ArrayList<>();
     private final EquipmentHandler equipmentHandler;
+    // @@author
     private final Path storageFile;
+    // @@author yarnieee
     private int nextBundleNumber = 1;
 
     /** Creates a bundle handler with its own equipment inventory. */
@@ -48,16 +67,20 @@ public class BundleHandler {
      * @param equipmentHandler inventory containing equipment available for bundling
      */
     public BundleHandler(EquipmentHandler equipmentHandler) {
+    // @@author
         this(equipmentHandler, null);
     }
 
     /** Creates a bundle handler using the supplied inventory and optional storage file. */
     public BundleHandler(EquipmentHandler equipmentHandler, Path storageFile) {
+        // @@author yarnieee
         if (equipmentHandler == null) {
             throw new IllegalArgumentException("Equipment handler cannot be null.");
         }
         this.equipmentHandler = equipmentHandler;
+        // @@author
         this.storageFile = storageFile;
+    // @@author yarnieee
     }
 
     /**
@@ -69,14 +92,18 @@ public class BundleHandler {
      */
     public Bundle addBundle(String input) throws BundleAdditionUnsuccessful {
         String name = parseBundleName(input);
+    // @@author
         if (bundles.stream().anyMatch(bundle -> bundle.getBundleName().equals(name))) {
             LOGGER.log(Level.WARNING, "Bundle name {0} is already in use.", name);
             throw new BundleAdditionUnsuccessful("Bundle name " + name + " already exists.");
         }
+        // @@author yarnieee
         if (nextBundleNumber > 999) {
             throw new BundleAdditionUnsuccessful("No more bundle IDs are available this session.");
         }
+        // @@author
         String bundleId = String.format(Locale.ROOT, "%03d", nextBundleNumber);
+        // @@author yarnieee
         nextBundleNumber++;
         Bundle bundle = new Bundle(name, bundleId);
         bundles.add(bundle);
@@ -90,6 +117,7 @@ public class BundleHandler {
     public List<Bundle> getBundleList() {
         return Collections.unmodifiableList(bundles);
     }
+        // @@author
 
     /** Clears session-only bundles after a restore replaces the equipment objects they reference. */
     public void clearBundles() {
@@ -166,6 +194,7 @@ public class BundleHandler {
         return false;
     }
 
+    // @@author yarnieee
     /**
      * Adds every valid equipment ID from a command and reports each result.
      *
@@ -174,11 +203,13 @@ public class BundleHandler {
      * @throws BundleAdditionUnsuccessful when the command syntax is invalid
      */
     public List<String> addItemsToBundle(String input) throws BundleAdditionUnsuccessful {
+    // @@author
         return addItemsToBundleWithResults(input).stream().map(ItemResult::message).toList();
     }
 
     /** Retains the validated outcome and item identity for each requested membership addition. */
     public List<ItemResult> addItemsToBundleWithResults(String input) throws BundleAdditionUnsuccessful {
+        // @@author yarnieee
         String[] arguments = input == null ? new String[0] : input.trim().split("\\s+");
         if (arguments.length < 3 || !arguments[0].equals(ADD_TO_BUNDLE_COMMAND)) {
             throw new BundleAdditionUnsuccessful(
@@ -191,14 +222,17 @@ public class BundleHandler {
             LOGGER.log(Level.WARNING, "No bundle found for ID {0}.", bundleId);
             throw new BundleAdditionUnsuccessful("Bundle ID " + bundleId + " does not exist.");
         }
+        // @@author
 
         ArrayList<ItemResult> messages = new ArrayList<>();
+        // @@author yarnieee
         for (int i = 2; i < arguments.length; i++) {
             messages.add(addItemToBundle(bundle, arguments[i]));
         }
         assert messages.size() == arguments.length - 2 : "Every requested item must produce a result.";
         return Collections.unmodifiableList(messages);
     }
+        // @@author
 
     /**
      * Removes every requested equipment ID from one bundle and reports each result.
@@ -248,6 +282,7 @@ public class BundleHandler {
         return Collections.unmodifiableList(messages);
     }
 
+    // @@author yarnieee
     /**
      * Prints all bundles and their contained equipment.
      *
@@ -258,9 +293,12 @@ public class BundleHandler {
         if (input == null || !input.trim().equals(LIST_BUNDLES_COMMAND)) {
             throw new BundleAdditionUnsuccessful("Invalid format. Use: list bundles");
         }
+    // @@author
 
         BundleView.print(getBundleList());
+    // @@author yarnieee
     }
+    // @@author
 
     /**
      * Selects all loans for every physical item in a bundle.
@@ -302,42 +340,62 @@ public class BundleHandler {
         loans.printLoans(history, "Loan history for " + subject, "No loan history for " + subject + ".");
     }
 
+    // @@author yarnieee
     /**
      * Validates and adds one equipment ID to a bundle.
      */
+    // @@author
     private ItemResult addItemToBundle(Bundle bundle, String itemId) {
+        // @@author yarnieee
         Equipment item = equipmentHandler.getEquipmentById(itemId);
         if (item == null) {
+        // @@author
             return itemResult(bundle, itemId, false, failureMessage(itemId, "equipment does not exist"));
+        // @@author yarnieee
         }
         if (item.isLoaned()) {
+        // @@author
             return itemResult(bundle, itemId, false, failureMessage(itemId, "equipment is currently loaned"));
+        // @@author yarnieee
         }
+        // @@author
         if (!item.isServiceable()) {
             return itemResult(bundle, itemId, false, failureMessage(itemId, "equipment is unserviceable"));
         }
+        // @@author yarnieee
         if (bundle.containsEquipmentId(itemId)) {
+        // @@author
             return itemResult(bundle, itemId, false, failureMessage(itemId, "equipment is already in this bundle"));
+        // @@author yarnieee
         }
         if (item.getType().equals("camera") && bundle.countType("camera") >= 1) {
+        // @@author
             return itemResult(bundle, itemId, false, failureMessage(itemId, "a bundle can contain only one camera"));
+        // @@author yarnieee
         }
         if (item.getType().equals("tripod") && bundle.countType("tripod") >= 1) {
+        // @@author
             return itemResult(bundle, itemId, false,
                     failureMessage(itemId, "a bundle can contain at most one tripod"));
+        // @@author yarnieee
         }
+        // @@author
         Equipment incompatibleItem = findIncompatibleEquipment(bundle, item);
         if (incompatibleItem != null) {
             return itemResult(bundle, itemId, false, failureMessage(itemId,
                     "equipment is incompatible with equipment ID " + incompatibleItem.getItemId()));
         }
 
+        // @@author yarnieee
         bundle.addEquipment(item);
         LOGGER.log(Level.INFO, "Added equipment {0} to bundle {1}.",
                 new Object[] {itemId, bundle.getBundleId()});
+        // @@author
         return itemResult(bundle, itemId, true,
                 "Equipment ID " + itemId + " added to bundle " + bundle.getBundleId() + " successfully.");
+    // @@author yarnieee
     }
+    // @@author
 
     /** Removes one equipment ID from a bundle without affecting the inventory record. */
     private ItemResult removeItemFromBundle(Bundle bundle, String itemId) {
@@ -382,6 +440,7 @@ public class BundleHandler {
 
     // @@author
 
+    // @@author yarnieee
     private Bundle findBundle(String bundleId) {
         for (Bundle bundle : bundles) {
             if (bundle.getBundleId().equals(bundleId)) {
@@ -390,6 +449,7 @@ public class BundleHandler {
         }
         return null;
     }
+    // @@author
 
     /** Finds the exact physical equipment record referenced by persisted bundle data. */
     private Equipment findEquipment(BundleStorage.StoredItem storedItem) {
@@ -455,12 +515,15 @@ public class BundleHandler {
     /** Represents one validated bundle history selector. */
     private record BundleSelector(String id, String name) { }
 
+    // @@author yarnieee
     private String parseBundleName(String input) throws BundleAdditionUnsuccessful {
         if (input == null || !input.trim().startsWith(ADD_BUNDLE_COMMAND + " " + NAME_MARKER)) {
             throw new BundleAdditionUnsuccessful("Invalid format. Use: add-bundle name/[NAME]");
         }
         String name = input.trim().substring((ADD_BUNDLE_COMMAND + " " + NAME_MARKER).length()).trim();
+    // @@author
         if (name.isBlank() || name.length() > 100) {
+            // @@author yarnieee
             throw new BundleAdditionUnsuccessful("Bundle name must contain 1 to 100 characters.");
         }
         return name;
@@ -483,3 +546,4 @@ public class BundleHandler {
         return "Equipment ID " + itemId + " was not added: " + reason + ".";
     }
 }
+            // @@author

@@ -6,15 +6,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+// @@author yarnieee
 import java.util.Locale;
+// @@author
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+// @@author yarnieee
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+// @@author
 
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
+// @@author yarnieee
 import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
+// @@author
 import seedu.snap.exceptions.EquipmentUpdateUnsuccessful;
 import seedu.snap.exceptions.EquipmentViewingUnsuccessful;
 import seedu.snap.ui.EquipmentView;
@@ -26,7 +32,9 @@ public class EquipmentHandler {
     private static final String ADD_COMMAND = "add";
     private static final String ADD_FORMAT_ERROR = "Invalid format. Use: add i/[ITEM] id/[ITEM ID] "
             + "type/[TYPE] cond/[CONDITION]";
+    // @@author yarnieee
     private static final Pattern DELETE_PATTERN = Pattern.compile("delete\\s+item/([0-9]{3})");
+    // @@author
     private static final Pattern SHOW_PATTERN = Pattern.compile("(?U)show\\s+id/([0-9]{3})");
     private static final String ITEM_MARKER = "i/";
     private static final String ID_MARKER = "id/";
@@ -234,6 +242,7 @@ public class EquipmentHandler {
         save(inventory);
     }
 
+    // @@author yarnieee
     /**
      * Finds equipment by its item ID.
      *
@@ -243,12 +252,16 @@ public class EquipmentHandler {
     public Equipment getEquipmentById(String itemId) {
         for (Equipment equipment : inventory) {
             if (equipment.getItemId().equals(itemId)) {
+    // @@author
                 logger.log(Level.INFO, "Found {0} with item ID {1}.",
+                        // @@author yarnieee
                         new Object[] {equipment.getType(), itemId});
                 return equipment;
             }
         }
+                        // @@author
         logger.log(Level.WARNING, "No equipment found for item ID {0}.", itemId);
+        // @@author yarnieee
         return null;
     }
 
@@ -257,26 +270,32 @@ public class EquipmentHandler {
      *
      * @param input complete delete command
      * @return the equipment that matches the command's item ID
+        // @@author
      * @throws EquipmentDeletionUnsuccessful when the command is invalid or the ID is missing or duplicated
      */
     public Equipment getEquipmentForDeletion(String input) throws EquipmentDeletionUnsuccessful {
         String itemId = parseDeleteItemId(input);
         Equipment match = null;
+        // @@author yarnieee
         for (Equipment equipment : inventory) {
             if (equipment.getItemId().equals(itemId)) {
+        // @@author
                 if (match != null) {
                     logger.log(Level.WARNING, "Equipment deletion rejected: duplicate ID {0}.", itemId);
                     throw new EquipmentDeletionUnsuccessful(
                             "Equipment ID " + itemId + " is not unique. No equipment was deleted.");
                 }
                 match = equipment;
+            // @@author yarnieee
             }
         }
+            // @@author
         if (match == null) {
             logger.log(Level.FINE, "Equipment deletion rejected: ID {0} does not exist.", itemId);
             throw new EquipmentDeletionUnsuccessful("Equipment ID " + itemId + " does not exist.");
         }
         return match;
+    // @@author yarnieee
     }
 
     /**
@@ -284,6 +303,7 @@ public class EquipmentHandler {
      *
      * @param input complete delete command
      * @return the removed equipment
+    // @@author
      * @throws EquipmentDeletionUnsuccessful when the command is invalid or the ID is missing or duplicated
      */
     public Equipment deleteEquipment(String input) throws EquipmentDeletionUnsuccessful {
@@ -308,8 +328,10 @@ public class EquipmentHandler {
         assert wasRemoved : "Equipment found for deletion must still be in the inventory";
         assert inventory.size() == previousSize - 1 : "Deletion must remove exactly one equipment record";
         logger.log(Level.INFO, "Deleted equipment with ID {0}.", equipment.getItemId());
+        // @@author yarnieee
         return equipment;
     }
+        // @@author
 
     /** Saves the supplied inventory when this handler has a backing file. */
     private void save(List<Equipment> equipment) throws IOException {
@@ -536,6 +558,7 @@ public class EquipmentHandler {
                 && firstCharacter != '+' && firstCharacter != '-';
     }
 
+    // @@author yarnieee
     /**
      * Extracts and validates the item ID from a delete command.
      *
@@ -546,12 +569,15 @@ public class EquipmentHandler {
     private String parseDeleteItemId(String input) throws EquipmentDeletionUnsuccessful {
         Matcher matcher = input == null ? null : DELETE_PATTERN.matcher(input.trim());
         if (matcher == null || !matcher.matches() || matcher.group(1).equals("000")) {
+    // @@author
             logger.fine("Equipment deletion rejected: invalid command syntax.");
+            // @@author yarnieee
             throw new EquipmentDeletionUnsuccessful(
                     "Invalid delete syntax. ITEM ID must be from 001 to 999.");
         }
         return matcher.group(1);
     }
+            // @@author
 
     /**
      * Prints out all equipment in inventory

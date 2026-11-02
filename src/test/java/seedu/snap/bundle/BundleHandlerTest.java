@@ -1,8 +1,11 @@
+// @@author yarnieee
 package seedu.snap.bundle;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+// @@author
 import static org.junit.jupiter.api.Assertions.assertSame;
+// @@author yarnieee
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -10,20 +13,28 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+// @@author
 import java.util.Locale;
 
+// @@author yarnieee
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+// @@author
 
 import seedu.snap.equipment.Equipment;
+// @@author yarnieee
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.BundleAdditionUnsuccessful;
+// @@author
 import seedu.snap.exceptions.BundleHistoryUnsuccessful;
+// @@author yarnieee
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
+// @@author
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.loan.Loan;
 import seedu.snap.loan.LoanHandler;
 
+// @@author yarnieee
 /** Tests bundle command parsing, validation, partial additions, and listing. */
 class BundleHandlerTest {
     private EquipmentHandler equipmentHandler;
@@ -32,12 +43,16 @@ class BundleHandlerTest {
     @BeforeEach
     void setUp() throws EquipmentAdditionUnsuccessful {
         equipmentHandler = new EquipmentHandler();
+// @@author
         equipmentHandler.addEquipment("add i/Camera id/001 type/camera cond/8 sensor/Full frame"
                 + " damage/SHUTTER_FAULT remarks/Handle with care");
         equipmentHandler.addEquipment("add i/Battery id/002 type/battery cond/8 capacity/2000 mAh damage/NONE");
+        // @@author yarnieee
         equipmentHandler.addEquipment("add i/Battery 2 id/003 type/battery cond/8");
+        // @@author
         equipmentHandler.addEquipment("add i/Tripod id/004 type/tripod cond/8 thread/Quarter inch damage/NONE");
         equipmentHandler.addEquipment("add i/Lens id/005 type/lens cond/8 zoom/24 to 70 mm damage/NONE");
+        // @@author yarnieee
         equipmentHandler.addEquipment("add i/Lens 2 id/006 type/lens cond/8");
         equipmentHandler.addEquipment("add i/Camera 2 id/007 type/camera cond/8");
         equipmentHandler.addEquipment("add i/Tripod 2 id/008 type/tripod cond/8");
@@ -56,6 +71,7 @@ class BundleHandlerTest {
 
     @Test
     void addBundle_invalidName_throwsException() {
+        // @@author
         for (String name : new String[]{"", "   ", "\u2003", "A".repeat(101)}) {
             assertThrows(BundleAdditionUnsuccessful.class,
                     () -> bundleHandler.addBundle("add-bundle name/" + name));
@@ -84,6 +100,7 @@ class BundleHandlerTest {
         } finally {
             Locale.setDefault(originalLocale);
         }
+    // @@author yarnieee
     }
 
     @Test
@@ -115,11 +132,15 @@ class BundleHandlerTest {
 
     @Test
     void addItemsToBundle_rejectsUnknownLoanedAndDuplicateItems()
+    // @@author
             throws BundleAdditionUnsuccessful, LoanAdditionUnsuccessful {
+        // @@author yarnieee
         Bundle bundle = bundleHandler.addBundle("add-bundle name/Travel Kit");
+        // @@author
         LoanHandler loans = new LoanHandler(equipmentHandler);
         loans.addLoan("loan id/006 b/001 issued/01-10-26 due/02-10-26");
 
+        // @@author yarnieee
         List<String> messages = bundleHandler.addItemsToBundle("add-to-bundle id/001 999 006 001 001");
 
         assertTrue(messages.get(0).contains("does not exist"));
@@ -128,6 +149,7 @@ class BundleHandlerTest {
         assertTrue(messages.get(3).contains("already in this bundle"));
         assertFalse(bundle.isComplete());
     }
+        // @@author
 
     @Test
     void addItemsToBundle_returnedItem_canJoinBundle() throws Exception {
@@ -160,6 +182,7 @@ class BundleHandlerTest {
         assertEquals(List.of(equipmentHandler.getEquipmentById("001")), bundle.getEquipmentList());
     }
 
+    // @@author yarnieee
     @Test
     void addItemsToBundle_allowsBatteryLensAdditionsAfterCompletion()
             throws BundleAdditionUnsuccessful {
@@ -193,6 +216,7 @@ class BundleHandlerTest {
         assertThrows(BundleAdditionUnsuccessful.class,
                 () -> bundleHandler.addItemsToBundle("add-to-bundle id/001 001"));
     }
+    // @@author
 
     @Test
     void removeItemsFromBundle_removesMembersAndReportsEachResult() throws Exception {
@@ -251,6 +275,7 @@ class BundleHandlerTest {
         assertTrue(bundle.isComplete());
     }
 
+    // @@author yarnieee
     @Test
     void viewAllBundles_printsBundleAndContents() throws BundleAdditionUnsuccessful {
         bundleHandler.addBundle("add-bundle name/Travel Kit");
@@ -271,6 +296,7 @@ class BundleHandlerTest {
         assertTrue(listing.contains("camera"));
         assertTrue(listing.contains("battery"));
     }
+    // @@author
 
     @Test
     void getBundleLoanHistory_combinesActiveAndReturnedLoansInChronologicalOrder() throws Exception {
@@ -310,4 +336,6 @@ class BundleHandlerTest {
         assertThrows(BundleHistoryUnsuccessful.class,
                 () -> bundleHandler.getBundleLoanHistory("history bundle/id/001", loans));
     }
+// @@author yarnieee
 }
+// @@author
