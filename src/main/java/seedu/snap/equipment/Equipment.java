@@ -187,6 +187,7 @@ public abstract class Equipment {
                 new Object[]{itemId, previousState ? "loaned" : "available",
                     isLoaned ? "loaned" : "available"});
     }
+
     public int getCondition() {
         return condition;
     }
@@ -200,6 +201,7 @@ public abstract class Equipment {
     static boolean isValidItemId(String id) {
         return Identifier.isValid(id, Identifier.Type.EQUIPMENT);
     }
+
     /** Applies validated name and condition together, preserving subtype, details, ID, and loan state. */
     public final void updateDetails(String itemName, int condition) {
         assert hasText(itemName) && itemName.length() <= MAX_NAME_LENGTH

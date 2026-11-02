@@ -456,6 +456,7 @@ public class EquipmentHandler {
             }
         }
     }
+
     /** Validates extracted values and creates the correct equipment subclass. */
     private static Equipment createValidatedEquipment(
             String itemName,
@@ -532,6 +533,7 @@ public class EquipmentHandler {
             throw new EquipmentAdditionUnsuccessful("Condition must be a whole number from 1 to 10.");
         }
     }
+
     /** Validates remarks before they are stored in an equipment object or written to disk. */
     private static void validateRemarks(String remarks) throws EquipmentAdditionUnsuccessful {
         if (remarks == null || remarks.length() > Equipment.MAX_REMARKS_LENGTH
@@ -567,6 +569,7 @@ public class EquipmentHandler {
                 && firstCharacter != '+' && firstCharacter != '-'
                 && !EquipmentFields.isTypedItemId(details, valueIndex);
     }
+
     /**
      * Extracts and validates the item ID from a delete command.
      *
@@ -661,6 +664,7 @@ public class EquipmentHandler {
         }
         return currentIndex;
     }
+
     /** Updates supplied details together while preserving identity and inventory order. */
     public Equipment updateEquipment(String input) throws EquipmentUpdateUnsuccessful {
         try {
@@ -740,6 +744,7 @@ public class EquipmentHandler {
         logger.log(Level.FINE, "Updated equipment with item ID {0}", target.getItemId());
         return target;
     }
+
     /** Converts a user-supplied equipment ID to the uppercase value used by the model. */
     private static String normalizeItemId(String itemId) {
         try {

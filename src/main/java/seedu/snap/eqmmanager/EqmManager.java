@@ -400,6 +400,7 @@ public class EqmManager {
             ConsoleOutput.error(e.getMessage());
         }
     }
+
     /** Displays the outcome of loan addition. */
     private void addLoan(String input) {
         // @@author Yi An
@@ -494,6 +495,7 @@ public class EqmManager {
             ConsoleOutput.error(e.getMessage());
         }
     }
+
     /** Displays the outcome of a loan-detail update. */
     private void updateLoan(String input) {
         try {
