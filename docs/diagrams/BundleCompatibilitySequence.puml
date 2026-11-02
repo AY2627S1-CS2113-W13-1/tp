@@ -49,7 +49,7 @@ Handler --> Manager: unmodifiable ItemResult list
 deactivate Handler
 Manager -> Manager: reportBundleResults(results, "added")
 
-opt later command-loop save, such as bye
+opt later command-loop save, such as exit
     Manager -> Handler: saveToStorage()
     Handler -> Storage: save(storageFile, bundles)
     Storage --> Handler: saved

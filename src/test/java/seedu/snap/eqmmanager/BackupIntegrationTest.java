@@ -30,8 +30,8 @@ class BackupIntegrationTest {
         originalOutput = System.out;
         System.setOut(new PrintStream(output, true, StandardCharsets.UTF_8));
         manager = new EqmManager(temporaryDirectory.resolve("data"));
-        manager.executeInput("add i/Camera id/001 type/camera cond/4 sensor/APS-C");
-        manager.executeInput("loan id/001 b/111 issued/01-10-26 due/02-10-26");
+        manager.executeInput("eqm-add name/Camera e/E001 type/camera cond/4 sensor/APS-C");
+        manager.executeInput("loan-add e/E001 u/U111 issued/01-10-26 due/02-10-26");
         output.reset();
     }
 
@@ -80,8 +80,8 @@ class BackupIntegrationTest {
 
         assertTrue(printed().contains("Invalid format"));
         output.reset();
-        manager.executeInput("list loans b/111");
-        assertTrue(printed().contains("001"));
+        manager.executeInput("loan-list-borrower u/U111");
+        assertTrue(printed().contains("L001"));
     }
 
     /** Returns captured command output without relying on table spacing. */

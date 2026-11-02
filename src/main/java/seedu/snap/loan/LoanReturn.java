@@ -3,13 +3,14 @@ package seedu.snap.loan;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import seedu.snap.Identifier;
 import seedu.snap.exceptions.LoanReturnUnsuccessful;
 
 /** Holds the mandatory assessment and optional remarks from a return command, before any records change. */
 record LoanReturn(String loanId, boolean serviceable, String damage, Integer condition, String remarks) {
-    private static final String FORMAT = "Invalid format. Use: return loan/<LOAN ID> "
+    private static final String FORMAT = "Invalid format. Use: loan-return l/<LOAN ID> "
             + "serviceable/<yes|no> damage/<DAMAGE|none> [cond/<1-10>] [remarks/<REMARKS>].";
-    private static final Pattern COMMAND = Pattern.compile("(?U)\\A\\s*return\\s+loan/([0-9]{3})"
+    private static final Pattern COMMAND = Pattern.compile("(?U)\\A\\s*loan-return\\s+l/([Ll][0-9]{3})"
             + "\\s+serviceable/((?i:yes|no))\\s+damage/([A-Za-z_]+)"
             + "(?:\\s+cond/([^\\s]+))?(?:\\s+remarks/(.*))?\\s*\\z");
 
@@ -22,8 +23,11 @@ record LoanReturn(String loanId, boolean serviceable, String damage, Integer con
         if (!match.matches()) {
             throw new LoanReturnUnsuccessful(FORMAT);
         }
-        if (match.group(1).equals("000")) {
-            throw new LoanReturnUnsuccessful("Loan ID must be from 001 to 999.");
+        String loanId;
+        try {
+            loanId = Identifier.normalize(match.group(1), Identifier.Type.LOAN);
+        } catch (IllegalArgumentException exception) {
+            throw new LoanReturnUnsuccessful("Loan ID must be from L001 to L999.");
         }
         Integer condition = null;
         if (match.group(4) != null) {
@@ -32,7 +36,7 @@ record LoanReturn(String loanId, boolean serviceable, String damage, Integer con
             }
             condition = Integer.valueOf(match.group(4));
         }
-        return new LoanReturn(match.group(1), match.group(2).equalsIgnoreCase("yes"),
+        return new LoanReturn(loanId, match.group(2).equalsIgnoreCase("yes"),
                 match.group(3), condition, match.group(5) == null ? "" : match.group(5));
     }
 }

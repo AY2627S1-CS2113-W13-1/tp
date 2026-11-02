@@ -8,8 +8,8 @@ import java.util.regex.Pattern;
 
 /** Reads named equipment fields without losing spaces within names and types. */
 final class EquipmentFields {
-    static final String ID_FIELD = "id";
-    static final String NAME_FIELD = "i";
+    static final String ID_FIELD = "e";
+    static final String NAME_FIELD = "name";
     static final String TYPE_FIELD = "type";
     static final String CONDITION_FIELD = "cond";
     static final String STATUS_FIELD = "status";
@@ -19,6 +19,7 @@ final class EquipmentFields {
             Pattern.UNICODE_CHARACTER_CLASS);
     private static final Pattern EDGE_WHITESPACE = Pattern.compile("^\\s+|\\s+$",
             Pattern.UNICODE_CHARACTER_CLASS);
+    private static final Pattern TYPED_ITEM_ID = Pattern.compile("(?i)E[0-9]{3}(?=\\s|$)");
 
     private EquipmentFields() {
     }
@@ -86,7 +87,13 @@ final class EquipmentFields {
             return false;
         }
         char first = details.charAt(index);
-        return !isWhitespace(first) && !Character.isDigit(first) && first != '+' && first != '-';
+        return !isWhitespace(first) && !Character.isDigit(first) && first != '+' && first != '-'
+                && !isTypedItemId(details, index);
+    }
+
+    /** Returns whether text at the supplied index starts with a typed equipment ID. */
+    static boolean isTypedItemId(String details, int index) {
+        return index < details.length() && TYPED_ITEM_ID.matcher(details.substring(index)).lookingAt();
     }
 
     /** Stores each nonempty value once so a later field cannot silently overwrite it. */

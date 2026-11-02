@@ -17,6 +17,21 @@ public class LoanTest {
     private static final LocalDate REFERENCE_DATE = LocalDate.of(2026, 10, 24);
 
     @Test
+    void setters_validateBorrowerAndIssueDateWithoutPartialUpdates() {
+        Loan loan = createLoan(REFERENCE_DATE);
+        loan.setBorrowerId("U000");
+        LocalDateTime issued = REFERENCE_DATE.minusDays(2).atStartOfDay();
+        loan.setIssuedDate(issued);
+        assertEquals("U000", loan.getBorrowerId());
+        assertEquals(issued, loan.getIssuedDate());
+        assertThrows(AssertionError.class, () -> loan.setBorrowerId("E001"));
+        assertThrows(AssertionError.class, () -> loan.setIssuedDate(null));
+        assertThrows(AssertionError.class,
+                () -> loan.setIssuedDate(REFERENCE_DATE.plusDays(1).atStartOfDay()));
+        assertEquals(issued, loan.getIssuedDate());
+    }
+
+    @Test
     public void isOverdue_activeLoanDueBeforeReferenceDate_returnsTrue() {
         Loan loan = createLoan(REFERENCE_DATE.minusDays(1));
 
@@ -83,10 +98,7 @@ public class LoanTest {
     private Loan createLoan(LocalDateTime dueDateTime) {
         LocalDateTime issuedDateTime =
                 dueDateTime.minusDays(5);
-        return new Loan(
-                "001",
-                "001",
-                "002",
+        return new Loan("L001", "E001", "U002",
                 issuedDateTime,
                 dueDateTime);
     }

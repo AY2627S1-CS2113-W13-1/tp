@@ -58,14 +58,14 @@ class EndOfInputIntegrationTest {
 
     @Test
     void run_inputEndsAfterCommandWithoutNewline_savesBundleForRestart() {
-        EqmManager manager = managerWithInput("add-bundle name/Retained kit");
+        EqmManager manager = managerWithInput("bundle-create name/Retained kit");
 
         manager.run();
 
         assertTrue(Files.isRegularFile(dataDirectory.resolve("bundles.txt")));
         assertEquals(1, countOutputLines("[OK] Goodbye."));
         output.reset();
-        EqmManager restarted = managerWithInput("list bundles\nbye\n");
+        EqmManager restarted = managerWithInput("bundle-list\nexit\n");
         restarted.run();
         assertTrue(printed().contains("Retained kit"));
         assertFalse(printed().contains("[ERROR]"));
@@ -90,7 +90,7 @@ class EndOfInputIntegrationTest {
 
     @Test
     void run_finalSaveFailsAfterInputEnds_reportsFailureOnceAndDoesNotClaimSuccess() throws Exception {
-        EqmManager manager = managerWithInput("add-bundle name/Unsaved kit\n");
+        EqmManager manager = managerWithInput("bundle-create name/Unsaved kit\n");
         Path bundleDirectory = blockBundleStorage();
 
         manager.run();
@@ -104,14 +104,14 @@ class EndOfInputIntegrationTest {
 
     @Test
     void run_failedByeStillAcceptsCommands_thenStopsAtEndOfInput() throws Exception {
-        EqmManager manager = managerWithInput("bye\nadd-bundle name/After failed exit\n");
+        EqmManager manager = managerWithInput("exit\nbundle-create name/After failed exit\n");
         blockBundleStorage();
 
         manager.run();
 
         String text = printed();
         int failure = text.indexOf("[ERROR] Could not save data: bundles.txt:");
-        int addition = text.indexOf("[OK] Bundle 001 \"After failed exit\" created.");
+        int addition = text.indexOf("[OK] Bundle B001 \"After failed exit\" created.");
         assertTrue(failure >= 0 && addition > failure);
         assertEquals(3, countOutputLines("snAp > "));
         assertFalse(text.contains("[OK] Goodbye."));
@@ -119,10 +119,10 @@ class EndOfInputIntegrationTest {
 
     @Test
     void run_afterFailedByeAndStorageRepair_allowsSuccessfulRetry() throws Exception {
-        EqmManager manager = managerWithInput("bye\n");
-        manager.executeInput("add-bundle name/Recovered kit");
+        EqmManager manager = managerWithInput("exit\n");
+        manager.executeInput("bundle-create name/Recovered kit");
         Path bundleDirectory = blockBundleStorage();
-        manager.executeInput("bye");
+        manager.executeInput("exit");
         assertTrue(printed().contains("[ERROR] Could not save data: bundles.txt:"));
         Files.delete(bundleDirectory.resolve("keep.txt"));
         Files.delete(bundleDirectory);

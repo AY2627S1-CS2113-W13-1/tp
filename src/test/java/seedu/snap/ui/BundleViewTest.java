@@ -19,16 +19,16 @@ import seedu.snap.equipment.EquipmentHandler;
 class BundleViewTest {
     @Test
     void composition_missingTypesFollowModelAndTripodRemainsOptional() throws Exception {
-        Bundle bundle = new Bundle("Kit", "001");
+        Bundle bundle = new Bundle("Kit", "B001");
         EquipmentHandler equipment = new EquipmentHandler();
         assertEquals(List.of("camera", "lens", "battery"), bundle.getMissingEquipmentTypes());
         assertEquals("Incomplete (missing camera, lens, battery)", BundleView.composition(bundle));
         assertThrows(UnsupportedOperationException.class, () -> bundle.getMissingEquipmentTypes().clear());
-        bundle.addEquipment(equipment.addEquipment("add i/Camera id/001 type/camera cond/1"));
+        bundle.addEquipment(equipment.addEquipment("eqm-add name/Camera e/E001 type/camera cond/1"));
         assertEquals("Incomplete (missing lens, battery)", BundleView.composition(bundle));
-        bundle.addEquipment(equipment.addEquipment("add i/Lens id/002 type/lens cond/2"));
+        bundle.addEquipment(equipment.addEquipment("eqm-add name/Lens e/E002 type/lens cond/2"));
         assertEquals("Incomplete (missing battery)", BundleView.composition(bundle));
-        bundle.addEquipment(equipment.addEquipment("add i/Battery id/003 type/battery cond/3"));
+        bundle.addEquipment(equipment.addEquipment("eqm-add name/Battery e/E003 type/battery cond/3"));
         assertEquals("Complete", BundleView.composition(bundle));
         assertTrue(bundle.getMissingEquipmentTypes().isEmpty());
         assertTrue(bundle.isComplete());
@@ -42,12 +42,12 @@ class BundleViewTest {
             System.setOut(captured);
             BundleView.print(List.of());
             assertTrue(output.toString(StandardCharsets.UTF_8).contains("0 bundles."));
-            assertTrue(output.toString(StandardCharsets.UTF_8).contains("add-bundle name/Camera kit"));
+            assertTrue(output.toString(StandardCharsets.UTF_8).contains("bundle-create name/Camera kit"));
             output.reset();
-            Bundle bundle = new Bundle("Kit\t\u001b[31m", "001");
+            Bundle bundle = new Bundle("Kit\t\u001b[31m", "B001");
             BundleView.print(List.of(bundle));
             String text = output.toString(StandardCharsets.UTF_8);
-            assertTrue(text.contains("Bundle 001: Kit\\u0009\\u001b[31m"));
+            assertTrue(text.contains("Bundle B001: Kit\\u0009\\u001b[31m"));
             assertTrue(text.contains("0 equipment items:"));
             assertTrue(text.contains("1 bundle."));
             assertTrue(text.contains("saved bundles are restored at startup"));

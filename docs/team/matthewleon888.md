@@ -17,13 +17,15 @@ when a command or storage operation fails.
 
 ### Enhancements implemented
 
-- **Bundle loan history and persistence:** Implemented `history bundle` for active and returned loans associated with
-  every physical item in a bundle. Added permanent equipment-identity matching, ordering, validation, persistence and
-  restart coverage. ([Issue #68](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/68),
+- **Bundle loan history and persistence:** Implemented `bundle-history` for viewing active and returned loans
+  associated with every item in a bundle. Preserved bundle, equipment and loan relationships across restarts,
+  added validation and fixed the save ordering for removing bundle membership before deleting equipment.
+  Added tests for output, ordering, empty histories and persistence. ([Issue #68](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/68),
   [PR #115](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/115))
-- **Loan-detail editing:** Implemented `update loan` with validation for borrower IDs, dates, unique loan IDs,
-  returned loans and equipment reassignment. Used a detached proposal and save-before-mutation workflow so failed
-  edits leave live records, equipment ownership and saved files unchanged. ([Issue #107](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/107),
+- **Loan-detail editing:** Implemented `loan-update` for changing permitted loan details without changing the
+  loan ID. Added validation for borrower IDs, dates, equipment availability, duplicate active loans and returned
+  loans. Used a proposal-and-save workflow to keep invalid updates from changing live or saved records, and
+  preserved issue-condition snapshots during borrower or date-only edits. ([Issue #107](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/107),
   [PR #116](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/116))
 - **Borrower-held equipment queries:** Implemented `list borrower/<BORROWER ID>` and its member alias, including
   strict input validation, active-loan filtering, empty-result handling, read-only behaviour and restart coverage.

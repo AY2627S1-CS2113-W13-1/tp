@@ -25,17 +25,18 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 /** Verifies permanent equipment identities remain distinct when visible Item IDs are reused. */
 class EquipmentRecordIdentityTest {
+    private static final String INTERACTIVE_CAMERA = "eqm-add name/Camera e/E001 type/camera cond/7";
     private static final String FIRST_RECORD_ID = "e21c9254-ab91-4624-82eb-9b4423e5a795";
     private static final String SECOND_RECORD_ID = "98abfd72-32b3-49b7-b2af-a1f4fe949435";
-    private static final String LEGACY_CAMERA = "add i/Camera id/001 type/camera cond/7";
+    private static final String LEGACY_CAMERA = "add i/Camera id/E001 type/camera cond/7";
 
     @TempDir
     private Path temporaryDirectory;
 
     @Test
     void newEquipment_identicalVisibleDetails_haveDifferentCanonicalIdentities() {
-        Camera first = new Camera("Camera", "001", 7);
-        Camera second = new Camera("Camera", "001", 7);
+        Camera first = new Camera("Camera", "E001", 7);
+        Camera second = new Camera("Camera", "E001", 7);
 
         assertEquals(UUID.fromString(first.getRecordId()).toString(), first.getRecordId());
         assertEquals(UUID.fromString(second.getRecordId()).toString(), second.getRecordId());
@@ -46,7 +47,7 @@ class EquipmentRecordIdentityTest {
     void saveAndLoad_keyedRecords_preserveIdentityWithoutRewritingFile() throws Exception {
         Path file = temporaryDirectory.resolve("equipment.txt");
         EquipmentHandler handler = new EquipmentHandler(file);
-        Equipment original = handler.addEquipment(LEGACY_CAMERA);
+        Equipment original = handler.addEquipment(INTERACTIVE_CAMERA);
         FileTime previousTime = FileTime.fromMillis(1_700_000_000_000L);
         Files.setLastModifiedTime(file, previousTime);
         byte[] saved = Files.readAllBytes(file);
@@ -64,8 +65,8 @@ class EquipmentRecordIdentityTest {
     void load_legacyFormats_saveIdentitiesBeforeReturningAndPreserveFreeText() throws Exception {
         Path file = temporaryDirectory.resolve("equipment.txt");
         Files.write(file, List.of(
-                "add i/Camera recordId/label id/001 type/camera cond/7 remarks/recordId/not-an-id id/002",
-                "serviceable/no\tadd i/Lens id/002 type/lens cond/6 zoom/recordId/label remarks/serviceable/yes"));
+                "add i/Camera recordId/label id/E001 type/camera cond/7 remarks/recordId/not-an-id id/E002",
+                "serviceable/no\tadd i/Lens id/E002 type/lens cond/6 zoom/recordId/label remarks/serviceable/yes"));
 
         List<Equipment> loaded = EquipmentStorage.load(file);
         byte[] migrated = Files.readAllBytes(file);
@@ -77,7 +78,7 @@ class EquipmentRecordIdentityTest {
         assertTrue(Files.readAllLines(file).stream().allMatch(line -> line.startsWith("recordId/")));
         assertArrayEquals(migrated, Files.readAllBytes(file));
         assertEquals("Camera recordId/label", restarted.get(0).getItemName());
-        assertEquals("recordId/not-an-id id/002", restarted.get(0).getRemarks());
+        assertEquals("recordId/not-an-id id/E002", restarted.get(0).getRemarks());
         assertTrue(restarted.get(0).isServiceable());
         assertFalse(restarted.get(1).isServiceable());
         assertEquals("zoom/recordId/label damage/NONE", restarted.get(1).getDetails());
@@ -88,7 +89,7 @@ class EquipmentRecordIdentityTest {
     void load_mixedFormats_preservesExplicitIdentityAndAssignsOnlyMissingIdentity() throws Exception {
         Path file = temporaryDirectory.resolve("equipment.txt");
         Files.write(file, List.of(keyed(FIRST_RECORD_ID, LEGACY_CAMERA),
-                "serviceable/yes\tadd i/Tripod id/002 type/tripod cond/8"));
+                "serviceable/yes\tadd i/Tripod id/E002 type/tripod cond/8"));
 
         List<Equipment> loaded = EquipmentStorage.load(file);
 
@@ -102,7 +103,7 @@ class EquipmentRecordIdentityTest {
     void load_invalidLaterLegacyRecord_keepsOriginalFileAndCurrentInventory() throws Exception {
         Path file = temporaryDirectory.resolve("equipment.txt");
         EquipmentHandler handler = new EquipmentHandler(file);
-        Equipment original = handler.addEquipment(LEGACY_CAMERA);
+        Equipment original = handler.addEquipment(INTERACTIVE_CAMERA);
         Files.write(file, List.of(LEGACY_CAMERA, "not an equipment record"));
         byte[] saved = Files.readAllBytes(file);
 
@@ -117,7 +118,7 @@ class EquipmentRecordIdentityTest {
     @ValueSource(strings = {"", "not-a-uuid", "1-1-1-1-1", "E21C9254-AB91-4624-82EB-9B4423E5A795",
         " e21c9254-ab91-4624-82eb-9b4423e5a795", "e21c9254-ab91-4624-82eb-9b4423e5a795 "})
     void restoreRecordId_invalidCanonicalValue_rejectsAtRuntimeWithoutChangingIdentity(String value) {
-        Equipment equipment = new Camera("Camera", "001", 7);
+        Equipment equipment = new Camera("Camera", "E001", 7);
         String original = equipment.getRecordId();
 
         assertThrows(IllegalArgumentException.class, () -> equipment.restoreRecordId(value));
@@ -127,7 +128,7 @@ class EquipmentRecordIdentityTest {
 
     @Test
     void restoreRecordId_null_rejectsWithoutChangingIdentity() {
-        Equipment equipment = new Camera("Camera", "001", 7);
+        Equipment equipment = new Camera("Camera", "E001", 7);
         String original = equipment.getRecordId();
 
         assertThrows(IllegalArgumentException.class, () -> equipment.restoreRecordId(null));
@@ -161,7 +162,7 @@ class EquipmentRecordIdentityTest {
     void load_duplicatePermanentIdentityWithDifferentItemIds_rejectsWithoutMigration() throws Exception {
         Path file = temporaryDirectory.resolve("equipment.txt");
         Files.write(file, List.of(keyed(FIRST_RECORD_ID, LEGACY_CAMERA), keyed(FIRST_RECORD_ID,
-                "add i/Lens id/002 type/lens cond/7")));
+                "add i/Lens id/E002 type/lens cond/7")));
         byte[] saved = Files.readAllBytes(file);
 
         IOException exception = assertThrows(IOException.class, () -> EquipmentStorage.load(file));
@@ -177,7 +178,7 @@ class EquipmentRecordIdentityTest {
                 "Windows read-only files permit reading but reject replacement during migration.");
         Path file = temporaryDirectory.resolve("equipment.txt");
         EquipmentHandler handler = new EquipmentHandler(file);
-        Equipment original = handler.addEquipment(LEGACY_CAMERA);
+        Equipment original = handler.addEquipment(INTERACTIVE_CAMERA);
         Files.writeString(file, LEGACY_CAMERA, StandardCharsets.UTF_8);
         byte[] saved = Files.readAllBytes(file);
         Files.setAttribute(file, "dos:readonly", true);
@@ -202,18 +203,18 @@ class EquipmentRecordIdentityTest {
     void deleteThenReuseSameItemIdAndName_afterRestart_createsNewPermanentIdentity() throws Exception {
         Path file = temporaryDirectory.resolve("equipment.txt");
         EquipmentHandler firstSession = new EquipmentHandler(file);
-        String oldIdentity = firstSession.addEquipment(LEGACY_CAMERA).getRecordId();
+        String oldIdentity = firstSession.addEquipment(INTERACTIVE_CAMERA).getRecordId();
         EquipmentHandler secondSession = new EquipmentHandler(file);
         secondSession.loadFromStorage();
-        secondSession.deleteEquipment("delete item/001");
+        secondSession.deleteEquipment("eqm-delete e/E001");
 
-        Equipment replacement = secondSession.addEquipment(LEGACY_CAMERA);
+        Equipment replacement = secondSession.addEquipment(INTERACTIVE_CAMERA);
         EquipmentHandler restarted = new EquipmentHandler(file);
         restarted.loadFromStorage();
 
         assertNotEquals(oldIdentity, replacement.getRecordId());
         assertEquals(replacement.getRecordId(), restarted.getEquipmentList().getFirst().getRecordId());
-        assertEquals("001", replacement.getItemId());
+        assertEquals("E001", replacement.getItemId());
         assertEquals("Camera", replacement.getItemName());
     }
 
@@ -222,14 +223,14 @@ class EquipmentRecordIdentityTest {
     void returnAssessmentAndNormalUpdate_preservePermanentIdentityInMemoryAndStorage(String type) throws Exception {
         Path file = temporaryDirectory.resolve("equipment.txt");
         EquipmentHandler handler = new EquipmentHandler(file);
-        Equipment original = handler.addEquipment("add i/Original id/001 type/" + type + " cond/7");
+        Equipment original = handler.addEquipment("eqm-add name/Original e/E001 type/" + type + " cond/7");
         String recordId = original.getRecordId();
         Equipment assessed = handler.prepareReturnAssessment(original, false, "NONE", "Repair required");
 
         assertEquals(recordId, assessed.getRecordId());
         handler.saveReturnAssessment(original, assessed);
         original.applyReturnAssessment(assessed);
-        assertSame(original, handler.updateEquipment("update id/001 i/Updated cond/8"));
+        assertSame(original, handler.updateEquipment("eqm-update e/E001 name/Updated cond/8"));
         Equipment restored = EquipmentStorage.load(file).getFirst();
 
         assertEquals(recordId, original.getRecordId());
@@ -244,8 +245,8 @@ class EquipmentRecordIdentityTest {
     void returnAssessment_differentPhysicalItemWithSameVisibleDetails_rejectsBeforeSaveAndCommit() throws Exception {
         Path file = temporaryDirectory.resolve("equipment.txt");
         EquipmentHandler handler = new EquipmentHandler(file);
-        Equipment original = handler.addEquipment(LEGACY_CAMERA);
-        Equipment replacement = new Camera("Camera", "001", 7);
+        Equipment original = handler.addEquipment(INTERACTIVE_CAMERA);
+        Equipment replacement = new Camera("Camera", "E001", 7);
         Equipment wrongAssessment = handler.prepareReturnAssessment(replacement, false, "SENSOR_DAMAGE", "Repair");
         byte[] saved = Files.readAllBytes(file);
 
