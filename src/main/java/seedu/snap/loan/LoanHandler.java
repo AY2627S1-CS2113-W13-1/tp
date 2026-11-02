@@ -669,7 +669,7 @@ public class LoanHandler {
 
     // @@author
 
-    // @@author Rohita-29
+    // @@author rktheg
 
     /**
      * Compares immutable issue and return assessments for one loan without reading current equipment.
@@ -702,6 +702,10 @@ public class LoanHandler {
                 + "return assessment recorded: {2}.", new Object[]{loanId, issued != null, returned != null});
     }
 
+    // @@author
+
+    // @@author Yi An
+
     /** Extracts and validates a loan ID from the condition-assessment command. */
     private static String parseAssessmentLoanId(String input) throws LoanViewingUnsuccessful {
         String normalizedInput = input == null ? "" : input.replaceAll("(?U)^\\s+|\\s+$", "");
@@ -719,6 +723,10 @@ public class LoanHandler {
         }
     }
 
+    // @@author
+
+    // @@author rktheg
+
     /** Converts an optional issue or return serviceability value to user-facing text. */
     private static String serviceabilityText(Boolean serviceable) {
         return serviceable == null ? "Not recorded" : serviceable ? "Yes" : "No";
@@ -733,6 +741,10 @@ public class LoanHandler {
     private static String assessmentRemarks(EquipmentConditionSnapshot snapshot, String missing) {
         return snapshot == null ? missing : snapshot.getRemarks().isEmpty() ? "None" : snapshot.getRemarks();
     }
+
+    // @@author
+
+    // @@author Yi An
 
     /**
      * Displays the issue-time equipment condition for one loan.

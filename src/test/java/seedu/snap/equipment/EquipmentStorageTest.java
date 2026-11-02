@@ -63,6 +63,55 @@ class EquipmentStorageTest {
         assertTrue(Files.readString(file).contains("id/E001"));
     }
 
+    // @@author Rohita-29
+
+    @Test
+    void load_legacyIdWithSupportedWhitespaceBeforeCondition_migratesId() throws IOException {
+        Path file = temporaryDirectory.resolve("equipment.txt");
+
+        for (String whitespace : List.of("\t", "\u2003")) {
+            Files.writeString(file, "add i/Camera id/001 type/camera" + whitespace + "cond/1\n");
+
+            List<Equipment> loaded = EquipmentStorage.load(file);
+
+            assertEquals("E001", loaded.getFirst().getItemId());
+            assertTrue(Files.readString(file).contains("id/E001"));
+        }
+    }
+
+    @Test
+    void load_canonicalIdLikeRemarks_preservesRecordWithoutRewriting() throws Exception {
+        Path file = temporaryDirectory.resolve("equipment.txt");
+        String remarks = "Keep literal id/123 type/camera";
+        EquipmentHandler handler = new EquipmentHandler(file);
+        handler.addEquipment(
+                "eqm-add name/Camera e/E001 type/camera cond/1 remarks/" + remarks);
+        String recordBeforeLoad = Files.readString(file);
+
+        List<Equipment> loaded = EquipmentStorage.load(file);
+
+        assertEquals("E001", loaded.getFirst().getItemId());
+        assertEquals(remarks, loaded.getFirst().getRemarks());
+        assertEquals(recordBeforeLoad, Files.readString(file));
+    }
+
+    @Test
+    void load_legacyIdWithIdLikeRemarks_migratesOnlyItemId() throws IOException {
+        Path file = temporaryDirectory.resolve("equipment.txt");
+        String remarks = "Keep literal id/123 type/camera";
+        Files.writeString(file, "add i/Camera id/001 type/camera cond/1 remarks/" + remarks + "\n");
+
+        List<Equipment> loaded = EquipmentStorage.load(file);
+
+        assertEquals("E001", loaded.getFirst().getItemId());
+        assertEquals(remarks, loaded.getFirst().getRemarks());
+        String savedRecord = Files.readString(file);
+        assertTrue(savedRecord.contains("id/E001"));
+        assertTrue(savedRecord.contains("remarks/" + remarks));
+    }
+
+    // @@author
+
     @Test
     void load_collidingLegacyAndCanonicalIds_rejectsFile() throws IOException {
         Path file = temporaryDirectory.resolve("equipment.txt");

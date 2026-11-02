@@ -25,6 +25,8 @@ final class EquipmentConditionSnapshotCodec {
         return encode(snapshot, "issue");
     }
 
+    // @@author rktheg
+
     /** Shares escaping for issue and return values while keeping their storage prefixes distinct. */
     static String encode(EquipmentConditionSnapshot snapshot, String stage) {
         if (snapshot == null) {
@@ -45,6 +47,8 @@ final class EquipmentConditionSnapshotCodec {
                 + encodeValue(snapshot.getRemarks());
     }
 
+    // @@author Rohita-29
+
     /**
      * Recreates a snapshot from four consecutive storage fields.
      *
@@ -58,6 +62,8 @@ final class EquipmentConditionSnapshotCodec {
             int startIndex) {
         return decode(fields, startIndex, "issue");
     }
+
+    // @@author rktheg
 
     /** Reads the same validated snapshot values using the selected issue or return prefixes. */
     static EquipmentConditionSnapshot decode(String[] fields, int startIndex, String stage) {
@@ -92,12 +98,16 @@ final class EquipmentConditionSnapshotCodec {
                 remarks);
     }
 
+    // @@author Rohita-29
+
     /** Encodes one text value so it remains within a single storage token. */
     private static String encodeValue(String value) {
         return URLEncoder.encode(
                 value,
                 StandardCharsets.UTF_8);
     }
+
+    // @@author rktheg
 
     /** Decodes one storage token into its original text value. */
     private static String decodeValue(String value) {
@@ -113,6 +123,8 @@ final class EquipmentConditionSnapshotCodec {
                     exception);
         }
     }
+
+    // @@author Rohita-29
 
     /** Extracts a value from a field with the required prefix. */
     private static String extractValue(

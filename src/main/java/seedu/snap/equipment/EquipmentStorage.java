@@ -26,6 +26,11 @@ final class EquipmentStorage {
     private static final Pattern NON_CANONICAL_ITEM_ID = Pattern.compile(
             "(?U)(\\bid/)([Ee]?)([0-9]{3})(?=\\s+type/)");
 
+    // @@author Rohita-29
+    private static final Pattern CONDITION_FIELD_MARKER = Pattern.compile("(?U)\\s+cond/");
+
+    // @@author MatthewLeon888
+
     private EquipmentStorage() {
         // Utility class; do not instantiate.
     }
@@ -86,6 +91,17 @@ final class EquipmentStorage {
     /** Rewrites only the actual add-record item ID, leaving free-form name text untouched. */
     private static String normalizeLegacyItemId(String line) {
         Matcher matcher = NON_CANONICAL_ITEM_ID.matcher(line);
+
+        // @@author Rohita-29
+
+        Matcher conditionMatcher = CONDITION_FIELD_MARKER.matcher(line);
+        if (!conditionMatcher.find()) {
+            return line;
+        }
+        matcher.region(0, conditionMatcher.start());
+
+        // @@author MatthewLeon888
+
         int idStart = -1;
         int numberStart = -1;
         int idEnd = -1;
