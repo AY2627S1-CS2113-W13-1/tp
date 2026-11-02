@@ -16,7 +16,10 @@ participant ":LoanHandler" as Loans
 
 Manager -> Parsing : parse(input)
 activate Parsing
-Parsing -> Parsing : parse fields
+note right of Parsing
+EquipmentFields.parse(...)
+extracts criteria map
+end note
 create Filter
 Parsing -> Filter : new(fields)
 activate Filter
@@ -40,15 +43,8 @@ loop each item
 end
 Filter --> Manager : matches
 deactivate Filter
-alt no matches
-    Manager -> Inventory : viewEquipment(empty list)
-    activate Inventory
-    Inventory --> Manager
-    deactivate Inventory
-else matches found
-    Manager -> Inventory : viewEquipment(matches)
-    activate Inventory
-    Inventory --> Manager
-    deactivate Inventory
-end
+Manager -> Inventory : viewEquipment(matches)
+activate Inventory
+Inventory --> Manager
+deactivate Inventory
 @enduml

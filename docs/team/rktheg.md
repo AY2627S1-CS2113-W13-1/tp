@@ -59,8 +59,8 @@ keeping equipment references consistent when an item is borrowed or updated.
   [return](../UserGuide.md#returning-equipment-return) and
   [loan-assessment](../UserGuide.md#comparing-a-loans-condition-assessments-view-loan) guidance, and documented
   [per-loan condition preservation](../DeveloperGuide.md#preserving-condition-assessments-for-each-loan) in the
-  DG. Added sequence and object diagrams showing that issue and return snapshots belong to the loan and remain
-  independent of later equipment changes. ([#166](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/166), merged)
+  DG. Added the sequence diagram showing immutable return condition persistence ([#166](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/166), merged)
+  and the object diagram illustrating copied snapshot ownership across Item ID reuse ([#168](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/168)).
 - **Developer Guide:** Documented [equipment management](../DeveloperGuide.md#equipment-management), covering
   the shared inventory, addition, availability, filtering and updates, plus logging and assertions. Explained
   validation, save failures, design choices and testing. Added the application architecture, shared class

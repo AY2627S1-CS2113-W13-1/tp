@@ -6,16 +6,20 @@ skinparam maxMessageSize 160
 
 participant ":LoanHandler" as Handler
 participant "LoanReturnStorage" as Store <<utility>>
+participant "LoanStorage.FileSnapshot" as Snapshots <<class>>
 participant ":EquipmentHandler" as Inventory
 participant "LoanStorage" as Loans <<utility>>
 
 Handler -> Store: save(...)
 activate Store
 loop each configured file
-    Store -> Store: FileSnapshot.capture(file)
-    create participant "snapshot:FileSnapshot" as Snapshot
-    Store -> Snapshot: new(path, existed, regularFile, contents)
-    Snapshot --> Store: snapshot
+    Store -> Snapshots: capture(file)
+    activate Snapshots
+    create participant "snapshot:\nLoanStorage.FileSnapshot" as Snapshot
+    Snapshots -> Snapshot: new(path, existed, regularFile, contents)
+    Snapshot --> Snapshots: snapshot
+    Snapshots --> Store: snapshot
+    deactivate Snapshots
 end
 note right of Store
 Capture equipment, loans and sequence paths.
@@ -33,11 +37,10 @@ loop each snapshot
 end
 Store --> Handler: IOException with any restoration errors
 deactivate Store
-Handler -> Handler: wrap as LoanReturnUnsuccessful
-note over Handler, Store
-No live assessment or returned flag is changed.
+note over Handler
+Wrap IOException as LoanReturnUnsuccessful;
+no live assessment or returned flag is changed.
 The caller reports a failed restoration when necessary.
 Equipment-save failures use the same restoration loop.
-Continue after individual restoration failures.
 end note
 @enduml
