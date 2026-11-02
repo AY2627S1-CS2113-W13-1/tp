@@ -225,7 +225,7 @@ Names may contain spaces and slashes. A field prefix after whitespace normally s
 | --- | --- | --- |
 | `USB id/card reader` | Yes | The nonnumeric `id/card` fragment stays in the name. |
 | `fluid/head tripod` | Yes | A slash within a word does not start a field. |
-| `Spare id/E001 camera` | No | Numeric ID-like fragments are reserved for the actual Item ID. |
+| `Spare id/E001 camera` | No | Typed ID-like fragments are reserved for the actual Item ID. |
 | `Camera type/lens` | No | `type/` starts a type field after whitespace. |
 
 For `add`, the actual `id/` is the last one before `type/`. Earlier ID-like name fragments cannot start

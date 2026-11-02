@@ -785,7 +785,7 @@ Fields follow the order name, Item ID, type, condition, optional subtype details
 The parser recognises prefixes at field boundaries, including after Unicode whitespace, rather than
 splitting on every space. This preserves names such as `USB id/card reader` and `fluid/head tripod`.
 The last `id/` before `type/` identifies the Item ID; earlier fragments in the name cannot start with
-whitespace, a digit, `+` or `-`. Numeric ID-like fragments stay reserved to detect repeated fields.
+whitespace, a digit, `+` or `-`. Typed ID-like fragments stay reserved to detect repeated fields.
 
 Subtype fields are parsed after `cond/`. The first `remarks/` starts the final literal field, so text such
 as `Check id/E001 adapter` is not mistaken for another ID. Subtype parsers handle their own attributes and
