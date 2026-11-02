@@ -103,7 +103,7 @@ public final class Help {
                         EQM-ADD
                         Format: eqm-add name/<NAME> e/<ID> type/<TYPE> cond/<N> [TYPE DETAIL] [damage/<DAMAGE>] \
                         [remarks/<TEXT>]
-                        Example: eqm-add name/Canon EOS R10 e/001 type/camera cond/1 sensor/APS-C
+                        Example: eqm-add name/Canon EOS R10 e/001 type/camera cond/1 sensor/APS-C \
                         mount/Canon RF damage/NONE
                         Name, unused Item ID, type and condition are required, in that order.
 
@@ -171,10 +171,12 @@ public final class Help {
                         """)),
                 new CommandHelp("loan-return", "Loans", lineEndings(String.format(Locale.ROOT, """
                         LOAN-RETURN
-                        Format: loan-return l/<LOAN ID> serviceable/<yes|no> damage/<DAMAGE> [remarks/<TEXT>]
+                        Format: loan-return l/<LOAN ID> serviceable/<yes|no> damage/<DAMAGE> [cond/<N>] [remarks/<TEXT>]
                         Example: loan-return l/001 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair
                         Requires an active Loan ID and explicit serviceable/ and damage/ assessment, in that order.
                         Serviceable yes/no and subtype damage values are case-insensitive; use NONE for no damage.
+                        Optional cond/ sets a whole-number condition from 1 to 10.
+                        If omitted, the current numeric condition is retained.
 
                         Serviceability determines whether the item may be borrowed again; damage alone does not.
 

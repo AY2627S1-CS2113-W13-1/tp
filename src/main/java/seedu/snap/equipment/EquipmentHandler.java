@@ -333,17 +333,17 @@ public class EquipmentHandler {
      * @throws EquipmentAdditionUnsuccessful when the command is invalid
      */
     static Equipment parseEquipment(String userInput) throws EquipmentAdditionUnsuccessful {
-        return parseEquipment(userInput, ADD_COMMAND, ITEM_MARKER, ID_MARKER, ADD_FORMAT_ERROR);
+        return parseEquipmentRecord(userInput, ADD_COMMAND, ITEM_MARKER, ID_MARKER, ADD_FORMAT_ERROR);
     }
 
     /** Parses the legacy command-style representation used only by existing saved equipment files. */
     static Equipment parseStoredEquipment(String userInput) throws EquipmentAdditionUnsuccessful {
-        return parseEquipment(userInput, LEGACY_ADD_COMMAND, LEGACY_ITEM_MARKER, LEGACY_ID_MARKER,
+        return parseEquipmentRecord(userInput, LEGACY_ADD_COMMAND, LEGACY_ITEM_MARKER, LEGACY_ID_MARKER,
                 LEGACY_ADD_FORMAT_ERROR);
     }
 
     /** Parses an equipment record using either the interactive or legacy storage syntax. */
-    private static Equipment parseEquipment(String userInput, String command, String itemMarker,
+    private static Equipment parseEquipmentRecord(String userInput, String command, String itemMarker,
             String idMarker, String formatError) throws EquipmentAdditionUnsuccessful {
         if (userInput == null || !userInput.matches("(?sU)" + command + "(?:\\s.*)?")) {
             throw new EquipmentAdditionUnsuccessful(formatError);

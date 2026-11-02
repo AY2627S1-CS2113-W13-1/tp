@@ -366,12 +366,16 @@ public class LoanHandler {
             }
             assessed = equipment.prepareReturnAssessment(item, assessment.serviceable(),
                     assessment.damage(), assessment.remarks());
+            if (assessment.condition() != null) {
+                assessed.updateDetails(assessed.getItemName(), assessment.condition());
+            }
         } catch (LoanAdditionUnsuccessful | IllegalArgumentException exception) {
             throw new LoanReturnUnsuccessful(exception.getMessage());
         }
 
         // This detached proposal cannot release equipment or alter the live loan before saving.
-        Loan returned = loan.returnedCopy();
+        LoanReturnAssessment snapshot = LoanReturnAssessment.fromEquipment(assessed);
+        Loan returned = loan.returnedCopy(snapshot);
         ArrayList<Loan> proposedLoans = new ArrayList<>(loans);
         proposedLoans.set(proposedLoans.indexOf(loan), returned);
         try {
@@ -385,7 +389,8 @@ public class LoanHandler {
         }
 
         item.applyReturnAssessment(assessed);
-        loan.setReturned(true);
+        loan.completeReturn(snapshot);
+        assert loan.getReturnAssessment() == snapshot : "Saved return assessment must belong to this loan";
         assert !item.isLoaned() && item.getLoanId() == null : "Returned equipment must have no active loan";
         assert numLoans == loans.size() : "Returning equipment must retain its loan record";
         logger.log(Level.INFO, "Returned loan {0} for item ID {1}; serviceable: {2}.",

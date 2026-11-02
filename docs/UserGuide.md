@@ -57,8 +57,8 @@ once a build is installed.
 
 Replace `<command>` with one of these exact lowercase topics:
 
-* Equipment: `eqm-add`, `eqm-list`, `eqm-show`, `eqm-delete`, `eqm-filter`, `eqm-update`, `eqm-maintain`.
-* Loans: `loan-add`, `loan-return`, `loan-delete`, `loan-update`, `loan-list`, `loan-list-borrower`, `loan-view`, `loan-list-overdue`, `eqm-loan-history`.
+* Equipment: `eqm-add`, `eqm-list`, `eqm-show`, `eqm-delete`, `eqm-filter`, `eqm-update`, `eqm-maintain`, `eqm-loan-history`.
+* Loans: `loan-add`, `loan-return`, `loan-delete`, `loan-update`, `loan-list`, `loan-list-borrower`, `loan-view`, `loan-show`, `loan-list-overdue`.
 * Bundles: `bundle-create`, `bundle-add-eqm`, `bundle-remove-eqm`, `bundle-list`, `bundle-history`.
 * General: `backup`, `restore`, `help`, `exit`.
 
@@ -808,6 +808,7 @@ Successful changes start with `[OK]`; rejected commands and save failures start 
 | List loans | `loan-list` |
 | View a borrower's current equipment | `loan-list-borrower u/<BORROWER ID>` |
 | Compare loan condition assessments | `loan-view l/<LOAN ID>` |
+| Show issue-time loan condition | `loan-show l/<LOAN ID>` |
 | Back up equipment and loan records | `backup path/<DIRECTORY>` |
 | Restore equipment and loan records | `restore path/<DIRECTORY>` |
 | View item loan history | `eqm-loan-history e/<ITEM ID>` |

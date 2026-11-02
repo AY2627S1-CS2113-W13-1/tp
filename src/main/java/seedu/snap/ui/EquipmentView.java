@@ -49,7 +49,7 @@ public final class EquipmentView {
                         Integer.toString(item.getCondition()), status(item));
             }
             System.out.println(TABLE_BORDER);
-        System.out.println("Names ending in ... are shortened. Use eqm-show e/<ID> for full details.");
+            System.out.println("Names ending in ... are shortened. Use eqm-show e/<ID> for full details.");
         }
         System.out.println(items.size() + " equipment " + (items.size() == 1 ? "item." : "items."));
     }
