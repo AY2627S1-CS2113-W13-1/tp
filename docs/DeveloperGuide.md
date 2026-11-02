@@ -215,6 +215,19 @@ application, saving and restart.
 both camera-lens fields, reversed insertion order, candidates supplied together, missing compatibility data and
 equipment pairs without a compatibility relationship. Existing bundle tests verify all previous validation rules.
 
+[![Bundle compatibility sequence: validate each candidate, compare it with current members and retain partial success.](images/BundleCompatibilitySequence.svg)](images/BundleCompatibilitySequence.svg)
+
+*Figure 4. Bundle additions validate each requested item independently and check successful earlier additions.*
+
+[PlantUML source](diagrams/BundleCompatibilitySequence.puml)
+
+The sequence shows the order used by `BundleHandler.addItemsToBundleWithResults(...)`. Basic inventory and bundle
+rules run before compatibility comparison. Only `INCOMPATIBLE` blocks an otherwise valid candidate; `UNKNOWN` and
+`NOT_APPLICABLE` allow processing to continue. Successful additions are immediately visible to later candidates.
+`Bundle.addEquipment(...)` returns `void`: it updates membership and completion state, while the handler constructs
+the success `ItemResult`. `reportBundleResults(...)` emits one result for every requested ID. The membership is
+persisted by the normal bundle save on exit rather than by the validation loop itself.
+
 ### Issuing a loan safely
 
 `EqmManager` routes `loan` to `LoanHandler.addLoan(...)`. The handler parses and validates the complete command,
@@ -224,7 +237,7 @@ condition and permanent identity, but does not reserve the live item yet.
 
 [![Loan addition sequence: validate availability, save the proposed loan and next identifier, then reserve the equipment.](images/LoanAdditionSequence.svg)](images/LoanAdditionSequence.svg)
 
-*Figure 4. Loan addition publishes the new record only after the proposed loan list and next identifier are saved.*
+*Figure 5. Loan addition publishes the new record only after the proposed loan list and next identifier are saved.*
 
 [PlantUML source](diagrams/LoanAdditionSequence.puml)
 
@@ -260,7 +273,7 @@ and changing records.
 
 [![Return sequence: prepare detached proposals, save them, then change the original equipment and loan.](images/ReturnSequence.svg)](images/ReturnSequence.svg)
 
-*Figure 5. A successful return changes the original records only after saving succeeds.*
+*Figure 6. A successful return changes the original records only after saving succeeds.*
 
 [PlantUML source](diagrams/ReturnSequence.puml)
 
@@ -298,13 +311,13 @@ assessment defaults to serviceable.
 
 #### Save failures and recovery
 
-The next diagram expands the storage step in Figure 5. It shows a loan or sequence save failing after the
+The next diagram expands the storage step in Figure 6. It shows a loan or sequence save failing after the
 equipment proposal was written. An equipment-save failure enters the same restoration loop. Only configured
 files are captured. A snapshot records regular-file bytes, absence or a pre-existing non-regular path.
 
 [![Failed return save: capture configured files, attempt writes, restore every snapshot, then report the failure.](images/ReturnSaveFailure.svg)](images/ReturnSaveFailure.svg)
 
-*Figure 6. A reported write failure triggers restoration before the return is rejected.*
+*Figure 7. A reported write failure triggers restoration before the return is rejected.*
 
 [PlantUML source](diagrams/ReturnSaveFailure.puml)
 
@@ -350,7 +363,7 @@ are omitted.
 
 [![Equipment identity class diagram: handlers manage records; loans store the permanent equipment identity and an optional active reference.](images/EquipmentIdentity.svg)](images/EquipmentIdentity.svg)
 
-*Figure 7. Equipment identity separates stored history keys from an active equipment-object reference.*
+*Figure 8. Equipment identity separates stored history keys from an active equipment-object reference.*
 
 [PlantUML source](diagrams/EquipmentIdentity.puml)
 
@@ -371,7 +384,7 @@ Item ID produces `LoanHistoryUnsuccessful` before selection.
 
 [![History query sequence: find the current item, match both identifiers, sort a separate list and display it without saving.](images/HistorySequence.svg)](images/HistorySequence.svg)
 
-*Figure 8. A history query sorts a selected copy and leaves the managed records unchanged.*
+*Figure 9. A history query sorts a selected copy and leaves the managed records unchanged.*
 
 [PlantUML source](diagrams/HistorySequence.puml)
 
@@ -461,7 +474,7 @@ The diagram omits model construction and ordinary availability checks to focus o
 
 [![Optional issue-date sequence: validate required input, read the local date once, save explicit dates and then publish the loan.](images/LoanDateDefault.svg)](images/LoanDateDefault.svg)
 
-*Figure 9. The optional date is resolved during command parsing and stored as an ordinary explicit date.*
+*Figure 10. The optional date is resolved during command parsing and stored as an ordinary explicit date.*
 
 [PlantUML source](diagrams/LoanDateDefault.puml)
 
@@ -559,7 +572,7 @@ words before lookup. This does not make other command names or fields case-insen
 
 [![Help sequence: EqmManager calls Help with a topic, which prints the menu, one command or the full reference without using record or storage handlers.](images/HelpSequence.svg)](images/HelpSequence.svg)
 
-*Figure 10. Help selects the requested text and returns control to the command loop.*
+*Figure 11. Help selects the requested text and returns control to the command loop.*
 
 [PlantUML source](diagrams/HelpSequence.puml)
 
@@ -653,7 +666,7 @@ the original physical item instead of appearing in the replacement item's histor
 
 [![Maintenance sequence: console input, validation, permanent identity resolution and saving before appending to live records](images/MaintenanceRecordSequence.svg)](images/MaintenanceRecordSequence.svg)
 
-*Figure 11. Recording maintenance saves the proposed list before publishing the new record.*
+*Figure 12. Recording maintenance saves the proposed list before publishing the new record.*
 
 [PlantUML source](diagrams/MaintenanceRecordSequence.puml)
 
@@ -712,7 +725,7 @@ file replacement outside the command-routing logic.
 
 [![Maintenance and backup classes: handler references, maintenance record ownership, storage dependencies and restore scope](images/MaintenanceBackupClasses.svg)](images/MaintenanceBackupClasses.svg)
 
-*Figure 12. Maintenance owns a separate history while backup coordinates the shared equipment and loan handlers.*
+*Figure 13. Maintenance owns a separate history while backup coordinates the shared equipment and loan handlers.*
 
 [PlantUML source](diagrams/MaintenanceBackupClasses.puml)
 
@@ -759,7 +772,7 @@ backup format and are not changed by the restore operation.
 
 [![Restore sequence: validate staged records, replace the live files, and restore every captured original after a failure.](images/BackupRestoreSequence.svg)](images/BackupRestoreSequence.svg)
 
-*Figure 13. Restore validates a complete snapshot before replacement and rolls back captured live files on failure.*
+*Figure 14. Restore validates a complete snapshot before replacement and rolls back captured live files on failure.*
 
 [PlantUML source](diagrams/BackupRestoreSequence.puml)
 
@@ -817,7 +830,7 @@ the replacement's serviceability with its new issue snapshot.
 
 [![Loan assessment object diagram: one returned loan owns separate issue and return snapshots while the live item may continue to change.](images/LoanAssessmentObject.svg)](images/LoanAssessmentObject.svg)
 
-*Figure 14. A returned loan owns copied issue and return values rather than reading historical condition from the current item.*
+*Figure 15. A returned loan owns copied issue and return values rather than reading historical condition from the current item.*
 
 [PlantUML source](diagrams/LoanAssessmentObject.puml)
 
@@ -907,7 +920,7 @@ Duplicate IDs are rejected because replacing an existing entry could detach loan
 [![Equipment addition: reject an existing Item ID or save before appending a new item](images/EquipmentAdditionSequence.svg)](images/EquipmentAdditionSequence.svg)
 
 <!-- @@author holsoma -->
-*Figure 15. Equipment addition rejects duplicate Item IDs and saves new items before insertion.*
+*Figure 16. Equipment addition rejects duplicate Item IDs and saves new items before insertion.*
 <!-- @@author -->
 
 [PlantUML source](diagrams/EquipmentAdditionSequence.puml)
@@ -962,7 +975,7 @@ save files or consume identifiers.
 [![Equipment filtering: parse criteria, inspect current loans and display original matching items without saving](images/EquipmentFilterSequence.svg)](images/EquipmentFilterSequence.svg)
 
 <!-- @@author holsoma -->
-*Figure 16. Equipment filtering displays matching items without changing records or saved files.*
+*Figure 17. Equipment filtering displays matching items without changing records or saved files.*
 <!-- @@author -->
 
 [PlantUML source](diagrams/EquipmentFilterSequence.puml)
@@ -1009,7 +1022,7 @@ For an existing camera `001`, `update id/001 i/Film Camera cond/5` follows this 
 [![Equipment update: validate and save the proposed inventory before changing the existing camera](images/equipment-update-sequence.svg)](images/equipment-update-sequence.svg)
 
 <!-- @@author holsoma -->
-*Figure 17. Equipment updates validate and save proposed details before changing the original object.*
+*Figure 18. Equipment updates validate and save proposed details before changing the original object.*
 <!-- @@author -->
 
 [PlantUML source](diagrams/equipment-updates/equipment-update-sequence.puml)
@@ -1067,7 +1080,7 @@ diagnostics out of normal command output.
 [![Logging lifecycle: configure shared output, run the application and close the session](images/LoggingLifecycle.svg)](images/LoggingLifecycle.svg)
 
 <!-- @@author holsoma -->
-*Figure 18. Shared logging is configured at startup and closed when the application ends.*
+*Figure 19. Shared logging is configured at startup and closed when the application ends.*
 <!-- @@author -->
 
 [PlantUML source](diagrams/LoggingLifecycle.puml)
@@ -1132,11 +1145,11 @@ The reference date is supplied to the method instead of being obtained directly 
 
 [![Overdue-loan classes: the manager delegates to a loan handler, which manages loans that own the overdue rule](images/OverdueLoanClasses.svg)](images/OverdueLoanClasses.svg)
 
-*Figure 19. Classes responsible for identifying and displaying overdue loans.*
+*Figure 20. Classes responsible for identifying and displaying overdue loans.*
 
 [PlantUML source](diagrams/OverdueLoanClasses.puml)
 
-Figure 19 focuses on the three classes that own command routing, selection and the overdue rule. The navigable
+Figure 20 focuses on the three classes that own command routing, selection and the overdue rule. The navigable
 associations show that one `EqmManager` delegates to one `LoanHandler`, which manages zero or more `Loan` objects.
 The temporary result collection and display utility are omitted because they do not change
 these responsibilities.
@@ -1147,11 +1160,11 @@ When the user enters `list overdue`, `EqmManager` obtains the current local date
 
 [![Overdue-loan sequence: read one reference date, evaluate each managed loan and display the selected records](images/OverdueLoanSequence.svg)](images/OverdueLoanSequence.svg)
 
-*Figure 20. The `list overdue` command reuses one reference date and does not change managed records.*
+*Figure 21. The `list overdue` command reuses one reference date and does not change managed records.*
 
 [PlantUML source](diagrams/OverdueLoanSequence.puml)
 
-Figure 20 reuses the single reference date while the handler evaluates each managed loan. The `loop` represents
+Figure 21 reuses the single reference date while the handler evaluates each managed loan. The `loop` represents
 the managed collection, and the guarded `opt` fragment adds only matching loans. Display formatting is delegated
 to `LoanView`; diagnostic logging and individual print calls are omitted. The query performs no storage calls or
 model mutations.
