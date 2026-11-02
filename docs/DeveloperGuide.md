@@ -298,7 +298,7 @@ assessment defaults to serviceable.
 
 #### Save failures and recovery
 
-The next diagram expands the storage step in Figure 4. It shows a loan or sequence save failing after the
+The next diagram expands the storage step in Figure 5. It shows a loan or sequence save failing after the
 equipment proposal was written. An equipment-save failure enters the same restoration loop. Only configured
 files are captured. A snapshot records regular-file bytes, absence or a pre-existing non-regular path.
 
@@ -1217,8 +1217,10 @@ equipment, loan list, saved files and next Loan ID unchanged.
 **Main success scenario:** The officer enters a valid `return` command for an active Loan ID. snAp prepares
 detached equipment and loan proposals, saves them, then applies the assessment and retains the loan as returned.
 
-**Extension:** If validation or saving fails, snAp reports the failure, keeps the live loan active and attempts to
-restore every file captured before the write. A restoration failure is included in the warning to inspect saved data.
+**Extensions:**
+- If validation fails, snAp reports the reason and leaves the equipment, loan list and saved files unchanged.
+- If saving fails, snAp reports the failure, keeps the live loan active and attempts to
+  restore every file captured before the write. A restoration failure is included in the warning to inspect saved data.
 
 <a id="non-functional-requirements"></a>
 

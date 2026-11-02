@@ -34,10 +34,21 @@ activate Live
 Live --> Backup: original snapshots
 deactivate Live
 alt replacement, bundle clearing or reload fails
-    Backup -> Live: replace equipment, loans and sequence
-    activate Live
-    Live --> Backup: failure
-    deactivate Live
+    alt file replacement fails
+        Backup -> Live: replace equipment, loans and sequence
+        activate Live
+        Live --> Backup: failure
+        deactivate Live
+    else bundle clearing or reload fails
+        Backup -> Live: replace equipment, loans and sequence
+        activate Live
+        Live --> Backup
+        deactivate Live
+        Backup -> Handlers: clear and save bundles; reload handlers
+        activate Handlers
+        Handlers --> Backup: failure
+        deactivate Handlers
+    end
     loop captured original files
         Backup -> Live: restore()
         activate Live
