@@ -707,6 +707,8 @@ public class LoanHandler {
         return snapshot == null ? missing : snapshot.getRemarks().isEmpty() ? "None" : snapshot.getRemarks();
     }
 
+    // @@author
+
     // @@author Rohita-29
 
     /** Extracts and validates a loan ID from a viewing command. */

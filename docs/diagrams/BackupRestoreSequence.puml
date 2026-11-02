@@ -1,0 +1,75 @@
+@startuml BackupRestoreSequence
+!include style.puml
+hide footbox
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 180
+
+participant ":EqmManager" as Manager
+participant ":BackupHandler" as Backup
+participant "backup files" as Source
+participant "staging directory" as Stage
+participant "live data files" as Live
+participant "equipment, loan and\nbundle handlers" as Handlers
+
+Manager -> Backup: restoreBackup(input)
+activate Backup
+Backup -> Source: read files and verify manifest
+activate Source
+Source --> Backup: snapshot
+deactivate Source
+Backup -> Stage: writeLiveFiles(snapshot)
+activate Stage
+Stage --> Backup
+deactivate Stage
+Backup -> Handlers: load staged equipment and loans
+activate Handlers
+Handlers --> Backup: validated records
+deactivate Handlers
+note over Stage, Handlers
+Temporary handlers validate the staged records
+before any live file is replaced.
+end note
+Backup -> Live: capture original files
+activate Live
+Live --> Backup: original snapshots
+deactivate Live
+alt replacement, bundle clearing or reload fails
+    alt file replacement fails
+        Backup -> Live: replace equipment, loans and sequence
+        activate Live
+        Live --> Backup: failure
+        deactivate Live
+    else bundle clearing or reload fails
+        Backup -> Live: replace equipment, loans and sequence
+        activate Live
+        Live --> Backup
+        deactivate Live
+        Backup -> Handlers: clear and save bundles; reload handlers
+        activate Handlers
+        Handlers --> Backup: failure
+        deactivate Handlers
+    end
+    loop captured original files
+        Backup -> Live: restore()
+        activate Live
+        Live --> Backup
+        deactivate Live
+    end
+    Backup -> Handlers: reload restored records
+    activate Handlers
+    Handlers --> Backup
+    deactivate Handlers
+    Backup --> Manager: BackupUnsuccessful
+else all changes succeed
+    Backup -> Live: replace equipment, loans and sequence
+    activate Live
+    Live --> Backup
+    deactivate Live
+    Backup -> Handlers: clear and save bundles; reload handlers
+    activate Handlers
+    Handlers --> Backup: reloaded state
+    deactivate Handlers
+    Backup --> Manager: source path
+end
+deactivate Backup
+@enduml
