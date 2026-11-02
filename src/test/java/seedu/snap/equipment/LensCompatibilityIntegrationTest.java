@@ -21,7 +21,7 @@ import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 /** Tests Lens compatibility parsing, display and persistence. */
 class LensCompatibilityIntegrationTest {
     private static final String FULL_LENS_COMMAND =
-            "add-eqm name/Standard Zoom e/101 type/lens cond/8 "
+            "eqm-add name/Standard Zoom e/101 type/lens cond/8 "
                     + "zoom/24-70 mm mount/Canon RF "
                     + "sensor/Full frame damage/NONE remarks/Ready";
 
@@ -45,7 +45,7 @@ class LensCompatibilityIntegrationTest {
         Lens lens = assertInstanceOf(
                 Lens.class,
                 EquipmentHandler.parseEquipment(
-                        "add-eqm name/Prime Lens e/102 type/lens cond/9"));
+                        "eqm-add name/Prime Lens e/102 type/lens cond/9"));
 
         assertEquals(
                 CompatibilityText.UNSPECIFIED,
@@ -65,7 +65,7 @@ class LensCompatibilityIntegrationTest {
         Lens lens = assertInstanceOf(
                 Lens.class,
                 EquipmentHandler.parseEquipment(
-                        "add-eqm name/Portrait Lens e/103 type/lens cond/7 "
+                        "eqm-add name/Portrait Lens e/103 type/lens cond/7 "
                                 + "mount/Nikon Z sensor/Full frame"));
 
         assertEquals(
@@ -82,13 +82,13 @@ class LensCompatibilityIntegrationTest {
     @Test
     void parseEquipment_invalidLensFields_throwException() {
         String repeatedMount =
-                "add-eqm name/Lens e/104 type/lens cond/5 "
+                "eqm-add name/Lens e/104 type/lens cond/5 "
                         + "mount/Canon RF mount/Nikon Z";
         String wrongOrder =
-                "add-eqm name/Lens e/105 type/lens cond/5 "
+                "eqm-add name/Lens e/105 type/lens cond/5 "
                         + "sensor/APS-C mount/Canon RF";
         String batteryField =
-                "add-eqm name/Lens e/106 type/lens cond/5 "
+                "eqm-add name/Lens e/106 type/lens cond/5 "
                         + "battery/LP-E17";
 
         assertThrows(

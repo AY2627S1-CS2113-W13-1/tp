@@ -11,7 +11,7 @@ import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 
 /** Tests equipment addition boundaries, malformed input, and recovery without changing other features. */
 class EquipmentAdditionTest {
-    private static final String FORMAT_ERROR = "Invalid format. Use: add-eqm name/[ITEM] e/[ITEM ID] "
+    private static final String FORMAT_ERROR = "Invalid format. Use: eqm-add name/[ITEM] e/[ITEM ID] "
             + "type/[TYPE] cond/[CONDITION]";
 
     @Test
@@ -88,10 +88,10 @@ class EquipmentAdditionTest {
         EquipmentHandler handler = seededInventory();
         String[] commands = {
             "addi/Camera e/002 type/camera cond/1",
-            "add-eqm name/Cameraid/002 type/camera cond/1",
-            "add-eqm name/Camera e/002type/camera cond/1",
-            "add-eqm name/Camera e/002 type/cameracond/1",
-            "add-eqm name/Cameraid/002type/cameracond/1"
+            "eqm-add name/Cameraid/002 type/camera cond/1",
+            "eqm-add name/Camera e/002type/camera cond/1",
+            "eqm-add name/Camera e/002 type/cameracond/1",
+            "eqm-add name/Cameraid/002type/cameracond/1"
         };
         for (String input : commands) {
             assertRejected(handler, input, FORMAT_ERROR);
@@ -114,12 +114,12 @@ class EquipmentAdditionTest {
             throws EquipmentAdditionUnsuccessful {
         EquipmentHandler handler = seededInventory();
         String[] inputs = {
-            "add-eqm name/USB e/003 reader e/002 type/lens cond/1",
-            "add-eqm name/USB e/+03 reader e/002 type/lens cond/1",
-            "add-eqm name/USB e/-03 reader e/002 type/lens cond/1",
-            "add-eqm name/USB e/ reader e/002 type/lens cond/1",
-            "add-eqm name/USB e/002 e/card type/lens cond/1",
-            "add-eqm name/USB e/002 type/lens e/card cond/1"
+            "eqm-add name/USB e/003 reader e/002 type/lens cond/1",
+            "eqm-add name/USB e/+03 reader e/002 type/lens cond/1",
+            "eqm-add name/USB e/-03 reader e/002 type/lens cond/1",
+            "eqm-add name/USB e/ reader e/002 type/lens cond/1",
+            "eqm-add name/USB e/002 e/card type/lens cond/1",
+            "eqm-add name/USB e/002 type/lens e/card cond/1"
         };
         for (String input : inputs) {
             assertRejected(handler, input, FORMAT_ERROR);
@@ -139,7 +139,7 @@ class EquipmentAdditionTest {
     @Test
     void parseEquipment_fieldWhitespace_trimsValues() throws EquipmentAdditionUnsuccessful {
         Equipment item = EquipmentHandler.parseEquipment(
-                "add-eqm   name/  Film Camera  \te/001  type/ camera  cond/1  ");
+                "eqm-add   name/  Film Camera  \te/001  type/ camera  cond/1  ");
         assertEquals("Film Camera", item.getItemName());
         assertEquals("001", item.getItemId());
         assertEquals("camera", item.getType());
@@ -184,16 +184,16 @@ class EquipmentAdditionTest {
             null, "", " ", "add", "additions name/Camera e/002 type/camera cond/1",
             "add Camera e/002 type/camera cond/1",
             "add i/Camera id/002 type/camera cond/1",
-            "add-eqm name/Camera type/camera cond/1",
-            "add-eqm name/Camera e/002 cond/1",
-            "add-eqm name/Camera e/002 type/camera",
+            "eqm-add name/Camera type/camera cond/1",
+            "eqm-add name/Camera e/002 cond/1",
+            "eqm-add name/Camera e/002 type/camera",
             "add e/002 name/Camera type/camera cond/1",
-            "add-eqm name/Camera type/camera e/002 cond/1",
+            "eqm-add name/Camera type/camera e/002 cond/1",
             "add unexpected name/Camera e/002 type/camera cond/1",
-            "add-eqm name/Camera name/Tripod e/002 type/camera cond/1",
-            "add-eqm name/Camera e/002 e/003 type/camera cond/1",
-            "add-eqm name/Camera e/002 type/camera type/battery cond/1",
-            "add-eqm name/Camera e/002 type/camera cond/1 cond/2"
+            "eqm-add name/Camera name/Tripod e/002 type/camera cond/1",
+            "eqm-add name/Camera e/002 e/003 type/camera cond/1",
+            "eqm-add name/Camera e/002 type/camera type/battery cond/1",
+            "eqm-add name/Camera e/002 type/camera cond/1 cond/2"
         };
         for (String input : commands) {
             List<Equipment> before = List.copyOf(handler.getEquipmentList());
@@ -208,7 +208,7 @@ class EquipmentAdditionTest {
         EquipmentHandler handler = seededInventory();
         assertRejected(handler, command("Camera", "001", "camera", "11"),
                 "Condition must be a whole number from 1 to 10.");
-        assertRejected(handler, "add-eqm name/Camera e/001", FORMAT_ERROR);
+        assertRejected(handler, "eqm-add name/Camera e/001", FORMAT_ERROR);
     }
 
     @Test
@@ -240,7 +240,7 @@ class EquipmentAdditionTest {
     /** Builds an add command with optional remarks. */
     private String command(String name, String id, String type, String condition, String remarks) {
         String remarkField = remarks.isEmpty() ? "" : " remarks/" + remarks;
-        return "add-eqm name/" + name + " e/" + id + " type/" + type + " cond/" + condition + remarkField;
+        return "eqm-add name/" + name + " e/" + id + " type/" + type + " cond/" + condition + remarkField;
     }
 
     /** Checks the error reason and protects the inventory's contents and order on every rejection. */

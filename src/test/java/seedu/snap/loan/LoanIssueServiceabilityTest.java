@@ -32,18 +32,18 @@ class LoanIssueServiceabilityTest {
     @BeforeEach
     void setUp() throws Exception {
         inventory = new EquipmentHandler();
-        inventory.addEquipment("add i/Camera id/001 type/camera cond/2");
+        inventory.addEquipment("eqm-add name/Camera e/001 type/camera cond/2");
         file = directory.resolve("loans.txt");
     }
 
     @Test
     void newLoan_returnAndLaterEquipmentChange_preserveIssueServiceability() throws Exception {
         LoanHandler handler = new LoanHandler(inventory, file);
-        Loan loan = handler.addLoan("loan id/001 b/002 issued/01-10-26 due/20-10-26");
+        Loan loan = handler.addLoan("loan-add e/001 u/002 issued/01-10-26 due/20-10-26");
         assertEquals(Boolean.TRUE, loan.getIssueServiceability());
         assertEquals(Boolean.TRUE, loan.returnedCopy().getIssueServiceability());
-        handler.returnLoan("return loan/001 serviceable/no damage/SENSOR_DAMAGE cond/8 remarks/Repair needed");
-        inventory.updateEquipment("update id/001 cond/4");
+        handler.returnLoan("loan-return l/001 serviceable/no damage/SENSOR_DAMAGE cond/8 remarks/Repair needed");
+        inventory.updateEquipment("eqm-update e/001 cond/4");
 
         Loan restored = LoanStorage.load(file).getFirst();
         assertEquals(Boolean.TRUE, loan.getIssueServiceability());
@@ -61,11 +61,11 @@ class LoanIssueServiceabilityTest {
         Loan legacy = handler.getLoanList().getFirst();
 
         assertNull(legacy.getIssueServiceability());
-        handler.updateLoan("update loan/001 b/003 due/21-10-26");
+        handler.updateLoan("loan-update l/001 u/003 due/21-10-26");
         assertNull(legacy.getIssueServiceability());
         assertFalse(Files.readString(file).contains("issueServiceable/"));
         assertNull(legacy.returnedCopy().getIssueServiceability());
-        handler.returnLoan("return loan/001 serviceable/yes damage/NONE cond/3");
+        handler.returnLoan("loan-return l/001 serviceable/yes damage/NONE cond/3");
 
         assertNull(LoanStorage.load(file).getFirst().getIssueServiceability());
         assertTrue(legacy.getReturnAssessment().serviceable());
@@ -78,14 +78,14 @@ class LoanIssueServiceabilityTest {
         LoanHandler handler = new LoanHandler(inventory, file);
         handler.loadFromStorage();
         Loan legacy = handler.getLoanList().getFirst();
-        inventory.addEquipment("add i/Lens id/002 type/lens cond/5");
+        inventory.addEquipment("eqm-add name/Lens e/002 type/lens cond/5");
 
-        handler.updateLoan("update loan/001 id/001");
+        handler.updateLoan("loan-update l/001 e/001");
         assertNull(legacy.getIssueServiceability());
-        handler.updateLoan("update loan/001 id/002");
+        handler.updateLoan("loan-update l/001 e/002");
         assertEquals(Boolean.TRUE, legacy.getIssueServiceability());
         assertEquals("lens", legacy.getIssueConditionSnapshot().getEquipmentType());
-        handler.updateLoan("update loan/001 b/003");
+        handler.updateLoan("loan-update l/001 u/003");
         assertEquals(Boolean.TRUE, legacy.getIssueServiceability());
         assertEquals(Boolean.TRUE, LoanStorage.load(file).getFirst().getIssueServiceability());
     }
@@ -107,7 +107,7 @@ class LoanIssueServiceabilityTest {
     @ValueSource(strings = {"", "true", "false", "YES", "maybe", "yes issueServiceable/no"})
     void load_invalidIssueServiceability_rejectsRecordWithoutReplacingLiveLoans(String value) throws Exception {
         LoanHandler handler = new LoanHandler(inventory, file);
-        Loan active = handler.addLoan("loan id/001 b/002 issued/01-10-26 due/20-10-26");
+        Loan active = handler.addLoan("loan-add e/001 u/002 issued/01-10-26 due/20-10-26");
         Files.writeString(file, RECORD + "returned/false " + ISSUE + " issueServiceable/" + value);
         String damaged = Files.readString(file);
 

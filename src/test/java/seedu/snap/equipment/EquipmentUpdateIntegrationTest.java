@@ -29,10 +29,10 @@ class EquipmentUpdateIntegrationTest {
     /** Supplies non-default details and damage for every supported equipment subclass. */
     private static Stream<String> equipmentCommands() {
         return Stream.of(
-                "add-eqm name/Original e/001 type/camera cond/1 sensor/full frame damage/SENSOR_DAMAGE",
-                "add-eqm name/Original e/001 type/lens cond/1 zoom/24-70mm damage/SCRATCHED_GLASS",
-                "add-eqm name/Original e/001 type/battery cond/1 capacity/2000mAh damage/SWELLING",
-                "add-eqm name/Original e/001 type/tripod cond/1 thread/1-4 inch damage/BENT_LEG");
+                "eqm-add name/Original e/001 type/camera cond/1 sensor/full frame damage/SENSOR_DAMAGE",
+                "eqm-add name/Original e/001 type/lens cond/1 zoom/24-70mm damage/SCRATCHED_GLASS",
+                "eqm-add name/Original e/001 type/battery cond/1 capacity/2000mAh damage/SWELLING",
+                "eqm-add name/Original e/001 type/tripod cond/1 thread/1-4 inch damage/BENT_LEG");
     }
 
     @ParameterizedTest
@@ -42,10 +42,10 @@ class EquipmentUpdateIntegrationTest {
         Path loanFile = temporaryDirectory.resolve("loans.txt");
         EquipmentHandler handler = new EquipmentHandler(equipmentFile);
         Equipment original = handler.addEquipment(command + " remarks/Serial label checked");
-        Equipment other = handler.addEquipment("add-eqm name/Other e/999 type/lens cond/10");
+        Equipment other = handler.addEquipment("eqm-add name/Other e/999 type/lens cond/10");
         String details = original.getDetails();
         LoanHandler loans = new LoanHandler(handler, loanFile);
-        Loan active = loans.addLoan("add-loan e/001 u/002 issued/01-10-26 due/02-10-26");
+        Loan active = loans.addLoan("loan-add e/001 u/002 issued/01-10-26 due/02-10-26");
         assertEquals("001", active.getLoanId());
         assertEquals("001", original.getLoanId());
 
@@ -60,7 +60,7 @@ class EquipmentUpdateIntegrationTest {
         assertEquals("Serial label checked", original.getRemarks());
         assertEquals(active.getLoanId(), original.getLoanId());
         assertTrue(original.isLoaned());
-        assertSame(original, EquipmentFilter.parse("filter-eqm e/001 status/loaned")
+        assertSame(original, EquipmentFilter.parse("eqm-filter e/001 status/loaned")
                 .apply(handler.getEquipmentList(), loans).getFirst());
         assertThrows(EquipmentDeletionUnsuccessful.class, () -> handler.deleteEquipment("eqm-delete e/001"));
 
@@ -81,7 +81,7 @@ class EquipmentUpdateIntegrationTest {
 
         active.setReturned(true);
         assertFalse(original.isLoaned());
-        assertSame(original, EquipmentFilter.parse("filter-eqm e/001 status/available")
+        assertSame(original, EquipmentFilter.parse("eqm-filter e/001 status/available")
                 .apply(handler.getEquipmentList(), loans).getFirst());
         assertSame(original, handler.deleteEquipment("eqm-delete e/001"));
     }
@@ -94,7 +94,7 @@ class EquipmentUpdateIntegrationTest {
         Equipment original = handler.addEquipment(command);
         String details = original.getDetails();
         LoanHandler loans = new LoanHandler(handler);
-        Loan active = loans.addLoan("add-loan e/001 u/002 issued/01-10-26 due/02-10-26");
+        Loan active = loans.addLoan("loan-add e/001 u/002 issued/01-10-26 due/02-10-26");
         Files.delete(file);
         Files.createDirectory(file);
         Path sentinel = file.resolve("keep.txt");

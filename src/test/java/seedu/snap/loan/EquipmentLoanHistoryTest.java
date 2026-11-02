@@ -51,8 +51,8 @@ class EquipmentLoanHistoryTest {
         loanFile = temporaryDirectory.resolve("loans.txt");
         sequenceFile = temporaryDirectory.resolve("loan-sequence.txt");
         equipment = new EquipmentHandler(equipmentFile);
-        camera = equipment.addEquipment("add-eqm name/Camera e/001 type/camera cond/4 sensor/APS-C");
-        equipment.addEquipment("add-eqm name/Lens e/002 type/lens cond/5 zoom/24-70mm");
+        camera = equipment.addEquipment("eqm-add name/Camera e/001 type/camera cond/4 sensor/APS-C");
+        equipment.addEquipment("eqm-add name/Lens e/002 type/lens cond/5 zoom/24-70mm");
         loans = new LoanHandler(equipment, loanFile, sequenceFile);
     }
 
@@ -117,7 +117,7 @@ class EquipmentLoanHistoryTest {
         String oldRecordId = camera.getRecordId();
         assertSame(camera, equipment.deleteEquipment("eqm-delete e/001"));
         Equipment replacement = equipment.addEquipment(
-                "add-eqm name/Camera e/001 type/" + replacementType + " cond/4");
+                "eqm-add name/Camera e/001 type/" + replacementType + " cond/4");
 
         assertNotEquals(oldRecordId, replacement.getRecordId());
         assertTrue(loans.getLoanHistory("eqm-loan-history e/001").isEmpty());
@@ -150,10 +150,10 @@ class EquipmentLoanHistoryTest {
         restartedLoans.loadFromStorage();
         assertThrows(LoanHistoryUnsuccessful.class, () -> restartedLoans.getLoanHistory("eqm-loan-history e/001"));
 
-        Equipment replacement = restartedEquipment.addEquipment("add-eqm name/Camera e/001 type/camera cond/4");
+        Equipment replacement = restartedEquipment.addEquipment("eqm-add name/Camera e/001 type/camera cond/4");
         assertNotEquals(oldRecordId, replacement.getRecordId());
         assertTrue(restartedLoans.getLoanHistory("eqm-loan-history e/001").isEmpty());
-        Loan current = restartedLoans.addLoan("add-loan e/001 u/222 issued/03-10-26 due/04-10-26");
+        Loan current = restartedLoans.addLoan("loan-add e/001 u/222 issued/03-10-26 due/04-10-26");
         restartedEquipment = new EquipmentHandler(equipmentFile);
         restartedEquipment.loadFromStorage();
         LoanHandler reloadedLoans = new LoanHandler(restartedEquipment, loanFile, sequenceFile);
@@ -232,7 +232,7 @@ class EquipmentLoanHistoryTest {
 
     /** Supplies malformed history commands and unsupported item ID formats. */
     private static Stream<String> invalidHistoryCommands() {
-        return Stream.of(null, "", "history", "history id", "eqm-loan-history e/", "eqm-loan-history e/000",
+        return Stream.of(null, "", "history", "eqm-loan-history", "eqm-loan-history e/", "eqm-loan-history e/000",
                 "eqm-loan-history e/01", "eqm-loan-history e/1000", "eqm-loan-history e/abc",
                 "eqm-loan-history e/-01", "history item/001", "history loan/001", "history /id001",
                 "eqm-loan-history e/001 extra", "eqm-loan-history e/001 e/002",
@@ -421,7 +421,7 @@ class EquipmentLoanHistoryTest {
 
     /** Creates loans with distinct borrower IDs so history selection is independent of table layout. */
     private Loan addLoan(String itemId, String borrowerId, String issued, String due) throws Exception {
-        return loans.addLoan("add-loan e/" + itemId + " u/" + borrowerId + " issued/" + issued + " due/" + due);
+        loans.addLoan("loan-add e/" + itemId + " u/" + borrowerId + " issued/" + issued + " due/" + due);
     }
 
     /** Completes a loan without removing the record needed by history queries. */

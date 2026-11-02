@@ -29,7 +29,7 @@ import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 
 /** Checks equipment availability through successful, rejected, returned, and deleted loans. */
 class EquipmentAvailabilityTest {
-    private static final String LOAN = "add-loan e/001 u/002 issued/01-10-26 due/02-10-26";
+    private static final String LOAN = "loan-add e/001 u/002 issued/01-10-26 due/02-10-26";
     private EquipmentHandler equipment;
     private Equipment camera;
     private LoanHandler loans;
@@ -39,7 +39,7 @@ class EquipmentAvailabilityTest {
     @BeforeEach
     void setUp() throws EquipmentAdditionUnsuccessful {
         equipment = new EquipmentHandler();
-        camera = equipment.addEquipment("add-eqm name/Camera e/001 type/camera cond/1");
+        camera = equipment.addEquipment("eqm-add name/Camera e/001 type/camera cond/1");
         loans = new LoanHandler(equipment);
     }
 
@@ -190,7 +190,7 @@ class EquipmentAvailabilityTest {
         Loan returned = loans.addLoan(LOAN);
         returned.setReturned(true);
         equipment.deleteEquipment("eqm-delete e/001");
-        Equipment replacement = equipment.addEquipment("add-eqm name/Replacement tripod e/001 type/tripod cond/4");
+        Equipment replacement = equipment.addEquipment("eqm-add name/Replacement tripod e/001 type/tripod cond/4");
         Loan active = loans.addLoan(LOAN.replace("01-10-26", "02-10-26"));
 
         assertSame(returned, loans.deleteLoan("loan-delete l/001"));
@@ -228,9 +228,9 @@ class EquipmentAvailabilityTest {
             System.setOut(captured);
             EqmManager manager = new EqmManager(temporaryDirectory);
             manager.executeInput(LOAN);
-            manager.executeInput("add-eqm name/Camera e/001 type/camera cond/1");
+            manager.executeInput("eqm-add name/Camera e/001 type/camera cond/1");
             manager.executeInput(LOAN);
-            manager.executeInput("list-eqm");
+            manager.executeInput("eqm-list");
             manager.executeInput("eqm-delete e/001");
             assertTrue(output.toString(StandardCharsets.UTF_8).contains("Item ID 001 does not exist."));
             assertTrue(output.toString(StandardCharsets.UTF_8).contains("[OK] Loan 001 issued."));

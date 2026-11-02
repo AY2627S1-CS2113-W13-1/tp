@@ -28,14 +28,15 @@ import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 
 /** Tests loan storage validation and failure-safe file replacement. */
 class LoanStorageTest {
-    private static final String LOAN = "loan id/001 b/002 issued/01-10-26 due/02-10-26";
+    private static final String LOAN = "loan-add e/001 u/002 issued/01-10-26 due/02-10-26";
+    private static final String LEGACY_LOAN = "loan id/001 b/002 issued/01-10-26 due/02-10-26";
     @TempDir
     private Path temporaryDirectory;
 
     @Test
     void load_malformedRecord_reportsTheLineNumber() throws IOException {
         Path file = temporaryDirectory.resolve("loans.txt");
-        Files.writeString(file, "loan id/001 b/002 issued/01-10-26 due/02-10-26\nnot a loan record\n");
+        Files.writeString(file, LEGACY_LOAN + "\nnot a loan record\n");
 
         IOException exception = assertThrows(IOException.class, () -> LoanStorage.load(file));
 
@@ -45,7 +46,7 @@ class LoanStorageTest {
     @Test
     void load_invalidReturnedStatus_rejectsTheSavedFile() throws IOException {
         Path file = temporaryDirectory.resolve("loans.txt");
-        Files.writeString(file, "loan id/001 b/002 issued/01-10-26 due/02-10-26 returned/maybe\n");
+        Files.writeString(file, LEGACY_LOAN + " returned/maybe\n");
 
         IOException exception = assertThrows(IOException.class, () -> LoanStorage.load(file));
 
@@ -59,7 +60,8 @@ class LoanStorageTest {
         Path file = temporaryDirectory.resolve("loans.txt");
         Files.writeString(file,
                 "loan id/001 b/002 issued/01-09-26 due/02-09-26 returned/true\n"
-                + "loan id/999 b/003 issued/01-09-26 due/02-09-26 returned/true\n" + LOAN + "\n");
+                + "loan id/999 b/003 issued/01-09-26 due/02-09-26 returned/true\n"
+                + LEGACY_LOAN + "\n");
         LoanHandler handler = new LoanHandler(equipment, file);
 
         handler.loadFromStorage();
@@ -86,9 +88,9 @@ class LoanStorageTest {
         Path file = temporaryDirectory.resolve("loans.txt");
         LoanHandler handler = new LoanHandler(equipment, file);
         Loan original = handler.addLoan(LOAN);
-        String other = LOAN.replace("id/001", "id/002");
+        String other = LOAN.replace("e/001", "e/002");
         String[] invalidRecords = {
-            other + "\n" + LOAN.replace("id/001", "id/999") + "\n",
+            other + "\n" + LOAN.replace("e/001", "e/999") + "\n",
             other + "\n" + other + "\n"
         };
 
@@ -117,7 +119,7 @@ class LoanStorageTest {
         Path file = temporaryDirectory.resolve("loans.txt");
         LoanHandler handler = new LoanHandler(equipment, file);
         Loan original = handler.addLoan(LOAN);
-        Files.writeString(file, LOAN.replace("id/001", "id/002") + "\n");
+        Files.writeString(file, LOAN.replace("e/001", "e/002") + "\n");
 
         IOException error = assertThrows(IOException.class, handler::loadFromStorage);
 
@@ -131,7 +133,7 @@ class LoanStorageTest {
     @Test
     void load_replacesEquipmentAndLoans_detachesOldReferences() throws Exception {
         EquipmentHandler equipment = new EquipmentHandler(temporaryDirectory.resolve("equipment.txt"));
-        Equipment previousItem = equipment.addEquipment("add-eqm name/Camera e/001 type/camera cond/5");
+        Equipment previousItem = equipment.addEquipment("eqm-add name/Camera e/001 type/camera cond/5");
         LoanHandler handler = new LoanHandler(equipment, temporaryDirectory.resolve("loans.txt"));
         Loan previousLoan = handler.addLoan(LOAN);
 
@@ -199,7 +201,7 @@ class LoanStorageTest {
         LoanHandler handler = new LoanHandler(equipment, destination);
         Loan history = handler.addLoan(LOAN);
         history.setReturned(true);
-        Loan active = handler.addLoan("add-loan e/001 u/003 issued/03-10-26 due/04-10-26");
+        Loan active = handler.addLoan("loan-add e/001 u/003 issued/03-10-26 due/04-10-26");
         Files.delete(destination);
         Files.createDirectory(destination);
         Path sentinel = destination.resolve("keep.txt");
@@ -230,7 +232,7 @@ class LoanStorageTest {
     private EquipmentHandler inventoryWithItems(String... ids) throws EquipmentAdditionUnsuccessful {
         EquipmentHandler equipment = new EquipmentHandler();
         for (String id : ids) {
-            equipment.addEquipment("add-eqm name/Camera e/" + id + " type/camera cond/5");
+            equipment.addEquipment("eqm-add name/Camera e/" + id + " type/camera cond/5");
         }
         return equipment;
     }

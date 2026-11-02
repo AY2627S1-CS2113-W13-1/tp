@@ -21,7 +21,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 /** Tests command routing and output for equipment additions and deletions. */
 class EqmManagerTest {
-    private static final String ADD_CAMERA = "add-eqm name/Canon EOS R10 e/001 type/camera cond/1";
+    private static final String ADD_CAMERA = "eqm-add name/Canon EOS R10 e/001 type/camera cond/1";
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
     private PrintStream originalOutput;
     @TempDir
@@ -42,15 +42,15 @@ class EqmManagerTest {
     void deleteEquipment_bundledItem_preservesInventoryAndCompletion() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory);
         manager.executeInput(ADD_CAMERA);
-        manager.executeInput("add-eqm name/Lens e/002 type/lens cond/1");
-        manager.executeInput("add-eqm name/Battery e/003 type/battery cond/1");
-        manager.executeInput("add-bundle name/Camera kit");
+        manager.executeInput("eqm-add name/Lens e/002 type/lens cond/1");
+        manager.executeInput("eqm-add name/Battery e/003 type/battery cond/1");
+        manager.executeInput("bundle-create name/Camera kit");
         manager.executeInput("bundle-add-eqm b/001 001 002 003");
         String saved = Files.readString(temporaryDirectory.resolve("equipment.txt"));
         output.reset();
 
         manager.executeInput("eqm-delete e/001");
-        manager.executeInput("list-bundle");
+        manager.executeInput("bundle-list");
 
         String actual = output.toString(StandardCharsets.UTF_8);
         assertTrue(actual.contains("Cannot delete item ID 001 while it belongs to a bundle."));
@@ -63,7 +63,7 @@ class EqmManagerTest {
     void removeFromBundle_afterRestart_allowsEquipmentDeletion() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory);
         manager.executeInput(ADD_CAMERA);
-        manager.executeInput("add-bundle name/Camera kit");
+        manager.executeInput("bundle-create name/Camera kit");
         manager.executeInput("bundle-add-eqm b/001 001");
         manager.executeInput("exit");
 
@@ -81,7 +81,7 @@ class EqmManagerTest {
 
         output.reset();
         EqmManager afterRestart = new EqmManager(temporaryDirectory);
-        afterRestart.executeInput("list-bundle");
+        afterRestart.executeInput("bundle-list");
         assertFalse(output.toString(StandardCharsets.UTF_8).contains("missing equipment"));
     }
 
@@ -91,8 +91,8 @@ class EqmManagerTest {
         manager.executeInput(ADD_CAMERA);
         output.reset();
 
-        manager.executeInput("add-eqm name/Tripod e/001 type/tripod cond/5");
-        manager.executeInput("add-eqm name/Tripod e/002 type/tripod cond/5");
+        manager.executeInput("eqm-add name/Tripod e/001 type/tripod cond/5");
+        manager.executeInput("eqm-add name/Tripod e/002 type/tripod cond/5");
 
         assertEquals("[ERROR] Item ID 001 already exists." + System.lineSeparator()
                 + "[OK] Equipment 002 added." + System.lineSeparator()
@@ -107,14 +107,14 @@ class EqmManagerTest {
         manager.executeInput(ADD_CAMERA);
         output.reset();
         String[] commands = {
-            "add-eqm name/Tripod e/002",
-            "add-eqm name/Tripod e/002 type/tripod cond/11",
-            "add-eqm name/Tripodid/002 type/tripod cond/5",
-            "add-eqm name/Tripod name/Lens e/002 type/tripod cond/5",
-            "add-eqm name/\u2003 e/002 type/tripod cond/5",
-            "add-eqm name/Tripod e/001 type/tripod cond/5"
+            "eqm-add name/Tripod e/002",
+            "eqm-add name/Tripod e/002 type/tripod cond/11",
+            "eqm-add name/Tripodid/002 type/tripod cond/5",
+            "eqm-add name/Tripod name/Lens e/002 type/tripod cond/5",
+            "eqm-add name/\u2003 e/002 type/tripod cond/5",
+            "eqm-add name/Tripod e/001 type/tripod cond/5"
         };
-        String formatError = "Invalid format. Use: add-eqm name/[ITEM] e/[ITEM ID] type/[TYPE] cond/[CONDITION]";
+        String formatError = "Invalid format. Use: eqm-add name/[ITEM] e/[ITEM ID] type/[TYPE] cond/[CONDITION]";
         String[] errors = {
             formatError, "Condition must be a whole number from 1 to 10.", formatError, formatError,
             "Item name must contain 1 to 100 characters.", "Item ID 001 already exists."
@@ -125,14 +125,14 @@ class EqmManagerTest {
                     output.toString(StandardCharsets.UTF_8), commands[i]);
             output.reset();
         }
-        manager.executeInput("add-eqm name/Tripod e/002 type/tripod cond/5");
+        manager.executeInput("eqm-add name/Tripod e/002 type/tripod cond/5");
         assertEquals("[OK] Equipment 002 added." + System.lineSeparator()
                 + "  Name: \"Tripod\"" + System.lineSeparator()
                 + "  Type: tripod | Condition: 5 | Status: Available" + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
         output.reset();
 
-        manager.executeInput("list-eqm");
+        manager.executeInput("eqm-list");
         String actual = output.toString(StandardCharsets.UTF_8);
         assertTrue(actual.contains("| 001 | Canon EOS R10"));
         assertTrue(actual.contains("| 002 | Tripod"));
@@ -143,13 +143,13 @@ class EqmManagerTest {
     @Test
     void addEquipment_explicitSubtypeDetails_showsSavedDetails() {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("add-eqm name/Camera e/001 type/CAMERA cond/7 sensor/Full frame damage/sensor_damage");
-        manager.executeInput("add-eqm name/Lens e/002 type/lens cond/6 zoom/24 to 70 mm damage/scratched_glass");
-        manager.executeInput("add-eqm name/Battery e/003 type/battery cond/5 capacity/2000 mAh damage/swelling");
-        manager.executeInput("add-eqm name/Tripod e/004 type/tripod cond/4 thread/Quarter inch damage/bent_leg");
+        manager.executeInput("eqm-add name/Camera e/001 type/CAMERA cond/7 sensor/Full frame damage/sensor_damage");
+        manager.executeInput("eqm-add name/Lens e/002 type/lens cond/6 zoom/24 to 70 mm damage/scratched_glass");
+        manager.executeInput("eqm-add name/Battery e/003 type/battery cond/5 capacity/2000 mAh damage/swelling");
+        manager.executeInput("eqm-add name/Tripod e/004 type/tripod cond/4 thread/Quarter inch damage/bent_leg");
         output.reset();
 
-        manager.executeInput("list-eqm");
+        manager.executeInput("eqm-list");
 
         String table = output.toString(StandardCharsets.UTF_8);
         assertEquals(4, table.lines().filter(line -> line.contains("Available")).count());
@@ -171,7 +171,7 @@ class EqmManagerTest {
     @Test
     void addEquipment_withRemarks_displaysAndPersistsRemarks() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("add-eqm name/Lens e/001 type/lens cond/3 remarks/Handle with care");
+        manager.executeInput("eqm-add name/Lens e/001 type/lens cond/3 remarks/Handle with care");
         output.reset();
 
         manager.executeInput("eqm-show e/001");
@@ -263,7 +263,7 @@ class EqmManagerTest {
     void deleteEquipment_sameNameDifferentIds_deletesOnlyRequestedId() {
         EqmManager manager = new EqmManager(temporaryDirectory);
         manager.executeInput(ADD_CAMERA);
-        manager.executeInput("add-eqm name/Canon EOS R10 e/002 type/camera cond/5");
+        manager.executeInput("eqm-add name/Canon EOS R10 e/002 type/camera cond/5");
         output.reset();
 
         manager.executeInput("eqm-delete e/001");
@@ -309,7 +309,7 @@ class EqmManagerTest {
     void deleteLoan_failedSave_keepsEquipmentLoanedUntilSuccessfulRetry() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory);
         manager.executeInput(ADD_CAMERA);
-        manager.executeInput("add-loan e/001 u/002 issued/01-10-26 due/02-10-26");
+        manager.executeInput("loan-add e/001 u/002 issued/01-10-26 due/02-10-26");
         Path loansFile = temporaryDirectory.resolve("loans.txt");
         Files.delete(loansFile);
         Files.createDirectory(loansFile);
@@ -330,7 +330,7 @@ class EqmManagerTest {
         output.reset();
 
         manager.executeInput("loan-delete l/001");
-        manager.executeInput("filter-eqm e/001 status/available");
+        manager.executeInput("eqm-filter e/001 status/available");
 
         String recovered = output.toString(StandardCharsets.UTF_8);
         assertTrue(recovered.contains("[OK] Loan 001 deleted."));
@@ -338,7 +338,7 @@ class EqmManagerTest {
         assertEquals("", Files.readString(loansFile));
         output.reset();
         EqmManager restarted = new EqmManager(temporaryDirectory);
-        restarted.executeInput("filter-eqm e/001 status/available");
+        restarted.executeInput("eqm-filter e/001 status/available");
         assertTrue(output.toString(StandardCharsets.UTF_8).contains("Canon EOS R10"));
     }
 
@@ -346,7 +346,7 @@ class EqmManagerTest {
     void bye_saveFailure_reportsBothFiles() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory);
         manager.executeInput(ADD_CAMERA);
-        manager.executeInput("add-loan e/001 u/002 issued/01-10-26 due/02-10-26");
+        manager.executeInput("loan-add e/001 u/002 issued/01-10-26 due/02-10-26");
 
         Path equipmentFile = temporaryDirectory.resolve("equipment.txt");
         Path loansFile = temporaryDirectory.resolve("loans.txt");
@@ -372,7 +372,7 @@ class EqmManagerTest {
         EqmManager manager = new EqmManager(temporaryDirectory);
         output.reset();
 
-        manager.executeInput("list-loan-overdue");
+        manager.executeInput("loan-list-overdue");
 
         assertEquals(
                 "Overdue loans" + System.lineSeparator() + "-------------" + System.lineSeparator()
@@ -385,7 +385,7 @@ class EqmManagerTest {
         EqmManager manager = new EqmManager(temporaryDirectory);
         manager.executeInput(ADD_CAMERA);
         manager.executeInput(
-                "add-loan e/001 u/002 issued/01-01-20 due/02-01-20");
+                "loan-add e/001 u/002 issued/01-01-20 due/02-01-20");
 
         String savedEquipment = Files.readString(
                 temporaryDirectory.resolve("equipment.txt"));
@@ -393,7 +393,7 @@ class EqmManagerTest {
                 temporaryDirectory.resolve("loans.txt"));
         output.reset();
 
-        manager.executeInput("list-loan-overdue");
+        manager.executeInput("loan-list-overdue");
 
         String actual = output.toString(StandardCharsets.UTF_8);
         assertTrue(actual.contains("ITEM ID"));
@@ -425,7 +425,7 @@ class EqmManagerTest {
         EqmManager manager = new EqmManager(temporaryDirectory);
         output.reset();
 
-        manager.executeInput("list-loan-overdue");
+        manager.executeInput("loan-list-overdue");
 
         assertEquals(
                 "Overdue loans" + System.lineSeparator() + "-------------" + System.lineSeparator()
@@ -442,11 +442,11 @@ class EqmManagerTest {
                 new EqmManager(temporaryDirectory, clock);
         manager.executeInput(ADD_CAMERA);
         manager.executeInput(
-                "add-loan e/001 u/002 "
+                "loan-add e/001 u/002 "
                         + "issued/24-10-26 due/25-10-26");
         output.reset();
 
-        manager.executeInput("list-loan-overdue");
+        manager.executeInput("loan-list-overdue");
 
         assertEquals(
                 "Overdue loans" + System.lineSeparator() + "-------------" + System.lineSeparator()
@@ -458,12 +458,13 @@ class EqmManagerTest {
     void oldInteractiveCommandKeywords_areRejected() {
         EqmManager manager = new EqmManager(temporaryDirectory);
         String[] oldCommands = {
-            "add i/Camera id/001 type/camera cond/1", "list", "show id/001", "delete item/001",
-            "filter type/camera", "update id/001 name/New", "maintain id/001 date/27-10-26 work/Repair outcome/Done",
-            "loan id/001 b/002 issued/01-10-26 due/02-10-26", "return loan/001 serviceable/yes damage/NONE",
-            "delete loan/001", "update loan/001 b/002", "list loans", "list borrower/002", "view loan/001",
-            "list overdue", "history id/001", "add-to-bundle id/001 001", "remove-from-bundle id/001 001",
-            "list bundles", "history bundle/id/001", "bye"
+            "add", "list", "show e/001", "delete item e/001", "filter type/camera", "update e/001 name/New",
+            "maintain e/001 date/27-10-26 work/Repair outcome/Done", "loan e/001 u/002 issued/01-10-26 due/02-10-26",
+            "return loan l/001 serviceable/yes damage/NONE", "delete loan l/001", "update loan l/001 u/002",
+            "list loans", "list borrower u/002", "view loan l/001", "list overdue", "history e/001",
+            "add-eqm name/Camera e/001 type/camera cond/1", "list-eqm", "filter-eqm type/camera",
+            "add-loan e/001 u/002 issued/01-10-26 due/02-10-26", "list-loan", "list-loan-borrower u/002",
+            "list-loan-overdue", "add-bundle name/Kit", "list-bundle", "history bundle b/001", "bye"
         };
 
         for (String command : oldCommands) {

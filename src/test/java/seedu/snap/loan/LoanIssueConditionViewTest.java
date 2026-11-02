@@ -49,13 +49,13 @@ class LoanIssueConditionViewTest {
             throws Exception {
         EquipmentHandler equipment = new EquipmentHandler();
         equipment.addEquipment(
-                "add-eqm name/Test Camera E-id/001 type/camera cond/6 "
+                "eqm-add name/Test Camera e/001 type/camera cond/6 "
                         + "sensor/Full frame "
                         + "damage/SENSOR_DAMAGE "
                         + "remarks/Handle carefully");
         LoanHandler handler = new LoanHandler(equipment);
         handler.addLoan(
-                "add-loan E-id/001 U-id/101 "
+                "loan-add e/001 u/101 "
                         + "issued/01-10-26 due/20-10-26");
         output.reset();
 
@@ -76,11 +76,11 @@ class LoanIssueConditionViewTest {
             throws Exception {
         EquipmentHandler equipment = new EquipmentHandler();
         equipment.addEquipment(
-                "add-eqm name/Test Camera E-id/001 "
+                "eqm-add name/Test Camera e/001 "
                         + "type/camera cond/6");
         LoanHandler handler = new LoanHandler(equipment);
         handler.addLoan(
-                "add-loan E-id/001 U-id/101 "
+                "loan-add e/001 u/101 "
                         + "issued/01-10-26 due/20-10-26");
         output.reset();
 
@@ -104,7 +104,7 @@ class LoanIssueConditionViewTest {
 
         EquipmentHandler equipment = new EquipmentHandler();
         equipment.addEquipment(
-                "add-eqm name/Test Camera E-id/001 "
+                "eqm-add name/Test Camera e/001 "
                         + "type/camera cond/6");
         LoanHandler handler =
                 new LoanHandler(equipment, loanFile);

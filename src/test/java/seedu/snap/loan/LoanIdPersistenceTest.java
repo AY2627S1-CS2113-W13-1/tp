@@ -28,7 +28,7 @@ import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 /** Tests assignment, persistence, and lifecycle safety of unique loan identifiers. */
 class LoanIdPersistenceTest {
     private static final String FIRST_LOAN =
-            "add-loan e/001 u/002 issued/01-10-26 due/02-10-26";
+            "loan-add e/001 u/002 issued/01-10-26 due/02-10-26";
     private EquipmentHandler equipment;
     private Equipment camera;
     private ByteArrayOutputStream output;
@@ -40,9 +40,9 @@ class LoanIdPersistenceTest {
     @BeforeEach
     void setUp() throws Exception {
         equipment = new EquipmentHandler();
-        camera = equipment.addEquipment("add-eqm name/Camera e/001 type/camera cond/1");
-        equipment.addEquipment("add-eqm name/Tripod e/003 type/tripod cond/2");
-        equipment.addEquipment("add-eqm name/Lens e/005 type/lens cond/3");
+        camera = equipment.addEquipment("eqm-add name/Camera e/001 type/camera cond/1");
+        equipment.addEquipment("eqm-add name/Tripod e/003 type/tripod cond/2");
+        equipment.addEquipment("eqm-add name/Lens e/005 type/lens cond/3");
         output = new ByteArrayOutputStream();
         originalOutput = System.out;
         System.setOut(new PrintStream(output, true, StandardCharsets.UTF_8));
@@ -58,7 +58,7 @@ class LoanIdPersistenceTest {
         LoanHandler handler = new LoanHandler(equipment);
 
         Loan first = handler.addLoan(FIRST_LOAN);
-        Loan second = handler.addLoan("add-loan e/003 u/004 issued/03-10-26 due/04-10-26");
+        Loan second = handler.addLoan("loan-add e/003 u/004 issued/03-10-26 due/04-10-26");
 
         assertEquals("001", first.getLoanId());
         assertEquals("002", second.getLoanId());
@@ -72,10 +72,10 @@ class LoanIdPersistenceTest {
         Path loanFile = temporaryDirectory.resolve("loans.txt");
         LoanHandler handler = new LoanHandler(equipment, loanFile);
         handler.addLoan(FIRST_LOAN);
-        handler.addLoan("add-loan e/003 u/004 issued/03-10-26 due/04-10-26");
+        handler.addLoan("loan-add e/003 u/004 issued/03-10-26 due/04-10-26");
 
         handler.deleteLoan("loan-delete l/001");
-        Loan replacement = handler.addLoan("add-loan e/005 u/006 issued/05-10-26 due/06-10-26");
+        Loan replacement = handler.addLoan("loan-add e/005 u/006 issued/05-10-26 due/06-10-26");
 
         assertEquals("003", replacement.getLoanId());
         assertEquals("004", Files.readString(temporaryDirectory.resolve("loan-sequence.txt")).trim()
@@ -92,7 +92,7 @@ class LoanIdPersistenceTest {
 
         LoanHandler handler = new LoanHandler(equipment, loanFile, sequenceFile);
         handler.loadFromStorage();
-        Loan next = handler.addLoan("add-loan e/003 u/004 issued/03-10-26 due/04-10-26");
+        Loan next = handler.addLoan("loan-add e/003 u/004 issued/03-10-26 due/04-10-26");
 
         assertEquals("022", next.getLoanId());
     }
@@ -110,7 +110,7 @@ class LoanIdPersistenceTest {
         handler.deleteLoan("loan-delete l/021");
         handler = new LoanHandler(equipment, loanFile, sequenceFile);
         handler.loadFromStorage();
-        Loan next = handler.addLoan("add-loan e/003 u/004 issued/03-10-26 due/04-10-26");
+        Loan next = handler.addLoan("loan-add e/003 u/004 issued/03-10-26 due/04-10-26");
 
         assertEquals("022", next.getLoanId());
         assertEquals("nextLoanId/023", Files.readString(sequenceFile).trim());
@@ -126,7 +126,7 @@ class LoanIdPersistenceTest {
 
         assertEquals("999", handler.addLoan(FIRST_LOAN).getLoanId());
         LoanAdditionUnsuccessful exception = assertThrows(LoanAdditionUnsuccessful.class,
-                () -> handler.addLoan("add-loan e/003 u/004 issued/03-10-26 due/04-10-26"));
+                () -> handler.addLoan("loan-add e/003 u/004 issued/03-10-26 due/04-10-26"));
 
         assertTrue(exception.getMessage().contains("maximum is 999"));
         assertEquals("1000", handler.getNextLoanId());
@@ -154,7 +154,7 @@ class LoanIdPersistenceTest {
         Path loanFile = temporaryDirectory.resolve("loans.txt");
         EquipmentHandler firstEquipment = new EquipmentHandler(equipmentFile);
         Equipment firstCamera = firstEquipment.addEquipment(
-                "add-eqm name/Camera e/001 type/camera cond/1 sensor/APS-C remarks/Loan ID label");
+                "eqm-add name/Camera e/001 type/camera cond/1 sensor/APS-C remarks/Loan ID label");
         String savedEquipment = Files.readString(equipmentFile);
         LoanHandler firstLoans = new LoanHandler(firstEquipment, loanFile);
         firstLoans.addLoan(FIRST_LOAN);

@@ -63,18 +63,18 @@ class HelpIntegrationTest {
         System.setOut(new PrintStream(output, true, StandardCharsets.UTF_8));
         dataDirectory = temporaryDirectory.resolve("data");
         manager = new EqmManager(dataDirectory, FIXED_CLOCK);
-        manager.executeInput("add-eqm name/Camera e/001 type/camera cond/4 sensor/Full frame "
+        manager.executeInput("eqm-add name/Camera e/001 type/camera cond/4 sensor/Full frame "
                 + "remarks/Camera checked");
-        manager.executeInput("add-eqm name/Battery e/002 type/battery cond/5 capacity/2000mAh");
-        manager.executeInput("add-eqm name/Lens e/003 type/lens cond/6 zoom/24-70mm");
-        manager.executeInput("add-eqm name/Tripod e/004 type/tripod cond/7 thread/1-4 inch");
-        manager.executeInput("add-eqm name/Workshop battery e/005 type/battery cond/3 capacity/1500mAh");
-        manager.executeInput("add-eqm name/Spare battery e/006 type/battery cond/8 capacity/1800mAh");
-        manager.executeInput("add-bundle name/Camera kit");
+        manager.executeInput("eqm-add name/Battery e/002 type/battery cond/5 capacity/2000mAh");
+        manager.executeInput("eqm-add name/Lens e/003 type/lens cond/6 zoom/24-70mm");
+        manager.executeInput("eqm-add name/Tripod e/004 type/tripod cond/7 thread/1-4 inch");
+        manager.executeInput("eqm-add name/Workshop battery e/005 type/battery cond/3 capacity/1500mAh");
+        manager.executeInput("eqm-add name/Spare battery e/006 type/battery cond/8 capacity/1800mAh");
+        manager.executeInput("bundle-create name/Camera kit");
         manager.executeInput("bundle-add-eqm b/001 001 002 003 004");
-        manager.executeInput("add-loan e/005 u/111 due/25-10-26");
+        manager.executeInput("loan-add e/005 u/111 due/25-10-26");
         manager.executeInput("loan-return l/001 serviceable/no damage/SWELLING remarks/Needs repair");
-        manager.executeInput("add-loan e/001 u/222 due/25-10-26");
+        manager.executeInput("loan-add e/001 u/222 due/25-10-26");
         manager.executeInput("eqm-maintain e/005 date/24-10-26 work/Inspected swelling outcome/Repair required");
         readField(manager, "bundles", BundleHandler.class).saveToStorage();
         assertTrue(readField(manager, "bundles", BundleHandler.class).getBundleList().getFirst().isComplete());
@@ -131,7 +131,7 @@ class HelpIntegrationTest {
 
         assertTrue(printedContent().contains("Command not recognised"));
         assertTrue(printedContent().contains("Type help"));
-        assertFalse(printedContent().contains("add-loan e/"));
+        assertFalse(printedContent().contains("loan-add e/"));
         assertEquals(before, snapshot(manager));
         assertSavedFilesUnchanged(filesBefore);
         assertEquals(pathsBefore, treePaths(dataDirectory));
@@ -142,7 +142,7 @@ class HelpIntegrationTest {
         manager.executeInput("help");
 
         assertMenuPrinted();
-        assertFalse(printedContent().contains("Format: add-loan e/"));
+        assertFalse(printedContent().contains("Format: loan-add e/"));
         assertFalse(printedContent().contains("damage/SENSOR_DAMAGE"));
         assertTrue(printed().lines().count() <= 24, "The command menu should fit a normal terminal screen");
     }
@@ -163,28 +163,29 @@ class HelpIntegrationTest {
 
     @ParameterizedTest
     @CsvSource(delimiter = '|', value = {
-        "add-eqm | Format: add-eqm name/<NAME>",
-        "list-eqm | Format: list-eqm",
+        "eqm-add | Format: eqm-add name/<NAME>",
+        "eqm-list | Format: eqm-list",
         "eqm-show | Format: eqm-show e/<ID>",
         "eqm-delete | Format: eqm-delete e/<ID>",
-        "add-loan | Format: add-loan e/<ITEM ID>",
+        "loan-add | Format: loan-add e/<ITEM ID>",
         "loan-return | Format: loan-return l/<LOAN ID>",
         "loan-delete | Format: loan-delete l/<LOAN ID>",
         "loan-update | Format: loan-update l/<LOAN ID>",
-        "list-loan | Format: list-loan",
+        "loan-list | Format: loan-list",
+        "loan-view | Format: loan-view l/<LOAN ID>",
         "loan-show | Format: loan-show l/<LOAN ID>",
         "backup | Format: backup path/<DIRECTORY>",
         "restore | Format: restore path/<DIRECTORY>",
-        "list-loan-borrower | Format: list-loan-borrower u/<BORROWER ID>",
-        "list-loan-overdue | Format: list-loan-overdue",
+        "loan-list-borrower | Format: loan-list-borrower u/<BORROWER ID>",
+        "loan-list-overdue | Format: loan-list-overdue",
         "eqm-loan-history | Format: eqm-loan-history e/<ITEM ID>",
-        "filter-eqm | Format: filter-eqm [e/<ID>]",
+        "eqm-filter | Format: eqm-filter [e/<ID>]",
         "eqm-update | Format: eqm-update e/<ID>",
         "eqm-maintain | Format: eqm-maintain e/<ITEM ID>",
-        "add-bundle | Format: add-bundle name/<NAME>",
+        "bundle-create | Format: bundle-create name/<NAME>",
         "bundle-add-eqm | Format: bundle-add-eqm b/<BUNDLE ID>",
         "bundle-remove-eqm | Format: bundle-remove-eqm b/<BUNDLE ID>",
-        "list-bundle | Format: list-bundle",
+        "bundle-list | Format: bundle-list",
         "bundle-history | Format: bundle-history b/<BUNDLE ID>",
         "help | Format: help",
         "exit | Format: exit"
@@ -196,30 +197,30 @@ class HelpIntegrationTest {
         assertTrue(printedContent().contains("Example: " + topic), topic);
         assertFalse(printedContent().contains("Command not recognised"), topic);
         assertFalse(printedContent().contains("Unknown help topic"), topic);
-        String unrelated = topic.equals("add-loan") ? "Format: add-eqm name/" : "Format: add-loan e/";
+        String unrelated = topic.equals("loan-add") ? "Format: eqm-add name/" : "Format: loan-add e/";
         assertFalse(printedContent().contains(unrelated), "Topic help should omit unrelated command sections");
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"help add-loan", "\u2003help\tadd-loan\u00a0", "help\u2003add-loan",
-        "help\u00a0add-loan", "help\t\tadd-loan"})
+    @ValueSource(strings = {"help loan-add", "\u2003help\tloan-add\u00a0", "help\u2003loan-add",
+        "help\u00a0loan-add", "help\t\tloan-add"})
     void help_singleWordTopicWhitespace_showsLoanSyntax(String command) {
         manager.executeInput(command);
 
-        assertTrue(printedContent().contains("Format: add-loan e/<ITEM ID>"));
+        assertTrue(printedContent().contains("Format: loan-add e/<ITEM ID>"));
         assertTrue(printedContent().contains("Omitted issued/ defaults to today's date"));
         assertFalse(printedContent().contains("Format: loan-return l/"));
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"help list-loan-overdue", "\u2003help\tlist-loan-overdue\u00a0",
-        "help\u2003list-loan-overdue", "help  list-loan-overdue"})
+    @ValueSource(strings = {"help loan-list-overdue", "\u2003help\tloan-list-overdue\u00a0",
+        "help\u2003loan-list-overdue", "help  loan-list-overdue"})
     void help_multiWordTopicWhitespace_showsExactOverdueTopic(String command) {
         manager.executeInput(command);
 
-        assertTrue(printedContent().contains("Format: list-loan-overdue"));
+        assertTrue(printedContent().contains("Format: loan-list-overdue"));
         assertTrue(printedContent().contains("Returned loans and loans due today or later are excluded."));
-        assertFalse(printedContent().contains("Format: list-loan"));
+        assertFalse(printedContent().contains("Format: loan-list"));
     }
 
     @ParameterizedTest
@@ -235,7 +236,7 @@ class HelpIntegrationTest {
         assertTrue(printedContent().contains("Example: loan-show l/001"));
         assertTrue(printedContent().contains("Legacy loans without a saved snapshot"));
         assertFalse(printedContent().contains("Unknown help topic"));
-        assertFalse(printedContent().contains("Format: add-loan e/"));
+        assertFalse(printedContent().contains("Format: loan-add e/"));
         assertEquals(before, snapshot(manager));
         assertSavedFilesUnchanged(filesBefore);
     }
@@ -245,8 +246,8 @@ class HelpIntegrationTest {
     void help_all_showsCompleteReference(String command) {
         manager.executeInput(command);
 
-        assertTrue(printedContent().contains("Format: add-eqm name/<NAME>"));
-        assertTrue(printedContent().contains("Format: add-loan e/<ITEM ID>"));
+        assertTrue(printedContent().contains("Format: eqm-add name/<NAME>"));
+        assertTrue(printedContent().contains("Format: loan-add e/<ITEM ID>"));
         assertTrue(printedContent().contains("Format: loan-return l/<LOAN ID>"));
         assertTrue(printedContent().contains("Format: loan-show l/<LOAN ID>"));
         assertTrue(printedContent().contains("Format: bundle-add-eqm b/<BUNDLE ID>"));
@@ -258,7 +259,7 @@ class HelpIntegrationTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"help unknown", "help list-loan-overdue extra", "help add-eqm name/Camera", "help Loan",
+    @ValueSource(strings = {"help unknown", "help loan-list-overdue extra", "help eqm-add name/Camera", "help Loan",
         "help all extra", "help loan/001", "help delete", "help list over"})
     void help_unknownTopic_showsErrorAndRecoverableMenu(String command) {
         manager.executeInput(command);
@@ -266,7 +267,7 @@ class HelpIntegrationTest {
         assertTrue(printedContent().contains("Unknown help topic"));
         assertMenuPrinted();
         assertFalse(printedContent().contains("Command not recognised"));
-        assertFalse(printedContent().contains("Format: add-loan e/"));
+        assertFalse(printedContent().contains("Format: loan-add e/"));
     }
 
     @Test
@@ -314,8 +315,8 @@ class HelpIntegrationTest {
         assertSavedFilesUnchanged(originals);
         output.reset();
 
-        manager.executeInput("add-loan e/006 u/333 due/25-10-26");
-        manager.executeInput("add-bundle name/Next kit");
+        manager.executeInput("loan-add e/006 u/333 due/25-10-26");
+        manager.executeInput("bundle-create name/Next kit");
 
         assertTrue(printedContent().contains("[OK] Loan 003 issued."));
         assertTrue(printedContent().contains("[OK] Bundle 002 \"Next kit\" created."));
@@ -331,7 +332,7 @@ class HelpIntegrationTest {
         output.reset();
 
         manager.executeInput("eqm-update e/006 name/Updated spare battery cond/9");
-        manager.executeInput("list-loan");
+        manager.executeInput("loan-list");
         manager.executeInput("eqm-loan-history e/001");
 
         assertTrue(printedContent().contains(" updated."));
@@ -344,7 +345,7 @@ class HelpIntegrationTest {
 
     @Test
     void run_helpThenBye_showsDiscoveryAndEndsOnlyAfterBye() throws Exception {
-        System.setIn(new ByteArrayInputStream("help\nhelp add-loan\nhelp unknown\nhelp all\nhelp exit\nexit\n"
+        System.setIn(new ByteArrayInputStream("help\nhelp loan-add\nhelp unknown\nhelp all\nhelp exit\nexit\n"
                 .getBytes(StandardCharsets.UTF_8)));
         EqmManager interactive = new EqmManager(temporaryDirectory.resolve("interactive-data"), FIXED_CLOCK);
 
@@ -353,12 +354,12 @@ class HelpIntegrationTest {
         assertTrue(printedContent().contains("Welcome to snAp."));
         assertTrue(printedContent().contains("Type help"));
         assertMenuPrinted();
-        assertTrue(printedContent().contains("Format: add-loan e/<ITEM ID>"));
+        assertTrue(printedContent().contains("Format: loan-add e/<ITEM ID>"));
         assertTrue(printedContent().contains("Unknown help topic"));
         assertTrue(printedContent().contains("Goodbye."));
         assertFalse(readField(interactive, "isRunning", Boolean.class));
-        assertTrue(printed().indexOf("Welcome") < printed().indexOf("add-loan e/"));
-        assertTrue(printed().indexOf("add-loan e/") < printed().indexOf("Goodbye."));
+        assertTrue(printed().indexOf("Welcome") < printed().indexOf("loan-add e/"));
+        assertTrue(printed().indexOf("loan-add e/") < printed().indexOf("Goodbye."));
 
         String newline = System.lineSeparator();
         String divider = "-".repeat(100);
@@ -411,7 +412,7 @@ class HelpIntegrationTest {
 
         assertTrue(printedContent().contains("Could not load saved data"));
         assertFalse(printedContent().contains("Welcome to snAp."));
-        assertFalse(printedContent().contains("add-loan e/"));
+        assertFalse(printedContent().contains("loan-add e/"));
         assertEquals(original, Files.readString(invalidLoans));
         assertFalse(Files.exists(invalidDirectory.resolve("equipment.txt")));
         assertFalse(Files.exists(invalidDirectory.resolve("loan-sequence.txt")));
@@ -541,14 +542,14 @@ class HelpIntegrationTest {
     /** Repeats help, lists and histories so viewing records cannot save data or consume identifiers. */
     private void executeAllReadOnlyForms(EqmManager target, ApplicationState expected) throws Exception {
         List<String> requests = new ArrayList<>(helpRequests());
-        requests.addAll(List.of("list-eqm", "filter-eqm cond/1-10", "filter-eqm e/999", "eqm-show e/001",
+        requests.addAll(List.of("eqm-list", "eqm-filter cond/1-10", "eqm-filter e/999", "eqm-show e/001",
                 "eqm-show e/002", "eqm-show e/003", "eqm-show e/004", "eqm-show e/005",
                 "eqm-show e/006", "eqm-show e/999", "eqm-show",
                 "eqm-show e/000", "eqm-show e/001 e/002", "eqm-show e/001 remarks/Unexpected"));
-        requests.addAll(List.of("list-loan", "list-loan-overdue", "eqm-loan-history e/001",
+        requests.addAll(List.of("loan-list", "loan-list-overdue", "eqm-loan-history e/001",
                 "eqm-loan-history e/005",
-                "bundle-history b/001", "bundle-history name/Camera kit", "list-bundle",
-                "list-loan-borrower u/222", "list-loan-borrower u/999", "loan-show l/001"));
+                "bundle-history b/001", "bundle-history name/Camera kit", "bundle-list",
+                "loan-list-borrower u/222", "loan-list-borrower u/999", "loan-view l/001", "loan-show l/001"));
         for (int repetition = 0; repetition < 2; repetition++) {
             for (String command : requests) {
                 output.reset();
@@ -567,7 +568,7 @@ class HelpIntegrationTest {
     /** Exercises every advertised topic as the menu grows, plus aliases and malformed requests. */
     private static List<String> helpRequests() {
         List<String> requests = new ArrayList<>(List.of("help", "help all", "help list member", "help unknown",
-                "help list-loan-overdue extra", "help add-eqm name/Camera", "help Loan", "help all extra"));
+                "help loan-list-overdue extra", "help eqm-add name/Camera", "help Loan", "help all extra"));
         for (String line : Help.getText("").lines().toList()) {
             if (!line.startsWith("| ")) {
                 continue;
@@ -591,13 +592,13 @@ class HelpIntegrationTest {
     private void assertMenuPrinted() {
         assertTrue(printedContent().contains("help all"));
         assertTrue(printedContent().contains("help <COMMAND>"));
-        assertTrue(printedContent().contains("help list-loan-overdue"));
-        assertTrue(printedContent().contains("list-loan-overdue"));
+        assertTrue(printedContent().contains("help loan-list-overdue"));
+        assertTrue(printedContent().contains("loan-list-overdue"));
         assertTrue(printedContent().contains("loan-show"));
         assertTrue(printedContent().contains("eqm-delete"));
         assertTrue(printedContent().contains("bundle-add-eqm"));
         assertTrue(printedContent().contains("bundle-remove-eqm"));
-        assertTrue(printedContent().contains("list-bundle"));
+        assertTrue(printedContent().contains("bundle-list"));
         assertTrue(printedContent().contains("bundle-history"));
         assertTrue(printed().lines().anyMatch(line -> line.matches("\\+-+\\+")));
         assertTrue(printed().lines().anyMatch(line -> line.startsWith("| ") && line.endsWith(" |")));

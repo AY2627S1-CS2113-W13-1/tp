@@ -32,9 +32,9 @@ class LoanEquipmentIdentityStorageTest {
         Path equipmentFile = temporaryDirectory.resolve("equipment.txt");
         Path loanFile = temporaryDirectory.resolve("loans.txt");
         EquipmentHandler inventory = new EquipmentHandler(equipmentFile);
-        Equipment camera = inventory.addEquipment("add-eqm name/Camera e/001 type/camera cond/4");
+        Equipment camera = inventory.addEquipment("eqm-add name/Camera e/001 type/camera cond/4");
         LoanHandler handler = new LoanHandler(inventory, loanFile);
-        Loan original = handler.addLoan("add-loan e/001 u/111 issued/01-10-26 due/02-10-26");
+        Loan original = handler.addLoan("loan-add e/001 u/111 issued/01-10-26 due/02-10-26");
         String validLoans = Files.readString(loanFile);
         String invalid = "loan loanId/001 id/001 b/111 issued/01-10-26 due/02-10-26 " + metadata + "\n";
         String equipmentBefore = Files.readString(equipmentFile);

@@ -27,7 +27,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 class EquipmentRecordIdentityTest {
     private static final String FIRST_RECORD_ID = "e21c9254-ab91-4624-82eb-9b4423e5a795";
     private static final String SECOND_RECORD_ID = "98abfd72-32b3-49b7-b2af-a1f4fe949435";
-    private static final String INTERACTIVE_CAMERA = "add-eqm name/Camera e/001 type/camera cond/7";
+    private static final String INTERACTIVE_CAMERA = "eqm-add name/Camera e/001 type/camera cond/7";
     private static final String LEGACY_CAMERA = "add i/Camera id/001 type/camera cond/7";
 
     @TempDir
@@ -223,7 +223,7 @@ class EquipmentRecordIdentityTest {
     void returnAssessmentAndNormalUpdate_preservePermanentIdentityInMemoryAndStorage(String type) throws Exception {
         Path file = temporaryDirectory.resolve("equipment.txt");
         EquipmentHandler handler = new EquipmentHandler(file);
-        Equipment original = handler.addEquipment("add-eqm name/Original e/001 type/" + type + " cond/7");
+        Equipment original = handler.addEquipment("eqm-add name/Original e/001 type/" + type + " cond/7");
         String recordId = original.getRecordId();
         Equipment assessed = handler.prepareReturnAssessment(original, false, "NONE", "Repair required");
 

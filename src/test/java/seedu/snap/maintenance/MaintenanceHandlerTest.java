@@ -23,7 +23,7 @@ import seedu.snap.exceptions.MaintenanceRecordUnsuccessful;
 
 /** Tests maintenance command validation, equipment identity binding, and persistence boundaries. */
 class MaintenanceHandlerTest {
-    private static final String ADD_CAMERA = "add-eqm name/Camera e/001 type/camera cond/5";
+    private static final String ADD_CAMERA = "eqm-add name/Camera e/001 type/camera cond/5";
     private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-10-27T12:00:00Z"), ZoneOffset.UTC);
 
     @TempDir

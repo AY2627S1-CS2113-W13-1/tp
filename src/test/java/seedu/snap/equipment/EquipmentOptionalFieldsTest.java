@@ -193,8 +193,8 @@ class EquipmentOptionalFieldsTest {
     void addEquipment_requiredFieldsRemainRequired() {
         EquipmentHandler handler = new EquipmentHandler();
         String[] commands = {
-            "add e/001 type/camera cond/7", "add-eqm name/Camera type/camera cond/7",
-            "add-eqm name/Camera e/001 cond/7", "add-eqm name/Camera e/001 type/camera"
+            "add e/001 type/camera cond/7", "eqm-add name/Camera type/camera cond/7",
+            "eqm-add name/Camera e/001 cond/7", "eqm-add name/Camera e/001 type/camera"
         };
         for (String command : commands) {
             assertThrows(EquipmentAdditionUnsuccessful.class, () -> handler.addEquipment(command));
@@ -204,6 +204,6 @@ class EquipmentOptionalFieldsTest {
 
     /** Builds only the required command fields, leaving optional additions explicit in each test. */
     private static String command(EquipmentType type, String id) {
-        return "add-eqm name/Equipment e/" + id + " type/" + type.type() + " cond/7";
+        return "eqm-add name/Equipment e/" + id + " type/" + type.type() + " cond/7";
     }
 }

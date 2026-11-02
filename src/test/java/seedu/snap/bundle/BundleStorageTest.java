@@ -36,7 +36,7 @@ class BundleStorageTest {
     @Test
     void load_missingEquipment_preservesExistingBundles() throws Exception {
         EquipmentHandler equipment = new EquipmentHandler();
-        equipment.addEquipment("add-eqm name/Camera e/001 type/camera cond/5 sensor/Full frame");
+        equipment.addEquipment("eqm-add name/Camera e/001 type/camera cond/5 sensor/Full frame");
         Path file = temporaryDirectory.resolve("bundles.txt");
         String missingRecordId = UUID.randomUUID().toString();
         String encodedName = Base64.getUrlEncoder().withoutPadding()
@@ -44,7 +44,7 @@ class BundleStorageTest {
         Files.writeString(file, "bundle id/001 name64/" + encodedName
                 + " items/001~" + missingRecordId + System.lineSeparator());
         BundleHandler handler = new BundleHandler(equipment, file);
-        handler.addBundle("add-bundle name/Existing bundle");
+        handler.addBundle("bundle-create name/Existing bundle");
 
         IOException exception = assertThrows(IOException.class, handler::loadFromStorage);
 
@@ -56,13 +56,13 @@ class BundleStorageTest {
     @Test
     void save_blockedDestination_preservesSentinel() throws Exception {
         EquipmentHandler equipment = new EquipmentHandler();
-        equipment.addEquipment("add-eqm name/Camera e/001 type/camera cond/5 sensor/Full frame");
+        equipment.addEquipment("eqm-add name/Camera e/001 type/camera cond/5 sensor/Full frame");
         Path file = temporaryDirectory.resolve("bundles.txt");
         Files.createDirectory(file);
         Path sentinel = file.resolve("keep.txt");
         Files.writeString(sentinel, "keep this data");
         BundleHandler handler = new BundleHandler(equipment, file);
-        handler.addBundle("add-bundle name/Travel Kit");
+        handler.addBundle("bundle-create name/Travel Kit");
 
         assertThrows(IOException.class, handler::saveToStorage);
 
@@ -72,12 +72,12 @@ class BundleStorageTest {
     @Test
     void removeMembership_saveFailure_restoresMembership() throws Exception {
         EquipmentHandler equipment = new EquipmentHandler();
-        equipment.addEquipment("add-eqm name/Camera e/001 type/camera cond/5 sensor/Full frame");
+        equipment.addEquipment("eqm-add name/Camera e/001 type/camera cond/5 sensor/Full frame");
         Path file = temporaryDirectory.resolve("bundles.txt");
         Files.createDirectory(file);
         Files.writeString(file.resolve("keep.txt"), "keep this data");
         BundleHandler handler = new BundleHandler(equipment, file);
-        handler.addBundle("add-bundle name/Travel Kit");
+        handler.addBundle("bundle-create name/Travel Kit");
         handler.addItemsToBundle("bundle-add-eqm b/001 001");
 
         BundleAdditionUnsuccessful exception = assertThrows(BundleAdditionUnsuccessful.class,

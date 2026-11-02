@@ -21,7 +21,7 @@ import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 /** Tests Tripod compatibility parsing, display and persistence. */
 class TripodCompatibilityIntegrationTest {
     private static final String FULL_TRIPOD_COMMAND =
-            "add-eqm name/Studio Tripod e/301 type/tripod cond/8 "
+            "eqm-add name/Studio Tripod e/301 type/tripod cond/8 "
                     + "thread/1/4\"-20 damage/NONE remarks/Stable";
 
     @TempDir
@@ -45,7 +45,7 @@ class TripodCompatibilityIntegrationTest {
         Tripod tripod = assertInstanceOf(
                 Tripod.class,
                 EquipmentHandler.parseEquipment(
-                        "add-eqm name/Tripod e/302 "
+                        "eqm-add name/Tripod e/302 "
                                 + "type/tripod cond/7"));
 
         assertEquals(
@@ -59,13 +59,13 @@ class TripodCompatibilityIntegrationTest {
     @Test
     void parseEquipment_invalidTripodFields_throwException() {
         String repeatedThread =
-                "add-eqm name/Tripod e/303 type/tripod cond/5 "
+                "eqm-add name/Tripod e/303 type/tripod cond/5 "
                         + "thread/1/4\"-20 thread/3/8\"-16";
         String mountField =
-                "add-eqm name/Tripod e/304 type/tripod cond/5 "
+                "eqm-add name/Tripod e/304 type/tripod cond/5 "
                         + "mount/Canon RF";
         String invalidDamage =
-                "add-eqm name/Tripod e/305 type/tripod cond/5 "
+                "eqm-add name/Tripod e/305 type/tripod cond/5 "
                         + "damage/CRACKED";
 
         assertThrows(

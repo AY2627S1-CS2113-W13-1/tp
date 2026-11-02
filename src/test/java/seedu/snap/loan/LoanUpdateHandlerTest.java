@@ -32,7 +32,7 @@ import seedu.snap.exceptions.LoanUpdateUnsuccessful;
 class LoanUpdateHandlerTest {
     private static final Logger LOAN_LOGGER = Logger.getLogger(LoanHandler.class.getName());
     private static final String ORIGINAL_LOAN =
-            "add-loan e/001 u/002 issued/01-10-26 due/10-10-26";
+            "loan-add e/001 u/002 issued/01-10-26 due/10-10-26";
     private EquipmentHandler equipment;
     private LoanHandler loans;
     private Equipment camera;
@@ -47,8 +47,8 @@ class LoanUpdateHandlerTest {
     @BeforeEach
     void setUp() throws Exception {
         equipment = new EquipmentHandler(temporaryDirectory.resolve("equipment.txt"));
-        camera = equipment.addEquipment("add-eqm name/Camera e/001 type/camera cond/4");
-        tripod = equipment.addEquipment("add-eqm name/Tripod e/002 type/tripod cond/5");
+        camera = equipment.addEquipment("eqm-add name/Camera e/001 type/camera cond/4");
+        tripod = equipment.addEquipment("eqm-add name/Tripod e/002 type/tripod cond/5");
         loanFile = temporaryDirectory.resolve("loans.txt");
         loans = new LoanHandler(equipment, loanFile);
         loans.addLoan(ORIGINAL_LOAN);
@@ -154,7 +154,7 @@ class LoanUpdateHandlerTest {
 
     @Test
     void updateLoan_loanedReplacement_rejectsWithoutChangingEitherAssociation() throws Exception {
-        loans.addLoan("add-loan e/002 u/003 issued/01-10-26 due/10-10-26");
+        loans.addLoan("loan-add e/002 u/003 issued/01-10-26 due/10-10-26");
         Loan original = loans.getLoanList().getFirst();
 
         assertThrows(LoanUpdateUnsuccessful.class,
@@ -167,7 +167,7 @@ class LoanUpdateHandlerTest {
 
     @Test
     void updateLoan_unserviceableReplacement_rejectsWithoutChangingHistory() throws Exception {
-        loans.addLoan("add-loan e/002 u/003 issued/01-10-26 due/10-10-26");
+        loans.addLoan("loan-add e/002 u/003 issued/01-10-26 due/10-10-26");
         loans.returnLoan("loan-return l/002 serviceable/no damage/NONE");
         Loan original = loans.getLoanList().getFirst();
         String saved = Files.readString(loanFile);

@@ -22,7 +22,7 @@ class CommandAliasesTest {
 
     @Test
     void canonicalCommandsAndUnknownTokens_areUnchanged() {
-        assertEquals("add-eqm sample/argument", CommandAliases.normalizeInput("  add-eqm   sample/argument  "));
+        assertEquals("eqm-add sample/argument", CommandAliases.normalizeInput("  eqm-add   sample/argument  "));
         assertEquals("unknown sample/argument", CommandAliases.normalizeInput("unknown sample/argument"));
         assertEquals("help", CommandAliases.normalizeInput("h"));
         assertNull(CommandAliases.normalizeInput(null));
@@ -32,16 +32,16 @@ class CommandAliasesTest {
     /** Supplies every supported command alias so omissions cannot pass unnoticed. */
     private static Stream<Arguments> aliases() {
         return Stream.of(
-                Arguments.of("add-eqm", "ae"), Arguments.of("list-eqm", "le"),
+                Arguments.of("eqm-add", "ae"), Arguments.of("eqm-list", "le"),
                 Arguments.of("eqm-show", "es"), Arguments.of("eqm-delete", "ed"),
-                Arguments.of("filter-eqm", "fe"), Arguments.of("eqm-update", "eu"),
+                Arguments.of("eqm-filter", "fe"), Arguments.of("eqm-update", "eu"),
                 Arguments.of("eqm-maintain", "em"), Arguments.of("eqm-loan-history", "elh"),
-                Arguments.of("add-loan", "al"), Arguments.of("loan-return", "lr"),
+                Arguments.of("loan-add", "al"), Arguments.of("loan-return", "lr"),
                 Arguments.of("loan-delete", "ld"), Arguments.of("loan-update", "lu"),
-                Arguments.of("list-loan", "ll"), Arguments.of("loan-show", "ls"),
-                Arguments.of("list-loan-borrower", "llb"), Arguments.of("list-loan-overdue", "llo"),
-                Arguments.of("add-bundle", "ab"), Arguments.of("bundle-add-eqm", "bae"),
-                Arguments.of("bundle-remove-eqm", "bre"), Arguments.of("list-bundle", "lb"),
+                Arguments.of("loan-list", "ll"), Arguments.of("loan-view", "lv"), Arguments.of("loan-show", "ls"),
+                Arguments.of("loan-list-borrower", "llb"), Arguments.of("loan-list-overdue", "llo"),
+                Arguments.of("bundle-create", "ab"), Arguments.of("bundle-add-eqm", "bae"),
+                Arguments.of("bundle-remove-eqm", "bre"), Arguments.of("bundle-list", "lb"),
                 Arguments.of("bundle-history", "bh"), Arguments.of("backup", "bk"),
                 Arguments.of("restore", "rs"), Arguments.of("help", "h"), Arguments.of("exit", "x"));
     }

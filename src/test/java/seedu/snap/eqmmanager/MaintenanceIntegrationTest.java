@@ -41,7 +41,7 @@ class MaintenanceIntegrationTest {
     @Test
     void maintain_validCommand_reportsSuccessAndPersistsRecord() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory, FIXED_CLOCK);
-        manager.executeInput("add-eqm name/Camera e/001 type/camera cond/5");
+        manager.executeInput("eqm-add name/Camera e/001 type/camera cond/5");
         output.reset();
 
         manager.executeInput("eqm-maintain e/001 date/27-10-26 work/Replaced battery outcome/Completed");
@@ -62,7 +62,7 @@ class MaintenanceIntegrationTest {
     @Test
     void maintain_invalidCommand_reportsErrorAndAcceptsNextValidCommand() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory, FIXED_CLOCK);
-        manager.executeInput("add-eqm name/Camera e/001 type/camera cond/5");
+        manager.executeInput("eqm-add name/Camera e/001 type/camera cond/5");
         output.reset();
 
         manager.executeInput("eqm-maintain e/001 date/31-02-26 work/Repair outcome/Completed");

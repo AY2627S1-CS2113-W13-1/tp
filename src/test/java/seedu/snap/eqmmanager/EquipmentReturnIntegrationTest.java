@@ -24,7 +24,7 @@ import seedu.snap.loan.LoanHandler;
 
 /** Exercises return commands through the application, including persistence and command recovery. */
 class EquipmentReturnIntegrationTest {
-    private static final String LOAN_COMMAND = "add-loan e/001 u/002 issued/01-10-26 due/02-10-26";
+    private static final String LOAN_COMMAND = "loan-add e/001 u/002 issued/01-10-26 due/02-10-26";
     private static final String RETURN_COMMAND =
             "loan-return l/001 serviceable/yes damage/NONE remarks/Checked by staff";
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -39,7 +39,7 @@ class EquipmentReturnIntegrationTest {
         originalOutput = System.out;
         System.setOut(new PrintStream(output, true, StandardCharsets.UTF_8));
         manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("add-eqm name/Camera e/001 type/camera cond/4 sensor/Full frame remarks/Before loan");
+        manager.executeInput("eqm-add name/Camera e/001 type/camera cond/4 sensor/Full frame remarks/Before loan");
         manager.executeInput(LOAN_COMMAND);
         output.reset();
     }
@@ -56,7 +56,7 @@ class EquipmentReturnIntegrationTest {
         assertTrue(printed().contains("[OK] Loan 001 returned."));
         assertTrue(Files.readString(temporaryDirectory.resolve("loans.txt")).contains("returned/true"));
         output.reset();
-        manager.executeInput("filter-eqm e/001 status/available");
+        manager.executeInput("eqm-filter e/001 status/available");
         assertTrue(printed().contains("Camera"));
 
         EqmManager restarted = new EqmManager(temporaryDirectory);
@@ -76,7 +76,7 @@ class EquipmentReturnIntegrationTest {
         EqmManager restarted = new EqmManager(temporaryDirectory);
         output.reset();
 
-        restarted.executeInput("filter-eqm e/001 status/available");
+        restarted.executeInput("eqm-filter e/001 status/available");
         assertTrue(printed().contains("No equipment matches the filters."));
         output.reset();
         restarted.executeInput(LOAN_COMMAND);
@@ -146,7 +146,7 @@ class EquipmentReturnIntegrationTest {
         assertEquals(originalSequence, Files.readString(sequenceFile));
         assertEquals("keep", Files.readString(sentinel));
         output.reset();
-        manager.executeInput("filter-eqm e/001 status/loaned");
+        manager.executeInput("eqm-filter e/001 status/loaned");
         assertTrue(printed().contains("Camera"));
         Files.delete(sentinel);
         Files.delete(loanFile);

@@ -33,7 +33,7 @@ class EquipmentLoanHistoryIntegrationTest {
         originalOutput = System.out;
         System.setOut(new PrintStream(output, true, StandardCharsets.UTF_8));
         manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("add-eqm name/Camera e/001 type/camera cond/4 sensor/Full frame");
+        manager.executeInput("eqm-add name/Camera e/001 type/camera cond/4 sensor/Full frame");
         output.reset();
     }
 
@@ -44,9 +44,9 @@ class EquipmentLoanHistoryIntegrationTest {
 
     @Test
     void historyCommand_activeAndReturnedLoans_displaysBorrowersDatesAndStatuses() throws Exception {
-        manager.executeInput("add-loan e/001 u/111 issued/03-10-26 due/04-10-26");
+        manager.executeInput("loan-add e/001 u/111 issued/03-10-26 due/04-10-26");
         manager.executeInput("loan-return l/001 serviceable/yes damage/NONE remarks/");
-        manager.executeInput("add-loan e/001 u/222 issued/01-10-26 due/02-10-26");
+        manager.executeInput("loan-add e/001 u/222 issued/01-10-26 due/02-10-26");
         output.reset();
 
         manager.executeInput("eqm-loan-history e/001");
@@ -65,18 +65,18 @@ class EquipmentLoanHistoryIntegrationTest {
 
     @Test
     void historyCommand_reusedItemIdAfterRestart_displaysOnlyReplacementHistory() throws Exception {
-        manager.executeInput("add-loan e/001 u/111 issued/01-10-26 due/02-10-26");
+        manager.executeInput("loan-add e/001 u/111 issued/01-10-26 due/02-10-26");
         manager.executeInput("loan-return l/001 serviceable/yes damage/NONE remarks/");
         EquipmentHandler before = new EquipmentHandler(temporaryDirectory.resolve("equipment.txt"));
         before.loadFromStorage();
         String oldRecordId = before.getEquipmentById("001").getRecordId();
         manager.executeInput("eqm-delete e/001");
         EqmManager restarted = new EqmManager(temporaryDirectory);
-        restarted.executeInput("add-eqm name/Camera e/001 type/camera cond/4 sensor/Full frame");
+        restarted.executeInput("eqm-add name/Camera e/001 type/camera cond/4 sensor/Full frame");
         output.reset();
         restarted.executeInput("eqm-loan-history e/001");
         assertFalse(printed().contains("111"));
-        restarted.executeInput("add-loan e/001 u/222 issued/03-10-26 due/04-10-26");
+        restarted.executeInput("loan-add e/001 u/222 issued/03-10-26 due/04-10-26");
         EqmManager reloaded = new EqmManager(temporaryDirectory);
         output.reset();
 
@@ -118,7 +118,7 @@ class EquipmentLoanHistoryIntegrationTest {
         assertFalse(Files.exists(temporaryDirectory.resolve("loans.txt")));
         assertFalse(Files.exists(temporaryDirectory.resolve("loan-sequence.txt")));
 
-        manager.executeInput("add-loan e/001 u/222 issued/01-10-26 due/02-10-26");
+        manager.executeInput("loan-add e/001 u/222 issued/01-10-26 due/02-10-26");
         output.reset();
         manager.executeInput("eqm-loan-history e/001");
         assertTrue(printed().contains("222"));
@@ -135,9 +135,9 @@ class EquipmentLoanHistoryIntegrationTest {
 
         assertFalse(printed().contains("111"));
         output.reset();
-        restarted.executeInput("list-loan");
+        restarted.executeInput("loan-list");
         assertTrue(printed().contains("111"));
-        restarted.executeInput("add-loan e/001 u/222 issued/03-10-26 due/04-10-26");
+        restarted.executeInput("loan-add e/001 u/222 issued/03-10-26 due/04-10-26");
         output.reset();
         restarted.executeInput("eqm-loan-history e/001");
         assertTrue(printed().contains("222"));

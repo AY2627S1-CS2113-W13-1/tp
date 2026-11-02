@@ -51,15 +51,15 @@ class LoanOptionalFieldsTest {
         loanFile = temporaryDirectory.resolve("loans.txt");
         sequenceFile = temporaryDirectory.resolve("loan-sequence.txt");
         equipment = new EquipmentHandler(equipmentFile);
-        camera = (Camera) equipment.addEquipment("add-eqm name/Camera e/001 type/camera cond/4"
+        camera = (Camera) equipment.addEquipment("eqm-add name/Camera e/001 type/camera cond/4"
                 + " sensor/APS-C damage/SENSOR_DAMAGE remarks/Original assessment");
-        equipment.addEquipment("add-eqm name/Lens e/002 type/lens cond/5 zoom/24-70mm");
+        equipment.addEquipment("eqm-add name/Lens e/002 type/lens cond/5 zoom/24-70mm");
         loans = new LoanHandler(equipment, loanFile, sequenceFile, FIXED_CLOCK);
     }
 
     @Test
     void addLoan_missingIssuedDate_savesLocalTodayAtMidnightAndReloadsWithoutRecalculating() throws Exception {
-        Loan added = loans.addLoan("add-loan e/001 u/111 due/25-10-26");
+        Loan added = loans.addLoan("loan-add e/001 u/111 due/25-10-26");
 
         assertEquals(LocalDate.of(2026, 10, 24).atStartOfDay(), added.getIssuedDate());
         assertEquals(LocalDate.of(2026, 10, 25).atStartOfDay(), added.getDueDate());
@@ -95,7 +95,7 @@ class LoanOptionalFieldsTest {
         Clock clock = Clock.fixed(Instant.parse(instant), ZoneId.of(zone));
         LoanHandler handler = new LoanHandler(equipment, loanFile, sequenceFile, clock);
 
-        Loan added = handler.addLoan("add-loan e/001 u/111 due/26-10-26");
+        Loan added = handler.addLoan("loan-add e/001 u/111 due/26-10-26");
 
         assertEquals(LocalDate.parse(expected).atStartOfDay(), added.getIssuedDate());
         assertTrue(camera.isLoaned());
@@ -106,7 +106,7 @@ class LoanOptionalFieldsTest {
         CountingClock clock = new CountingClock();
         LoanHandler handler = new LoanHandler(equipment, loanFile, sequenceFile, clock);
 
-        Loan added = handler.addLoan("add-loan e/001 u/111 due/25-10-26");
+        Loan added = handler.addLoan("loan-add e/001 u/111 due/25-10-26");
 
         assertEquals(1, clock.reads);
         assertEquals(LocalDate.of(2026, 10, 24).atStartOfDay(), added.getIssuedDate());
@@ -117,7 +117,7 @@ class LoanOptionalFieldsTest {
         CountingClock clock = new CountingClock();
         LoanHandler handler = new LoanHandler(equipment, loanFile, sequenceFile, clock);
 
-        Loan added = handler.addLoan("add-loan e/001 u/111 issued/01-10-26 due/02-10-26");
+        Loan added = handler.addLoan("loan-add e/001 u/111 issued/01-10-26 due/02-10-26");
 
         assertEquals(0, clock.reads);
         assertEquals(LocalDate.of(2026, 10, 1).atStartOfDay(), added.getIssuedDate());
@@ -126,7 +126,7 @@ class LoanOptionalFieldsTest {
 
     @Test
     void addLoan_dueDateEqualsDefaultIssuedDate_isAccepted() throws Exception {
-        Loan added = loans.addLoan("add-loan e/001 u/111 due/24-10-26");
+        Loan added = loans.addLoan("loan-add e/001 u/111 due/24-10-26");
 
         assertEquals(added.getIssuedDate(), added.getDueDate());
         assertTrue(camera.isLoaned());
@@ -135,26 +135,26 @@ class LoanOptionalFieldsTest {
 
     /** Covers present invalid dates, omitted required fields and unsupported duplicate or reordered fields. */
     private static Stream<String> invalidLoanCommands() {
-        return Stream.of("add-loan e/002 u/222 due/23-10-26", "add-loan e/002 u/222 issued/ due/25-10-26",
-                "add-loan e/002 u/222 issued/invalid due/25-10-26",
-                "add-loan e/002 u/222 issued/31-02-26 due/25-10-26",
-                "add-loan e/002 u/222 issued/25-10-26 due/24-10-26",
-                "add-loan e/002 u/222 issued/2026-10-24 due/25-10-26",
-                "add-loan e/002 u/222 issued/24-10-26", "add-loan e/002 u/222",
-                "add-loan e/002 due/25-10-26",
-                "loan u/222 due/25-10-26", "loan id/002 b/222 due/25-10-26",
-                "add-loan e/002 u/222 due/", "add-loan e/002 u/222 due/invalid",
-                "add-loan e/002 u/222 due/31-02-26", "add-loan e/002 u/222 due/25-10-26 issued/24-10-26",
-                "add-loan e/002 issued/24-10-26 u/222 due/25-10-26",
-                "add-loan e/002 u/222 issued/24-10-26 issued/24-10-26 due/25-10-26",
-                "add-loan e/002 u/222 due/25-10-26 due/26-10-26",
-                "add-loan e/002 u/222 e/002 due/25-10-26", "add-loan e/002 u/222 due/25-10-26 extra");
+        return Stream.of("loan-add e/002 u/222 due/23-10-26", "loan-add e/002 u/222 issued/ due/25-10-26",
+                "loan-add e/002 u/222 issued/invalid due/25-10-26",
+                "loan-add e/002 u/222 issued/31-02-26 due/25-10-26",
+                "loan-add e/002 u/222 issued/25-10-26 due/24-10-26",
+                "loan-add e/002 u/222 issued/2026-10-24 due/25-10-26",
+                "loan-add e/002 u/222 issued/24-10-26", "loan-add e/002 u/222",
+                "loan-add e/002 due/25-10-26",
+                "loan u/222 due/25-10-26", "loan-add e/002 b/222 due/25-10-26",
+                "loan-add e/002 u/222 due/", "loan-add e/002 u/222 due/invalid",
+                "loan-add e/002 u/222 due/31-02-26", "loan-add e/002 u/222 due/25-10-26 issued/24-10-26",
+                "loan-add e/002 issued/24-10-26 u/222 due/25-10-26",
+                "loan-add e/002 u/222 issued/24-10-26 issued/24-10-26 due/25-10-26",
+                "loan-add e/002 u/222 due/25-10-26 due/26-10-26",
+                "loan-add e/002 u/222 e/002 due/25-10-26", "loan-add e/002 u/222 due/25-10-26 extra");
     }
 
     @ParameterizedTest
     @MethodSource("invalidLoanCommands")
     void addLoan_invalidOptionalOrRequiredField_preservesRecordsAndAllowsRetry(String command) throws Exception {
-        Loan original = loans.addLoan("add-loan e/001 u/111 issued/01-10-26 due/02-10-26");
+        Loan original = loans.addLoan("loan-add e/001 u/111 issued/01-10-26 due/02-10-26");
         String savedEquipment = Files.readString(equipmentFile);
         String savedLoans = Files.readString(loanFile);
         String savedSequence = Files.readString(sequenceFile);
@@ -170,7 +170,7 @@ class LoanOptionalFieldsTest {
         assertEquals(savedEquipment, Files.readString(equipmentFile));
         assertEquals(savedLoans, Files.readString(loanFile));
         assertEquals(savedSequence, Files.readString(sequenceFile));
-        Loan next = loans.addLoan("add-loan e/002 u/222 due/25-10-26");
+        Loan next = loans.addLoan("loan-add e/002 u/222 due/25-10-26");
         assertEquals("002", next.getLoanId());
         assertEquals(LocalDate.of(2026, 10, 24).atStartOfDay(), next.getIssuedDate());
     }
@@ -178,7 +178,7 @@ class LoanOptionalFieldsTest {
     @ParameterizedTest
     @ValueSource(strings = {"loans.txt", "loan-sequence.txt"})
     void addLoan_failedDefaultedSave_preservesCounterAndRetryUsesTheDefault(String blockedName) throws Exception {
-        Loan original = loans.addLoan("add-loan e/001 u/111 issued/01-10-26 due/02-10-26");
+        Loan original = loans.addLoan("loan-add e/001 u/111 issued/01-10-26 due/02-10-26");
         String savedLoans = Files.readString(loanFile);
         String savedSequence = Files.readString(sequenceFile);
         Path blocked = temporaryDirectory.resolve(blockedName);
@@ -188,7 +188,7 @@ class LoanOptionalFieldsTest {
         Path sentinel = blocked.resolve("keep.txt");
         Files.writeString(sentinel, "keep");
 
-        assertThrows(LoanAdditionUnsuccessful.class, () -> loans.addLoan("add-loan e/002 u/222 due/25-10-26"));
+        assertThrows(LoanAdditionUnsuccessful.class, () -> loans.addLoan("loan-add e/002 u/222 due/25-10-26"));
 
         assertEquals(List.of(original), loans.getLoanList());
         assertEquals("002", loans.getNextLoanId());
@@ -205,7 +205,7 @@ class LoanOptionalFieldsTest {
         Files.delete(blocked);
         Files.writeString(blocked, blockedContents);
 
-        Loan retried = loans.addLoan("add-loan e/002 u/222 due/25-10-26");
+        Loan retried = loans.addLoan("loan-add e/002 u/222 due/25-10-26");
 
         assertEquals("002", retried.getLoanId());
         assertEquals(LocalDate.of(2026, 10, 24).atStartOfDay(), retried.getIssuedDate());
@@ -230,7 +230,7 @@ class LoanOptionalFieldsTest {
     @ParameterizedTest
     @ValueSource(strings = {"", " remarks/"})
     void returnLoan_missingOrEmptyRemarks_clearsPreviousRemarksAndPersists(String optionalRemarks) throws Exception {
-        Loan original = loans.addLoan("add-loan e/001 u/111 due/25-10-26");
+        Loan original = loans.addLoan("loan-add e/001 u/111 due/25-10-26");
 
         assertSame(original, loans.returnLoan("loan-return l/001 serviceable/yes damage/NONE" + optionalRemarks));
 
@@ -252,7 +252,7 @@ class LoanOptionalFieldsTest {
 
     @Test
     void returnLoan_optionalRemarks_preservesExplicitAssessmentAndLiteralFinalText() throws Exception {
-        loans.addLoan("add-loan e/001 u/111 due/25-10-26");
+        loans.addLoan("loan-add e/001 u/111 due/25-10-26");
         String remarks = "Keep damage/NONE serviceable/yes label for repair";
 
         loans.returnLoan("loan-return l/001 serviceable/no damage/SHUTTER_FAULT remarks/" + remarks);
@@ -261,7 +261,7 @@ class LoanOptionalFieldsTest {
         assertFalse(camera.isLoaned());
         assertEquals(CameraDamage.SHUTTER_FAULT, camera.getDamage());
         assertEquals(remarks, camera.getRemarks());
-        assertThrows(LoanAdditionUnsuccessful.class, () -> loans.addLoan("add-loan e/001 u/222 due/25-10-26"));
+        assertThrows(LoanAdditionUnsuccessful.class, () -> loans.addLoan("loan-add e/001 u/222 due/25-10-26"));
         assertEquals("002", loans.getNextLoanId());
     }
 
@@ -282,7 +282,7 @@ class LoanOptionalFieldsTest {
     @ParameterizedTest
     @MethodSource("invalidReturnCommands")
     void returnLoan_missingOrInvalidAssessment_preservesAllRecordsAndAllowsRetry(String command) throws Exception {
-        Loan original = loans.addLoan("add-loan e/001 u/111 due/25-10-26");
+        Loan original = loans.addLoan("loan-add e/001 u/111 due/25-10-26");
         String savedEquipment = Files.readString(equipmentFile);
         String savedLoans = Files.readString(loanFile);
         String savedSequence = Files.readString(sequenceFile);
@@ -309,7 +309,7 @@ class LoanOptionalFieldsTest {
     @ParameterizedTest
     @ValueSource(strings = {"equipment.txt", "loans.txt", "loan-sequence.txt"})
     void returnLoan_failedSaveWithOmittedRemarks_preservesOldRemarksUntilRetry(String blockedName) throws Exception {
-        Loan original = loans.addLoan("add-loan e/001 u/111 due/25-10-26");
+        Loan original = loans.addLoan("loan-add e/001 u/111 due/25-10-26");
         String savedEquipment = Files.readString(equipmentFile);
         String savedLoans = Files.readString(loanFile);
         String savedSequence = Files.readString(sequenceFile);

@@ -27,25 +27,25 @@ import seedu.snap.parser.CommandAliases;
 
 /** Checks the command guide covers executable syntax, meaningful defaults and important restrictions. */
 class HelpTest {
-    private static final List<String> TOPICS = List.of("add-eqm", "list-eqm", "eqm-show", "eqm-delete", "add-loan",
-            "loan-return", "loan-delete", "loan-update", "list-loan", "loan-show", "list-loan-borrower",
-            "list-loan-overdue", "eqm-loan-history", "filter-eqm", "eqm-update", "eqm-maintain", "add-bundle",
-            "bundle-add-eqm", "backup", "restore", "bundle-remove-eqm", "list-bundle", "bundle-history", "help",
+    private static final List<String> TOPICS = List.of("eqm-add", "eqm-list", "eqm-show", "eqm-delete", "loan-add",
+            "loan-return", "loan-delete", "loan-update", "loan-list", "loan-view", "loan-show", "loan-list-borrower",
+            "loan-list-overdue", "eqm-loan-history", "eqm-filter", "eqm-update", "eqm-maintain", "bundle-create",
+            "bundle-add-eqm", "backup", "restore", "bundle-remove-eqm", "bundle-list", "bundle-history", "help",
             "exit");
 
     /** Supplies the user-facing syntax and example for each supported command. */
     private static Stream<Arguments> commandExamples() {
         return Stream.of(
-                Arguments.of("add-eqm", "add-eqm name/<NAME> e/<ID> type/<TYPE> cond/<N>"
+                Arguments.of("eqm-add", "eqm-add name/<NAME> e/<ID> type/<TYPE> cond/<N>"
                         + " [TYPE DETAIL] [damage/<DAMAGE>] [remarks/<TEXT>]",
-                        "add-eqm name/Canon EOS R10 e/001 type/camera cond/1 "
+                        "eqm-add name/Canon EOS R10 e/001 type/camera cond/1 "
                                 + "sensor/APS-C mount/Canon RF damage/NONE"),
-                Arguments.of("list-eqm", "list-eqm", "list-eqm"),
+                Arguments.of("eqm-list", "eqm-list", "eqm-list"),
                 Arguments.of("eqm-show", "eqm-show e/<ID>", "eqm-show e/001"),
                 Arguments.of("eqm-delete", "eqm-delete e/<ID>", "eqm-delete e/001"),
-                Arguments.of("add-loan", "add-loan e/<ITEM ID> u/<BORROWER ID> "
+                Arguments.of("loan-add", "loan-add e/<ITEM ID> u/<BORROWER ID> "
                                 + "[issued/<DD-MM-YY>] due/<DD-MM-YY>",
-                        "add-loan e/001 u/002 issued/24-10-26 due/31-10-26"),
+                        "loan-add e/001 u/002 issued/24-10-26 due/31-10-26"),
                 Arguments.of("loan-return", "loan-return l/<LOAN ID> serviceable/<yes|no> "
                                 + "damage/<DAMAGE> [remarks/<TEXT>]",
                         "loan-return l/001 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair"),
@@ -53,28 +53,29 @@ class HelpTest {
                 Arguments.of("loan-update", "loan-update l/<LOAN ID> [e/<ITEM ID>] [u/<BORROWER ID>]"
                                 + " [issued/<DD-MM-YY>] [due/<DD-MM-YY>]",
                         "loan-update l/001 e/002 u/007 due/07-11-26"),
-                Arguments.of("list-loan", "list-loan", "list-loan"),
+                Arguments.of("loan-list", "loan-list", "loan-list"),
+                Arguments.of("loan-view", "loan-view l/<LOAN ID>", "loan-view l/001"),
                 Arguments.of("loan-show", "loan-show l/<LOAN ID>", "loan-show l/001"),
                 Arguments.of("backup", "backup path/<DIRECTORY>", "backup path/backups/session-1"),
                 Arguments.of("restore", "restore path/<DIRECTORY>", "restore path/backups/session-1"),
-                Arguments.of("list-loan-borrower", "list-loan-borrower u/<BORROWER ID>",
-                        "list-loan-borrower u/002"),
-                Arguments.of("list-loan-overdue", "list-loan-overdue", "list-loan-overdue"),
+                Arguments.of("loan-list-borrower", "loan-list-borrower u/<BORROWER ID>",
+                        "loan-list-borrower u/002"),
+                Arguments.of("loan-list-overdue", "loan-list-overdue", "loan-list-overdue"),
                 Arguments.of("eqm-loan-history", "eqm-loan-history e/<ITEM ID>", "eqm-loan-history e/001"),
-                Arguments.of("filter-eqm", "filter-eqm [e/<ID>] [name/<NAME>] [type/<TYPE>] "
+                Arguments.of("eqm-filter", "eqm-filter [e/<ID>] [name/<NAME>] [type/<TYPE>] "
                                 + "[cond/<N|MIN-MAX>] [status/<STATUS>]",
-                        "filter-eqm type/camera cond/1-3 status/available"),
+                        "eqm-filter type/camera cond/1-3 status/available"),
                 Arguments.of("eqm-maintain", "eqm-maintain e/<ITEM ID> date/<DD-MM-YY> "
                                 + "work/<DESCRIPTION> outcome/<OUTCOME>",
                         "eqm-maintain e/001 date/27-10-26 work/Replaced battery outcome/Completed"),
                 Arguments.of("eqm-update", "eqm-update e/<ID> [name/<NAME>] [type/<TYPE>] [cond/<N>]",
                         "eqm-update e/001 name/Studio camera cond/5"),
-                Arguments.of("add-bundle", "add-bundle name/<NAME>", "add-bundle name/Studio kit"),
+                Arguments.of("bundle-create", "bundle-create name/<NAME>", "bundle-create name/Studio kit"),
                 Arguments.of("bundle-add-eqm", "bundle-add-eqm b/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]",
                         "bundle-add-eqm b/001 001 002 003"),
                 Arguments.of("bundle-remove-eqm", "bundle-remove-eqm b/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]",
                         "bundle-remove-eqm b/001 001"),
-                Arguments.of("list-bundle", "list-bundle", "list-bundle"),
+                Arguments.of("bundle-list", "bundle-list", "bundle-list"),
                 Arguments.of("bundle-history", "bundle-history b/<BUNDLE ID>", "bundle-history b/001"),
                 Arguments.of("bundle-history", "bundle-history name/<NAME>", "bundle-history name/Studio kit"),
                 Arguments.of("help", "help", "help"),
@@ -118,7 +119,7 @@ class HelpTest {
         String lowerCaseText = text.toLowerCase(Locale.ROOT);
 
         assertTrue(text.lines().count() < 20, "The default menu must fit in a small terminal.");
-        for (String group : List.of("equipment", "add-loan", "bundle")) {
+        for (String group : List.of("equipment", "loan-add", "bundle")) {
             assertTrue(lowerCaseText.contains(group), "The menu should group " + group + " commands.");
         }
         List<String> menuRows = text.lines().filter(line -> line.startsWith("| ") && line.endsWith(" |"))
@@ -192,11 +193,11 @@ class HelpTest {
 
     @Test
     void getText_topic_placesRequestedCommandBeforeSharedRulesAndUsesHeadingSeparators() {
-        String text = Help.getText("add-loan");
+        String text = Help.getText("loan-add");
         List<String> lines = text.lines().toList();
 
         assertEquals("=".repeat(100), lines.getFirst());
-        assertEquals("ADD-LOAN", lines.get(1));
+        assertEquals("LOAN-ADD", lines.get(1));
         assertEquals(lines.getFirst(), lines.get(2));
         assertTrue(lines.get(3).isBlank());
         assertTrue(text.indexOf("Format:") < text.indexOf("snAp command help"));
@@ -206,10 +207,11 @@ class HelpTest {
     @Test
     void getText_all_separatesEveryCommandWithSpacedFullWidthHeadingBands() {
         List<String> lines = Help.getText("all").lines().toList();
-        List<String> headings = List.of("ADD-EQM", "LIST-EQM", "EQM-SHOW", "EQM-DELETE", "ADD-LOAN", "LOAN-RETURN",
-                "LOAN-DELETE", "LOAN-UPDATE", "LIST-LOAN", "LOAN-SHOW", "LIST-LOAN-BORROWER",
-                "LIST-LOAN-OVERDUE", "EQM-LOAN-HISTORY", "FILTER-EQM", "EQM-UPDATE", "EQM-MAINTAIN", "ADD-BUNDLE",
-                "BUNDLE-ADD-EQM", "BUNDLE-REMOVE-EQM", "LIST-BUNDLE", "BUNDLE-HISTORY", "BACKUP", "RESTORE", "HELP",
+        List<String> headings = List.of("EQM-ADD", "EQM-LIST", "EQM-SHOW", "EQM-DELETE", "LOAN-ADD", "LOAN-RETURN",
+                "LOAN-DELETE", "LOAN-UPDATE", "LOAN-LIST", "VIEW LOAN CONDITION ASSESSMENTS", "LOAN-SHOW",
+                "LOAN-LIST-BORROWER", "LOAN-LIST-OVERDUE", "EQM-LOAN-HISTORY", "EQM-FILTER", "EQM-UPDATE",
+                "EQM-MAINTAIN", "BUNDLE-CREATE", "BUNDLE-ADD-EQM", "BUNDLE-REMOVE-EQM", "BUNDLE-LIST",
+                "BUNDLE-HISTORY", "BACKUP", "RESTORE", "HELP",
                 "EXIT");
         String divider = "=".repeat(100);
 
@@ -239,16 +241,16 @@ class HelpTest {
     void getText_multiwordTopics_selectExactGuideAfterWhitespaceNormalisation() {
         assertEquals(Help.getText("eqm-delete"), Help.getText(" \teqm-delete\u00a0 "));
         assertEquals(Help.getText("loan-delete"), Help.getText(" \tloan-delete\u00a0 "));
-        assertEquals(Help.getText("list-loan"), Help.getText(" \tlist-loan\u00a0 "));
+        assertEquals(Help.getText("loan-list"), Help.getText(" \tloan-list\u00a0 "));
         assertEquals(Help.getText("loan-show"), Help.getText(" \tloan-show\u00a0 "));
-        assertEquals(Help.getText("list-loan-overdue"), Help.getText(" \tlist-loan-overdue\u00a0 "));
-        assertEquals(Help.getText("list-bundle"), Help.getText(" \tlist-bundle\u00a0 "));
+        assertEquals(Help.getText("loan-list-overdue"), Help.getText(" \tloan-list-overdue\u00a0 "));
+        assertEquals(Help.getText("bundle-list"), Help.getText(" \tbundle-list\u00a0 "));
         assertEquals(Help.getText("bundle-history"), Help.getText(" \tbundle-history\u00a0 "));
-        assertEquals(Help.getText("list-loan-borrower"), Help.getText(" \tlist-loan-borrower\u00a0 "));
+        assertEquals(Help.getText("loan-list-borrower"), Help.getText(" \tloan-list-borrower\u00a0 "));
         for (String topic : TOPICS) {
             assertEquals(Help.getText(topic), Help.getText(CommandAliases.aliasFor(topic)), topic);
         }
-        assertFalse(labelledValues(Help.getText("list-eqm"), "Format:").contains("list-loan"));
+        assertFalse(labelledValues(Help.getText("eqm-list"), "Format:").contains("loan-list"));
         assertFalse(labelledValues(Help.getText("eqm-delete"), "Format:").contains("loan-delete l/<LOAN ID>"));
         assertFalse(labelledValues(Help.getText("eqm-loan-history"), "Format:")
                 .contains("bundle-history b/<BUNDLE ID>"));
@@ -257,7 +259,7 @@ class HelpTest {
     /** Supplies misspellings, partial topics and aliases that must not select a command guide. */
     private static Stream<String> unknownTopics() {
         return Stream.of("unknown", "HELP", "ADD", "helpall", "helpful", "equipment", "loans", "bundles",
-                "delete", "list loan", "list items", "list-loan extra", "view", "loan-show l/001", "view loan extra",
+                "delete", "list loan", "list items", "loan-list extra", "view", "loan-show l/001", "loan-view extra",
                 "bundle-history b/001", "bundle-history name/Studio kit", "bundle-remove-eqm b/001 001",
                 "help add", "all extra");
     }
@@ -274,21 +276,21 @@ class HelpTest {
 
     @Test
     void getText_topicGuides_retainRelevantRequirementsDefaultsAndRestrictions() {
-        assertTrue(proseFor("add-eqm").contains("Name, unused Item ID, type and condition are required"));
-        assertTrue(proseFor("add-eqm").contains("omitted damage defaults to NONE;"));
+        assertTrue(proseFor("eqm-add").contains("Name, unused Item ID, type and condition are required"));
+        assertTrue(proseFor("eqm-add").contains("omitted damage defaults to NONE;"));
         assertTrue(proseFor("eqm-delete").contains("Active loans and bundle membership block deletion."));
-        assertTrue(proseFor("add-loan").contains("Omitted issued/ defaults to today's date"));
-        assertTrue(proseFor("add-loan").contains("Issue date must be on or before the required due date."));
+        assertTrue(proseFor("loan-add").contains("Omitted issued/ defaults to today's date"));
+        assertTrue(proseFor("loan-add").contains("Issue date must be on or before the required due date."));
         assertTrue(proseFor("loan-return").contains("explicit serviceable/ and damage/ assessment"));
         assertTrue(proseFor("loan-return").contains(
                 "For other damage values, omitted or empty remarks clear prior notes."));
         assertTrue(proseFor("loan-delete").contains(
                 "Deleting returned history leaves newer active loans unchanged."));
-        assertTrue(proseFor("list-loan-overdue").contains("Returned loans and loans due today or later are excluded."));
+        assertTrue(proseFor("loan-list-overdue").contains("Returned loans and loans due today or later are excluded."));
         assertTrue(proseFor("eqm-loan-history").contains("Reused Item IDs keep separate histories."));
-        assertTrue(proseFor("filter-eqm").contains("All filters must match (AND)."));
+        assertTrue(proseFor("eqm-filter").contains("All filters must match (AND)."));
         assertTrue(proseFor("eqm-update").contains("Omitted fields retain their current values."));
-        assertTrue(proseFor("add-bundle").contains(
+        assertTrue(proseFor("bundle-create").contains(
                 "Bundles and their equipment memberships are restored between application runs"));
         assertTrue(proseFor("bundle-add-eqm").contains(
                 "exactly one camera, at least one lens and at least one battery."));
@@ -301,7 +303,7 @@ class HelpTest {
             String type, String fields, Enum<?>[] damages) {
         String choices = String.join(", ", Arrays.stream(damages).map(Enum::name).toList());
 
-        assertTrue(proseFor("add-eqm").contains(type + ": " + fields + "; damage: " + choices), type);
+        assertTrue(proseFor("eqm-add").contains(type + ": " + fields + "; damage: " + choices), type);
         assertTrue(proseFor("loan-return").contains(type + ": " + choices), type);
     }
 
@@ -483,13 +485,13 @@ class HelpTest {
     void getText_overdueLoans_explainsEligibilityAndReadOnlyBehaviour() {
         String text = normaliseWhitespace(Help.getText());
 
-        assertTrue(text.contains("Format: list-loan-overdue"));
+        assertTrue(text.contains("Format: loan-list-overdue"));
         assertTrue(text.contains(
                 "Shows active loans with due dates earlier than today's local date."));
         assertTrue(text.contains(
                 "Returned loans and loans due today or later are excluded."));
         assertTrue(text.contains(
-                "Uses the same columns and DD-MM-YY dates as list-loan, with Overdue state and a count."));
+                "Uses the same columns and DD-MM-YY dates as loan-list, with Overdue state and a count."));
     }
 
     @Test
@@ -513,12 +515,12 @@ class HelpTest {
     void getText_borrowerLoans_explainsFilteringAliasesAndReadOnlyBehaviour() {
         String text = normaliseWhitespace(Help.getText());
 
-        assertTrue(text.contains("LIST-LOAN-BORROWER"));
+        assertTrue(text.contains("LOAN-LIST-BORROWER"));
         assertFalse(text.contains("list member"));
         assertTrue(text.contains("Shows only active equipment held by the selected borrower"));
         assertTrue(text.contains("Returned loans and loans held by other borrowers are excluded."));
         assertTrue(text.contains("An unknown borrower ID and a known borrower with no active loans"));
-        assertTrue(proseFor("list-loan-borrower").contains(
+        assertTrue(proseFor("loan-list-borrower").contains(
                 "A borrower is known when at least one active or returned loan uses that ID."));
         assertTrue(text.contains("This read-only query does not change equipment, loans or saved files."));
     }
@@ -528,7 +530,7 @@ class HelpTest {
         String text = Help.getText();
 
         assertTrue(labelledValues(text, "Format:").containsAll(List.of("help", "help <COMMAND>", "help all")));
-        assertTrue(labelledValues(text, "Example:").containsAll(List.of("help", "help add-loan", "help all")));
+        assertTrue(labelledValues(text, "Example:").containsAll(List.of("help", "help loan-add", "help all")));
         text = normaliseWhitespace(text);
         assertTrue(text.contains("Saves equipment, loans, maintenance records and bundles before exiting."));
         assertTrue(text.contains("A save failure keeps the application running;"));

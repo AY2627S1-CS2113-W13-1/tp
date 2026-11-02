@@ -33,8 +33,8 @@ class EquipmentUpdateTest {
     @BeforeEach
     void setUp() throws EquipmentAdditionUnsuccessful {
         handler = new EquipmentHandler();
-        camera = handler.addEquipment("add-eqm name/Camera e/001 type/camera cond/1");
-        tripod = handler.addEquipment("add-eqm name/Tripod e/999 type/tripod cond/10");
+        camera = handler.addEquipment("eqm-add name/Camera e/001 type/camera cond/1");
+        tripod = handler.addEquipment("eqm-add name/Tripod e/999 type/tripod cond/10");
     }
 
     @Test
@@ -186,11 +186,11 @@ class EquipmentUpdateTest {
         try (PrintStream captured = new PrintStream(output, true, StandardCharsets.UTF_8)) {
             System.setOut(captured);
             EqmManager manager = new EqmManager(temporaryDataDirectory);
-            manager.executeInput("add-eqm name/Camera e/001 type/camera cond/1");
+            manager.executeInput("eqm-add name/Camera e/001 type/camera cond/1");
             output.reset();
             manager.executeInput("eqm-update e/001 name/Bad cond/11");
             manager.executeInput("eqm-update e/001 name/Film Camera cond/5");
-            manager.executeInput("list-eqm");
+            manager.executeInput("eqm-list");
             manager.executeInput("eqm-delete e/001");
             String text = output.toString(StandardCharsets.UTF_8);
             assertTrue(text.contains("Condition must be a whole number from 1 to 10."));

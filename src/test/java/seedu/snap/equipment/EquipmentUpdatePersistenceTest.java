@@ -24,7 +24,7 @@ class EquipmentUpdatePersistenceTest {
     void updateEquipment_restart_restoresOnlyTheSuppliedChanges() throws Exception {
         Path file = temporaryDirectory.resolve("equipment.txt");
         EquipmentHandler handler = new EquipmentHandler(file);
-        Equipment original = handler.addEquipment("add-eqm name/Camera e/001 type/camera cond/1");
+        Equipment original = handler.addEquipment("eqm-add name/Camera e/001 type/camera cond/1");
         assertSame(original, handler.updateEquipment("eqm-update e/001 name/Film Camera cond/5"));
         EquipmentHandler restarted = new EquipmentHandler(file);
         restarted.loadFromStorage();
@@ -39,7 +39,7 @@ class EquipmentUpdatePersistenceTest {
     void updateEquipment_rejectedValues_preserveSavedFileAndAllowRecovery() throws Exception {
         Path file = temporaryDirectory.resolve("equipment.txt");
         EquipmentHandler handler = new EquipmentHandler(file);
-        Equipment original = handler.addEquipment("add-eqm name/Camera e/001 type/camera cond/1");
+        Equipment original = handler.addEquipment("eqm-add name/Camera e/001 type/camera cond/1");
         String saved = Files.readString(file);
         assertThrows(EquipmentUpdateUnsuccessful.class,
                 () -> handler.updateEquipment("eqm-update e/001 name/Changed cond/11"));
@@ -56,7 +56,7 @@ class EquipmentUpdatePersistenceTest {
     void updateEquipment_failedWrite_preservesObjectAndRecoversWhenStorageIsFixed() throws Exception {
         Path file = temporaryDirectory.resolve("equipment.txt");
         EquipmentHandler handler = new EquipmentHandler(file);
-        Equipment original = handler.addEquipment("add-eqm name/Camera e/001 type/camera cond/1");
+        Equipment original = handler.addEquipment("eqm-add name/Camera e/001 type/camera cond/1");
         Files.delete(file);
         Files.createDirectory(file);
         Path sentinel = file.resolve("keep.txt");

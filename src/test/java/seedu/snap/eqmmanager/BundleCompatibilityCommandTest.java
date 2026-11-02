@@ -38,13 +38,13 @@ class BundleCompatibilityCommandTest {
     @Test
     void addToBundle_incompatibleAndCompatibleCandidates_reportsAndStoresEachResult() {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("add-eqm name/Camera e/001 type/camera cond/1 sensor/APS-C"
+        manager.executeInput("eqm-add name/Camera e/001 type/camera cond/1 sensor/APS-C"
                 + " mount/Canon RF battery/LP-E17");
-        manager.executeInput("add-eqm name/Incompatible Lens e/002 type/lens cond/1"
+        manager.executeInput("eqm-add name/Incompatible Lens e/002 type/lens cond/1"
                 + " mount/Nikon Z sensor/APS-C");
-        manager.executeInput("add-eqm name/Compatible Battery e/003 type/battery cond/1"
+        manager.executeInput("eqm-add name/Compatible Battery e/003 type/battery cond/1"
                 + " battery/lp-e17");
-        manager.executeInput("add-bundle name/Camera Kit");
+        manager.executeInput("bundle-create name/Camera Kit");
         manager.executeInput("bundle-add-eqm b/001 001");
         output.reset();
 
@@ -61,7 +61,7 @@ class BundleCompatibilityCommandTest {
         assertTrue(printed.contains("Composition: Incomplete (missing lens)"));
 
         output.reset();
-        manager.executeInput("list-bundle");
+        manager.executeInput("bundle-list");
         String listing = output.toString(StandardCharsets.UTF_8);
 
         assertTrue(listing.contains("Camera"));

@@ -41,7 +41,7 @@ class OptionalFieldsIntegrationTest {
         originalOutput = System.out;
         System.setOut(new PrintStream(output, true, StandardCharsets.UTF_8));
         manager = new EqmManager(temporaryDirectory, FIXED_CLOCK);
-        manager.executeInput("add-eqm name/Camera e/001 type/camera cond/4 sensor/Full frame remarks/Old remarks");
+        manager.executeInput("eqm-add name/Camera e/001 type/camera cond/4 sensor/Full frame remarks/Old remarks");
         output.reset();
     }
 
@@ -52,7 +52,7 @@ class OptionalFieldsIntegrationTest {
 
     @Test
     void optionalCommands_defaultLocalDateAndEmptyRemarks_areSavedAndRestored() throws Exception {
-        manager.executeInput("add-loan e/001 u/111 due/25-10-26");
+        manager.executeInput("loan-add e/001 u/111 due/25-10-26");
         assertTrue(printed().contains("[OK] Loan 001 issued."));
         assertTrue(Files.readString(temporaryDirectory.resolve("loans.txt"))
                 .contains("issued/25-10-26 due/25-10-26"));
@@ -64,7 +64,7 @@ class OptionalFieldsIntegrationTest {
         Clock later = Clock.fixed(Instant.parse("2030-01-01T00:00:00Z"), ZoneOffset.UTC);
         EqmManager restarted = new EqmManager(temporaryDirectory, later);
         output.reset();
-        restarted.executeInput("list-loan");
+        restarted.executeInput("loan-list");
         assertTrue(printed().contains("25-10-26"));
         assertTrue(printed().contains("Returned"));
         EquipmentHandler inventory = new EquipmentHandler(temporaryDirectory.resolve("equipment.txt"));
@@ -84,13 +84,13 @@ class OptionalFieldsIntegrationTest {
 
     @Test
     void optionalCommands_invalidPresentDateAndMissingAssessment_recoverWithoutConsumingLoanIds() throws Exception {
-        manager.executeInput("add-loan e/001 u/111 issued/ due/25-10-26");
-        manager.executeInput("add-loan e/001 u/111 due/24-10-26");
-        manager.executeInput("add-loan e/001 u/111");
+        manager.executeInput("loan-add e/001 u/111 issued/ due/25-10-26");
+        manager.executeInput("loan-add e/001 u/111 due/24-10-26");
+        manager.executeInput("loan-add e/001 u/111");
         assertFalse(printed().contains("[OK]"));
         assertFalse(Files.exists(temporaryDirectory.resolve("loans.txt")));
         output.reset();
-        manager.executeInput("add-loan e/001 u/111 due/25-10-26");
+        manager.executeInput("loan-add e/001 u/111 due/25-10-26");
         assertTrue(printed().contains("[OK] Loan 001 issued."));
         String savedLoans = Files.readString(temporaryDirectory.resolve("loans.txt"));
         String savedEquipment = Files.readString(temporaryDirectory.resolve("equipment.txt"));
@@ -107,7 +107,7 @@ class OptionalFieldsIntegrationTest {
         manager.executeInput("loan-return l/001 serviceable/no damage/SENSOR_DAMAGE");
         assertTrue(printed().contains("[OK] Loan 001 returned."));
         output.reset();
-        manager.executeInput("add-loan e/001 u/222 due/25-10-26");
+        manager.executeInput("loan-add e/001 u/222 due/25-10-26");
         assertFalse(printed().contains("[OK]"));
         assertTrue(printed().contains("unserviceable"));
         assertEquals("nextLoanId/002", Files.readString(temporaryDirectory.resolve("loan-sequence.txt")).trim());
@@ -115,7 +115,7 @@ class OptionalFieldsIntegrationTest {
 
     @Test
     void optionalCommands_errorMessagesShowWhichFieldsMayBeOmitted() {
-        manager.executeInput("add-loan");
+        manager.executeInput("loan-add");
 
         String loanHelp = printed();
         assertTrue(loanHelp.contains("[issued/"));
@@ -130,7 +130,7 @@ class OptionalFieldsIntegrationTest {
 
     @Test
     void optionalCommands_failedReturnSave_retainsPreviousRemarksAndAllowsShortFormRetry() throws Exception {
-        manager.executeInput("add-loan e/001 u/111 due/25-10-26");
+        manager.executeInput("loan-add e/001 u/111 due/25-10-26");
         Path loanFile = temporaryDirectory.resolve("loans.txt");
         Path equipmentFile = temporaryDirectory.resolve("equipment.txt");
         String savedLoans = Files.readString(loanFile);

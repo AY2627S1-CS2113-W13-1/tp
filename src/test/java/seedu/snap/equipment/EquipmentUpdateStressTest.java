@@ -30,7 +30,7 @@ class EquipmentUpdateStressTest {
         try (PrintStream captured = new PrintStream(output, true, StandardCharsets.UTF_8)) {
             System.setOut(captured);
             EqmManager manager = new EqmManager(temporaryDataDirectory);
-            manager.executeInput("add-eqm name/Camera e/001 type/camera cond/1");
+            manager.executeInput("eqm-add name/Camera e/001 type/camera cond/1");
             for (String space : new String[]{" ", "\t", "\u2003", "\u00a0", "\u2007", "\u202f"}) {
                 output.reset();
                 manager.executeInput(space + "eqm-update" + space + "e/001" + space + "cond/5" + space);
@@ -48,7 +48,7 @@ class EquipmentUpdateStressTest {
     void updateEquipment_unicodeSeparators_acceptsEachWhitespaceCharacter() throws Exception {
         for (String separator : new String[]{" ", "\t", "\u2003", "\u00a0", "\u2007", "\u202f"}) {
             EquipmentHandler handler = new EquipmentHandler();
-            Equipment item = handler.addEquipment("add-eqm name/Camera e/001 type/camera cond/1");
+            Equipment item = handler.addEquipment("eqm-add name/Camera e/001 type/camera cond/1");
             handler.updateEquipment("eqm-update" + separator + "e/001" + separator + "name/Film Camera");
             assertEquals("Film Camera", item.getItemName());
         }
@@ -57,7 +57,7 @@ class EquipmentUpdateStressTest {
     @Test
     void updateEquipment_visuallyBlankValues_rejectsWithoutChangingRecord() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
-        Equipment item = handler.addEquipment("add-eqm name/Camera e/001 type/camera cond/1");
+        Equipment item = handler.addEquipment("eqm-add name/Camera e/001 type/camera cond/1");
         for (String blank : new String[]{"\u00a0", "\u2007", "\u202f", " \u00a0\t\u2003"}) {
             for (String field : new String[]{"name/", "type/"}) {
                 assertThrows(EquipmentUpdateUnsuccessful.class,
@@ -73,7 +73,7 @@ class EquipmentUpdateStressTest {
         EquipmentHandler handler = new EquipmentHandler();
         for (int id = 1; id <= 999; id++) {
             String formatted = String.format(java.util.Locale.ROOT, "%03d", id);
-            handler.addEquipment("add-eqm name/Original e/" + formatted + " type/camera cond/1");
+            handler.addEquipment("eqm-add name/Original e/" + formatted + " type/camera cond/1");
         }
         for (int id = 999; id >= 1; id--) {
             String formatted = String.format(java.util.Locale.ROOT, "%03d", id);
@@ -94,7 +94,7 @@ class EquipmentUpdateStressTest {
     @Test
     void updateEquipment_seededMalformedTokens_neverPartiallyAppliesRejectedInput() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
-        Equipment item = handler.addEquipment("add-eqm name/Camera e/001 type/camera cond/1");
+        Equipment item = handler.addEquipment("eqm-add name/Camera e/001 type/camera cond/1");
         String[] tokens = {"e/001", "e/000", "e/999", "name/New", "type/lens", "cond/10", "cond/11",
             "cond/2147483648", "status/available", "name/", "type/", "\u00a0", "x", "e/card"};
         Random random = new Random(2627);
@@ -121,8 +121,8 @@ class EquipmentUpdateStressTest {
     @Test
     void updateEquipment_seededMixedOperations_preservesModelAndAllOtherRecords() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
-        Equipment first = handler.addEquipment("add-eqm name/Original e/001 type/camera cond/1");
-        Equipment other = handler.addEquipment("add-eqm name/Other e/999 type/lens cond/10");
+        Equipment first = handler.addEquipment("eqm-add name/Original e/001 type/camera cond/1");
+        Equipment other = handler.addEquipment("eqm-add name/Other e/999 type/lens cond/10");
         String expectedName = "Original";
         String expectedType = "camera";
         int expectedCondition = 1;

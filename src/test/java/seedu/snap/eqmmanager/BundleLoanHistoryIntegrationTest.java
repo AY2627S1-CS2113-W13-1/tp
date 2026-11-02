@@ -35,12 +35,12 @@ class BundleLoanHistoryIntegrationTest {
     @Test
     void historyBundleCommand_displaysActiveAndReturnedLoans() {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("add-eqm name/Camera e/001 type/camera cond/5 sensor/Full frame");
-        manager.executeInput("add-eqm name/Battery e/002 type/battery cond/5 capacity/2000 mAh");
-        manager.executeInput("add-bundle name/Travel Kit");
+        manager.executeInput("eqm-add name/Camera e/001 type/camera cond/5 sensor/Full frame");
+        manager.executeInput("eqm-add name/Battery e/002 type/battery cond/5 capacity/2000 mAh");
+        manager.executeInput("bundle-create name/Travel Kit");
         manager.executeInput("bundle-add-eqm b/001 001 002");
-        manager.executeInput("add-loan e/001 u/111 issued/01-10-26 due/02-10-26");
-        manager.executeInput("add-loan e/002 u/222 issued/03-10-26 due/04-10-26");
+        manager.executeInput("loan-add e/001 u/111 issued/01-10-26 due/02-10-26");
+        manager.executeInput("loan-add e/002 u/222 issued/03-10-26 due/04-10-26");
         manager.executeInput("loan-return l/002 serviceable/yes damage/NONE");
         output.reset();
 
@@ -68,12 +68,12 @@ class BundleLoanHistoryIntegrationTest {
     @Test
     void historyBundleCommand_survivesRestartWithBundleAndLoanPersistence() {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("add-eqm name/Camera e/001 type/camera cond/5 sensor/Full frame");
-        manager.executeInput("add-eqm name/Battery e/002 type/battery cond/5 capacity/2000 mAh");
-        manager.executeInput("add-bundle name/Travel Kit");
+        manager.executeInput("eqm-add name/Camera e/001 type/camera cond/5 sensor/Full frame");
+        manager.executeInput("eqm-add name/Battery e/002 type/battery cond/5 capacity/2000 mAh");
+        manager.executeInput("bundle-create name/Travel Kit");
         manager.executeInput("bundle-add-eqm b/001 001 002");
-        manager.executeInput("add-loan e/001 u/111 issued/01-10-26 due/02-10-26");
-        manager.executeInput("add-loan e/002 u/222 issued/03-10-26 due/04-10-26");
+        manager.executeInput("loan-add e/001 u/111 issued/01-10-26 due/02-10-26");
+        manager.executeInput("loan-add e/002 u/222 issued/03-10-26 due/04-10-26");
         manager.executeInput("loan-return l/002 serviceable/yes damage/NONE");
         manager.executeInput("exit");
         output.reset();

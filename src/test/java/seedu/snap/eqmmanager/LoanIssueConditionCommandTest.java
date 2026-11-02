@@ -147,13 +147,13 @@ class LoanIssueConditionCommandTest {
     /** Adds one camera and creates its first loan. */
     private void addEquipmentAndLoan(EqmManager manager) {
         manager.executeInput(
-                "add-eqm name/Test Camera e/001 "
+                "eqm-add name/Test Camera e/001 "
                         + "type/camera cond/6 "
                         + "sensor/Full frame "
                         + "damage/SENSOR_DAMAGE "
                         + "remarks/Handle carefully");
         manager.executeInput(
-                "add-loan e/001 u/101 "
+                "loan-add e/001 u/101 "
                         + "issued/01-10-26 due/20-10-26");
     }
 }

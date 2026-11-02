@@ -35,7 +35,7 @@ class EquipmentViewTest {
     @Test
     void inventory_longNameAndRemarks_keepsOnlyBoundedSummaryColumns() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
-        handler.addEquipment("add-eqm name/" + "A".repeat(100) + " e/001 type/camera cond/10 "
+        handler.addEquipment("eqm-add name/" + "A".repeat(100) + " e/001 type/camera cond/10 "
                 + "remarks/" + "r".repeat(200));
 
         handler.viewAllEquipment();
@@ -57,10 +57,10 @@ class EquipmentViewTest {
     @Test
     void inventory_wideAndJoinedUnicodeNames_preservesGraphemesAndColumnWidths() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
-        handler.addEquipment("add-eqm name/" + "相".repeat(30) + " e/001 type/camera cond/1");
-        handler.addEquipment("add-eqm name/" + "😀".repeat(26) + " e/002 type/lens cond/2");
-        handler.addEquipment("add-eqm name/" + "e\u0301".repeat(50) + " e/003 type/battery cond/3");
-        handler.addEquipment("add-eqm name/" + "👩‍👩‍👧‍👦".repeat(8) + " e/004 type/tripod cond/4");
+        handler.addEquipment("eqm-add name/" + "相".repeat(30) + " e/001 type/camera cond/1");
+        handler.addEquipment("eqm-add name/" + "😀".repeat(26) + " e/002 type/lens cond/2");
+        handler.addEquipment("eqm-add name/" + "e\u0301".repeat(50) + " e/003 type/battery cond/3");
+        handler.addEquipment("eqm-add name/" + "👩‍👩‍👧‍👦".repeat(8) + " e/004 type/tripod cond/4");
 
         handler.viewAllEquipment();
 
@@ -75,7 +75,7 @@ class EquipmentViewTest {
     @Test
     void inventory_controlCharacters_areVisibleWithoutCreatingExtraRows() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
-        handler.addEquipment("add-eqm name/Camera\t\u001b[31m e/001 type/camera cond/1");
+        handler.addEquipment("eqm-add name/Camera\t\u001b[31m e/001 type/camera cond/1");
 
         handler.viewAllEquipment();
 
@@ -88,7 +88,7 @@ class EquipmentViewTest {
     @Test
     void inventory_pipeInName_keepsTableColumnsAndOriginalDetails() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
-        Equipment item = handler.addEquipment("add-eqm name/Camera | Kit e/001 type/camera cond/1");
+        Equipment item = handler.addEquipment("eqm-add name/Camera | Kit e/001 type/camera cond/1");
 
         handler.viewAllEquipment();
 
@@ -116,8 +116,8 @@ class EquipmentViewTest {
     @Test
     void inventory_andFilteredResults_useIdenticalTablesInOriginalOrder() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
-        handler.addEquipment("add-eqm name/Camera e/002 type/camera cond/1");
-        handler.addEquipment("add-eqm name/Lens e/001 type/lens cond/2");
+        handler.addEquipment("eqm-add name/Camera e/002 type/camera cond/1");
+        handler.addEquipment("eqm-add name/Lens e/001 type/lens cond/2");
         handler.viewAllEquipment();
         List<String> inventoryRows = printed().lines().skip(1).toList();
         output.reset();
@@ -153,7 +153,7 @@ class EquipmentViewTest {
         String name = "A".repeat(100);
         String details = "S".repeat(100);
         String remarks = "r".repeat(98) + "  " + "R".repeat(100);
-        Equipment item = handler.addEquipment("add-eqm name/" + name + " e/001 type/camera cond/8 sensor/" + details
+        Equipment item = handler.addEquipment("eqm-add name/" + name + " e/001 type/camera cond/8 sensor/" + details
                 + " mount/RF thread/1-4 battery/LP-E6 damage/OTHER remarks/" + remarks);
         item.setLoanId("007");
 
@@ -174,9 +174,9 @@ class EquipmentViewTest {
     @Test
     void details_otherSubtypesExposeCompatibilityAndDefaults() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
-        handler.addEquipment("add-eqm name/Lens e/001 type/lens cond/2 zoom/24-70 mount/RF sensor/APS-C");
-        handler.addEquipment("add-eqm name/Battery e/002 type/battery cond/3 capacity/2000mAh battery/LP-E6");
-        handler.addEquipment("add-eqm name/Tripod e/003 type/tripod cond/4");
+        handler.addEquipment("eqm-add name/Lens e/001 type/lens cond/2 zoom/24-70 mount/RF sensor/APS-C");
+        handler.addEquipment("eqm-add name/Battery e/002 type/battery cond/3 capacity/2000mAh battery/LP-E6");
+        handler.addEquipment("eqm-add name/Tripod e/003 type/tripod cond/4");
 
         handler.showEquipment("eqm-show e/001");
         assertTrue(printed().contains("Zoom range: 24-70"));

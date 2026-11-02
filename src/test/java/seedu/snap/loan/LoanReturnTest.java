@@ -31,7 +31,7 @@ import seedu.snap.exceptions.LoanReturnUnsuccessful;
 
 /** Verifies return assessments, retained loan records and recovery from failed saves. */
 class LoanReturnTest {
-    private static final String LOAN_COMMAND = "add-loan E-id/001 U-id/002 issued/01-10-26 due/02-10-26";
+    private static final String LOAN_COMMAND = "loan-add e/001 u/002 issued/01-10-26 due/02-10-26";
     private static final String RETURN_COMMAND =
             "loan-return l/001 serviceable/yes damage/NONE remarks/Checked at counter";
     private EquipmentHandler equipment;
@@ -51,7 +51,7 @@ class LoanReturnTest {
         loanFile = temporaryDirectory.resolve("loans.txt");
         sequenceFile = temporaryDirectory.resolve("loan-sequence.txt");
         equipment = new EquipmentHandler(equipmentFile);
-        camera = (Camera) equipment.addEquipment("add-eqm name/Camera e/001 type/camera cond/4"
+        camera = (Camera) equipment.addEquipment("eqm-add name/Camera e/001 type/camera cond/4"
                 + " sensor/APS-C damage/SENSOR_DAMAGE remarks/Original assessment");
         loans = new LoanHandler(equipment, loanFile, sequenceFile);
         original = loans.addLoan(LOAN_COMMAND);
@@ -82,7 +82,7 @@ class LoanReturnTest {
         assertEquals("002", loans.getNextLoanId());
         assertEquals(savedSequence, Files.readString(sequenceFile));
         assertTrue(Files.readString(loanFile).contains("returned/true"));
-        assertSame(camera, EquipmentFilter.parse("filter-eqm E-id/001 status/available")
+        assertSame(camera, EquipmentFilter.parse("eqm-filter e/001 status/available")
                 .apply(equipment.getEquipmentList(), loans).getFirst());
     }
 
@@ -101,9 +101,9 @@ class LoanReturnTest {
                 "loan-return l/001 serviceable/yes "
                         + "damage/SHUTTER_FAULT "
                         + "remarks/Assessed after return");
-        equipment.updateEquipment("eqm-update E-id/001 cond/8");
+        equipment.updateEquipment("eqm-update e/001 cond/8");
         Loan second = loans.addLoan(
-                "add-loan E-id/001 U-id/003 issued/03-10-26 due/04-10-26");
+                "loan-add e/001 u/003 issued/03-10-26 due/04-10-26");
 
         EquipmentConditionSnapshot secondSnapshot =
                 second.getIssueConditionSnapshot();
@@ -162,7 +162,7 @@ class LoanReturnTest {
 
         assertFalse(camera.isLoaned());
         assertFalse(camera.isServiceable());
-        assertTrue(EquipmentFilter.parse("filter-eqm E-id/001 status/available")
+        assertTrue(EquipmentFilter.parse("eqm-filter e/001 status/available")
                 .apply(equipment.getEquipmentList(), loans).isEmpty());
         assertThrows(LoanAdditionUnsuccessful.class, () -> loans.addLoan(LOAN_COMMAND));
         assertEquals("002", loans.getNextLoanId());

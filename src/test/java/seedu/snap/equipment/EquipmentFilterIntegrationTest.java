@@ -31,16 +31,16 @@ class EquipmentFilterIntegrationTest {
     void apply_allSubclasses_preservesObjectsDetailsAndSavedRecords() throws Exception {
         Path file = temporaryDirectory.resolve("equipment.txt");
         EquipmentHandler equipment = new EquipmentHandler(file);
-        equipment.addEquipment("add-eqm name/Camera e/001 type/camera cond/1 sensor/full frame "
+        equipment.addEquipment("eqm-add name/Camera e/001 type/camera cond/1 sensor/full frame "
                 + "damage/SENSOR_DAMAGE");
-        equipment.addEquipment("add-eqm name/Lens e/002 type/lens cond/2 zoom/24-70mm damage/SCRATCHED_GLASS");
-        equipment.addEquipment("add-eqm name/Battery e/003 type/battery cond/3 capacity/2000mAh damage/SWELLING");
-        equipment.addEquipment("add-eqm name/Tripod e/004 type/tripod cond/4 thread/1-4 inch damage/BENT_LEG");
+        equipment.addEquipment("eqm-add name/Lens e/002 type/lens cond/2 zoom/24-70mm damage/SCRATCHED_GLASS");
+        equipment.addEquipment("eqm-add name/Battery e/003 type/battery cond/3 capacity/2000mAh damage/SWELLING");
+        equipment.addEquipment("eqm-add name/Tripod e/004 type/tripod cond/4 thread/1-4 inch damage/BENT_LEG");
         List<Equipment> original = List.copyOf(equipment.getEquipmentList());
         String saved = Files.readString(file);
         LoanHandler loans = new LoanHandler(equipment);
 
-        List<Equipment> matches = EquipmentFilter.parse("filter-eqm status/available cond/1-4")
+        List<Equipment> matches = EquipmentFilter.parse("eqm-filter status/available cond/1-4")
                 .apply(equipment.getEquipmentList(), loans);
 
         assertEquals(original, matches);
@@ -85,15 +85,15 @@ class EquipmentFilterIntegrationTest {
     @Test
     void apply_returnedHistoryAndActiveLoan_preservesAvailabilityAndDeletionChecks() throws Exception {
         EquipmentHandler equipment = new EquipmentHandler();
-        Equipment camera = equipment.addEquipment("add-eqm name/Camera e/001 type/camera cond/1 sensor/full frame");
+        Equipment camera = equipment.addEquipment("eqm-add name/Camera e/001 type/camera cond/1 sensor/full frame");
         LoanHandler loans = new LoanHandler(equipment);
-        Loan returned = loans.addLoan("add-loan e/001 u/002 issued/01-10-26 due/02-10-26");
+        Loan returned = loans.addLoan("loan-add e/001 u/002 issued/01-10-26 due/02-10-26");
         returned.setReturned(true);
-        EquipmentFilter available = EquipmentFilter.parse("filter-eqm status/available");
-        EquipmentFilter loaned = EquipmentFilter.parse("filter-eqm status/loaned");
+        EquipmentFilter available = EquipmentFilter.parse("eqm-filter status/available");
+        EquipmentFilter loaned = EquipmentFilter.parse("eqm-filter status/loaned");
         assertEquals(List.of(camera), available.apply(equipment.getEquipmentList(), loans));
 
-        Loan active = loans.addLoan("add-loan e/001 u/003 issued/03-10-26 due/04-10-26");
+        Loan active = loans.addLoan("loan-add e/001 u/003 issued/03-10-26 due/04-10-26");
         loans.deleteLoan("loan-delete l/001");
 
         assertTrue(available.apply(equipment.getEquipmentList(), loans).isEmpty());
@@ -102,7 +102,7 @@ class EquipmentFilterIntegrationTest {
         assertEquals(List.of(active), loans.getLoanList());
         assertThrows(EquipmentDeletionUnsuccessful.class, () -> equipment.deleteEquipment("eqm-delete e/001"));
         assertThrows(LoanAdditionUnsuccessful.class,
-                () -> loans.addLoan("add-loan e/001 u/004 issued/05-10-26 due/06-10-26"));
+                () -> loans.addLoan("loan-add e/001 u/004 issued/05-10-26 due/06-10-26"));
         assertEquals("sensor/full frame damage/NONE", camera.getDetails());
 
         active.setReturned(true);

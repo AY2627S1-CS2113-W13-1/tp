@@ -21,7 +21,7 @@ import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 /** Tests Battery compatibility parsing, display and persistence. */
 class BatteryCompatibilityIntegrationTest {
     private static final String FULL_BATTERY_COMMAND =
-            "add-eqm name/Camera Battery e/201 type/battery cond/8 "
+            "eqm-add name/Camera Battery e/201 type/battery cond/8 "
                     + "capacity/2000 mAh battery/Li-ion "
                     + "damage/NONE remarks/Charged";
 
@@ -46,7 +46,7 @@ class BatteryCompatibilityIntegrationTest {
         Battery battery = assertInstanceOf(
                 Battery.class,
                 EquipmentHandler.parseEquipment(
-                        "add-eqm name/Battery e/202 "
+                        "eqm-add name/Battery e/202 "
                                 + "type/battery cond/7"));
 
         assertEquals(
@@ -66,7 +66,7 @@ class BatteryCompatibilityIntegrationTest {
         Battery battery = assertInstanceOf(
                 Battery.class,
                 EquipmentHandler.parseEquipment(
-                        "add-eqm name/AA Battery e/203 "
+                        "eqm-add name/AA Battery e/203 "
                                 + "type/battery cond/6 battery/AA"));
 
         assertEquals(
@@ -81,13 +81,13 @@ class BatteryCompatibilityIntegrationTest {
     @Test
     void parseEquipment_invalidBatteryFields_throwException() {
         String repeatedType =
-                "add-eqm name/Battery e/204 type/battery cond/5 "
+                "eqm-add name/Battery e/204 type/battery cond/5 "
                         + "battery/AA battery/AAA";
         String wrongOrder =
-                "add-eqm name/Battery e/205 type/battery cond/5 "
+                "eqm-add name/Battery e/205 type/battery cond/5 "
                         + "battery/AA capacity/2000 mAh";
         String mountField =
-                "add-eqm name/Battery e/206 type/battery cond/5 "
+                "eqm-add name/Battery e/206 type/battery cond/5 "
                         + "mount/Canon RF";
 
         assertThrows(

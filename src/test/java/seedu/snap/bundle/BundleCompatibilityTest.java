@@ -28,30 +28,30 @@ class BundleCompatibilityTest {
     @BeforeEach
     void setUp() throws EquipmentAdditionUnsuccessful {
         equipmentHandler = new EquipmentHandler();
-        equipmentHandler.addEquipment("add-eqm name/Camera e/001 type/camera cond/1 sensor/APS-C"
+        equipmentHandler.addEquipment("eqm-add name/Camera e/001 type/camera cond/1 sensor/APS-C"
                 + " mount/Canon RF thread/Quarter inch battery/LP-E17");
-        equipmentHandler.addEquipment("add-eqm name/Compatible Lens e/002 type/lens cond/1 zoom/18-45 mm"
+        equipmentHandler.addEquipment("eqm-add name/Compatible Lens e/002 type/lens cond/1 zoom/18-45 mm"
                 + " mount/canon rf sensor/aps-c");
-        equipmentHandler.addEquipment("add-eqm name/Compatible Battery e/003 type/battery cond/1"
+        equipmentHandler.addEquipment("eqm-add name/Compatible Battery e/003 type/battery cond/1"
                 + " capacity/1000 mAh battery/lp-e17");
-        equipmentHandler.addEquipment("add-eqm name/Compatible Tripod e/004 type/tripod cond/1"
+        equipmentHandler.addEquipment("eqm-add name/Compatible Tripod e/004 type/tripod cond/1"
                 + " thread/quarter inch");
-        equipmentHandler.addEquipment("add-eqm name/Wrong Mount Lens e/005 type/lens cond/1"
+        equipmentHandler.addEquipment("eqm-add name/Wrong Mount Lens e/005 type/lens cond/1"
                 + " mount/Nikon Z sensor/APS-C");
-        equipmentHandler.addEquipment("add-eqm name/Wrong Sensor Lens e/006 type/lens cond/1"
+        equipmentHandler.addEquipment("eqm-add name/Wrong Sensor Lens e/006 type/lens cond/1"
                 + " mount/Canon RF sensor/Full frame");
-        equipmentHandler.addEquipment("add-eqm name/Wrong Battery e/007 type/battery cond/1"
+        equipmentHandler.addEquipment("eqm-add name/Wrong Battery e/007 type/battery cond/1"
                 + " battery/NP-FZ100");
-        equipmentHandler.addEquipment("add-eqm name/Wrong Tripod e/008 type/tripod cond/1"
+        equipmentHandler.addEquipment("eqm-add name/Wrong Tripod e/008 type/tripod cond/1"
                 + " thread/Three eighth inch");
-        equipmentHandler.addEquipment("add-eqm name/Unknown Lens e/009 type/lens cond/1");
+        equipmentHandler.addEquipment("eqm-add name/Unknown Lens e/009 type/lens cond/1");
         bundleHandler = new BundleHandler(equipmentHandler);
     }
 
     @Test
     void addItemsToBundle_compatibleEquipment_addsEveryItem()
             throws BundleAdditionUnsuccessful {
-        Bundle bundle = bundleHandler.addBundle("add-bundle name/Compatible Kit");
+        Bundle bundle = bundleHandler.addBundle("bundle-create name/Compatible Kit");
 
         List<String> messages =
                 bundleHandler.addItemsToBundle("bundle-add-eqm b/001 001 002 003 004");
@@ -74,7 +74,7 @@ class BundleCompatibilityTest {
     @MethodSource("incompatibleEquipmentIds")
     void addItemsToBundle_incompatibleEquipment_rejectsCandidate(String candidateId)
             throws BundleAdditionUnsuccessful {
-        Bundle bundle = bundleHandler.addBundle("add-bundle name/Incompatible Kit");
+        Bundle bundle = bundleHandler.addBundle("bundle-create name/Incompatible Kit");
         bundleHandler.addItemsToBundle("bundle-add-eqm b/001 001");
 
         List<String> messages =
@@ -91,7 +91,7 @@ class BundleCompatibilityTest {
     @Test
     void addItemsToBundle_incompatibleItemInSameCommand_reportsEachResult()
             throws BundleAdditionUnsuccessful {
-        Bundle bundle = bundleHandler.addBundle("add-bundle name/Mixed Kit");
+        Bundle bundle = bundleHandler.addBundle("bundle-create name/Mixed Kit");
 
         List<String> messages =
                 bundleHandler.addItemsToBundle("bundle-add-eqm b/001 001 005 003");
@@ -107,7 +107,7 @@ class BundleCompatibilityTest {
     @Test
     void addItemsToBundle_cameraAddedAfterIncompatibleLens_rejectsCamera()
             throws BundleAdditionUnsuccessful {
-        Bundle bundle = bundleHandler.addBundle("add-bundle name/Reverse Kit");
+        Bundle bundle = bundleHandler.addBundle("bundle-create name/Reverse Kit");
 
         List<String> messages =
                 bundleHandler.addItemsToBundle("bundle-add-eqm b/001 005 001");
@@ -122,7 +122,7 @@ class BundleCompatibilityTest {
     @Test
     void addItemsToBundle_unknownCompatibility_allowsAddition()
             throws BundleAdditionUnsuccessful {
-        Bundle bundle = bundleHandler.addBundle("add-bundle name/Unknown Kit");
+        Bundle bundle = bundleHandler.addBundle("bundle-create name/Unknown Kit");
 
         List<String> messages =
                 bundleHandler.addItemsToBundle("bundle-add-eqm b/001 001 009");
@@ -134,7 +134,7 @@ class BundleCompatibilityTest {
     @Test
     void addItemsToBundle_unrelatedEquipmentTypes_allowsAddition()
             throws BundleAdditionUnsuccessful {
-        Bundle bundle = bundleHandler.addBundle("add-bundle name/Camera-free Kit");
+        Bundle bundle = bundleHandler.addBundle("bundle-create name/Camera-free Kit");
 
         List<String> messages =
                 bundleHandler.addItemsToBundle("bundle-add-eqm b/001 002 003");
