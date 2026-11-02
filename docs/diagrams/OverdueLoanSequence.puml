@@ -12,8 +12,7 @@ participant "LoanView" as View
 
 User -> Manager: executeInput("list overdue")
 activate Manager
-Manager -> Manager: normalise and match exact command
-Manager -> Manager: referenceDate = LocalDate.now(clock)
+note right of Manager: Reads referenceDate from the configured clock.
 Manager -> Handler: viewOverdueLoans(referenceDate)
 activate Handler
 
@@ -25,7 +24,7 @@ loop each managed loan
     Loan --> Handler: active AND due before referenceDate
     deactivate Loan
     opt result is true
-        Handler -> Handler: add loan to selected list
+        note right of Handler: Add loan to selected list.
     end
 end
 Handler --> Handler: unmodifiable selected list

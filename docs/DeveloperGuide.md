@@ -1001,7 +1001,7 @@ The reference date is supplied to the method instead of being obtained directly 
 
 Figure 14 focuses on the three classes that own command routing, selection and the overdue rule. The navigable
 associations show that one `EqmManager` delegates to one `LoanHandler`, which manages zero or more `Loan` objects.
-The configured clock, temporary result collection and display utility are omitted because they do not change
+The temporary result collection and display utility are omitted because they do not change
 these responsibilities.
 
 #### Command execution
