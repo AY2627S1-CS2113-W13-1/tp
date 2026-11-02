@@ -1,0 +1,104 @@
+@startuml LoanUpdateSequence
+!include style.puml
+hide footbox
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 170
+
+participant ":EqmManager" as Manager
+participant ":LoanHandler" as Handler
+participant "LoanUpdate" as Update <<record>>
+participant "loan:Loan" as Loan
+participant "EquipmentConditionSnapshot" as Snapshot <<value>>
+participant "LoanStorage" as Store <<utility>>
+participant "current:Equipment" as Current
+participant "replacement:Equipment" as Replacement
+
+Manager -> Handler: updateLoan(input)
+activate Handler
+Handler -> Update: parse(input)
+alt malformed or unsupported update
+    Update --> Handler: LoanUpdateUnsuccessful
+    Handler --> Manager: LoanUpdateUnsuccessful
+    deactivate Handler
+    Manager -> Manager: display update error
+    break invalid command
+else validated optional changes
+    Update --> Handler: validated update
+    Handler -> Handler: findLoanForUpdate(update.loanId())
+    Handler -> Handler: findEquipment(loan.getItemId())
+    Handler -> Loan: ownsEquipment(current)
+    Loan --> Handler: ownership confirmed
+end
+
+alt replacement item supplied
+    Handler -> Handler: findEquipment(update.itemId())
+    Handler -> Handler: validate no active loan and serviceable
+    alt replacement is missing, loaned or unserviceable
+        Handler --> Manager: LoanUpdateUnsuccessful
+        deactivate Handler
+        Manager -> Manager: display update error
+        break invalid replacement
+    else replacement is valid
+        Handler -> Handler: retain replacement
+    end
+else no replacement item supplied
+    Handler -> Handler: retain current equipment
+end
+
+Handler -> Handler: fill omitted borrower and dates
+alt issuedDate is after dueDate
+    Handler --> Manager: LoanUpdateUnsuccessful
+    deactivate Handler
+    Manager -> Manager: display update error
+    break invalid date order
+else date order is valid
+    Handler -> Handler: continue validation
+end
+Handler -> Loan: updatedCopy(..., replacement)
+alt same equipment object
+    note right of Loan
+    Preserve the existing issue snapshot
+    and issue serviceability.
+    end note
+else replacement equipment object
+    Loan -> Snapshot: fromEquipment(replacement)
+    Snapshot --> Loan: replacement issue snapshot
+    note right of Loan
+    Capture replacement condition, damage,
+    remarks and serviceability for this loan.
+    end note
+end
+Loan --> Handler: detached loan proposal
+Handler -> Handler: copy loans and replace the matching record
+Handler -> Store: save(proposedLoans, nextLoanNumber)
+activate Store
+alt save fails
+    Store --> Handler: IOException
+    deactivate Store
+    Handler --> Manager: LoanUpdateUnsuccessful
+    deactivate Handler
+    Manager -> Manager: display update error
+    note over Handler, Loan
+    No live loan fields or equipment loan flags
+    have changed before persistence succeeds.
+    end note
+else save succeeds
+    Store --> Handler: saved
+    deactivate Store
+    Handler -> Loan: applyUpdate(proposal, replacement)
+    alt replacement differs from current
+        Loan -> Current: setLoanId(null)
+        Loan -> Replacement: setLoanId(loanId)
+    else same equipment object
+        Loan -> Current: setLoanId(loanId)
+    end
+    Handler --> Manager: updated loan
+    deactivate Handler
+    Manager -> Manager: display update success
+    note over Loan, Replacement
+    The Loan ID and loan count stay unchanged.
+    The original equipment is released only after save;
+    the replacement becomes the active object reference.
+    end note
+end
+@enduml
