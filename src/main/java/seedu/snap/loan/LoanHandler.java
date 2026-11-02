@@ -114,11 +114,9 @@ public class LoanHandler {
         this.clock = clock;
     }
 
-    // @@author yarnieee
     /** Returns the next loan ID, or L1000 when all supported identifiers have been used. */
     public String getNextLoanId() {
         return nextLoanNumber == MAX_LOAN_NUMBER + 1 ? "L1000" : formatLoanId(nextLoanNumber);
-        // @@author
     }
 
     /** Returns the number of currently loaded loans. */
@@ -184,18 +182,12 @@ public class LoanHandler {
         }
         for (Loan loan : loans) {
             loan.detachEquipment();
-            // @@author yarnieee
         }
-        // @@author
         for (Equipment item : equipment.getEquipmentList()) {
             item.setLoaned(false);
-            // @@author yarnieee
         }
-        // @@author
         int activeIndex = 0;
-        // @@author yarnieee
         for (Loan loan : loaded) {
-            // @@author
             if (!loan.isReturned()) {
                 loan.attachEquipment(activeEquipment.get(activeIndex++));
             }
@@ -241,9 +233,7 @@ public class LoanHandler {
         String loanId = formatLoanId(nextLoanNumber);
         // @@author
         Loan loan = new Loan(loanId, item, parsed.getBorrowerId(), parsed.getIssuedDate(), parsed.getDueDate());
-        // @@author yarnieee
         assert loan != null : "Created loan must not be null.";
-        // @@author
         ArrayList<Loan> updatedLoans = new ArrayList<>(loans);
         updatedLoans.add(loan);
         try {
@@ -378,10 +368,8 @@ public class LoanHandler {
             throw new LoanAdditionUnsuccessful("Item ID " + itemId + " does not exist.");
         }
         return match;
-        // @@author yarnieee
     }
 
-    // @@author
     /** Finds one available item, rejecting missing or ambiguous IDs before a loan changes any state. */
     private Equipment findAvailableEquipment(String itemId) throws LoanAdditionUnsuccessful {
         Equipment match = findEquipment(itemId);
@@ -459,10 +447,8 @@ public class LoanHandler {
     /** Rejects missing, duplicated or already returned loan IDs before an assessment is prepared. */
     private Loan findLoanForReturn(String loanId) throws LoanReturnUnsuccessful {
         Loan match = null;
-        // @@author yarnieee
         for (Loan candidate : loans) {
             if (loanId.equals(candidate.getLoanId())) {
-                // @@author
                 if (match != null) {
                     throw new LoanReturnUnsuccessful("Loan ID " + loanId + " is not unique.");
                 }
@@ -488,11 +474,9 @@ public class LoanHandler {
      *                                  or no matching loan is found
      */
     public Loan deleteLoan(String input) throws LoanDeletionUnsuccessful {
-        // @@author yarnieee
         String[] arguments = input == null ? new String[0] : input.trim().split("\\s+");
         if (arguments.length != 2 || !arguments[0].equals("loan-delete") || !arguments[1].startsWith("l/")) {
             throw new LoanDeletionUnsuccessful("Invalid command format. Expected: loan-delete l/[LOAN ID].");
-            // @@author
         }
         // @@author yarnieee
         String loanId = parseDeleteLoanId(arguments[1]);
@@ -515,17 +499,13 @@ public class LoanHandler {
 
         ArrayList<Loan> updatedLoans = new ArrayList<>(loans);
         updatedLoans.remove(loan);
-        // @@author yarnieee
         try {
-            // @@author
             save(updatedLoans, nextLoanNumber);
         } catch (IOException exception) {
             logger.log(Level.WARNING, "Loan deletion could not be saved", exception);
             throw new LoanDeletionUnsuccessful("Could not save loan deletion: " + exception.getMessage());
-            // @@author yarnieee
         }
         loans.remove(loan);
-        // @@author
         loan.detachEquipment();
         numLoans--;
         assert numLoans == loans.size() : "numLoans should match the size of the loans list";
@@ -550,16 +530,12 @@ public class LoanHandler {
 
     /** Requires explicit dates in stored records; loading never supplies a current-date default. */
     static Loan parseLoanRecord(String input) throws LoanAdditionUnsuccessful {
-        // @@author yarnieee
         String[] arguments = input == null ? new String[0] : input.trim().split("\\s+");
-        // @@author
         if (arguments.length != EXPECTED_ADD_ARGUMENT_COUNT) {
-            // @@author yarnieee
             throw new LoanAdditionUnsuccessful("Incorrect number of arguments.");
         }
         return parseLoanArguments(arguments, null, LEGACY_LOAN_COMMAND, LEGACY_ITEM_MARKER,
                 LEGACY_BORROWER_MARKER);
-        // @@author
     }
 
     /** Shares ID, supplied-date and date-order validation between commands and complete stored records. */
@@ -589,13 +565,11 @@ public class LoanHandler {
             dueDate = parseDateArgument(arguments[3], "due/", "/due");
             issuedDate = LocalDate.now(clock).atStartOfDay();
         }
-        // @@author yarnieee
 
         if (issuedDate.isAfter(dueDate)) {
             throw new LoanAdditionUnsuccessful("Issued date must not be later than the due date.");
         }
 
-        // @@author
         return new Loan(itemId, borrowerId, issuedDate, dueDate);
     }
 
@@ -606,7 +580,6 @@ public class LoanHandler {
             logger.log(Level.FINE, "Saved {0} loan(s) to {1}", new Object[]{loansToSave.size(), storageFile});
         }
     }
-    // @@author yarnieee
 
     /**
      * Extracts and validates an ID argument.
@@ -636,7 +609,6 @@ public class LoanHandler {
         }
     }
 
-    // @@author
     /**
      * Extracts and validates the loan ID from a loan-delete command.
      *
@@ -656,7 +628,6 @@ public class LoanHandler {
         }
     }
 
-    // @@author yarnieee
     /** Creates an identifier-format error that names the required type prefix. */
     private static LoanAdditionUnsuccessful idFormatError(String prefix, String alternatePrefix, String name,
             Identifier.Type type) {
@@ -675,7 +646,6 @@ public class LoanHandler {
      * @param alternatePrefix required prefix for the alternate date format
      * @return the parsed date at midnight
      */
-    // @@author
     private static LocalDateTime parseDateArgument(String argument, String prefix, String alternatePrefix)
             // @@author yarnieee
             throws LoanAdditionUnsuccessful {

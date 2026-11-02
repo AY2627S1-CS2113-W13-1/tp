@@ -11,12 +11,10 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-// @@author yarnieee
 import seedu.snap.equipment.Equipment;
 import seedu.snap.bundle.Bundle;
 import seedu.snap.bundle.BundleHandler;
 import seedu.snap.exceptions.BundleAdditionUnsuccessful;
-// @@author
 import seedu.snap.exceptions.BundleHistoryUnsuccessful;
 import seedu.snap.exceptions.BackupUnsuccessful;
 import seedu.snap.equipment.EquipmentFilter;
@@ -304,12 +302,10 @@ public class EqmManager {
                     return;
                 }
             } else {
-                // @@author yarnieee
                 executeInput(input);
             }
         }
 
-        // @@author
         ConsoleOutput.success("Goodbye.");
         // @@author yarnieee
     }
@@ -444,45 +440,31 @@ public class EqmManager {
 
     /** Creates a bundle and reports its assigned identifier. */
     private void addBundle(String input) {
-        // @@author yarnieee
         try {
             Bundle bundle = bundles.addBundle(input);
-            // @@author
             ConsoleOutput.success("Bundle " + bundle.getBundleId() + " \""
                     + ConsoleOutput.inline(bundle.getBundleName()) + "\" created.");
             System.out.println("  Composition: " + BundleView.composition(bundle));
             BundleView.persistenceNote();
-        // @@author yarnieee
         } catch (BundleAdditionUnsuccessful e) {
-            // @@author
             ConsoleOutput.error(e.getMessage());
-            // @@author yarnieee
         }
-        // @@author
     }
 
     /** Reports each equipment addition to a bundle independently. */
     private void addItemsToBundle(String input) {
-        // @@author yarnieee
         try {
-            // @@author
             reportBundleResults(bundles.addItemsToBundleWithResults(input), "added");
-        // @@author yarnieee
         } catch (BundleAdditionUnsuccessful e) {
-            // @@author
             ConsoleOutput.error(e.getMessage());
-            // @@author yarnieee
         }
-        // @@author
     }
 
     /** Reports the outcome of removing equipment from a persisted bundle. */
     private void removeItemsFromBundle(String input) {
         try {
             reportBundleResults(bundles.removeItemsFromBundleWithResults(input), "removed");
-        // @@author yarnieee
         } catch (BundleAdditionUnsuccessful e) {
-            // @@author
             ConsoleOutput.error(e.getMessage());
         }
     }
@@ -507,10 +489,8 @@ public class EqmManager {
             ConsoleOutput.error(e.getMessage());
         }
         // @@author
-        // @@author yarnieee
     }
 
-    // @@author
     /** Displays a persisted return result or its validation/save error. */
     private void returnEquipment(String input) {
         try {
@@ -581,11 +561,9 @@ public class EqmManager {
             equipment.viewEquipment(matches);
         } catch (EquipmentFilteringUnsuccessful e) {
             ConsoleOutput.error(e.getMessage());
-            // @@author yarnieee
         }
     }
 
-    // @@author
     /** Displays an update result while leaving validation and persistence to the handler. */
     private void updateEquipment(String input) {
         try {
@@ -593,10 +571,8 @@ public class EqmManager {
             reportEquipment(updated, "updated");
         } catch (EquipmentUpdateUnsuccessful e) {
             ConsoleOutput.error(e.getMessage());
-            // @@author yarnieee
         }
     }
-    // @@author
 
     /** Displays the outcome of a loan-detail update. */
     private void updateLoan(String input) {

@@ -143,20 +143,14 @@ public class BundleHandler {
                 if (item == null) {
                     throw new IOException("Bundle " + stored.bundleId() + " references missing equipment ID "
                             + storedItem.itemId() + ".");
-                    // @@author yarnieee
                 }
                 if (item.getType().equals("camera") && bundle.countType("camera") >= 1) {
-                    // @@author
                     throw new IOException("Bundle " + stored.bundleId() + " contains multiple cameras.");
-                    // @@author yarnieee
                 }
                 if (item.getType().equals("tripod") && bundle.countType("tripod") >= 1) {
-                    // @@author
                     throw new IOException("Bundle " + stored.bundleId() + " contains multiple tripods.");
                 }
-                // @@author yarnieee
                 bundle.addEquipment(item);
-                // @@author
             }
             restoredBundles.add(bundle);
             // @@author yarnieee
@@ -199,10 +193,8 @@ public class BundleHandler {
      * @return true when any bundle contains the equipment ID
      */
     public boolean containsEquipmentId(String itemId) {
-        // @@author yarnieee
         for (Bundle bundle : bundles) {
             if (bundle.containsEquipmentId(itemId)) {
-                // @@author
                 return true;
             }
         }
@@ -262,11 +254,8 @@ public class BundleHandler {
 
     /** Returns outcomes only after changed memberships are saved, preserving rollback on failure. */
     public List<ItemResult> removeItemsFromBundleWithResults(String input) throws BundleAdditionUnsuccessful {
-        // @@author yarnieee
         String[] arguments = input == null ? new String[0] : input.trim().split("\\s+");
-        // @@author
         if (arguments.length < 3 || !arguments[0].equals(REMOVE_FROM_BUNDLE_COMMAND)) {
-            // @@author yarnieee
             throw new BundleAdditionUnsuccessful(
                     "Invalid format. Use: bundle-remove-eqm b/[BUNDLE ID] [EQUIPMENT ID]...");
         }
@@ -278,7 +267,6 @@ public class BundleHandler {
             throw new BundleAdditionUnsuccessful("Bundle ID " + bundleId + " does not exist.");
         }
 
-        // @@author
         List<Equipment> previousEquipment = List.copyOf(bundle.getEquipmentList());
         ArrayList<ItemResult> messages = new ArrayList<>();
         boolean membershipChanged = false;
@@ -298,7 +286,6 @@ public class BundleHandler {
                 LOGGER.log(Level.WARNING, "Bundle membership removal could not be saved", exception);
                 throw new BundleAdditionUnsuccessful("Could not save bundle removal: " + exception.getMessage());
             }
-            // @@author yarnieee
         }
         assert messages.size() == arguments.length - 2 : "Every requested item must produce a result.";
         return Collections.unmodifiableList(messages);
@@ -315,7 +302,6 @@ public class BundleHandler {
             throw new BundleAdditionUnsuccessful("Invalid format. Use: bundle-list");
         }
 
-        // @@author
         BundleView.print(getBundleList());
         // @@author yarnieee
     }
@@ -424,9 +410,7 @@ public class BundleHandler {
     private ItemResult removeItemFromBundle(Bundle bundle, String itemId) {
         if (!bundle.removeEquipmentById(itemId)) {
             LOGGER.log(Level.WARNING, "Could not remove equipment {0} from bundle {1}: not a member.",
-                    // @@author yarnieee
                     new Object[] {itemId, bundle.getBundleId()});
-            // @@author
             return itemResult(bundle, itemId, false,
                     "Equipment ID " + itemId + " was not removed: it is not in bundle " + bundle.getBundleId() + ".");
         }
@@ -436,9 +420,7 @@ public class BundleHandler {
 
     /** Adds display metadata without making the UI infer success by parsing a human-readable sentence. */
     private ItemResult itemResult(Bundle bundle, String itemId, boolean successful, String message) {
-        // @@author yarnieee
         Equipment item = equipmentHandler.getEquipmentById(itemId);
-        // @@author
         return new ItemResult(bundle.getBundleId(), itemId, item == null ? null : item.getItemName(),
                 successful, message);
     }

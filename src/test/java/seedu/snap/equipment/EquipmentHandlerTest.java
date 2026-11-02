@@ -127,9 +127,7 @@ class EquipmentHandlerTest {
 
     @Test
     public void addEquipment_repeatedValidAndInvalidInputs_preservesInventory()
-            // @@author yarnieee
             throws EquipmentAdditionUnsuccessful {
-        // @@author
         EquipmentHandler handler = new EquipmentHandler();
         ArrayList<Equipment> expected = new ArrayList<>();
         String[] invalidCommands = invalidAddCommands();
@@ -529,9 +527,7 @@ class EquipmentHandlerTest {
 
     @Test
     void addEquipment_deletedId_acceptsReplacement()
-            // @@author yarnieee
             throws EquipmentAdditionUnsuccessful, EquipmentDeletionUnsuccessful {
-        // @@author
         EquipmentHandler handler = new EquipmentHandler();
         // @@author yarnieee
         handler.addEquipment("eqm-add name/Camera e/E001 type/camera cond/1");
@@ -576,9 +572,7 @@ class EquipmentHandlerTest {
     // @@author
     @Test
     public void deleteEquipment_middleItem_preservesOtherEquipment()
-            // @@author yarnieee
             throws EquipmentAdditionUnsuccessful, EquipmentDeletionUnsuccessful {
-        // @@author
         EquipmentHandler handler = new EquipmentHandler();
         // @@author yarnieee
         Equipment first = handler.addEquipment("eqm-add name/Camera e/E003 type/camera cond/1");
@@ -594,10 +588,8 @@ class EquipmentHandlerTest {
 
     @Test
     public void deleteEquipment_boundaryIds_removesMatchingEquipment()
-            // @@author yarnieee
             throws EquipmentAdditionUnsuccessful, EquipmentDeletionUnsuccessful {
         for (String itemId : List.of("E001", "E999")) {
-            // @@author
             EquipmentHandler handler = new EquipmentHandler();
             // @@author yarnieee
             Equipment equipment = handler.addEquipment("eqm-add name/Camera e/" + itemId + " type/camera cond/1");
@@ -610,9 +602,7 @@ class EquipmentHandlerTest {
 
     @Test
     public void deleteEquipment_extraWhitespace_removesMatchingEquipment()
-            // @@author yarnieee
             throws EquipmentAdditionUnsuccessful, EquipmentDeletionUnsuccessful {
-        // @@author
         EquipmentHandler handler = new EquipmentHandler();
         // @@author yarnieee
         Equipment equipment = handler.addEquipment("eqm-add name/Camera e/E001 type/camera cond/1");
@@ -624,9 +614,7 @@ class EquipmentHandlerTest {
 
     @Test
     public void getEquipmentForDeletion_validCommand_preservesInventory()
-            // @@author yarnieee
             throws EquipmentAdditionUnsuccessful, EquipmentDeletionUnsuccessful {
-        // @@author
         EquipmentHandler handler = new EquipmentHandler();
         // @@author yarnieee
         Equipment equipment = handler.addEquipment("eqm-add name/Camera e/E001 type/camera cond/1");
@@ -640,12 +628,10 @@ class EquipmentHandlerTest {
     public void deleteEquipment_emptyInventory_throwsException() {
         EquipmentHandler handler = new EquipmentHandler();
 
-        // @@author yarnieee
         EquipmentDeletionUnsuccessful exception = assertThrows(EquipmentDeletionUnsuccessful.class,
                 () -> handler.deleteEquipment("eqm-delete e/E001"));
 
         assertEquals("Equipment ID E001 does not exist.", exception.getMessage());
-        // @@author
         assertEquals(List.of(), handler.getEquipmentList());
     }
 
@@ -658,13 +644,11 @@ class EquipmentHandlerTest {
         Equipment unrelated = new Battery("Battery", "E002", 10);
         // @@author
         EquipmentHandler handler = handlerWithCorruptedInventory(first, second, unrelated);
-        // @@author yarnieee
 
         EquipmentDeletionUnsuccessful exception = assertThrows(EquipmentDeletionUnsuccessful.class,
                 () -> handler.deleteEquipment("eqm-delete e/E001"));
 
         assertEquals("Equipment ID E001 is not unique. No equipment was deleted.", exception.getMessage());
-        // @@author
         assertEquals(List.of(first, second, unrelated), handler.getEquipmentList());
 
         // @@author yarnieee
@@ -690,11 +674,8 @@ class EquipmentHandlerTest {
 
     @Test
     public void deleteEquipment_repeatedDeletion_preservesRemainingEquipment()
-            // @@author yarnieee
             throws EquipmentAdditionUnsuccessful, EquipmentDeletionUnsuccessful {
-        // @@author
         EquipmentHandler handler = new EquipmentHandler();
-        // @@author yarnieee
         handler.addEquipment("eqm-add name/Camera e/E001 type/camera cond/1");
         Equipment remaining = handler.addEquipment("eqm-add name/Tripod e/E002 type/tripod cond/5");
         handler.deleteEquipment("eqm-delete e/E001");
@@ -703,15 +684,12 @@ class EquipmentHandlerTest {
                 () -> handler.deleteEquipment("eqm-delete e/E001"));
 
         assertEquals("Equipment ID E001 does not exist.", exception.getMessage());
-        // @@author
         assertEquals(List.of(remaining), handler.getEquipmentList());
     }
 
     @Test
     public void deleteEquipment_reusedId_removesReplacement()
-            // @@author yarnieee
             throws EquipmentAdditionUnsuccessful, EquipmentDeletionUnsuccessful {
-        // @@author
         EquipmentHandler handler = new EquipmentHandler();
         // @@author yarnieee
         handler.addEquipment("eqm-add name/Camera e/E001 type/camera cond/1");

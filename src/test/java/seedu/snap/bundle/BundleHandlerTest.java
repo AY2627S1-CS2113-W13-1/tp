@@ -102,22 +102,18 @@ class BundleHandlerTest {
     void addBundle_invalidName_throwsException() {
         // @@author
         for (String name : new String[]{"", "   ", "\u2003", "A".repeat(101)}) {
-            // @@author yarnieee
             assertThrows(BundleAdditionUnsuccessful.class,
                     () -> bundleHandler.addBundle("bundle-create name/" + name));
-            // @@author
             assertTrue(bundleHandler.getBundleList().isEmpty());
         }
     }
 
     @Test
     void addBundle_duplicateName_throwsException() throws BundleAdditionUnsuccessful {
-        // @@author yarnieee
         bundleHandler.addBundle("bundle-create name/Travel Kit");
 
         assertThrows(BundleAdditionUnsuccessful.class,
                 () -> bundleHandler.addBundle("bundle-create name/Travel Kit"));
-        // @@author
         assertEquals(1, bundleHandler.getBundleList().size());
     }
 
@@ -211,18 +207,14 @@ class BundleHandlerTest {
         assertTrue(bundleHandler.addItemsToBundle("bundle-add-eqm b/B001 E005")
                 // @@author
                 .getFirst().contains("currently loaned"));
-        // @@author yarnieee
         assertFalse(bundle.isComplete());
-        // @@author
 
         loan.setReturned(true);
-        // @@author yarnieee
         List<String> messages = bundleHandler.addItemsToBundle("bundle-add-eqm b/B001 E005");
 
         assertEquals(List.of("Equipment ID E005 added to bundle B001 successfully."), messages);
         assertTrue(bundle.isComplete());
         assertFalse(equipmentHandler.getEquipmentById("E005").isLoaned());
-        // @@author
     }
 
     @Test
@@ -298,7 +290,6 @@ class BundleHandlerTest {
     // @@author
     @Test
     void removeItemsFromBundle_removesMembersAndReportsEachResult() throws Exception {
-        // @@author yarnieee
         Bundle bundle = bundleHandler.addBundle("bundle-create name/Travel Kit");
         bundleHandler.addItemsToBundle("bundle-add-eqm b/B001 E001 E002 E005");
 
@@ -311,17 +302,14 @@ class BundleHandlerTest {
         assertEquals(List.of(equipmentHandler.getEquipmentById("E005")), bundle.getEquipmentList());
         assertFalse(bundleHandler.containsEquipmentId("E001"));
         assertFalse(bundleHandler.containsEquipmentId("E002"));
-        // @@author
     }
 
     @Test
     void removeItemsFromBundle_invalidCommandOrUnknownBundle_throwsException() {
-        // @@author yarnieee
         assertThrows(BundleAdditionUnsuccessful.class,
                 () -> bundleHandler.removeItemsFromBundle("bundle-remove-eqm b/B001"));
         assertThrows(BundleAdditionUnsuccessful.class,
                 () -> bundleHandler.removeItemsFromBundle("bundle-remove-eqm b/B999 E001"));
-        // @@author
     }
 
     @Test
@@ -358,7 +346,6 @@ class BundleHandlerTest {
         assertEquals(3, bundle.getEquipmentList().getFirst().getCondition());
         assertEquals("sensor/Full frame damage/SHUTTER_FAULT", camera.getDetails());
         assertEquals("Handle with care", camera.getRemarks());
-        // @@author yarnieee
         assertTrue(bundle.isComplete());
     }
 
@@ -382,7 +369,6 @@ class BundleHandlerTest {
         assertTrue(listing.contains("camera"));
         assertTrue(listing.contains("battery"));
     }
-    // @@author
 
     @Test
     void getBundleLoanHistory_combinesActiveAndReturnedLoansInChronologicalOrder() throws Exception {

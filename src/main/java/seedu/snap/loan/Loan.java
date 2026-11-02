@@ -67,9 +67,7 @@ public class Loan {
     }
 
     /** Creates a stored record with an optional permanent equipment identity for legacy compatibility. */
-    // @@author yarnieee
     public Loan(String loanId, String itemId, String borrowerId, LocalDateTime issuedDate,
-            // @@author
             LocalDateTime dueDate, String equipmentRecordId) {
         this(
                 loanId,
@@ -114,10 +112,8 @@ public class Loan {
         this.itemId = itemId;
         // @@author
         this.borrowerId = borrowerId;
-        // @@author yarnieee
         this.issuedDate = issuedDate;
         this.dueDate = dueDate;
-        // @@author
         this.equipmentRecordId = equipmentRecordId;
         this.issueConditionSnapshot = issueConditionSnapshot;
         // @@author yarnieee
@@ -138,9 +134,7 @@ public class Loan {
             this.returnAssessment = returnAssessment;
             isReturned = true;
         }
-        // @@author yarnieee
     }
-    // @@author
 
     /** Creates a legacy candidate without retaining or reserving its equipment before saving. */
     // @@author yarnieee
@@ -150,10 +144,8 @@ public class Loan {
 
     // @@author
     /** Creates an identified candidate; the handler attaches its equipment only after saving. */
-    // @@author yarnieee
     public Loan(String loanId, Equipment equipment, String borrowerId, LocalDateTime issuedDate,
             LocalDateTime dueDate) {
-        // @@author
         this(
                 loanId,
                 getAvailableItemId(equipment),
@@ -385,21 +377,15 @@ public class Loan {
         assert !equipment.isLoaned() : "Attached equipment must be available";
         assert this.equipment == null || this.equipment == equipment : "A loan must not change equipment references";
         this.equipment = equipment;
-        // @@author yarnieee
         equipment.setLoanId(loanId);
-        // @@author
     }
 
     /** Releases only the equipment still owned by this loan, then discards its reference. */
     void detachEquipment() {
         if (equipment != null && loanId != null && loanId.equals(equipment.getLoanId())) {
-            // @@author yarnieee
             equipment.setLoanId(null);
-            // @@author
             logger.log(Level.INFO, "Released equipment with item ID {0} from loan {1}.",
-                    // @@author yarnieee
                     new Object[]{itemId, loanId});
-            // @@author
         }
         equipment = null;
         assert equipment == null : "Detached loans must not retain equipment references";
@@ -415,9 +401,7 @@ public class Loan {
         if (!isReturned) {
             logger.log(Level.WARNING, "Rejected reactivation of returned loan {0}.", loanId);
             throw new IllegalStateException("A returned loan cannot be reactivated.");
-            // @@author yarnieee
         }
-        // @@author
         detachEquipment();
         this.isReturned = true;
         logger.log(Level.INFO, "Loan {0} for item ID {1} marked as returned.", new Object[]{loanId, itemId});

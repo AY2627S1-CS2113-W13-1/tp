@@ -51,13 +51,11 @@ class EqmManagerTest {
     @Test
     void deleteEquipment_bundledItem_preservesInventoryAndCompletion() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        // @@author yarnieee
         manager.executeInput(ADD_CAMERA);
         manager.executeInput("eqm-add name/Lens e/E002 type/lens cond/1");
         manager.executeInput("eqm-add name/Battery e/E003 type/battery cond/1");
         manager.executeInput("bundle-create name/Camera kit");
         manager.executeInput("bundle-add-eqm b/B001 E001 E002 E003");
-        // @@author
         String saved = Files.readString(temporaryDirectory.resolve("equipment.txt"));
         output.reset();
 
@@ -78,12 +76,10 @@ class EqmManagerTest {
     @Test
     void removeFromBundle_afterRestart_allowsEquipmentDeletion() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        // @@author yarnieee
         manager.executeInput(ADD_CAMERA);
         manager.executeInput("bundle-create name/Camera kit");
         manager.executeInput("bundle-add-eqm b/B001 E001");
         manager.executeInput("exit");
-        // @@author
 
         output.reset();
         EqmManager restarted = new EqmManager(temporaryDirectory);
@@ -114,7 +110,6 @@ class EqmManagerTest {
     @Test
     void addEquipment_duplicateId_printsErrorAndAcceptsNextValidCommand() {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        // @@author yarnieee
         manager.executeInput(ADD_CAMERA);
         output.reset();
 
@@ -123,21 +118,16 @@ class EqmManagerTest {
 
         assertEquals("[ERROR] Item ID E001 already exists." + System.lineSeparator()
                 + "[OK] Equipment E002 added." + System.lineSeparator()
-                // @@author
                 + "  Name: \"Tripod\"" + System.lineSeparator()
                 + "  Type: tripod | Condition: 5 | Status: Available" + System.lineSeparator(),
-                // @@author yarnieee
                 output.toString(StandardCharsets.UTF_8));
-        // @@author
     }
 
     @Test
     void addEquipment_malformedCommands_recoversAndPreservesInventory() {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        // @@author yarnieee
         manager.executeInput(ADD_CAMERA);
         output.reset();
-        // @@author
         String[] commands = {
             // @@author yarnieee
             "eqm-add name/Tripod e/E002",
@@ -169,9 +159,7 @@ class EqmManagerTest {
                 // @@author
                 + "  Name: \"Tripod\"" + System.lineSeparator()
                 + "  Type: tripod | Condition: 5 | Status: Available" + System.lineSeparator(),
-                // @@author yarnieee
                 output.toString(StandardCharsets.UTF_8));
-        // @@author
         output.reset();
 
         // @@author yarnieee
@@ -303,13 +291,10 @@ class EqmManagerTest {
     @Test
     void deleteEquipment_repeatedCommand_printsMissingIdError() {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        // @@author yarnieee
         manager.executeInput(ADD_CAMERA);
         manager.executeInput("eqm-delete e/E001");
-        // @@author
         output.reset();
 
-        // @@author yarnieee
         manager.executeInput("eqm-delete e/E001");
 
         assertEquals("[ERROR] Equipment ID E001 does not exist." + System.lineSeparator(),
@@ -317,34 +302,26 @@ class EqmManagerTest {
     }
 
     @Test
-    // @@author
     void deleteEquipment_afterInvalidCommands_stillDeletesEquipment() {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        // @@author yarnieee
         manager.executeInput(ADD_CAMERA);
         manager.executeInput("eqm-delete e/000");
         manager.executeInput("eqm-delete e/999");
-        // @@author
         output.reset();
 
-        // @@author yarnieee
         manager.executeInput("eqm-delete e/E001");
 
         assertEquals("[OK] Equipment E001 \"Canon EOS R10\" deleted." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
     }
-    // @@author
 
     @Test
     void deleteEquipment_sameNameDifferentIds_deletesOnlyRequestedId() {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        // @@author yarnieee
         manager.executeInput(ADD_CAMERA);
         manager.executeInput("eqm-add name/Canon EOS R10 e/E002 type/camera cond/5");
-        // @@author
         output.reset();
 
-        // @@author yarnieee
         manager.executeInput("eqm-delete e/E001");
         manager.executeInput("eqm-delete e/E001");
         manager.executeInput("eqm-delete e/E002");
@@ -354,7 +331,6 @@ class EqmManagerTest {
                 + "[OK] Equipment E002 \"Canon EOS R10\" deleted." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
     }
-    // @@author
 
     @Test
     void executeInput_unrecognizedCommand_printsErrorMessage() {
@@ -392,10 +368,8 @@ class EqmManagerTest {
     @Test
     void deleteLoan_failedSave_keepsEquipmentLoanedUntilSuccessfulRetry() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        // @@author yarnieee
         manager.executeInput(ADD_CAMERA);
         manager.executeInput("loan-add e/E001 u/U002 issued/01-10-26 due/02-10-26");
-        // @@author
         Path loansFile = temporaryDirectory.resolve("loans.txt");
         Files.delete(loansFile);
         Files.createDirectory(loansFile);
@@ -441,10 +415,8 @@ class EqmManagerTest {
     @Test
     void bye_saveFailure_reportsBothFiles() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        // @@author yarnieee
         manager.executeInput(ADD_CAMERA);
         manager.executeInput("loan-add e/E001 u/U002 issued/01-10-26 due/02-10-26");
-        // @@author
 
         Path equipmentFile = temporaryDirectory.resolve("equipment.txt");
         Path loansFile = temporaryDirectory.resolve("loans.txt");

@@ -149,9 +149,7 @@ public class EquipmentHandler {
         }
         try {
             if (remarks == null || remarks.matches("(?s).*\\R.*")) {
-                // @@author yarnieee
                 throw new EquipmentAdditionUnsuccessful(
-                        // @@author
                         "Remarks must contain at most 200 characters and no line breaks.");
             }
             String normalisedRemarks = EquipmentFields.trimWhitespace(remarks);
@@ -302,13 +300,9 @@ public class EquipmentHandler {
                 // @@author
                 if (match != null) {
                     logger.log(Level.WARNING, "Equipment deletion rejected: duplicate ID {0}.", itemId);
-                    // @@author yarnieee
                     throw new EquipmentDeletionUnsuccessful(
-                            // @@author
                             "Equipment ID " + itemId + " is not unique. No equipment was deleted.");
-                    // @@author yarnieee
                 }
-                // @@author
                 match = equipment;
                 // @@author yarnieee
             }
@@ -316,10 +310,8 @@ public class EquipmentHandler {
         // @@author
         if (match == null) {
             logger.log(Level.FINE, "Equipment deletion rejected: ID {0} does not exist.", itemId);
-            // @@author yarnieee
             throw new EquipmentDeletionUnsuccessful("Equipment ID " + itemId + " does not exist.");
         }
-        // @@author
         return match;
         // @@author yarnieee
     }
@@ -390,7 +382,6 @@ public class EquipmentHandler {
                 LEGACY_ADD_FORMAT_ERROR);
         // @@author
     }
-    // @@author yarnieee
 
     /** Parses an equipment record using either the interactive or legacy storage syntax. */
     private static Equipment parseEquipmentRecord(String userInput, String command, String itemMarker,
@@ -400,7 +391,6 @@ public class EquipmentHandler {
         }
         String addDetails = EquipmentFields.trimWhitespace(userInput.substring(command.length()));
         int itemIndex = findFieldMarker(addDetails, itemMarker, 0);
-        // @@author
         int typeIndex = findFieldMarker(addDetails, TYPE_MARKER, 0);
         int conditionIndex = findFieldMarker(addDetails, CONDITION_MARKER, 0);
         // @@author yarnieee
@@ -431,9 +421,7 @@ public class EquipmentHandler {
                 addDetails.substring(typeIndex + TYPE_MARKER.length(), conditionIndex));
         int detailsIndex = findDetailsStart(addDetails, conditionValueStart, remarksIndex);
         if (remarksIndex != -1 && detailsIndex != -1 && remarksIndex < detailsIndex) {
-            // @@author yarnieee
             throw new EquipmentAdditionUnsuccessful(
-                    // @@author
                     "Remarks must appear after optional equipment details.");
         }
         int conditionEnd = firstFieldIndex(detailsIndex, remarksIndex, addDetails.length());
@@ -578,9 +566,7 @@ public class EquipmentHandler {
                     remarks);
         }
 
-        // @@author yarnieee
         throw new EquipmentAdditionUnsuccessful(
-                // @@author
                 "Unsupported equipment type. Use: "
                         + "camera, lens, battery or tripod.");
     }
@@ -608,9 +594,7 @@ public class EquipmentHandler {
     private static void validateRemarks(String remarks) throws EquipmentAdditionUnsuccessful {
         if (remarks == null || remarks.length() > Equipment.MAX_REMARKS_LENGTH
                 || remarks.matches("(?s).*\\R.*")) {
-            // @@author yarnieee
             throw new EquipmentAdditionUnsuccessful(
-                    // @@author
                     "Remarks must contain at most 200 characters and no line breaks.");
         }
     }

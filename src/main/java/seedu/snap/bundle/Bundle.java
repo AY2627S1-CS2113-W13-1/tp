@@ -158,9 +158,7 @@ public class Bundle {
         }
         equipment.clear();
         equipment.addAll(previousEquipment);
-        // @@author yarnieee
         updateCompletionState();
-        // @@author
         assert equipment.equals(previousEquipment) : "Bundle rollback must restore all equipment";
     }
 

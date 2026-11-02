@@ -58,7 +58,6 @@ class BundleTest {
 
     @Test
     void removeEquipmentById_updatesContentsAndCompletion() {
-        // @@author yarnieee
         Bundle bundle = new Bundle("Travel Kit", "B001");
         bundle.addEquipment(new Camera("Camera", "E001", 8, "Full frame", Camera.CameraDamage.NONE));
         bundle.addEquipment(new Battery("Battery", "E002", 8, "2000 mAh", Battery.BatteryDamage.NONE));
@@ -66,16 +65,13 @@ class BundleTest {
         assertTrue(bundle.isComplete());
 
         assertTrue(bundle.removeEquipmentById("E003"));
-        // @@author
 
         assertEquals(2, bundle.getEquipmentList().size());
-        // @@author yarnieee
         assertFalse(bundle.containsEquipmentId("E003"));
         assertFalse(bundle.isComplete());
     }
 
     @Test
-    // @@author
     void removeEquipmentById_unknownItem_leavesBundleUnchanged() {
         // @@author yarnieee
         Bundle bundle = new Bundle("Travel Kit", "B001");
@@ -92,7 +88,6 @@ class BundleTest {
 
     @Test
     void addEquipment_optionalTripod_keepsBundleComplete() {
-        // @@author yarnieee
         Bundle bundle = new Bundle("Travel Kit", "B001");
         bundle.addEquipment(new Camera("Camera", "E001", 8, "Full frame", Camera.CameraDamage.NONE));
         bundle.addEquipment(new Battery("Battery", "E002", 8, "2000 mAh", Battery.BatteryDamage.NONE));
@@ -103,7 +98,6 @@ class BundleTest {
         bundle.addEquipment(new Tripod("Tripod", "E004", 8, "Quarter inch", Tripod.TripodDamage.NONE));
 
         assertTrue(bundle.isComplete());
-        // @@author
     }
 
     @Test
