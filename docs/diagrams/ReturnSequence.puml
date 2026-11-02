@@ -19,7 +19,7 @@ Check object identity, active loan ID and permanent record ID.
 end note
 Handler -> Inventory: prepareReturnAssessment(...)
 Inventory --> Handler: detached assessed item
-Handler -> Loan: returnedCopy()
+Handler -> Loan: returnedCopy(assessment)
 Loan --> Handler: detached returned loan
 Handler -> Store: save(...)
 activate Store
@@ -31,7 +31,7 @@ end note
 Store --> Handler: saved successfully
 deactivate Store
 Handler -> Item: applyReturnAssessment(assessed)
-Handler -> Loan: setReturned(true)
+Handler -> Loan: completeReturn(assessment)
 activate Loan
 Loan -> Item: setLoanId(null)
 note over Loan, Item

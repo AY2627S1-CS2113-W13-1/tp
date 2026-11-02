@@ -96,7 +96,9 @@ final class LoanStorage {
                             record.issuedDate(),
                             record.dueDate(),
                             record.equipmentRecordId(),
-                            record.issueConditionSnapshot());
+                            record.issueConditionSnapshot(),
+                            record.returnAssessment(),
+                            record.issueServiceability());
             loan.setReturned(record.returned());
             loaded.add(loan);
         }
@@ -202,12 +204,18 @@ final class LoanStorage {
         if (snapshot != null) {
             record += " "
                     + EquipmentConditionSnapshotCodec.encode(snapshot);
+            if (loan.getIssueServiceability() != null) {
+                record += " issueServiceable/" + (loan.getIssueServiceability() ? "yes" : "no");
+            }
         }
 
+        if (loan.getReturnAssessment() != null) {
+            record += " " + LoanReturnAssessmentCodec.encode(loan.getReturnAssessment());
+        }
         return record;
     }
 
-    /** Parses records with optional return status, equipment identity and issue snapshot. */
+    /** Parses records with optional return status, equipment identity, issue snapshot and return assessment. */
     private static LoanRecord parseRecord(String line) throws LoanAdditionUnsuccessful {
         String[] fields = line.split("\\s+");
         boolean hasLoanId = fields.length >= 2 && fields[1].startsWith("loanId/");
@@ -243,18 +251,30 @@ final class LoanStorage {
         }
 
         EquipmentConditionSnapshot issueConditionSnapshot = null;
-        if (nextField < fields.length) {
-            int remainingFields = fields.length - nextField;
-            if (remainingFields
-                    != EquipmentConditionSnapshotCodec.FIELD_COUNT) {
-                throw new IllegalArgumentException(
-                        "Incomplete or unexpected issue-condition snapshot.");
-            }
-            issueConditionSnapshot =
-                    EquipmentConditionSnapshotCodec.decode(
-                            fields,
-                            nextField);
+        Boolean issueServiceability = null;
+        if (nextField < fields.length && fields[nextField].startsWith("issueType/")) {
+            issueConditionSnapshot = EquipmentConditionSnapshotCodec.decode(fields, nextField);
             nextField += EquipmentConditionSnapshotCodec.FIELD_COUNT;
+            if (nextField < fields.length && fields[nextField].startsWith("issueServiceable/")) {
+                String value = parseField(fields[nextField++], "issueServiceable/");
+                if (!value.equals("yes") && !value.equals("no")) {
+                    throw new IllegalArgumentException("Expected issueServiceable/yes or issueServiceable/no.");
+                }
+                issueServiceability = value.equals("yes");
+            }
+        }
+
+        LoanReturnAssessment returnAssessment = null;
+        if (nextField < fields.length && fields[nextField].startsWith("returnType/")) {
+            if (!returned) {
+                throw new IllegalArgumentException("An active loan cannot contain a return assessment.");
+            }
+            returnAssessment = LoanReturnAssessmentCodec.decode(fields, nextField);
+            if (issueConditionSnapshot != null && !issueConditionSnapshot.getEquipmentType()
+                    .equals(returnAssessment.condition().getEquipmentType())) {
+                throw new IllegalArgumentException("Issue and return assessments must have the same equipment type.");
+            }
+            nextField += LoanReturnAssessmentCodec.FIELD_COUNT;
         }
 
         if (nextField != fields.length) {
@@ -264,7 +284,7 @@ final class LoanStorage {
 
         return new LoanRecord(loanId, parsed.getItemId(), parsed.getBorrowerId(),
                 parsed.getIssuedDate(), parsed.getDueDate(), returned,
-                equipmentRecordId, issueConditionSnapshot);
+                equipmentRecordId, issueConditionSnapshot, returnAssessment, issueServiceability);
     }
 
     /** Parses the optional returned status from a storage field. */
@@ -333,7 +353,8 @@ final class LoanStorage {
     private record LoanRecord(String loanId, String itemId, String borrowerId,
             java.time.LocalDateTime issuedDate, java.time.LocalDateTime dueDate, boolean returned,
             String equipmentRecordId,
-            EquipmentConditionSnapshot issueConditionSnapshot) {
+            EquipmentConditionSnapshot issueConditionSnapshot, LoanReturnAssessment returnAssessment,
+            Boolean issueServiceability) {
     }
 
     /** Captures a file before replacement so failed loan and return saves can be rolled back. */

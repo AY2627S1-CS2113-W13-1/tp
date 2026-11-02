@@ -167,12 +167,16 @@ public final class Help {
                         """)),
                 new CommandHelp("return", "Loans", lineEndings(String.format(Locale.ROOT, """
                         RETURN EQUIPMENT
-                        Format: return loan/<LOAN ID> serviceable/<yes|no> damage/<DAMAGE> [remarks/<TEXT>]
-                        Example: return loan/001 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair
+                        Format: return loan/<LOAN ID> serviceable/<yes|no> damage/<DAMAGE> [cond/<N>] [remarks/<TEXT>]
+                        Example: return loan/001 serviceable/no damage/SENSOR_DAMAGE cond/8 remarks/Sensor needs repair
                         Requires an active Loan ID and explicit serviceable/ and damage/ assessment, in that order.
                         Serviceable yes/no and subtype damage values are case-insensitive; use NONE for no damage.
 
                         Serviceability determines whether the item may be borrowed again; damage alone does not.
+
+                        Optional cond/ follows damage/ and is a whole number from 1 to 10.
+                        If omitted, the current numeric condition is retained in the return assessment.
+                        View loan/<LOAN ID> compares saved issue and return assessments, including after later loans.
 
                         Remarks/ must be last. For OTHER, provide non-empty text after trimming.
                         For other damage values, omitted or empty remarks clear prior notes.
@@ -223,12 +227,12 @@ public final class Help {
                         Includes a result count and guidance when no loans are recorded.
                         """)),
                 new CommandHelp("view loan", "Loans", lineEndings("""
-                        VIEW LOAN ISSUE CONDITION
+                        VIEW LOAN CONDITION ASSESSMENTS
                         Format: view loan/<LOAN ID>
                         Example: view loan/001
-                        Shows the equipment type, condition, damage and remarks recorded when the loan was issued.
-                        If update loan assigns another item, this shows the replacement's condition at reassignment.
-                        Legacy loans without a saved snapshot report that the issue condition was not recorded.
+                        Compares the saved issue and return type, condition, damage and remarks for one loan.
+                        New loans record issue-time serviceability; both assessments keep their saved values.
+                        Active loans show Not returned. Missing legacy assessments show Not recorded.
                         This read-only command does not change equipment, loans or saved records.
                         """)),
                 new CommandHelp("list borrower", "Loans", lineEndings("""
@@ -380,6 +384,8 @@ public final class Help {
                         All bundles and their saved memberships are cleared. Maintenance records remain unchanged.
                         A failed restore attempts to restore the previous saved records; report any rollback error.
                         Restore is available after a startup loading error. Other commands are blocked except bye.
+                        If maintenance did not load, restore is blocked too. Exit with bye, preserve and repair
+                        or recover data/maintenance.txt separately, then restart.
                         """)),
                 new CommandHelp("help", "General", lineEndings("""
                         HELP
