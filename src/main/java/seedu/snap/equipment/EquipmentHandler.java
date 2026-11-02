@@ -23,8 +23,8 @@ import seedu.snap.ui.EquipmentView;
 public class EquipmentHandler {
     /** Diagnostic logger; the application sends outcomes and detailed traces to local files. */
     private static final Logger logger = Logger.getLogger(EquipmentHandler.class.getName());
-    private static final String ADD_COMMAND = "add-eqm";
-    private static final String ADD_FORMAT_ERROR = "Invalid format. Use: add-eqm name/[ITEM] e/[ITEM ID] "
+    private static final String ADD_COMMAND = "eqm-add";
+    private static final String ADD_FORMAT_ERROR = "Invalid format. Use: eqm-add name/[ITEM] e/[ITEM ID] "
             + "type/[TYPE] cond/[CONDITION]";
     private static final String LEGACY_ADD_COMMAND = "add";
     private static final String LEGACY_ITEM_MARKER = "i/";

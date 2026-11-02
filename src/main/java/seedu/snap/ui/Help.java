@@ -99,11 +99,11 @@ public final class Help {
     /** Keeps each command's description in one immutable entry for every help view. */
     private static List<CommandHelp> createCommands() {
         return List.of(
-                new CommandHelp("add-eqm", "Equipment", lineEndings(String.format(Locale.ROOT, """
-                        ADD-EQM
-                        Format: add-eqm name/<NAME> e/<ID> type/<TYPE> cond/<N> [TYPE DETAIL] [damage/<DAMAGE>] \
+                new CommandHelp("eqm-add", "Equipment", lineEndings(String.format(Locale.ROOT, """
+                        EQM-ADD
+                        Format: eqm-add name/<NAME> e/<ID> type/<TYPE> cond/<N> [TYPE DETAIL] [damage/<DAMAGE>] \
                         [remarks/<TEXT>]
-                        Example: add-eqm name/Canon EOS R10 e/001 type/camera cond/1 sensor/APS-C
+                        Example: eqm-add name/Canon EOS R10 e/001 type/camera cond/1 sensor/APS-C
                         mount/Canon RF damage/NONE
                         Name, unused Item ID, type and condition are required, in that order.
 
@@ -127,10 +127,10 @@ public final class Help {
                         damageValues(Camera.CameraDamage.values()),
                         damageValues(Lens.LensDamage.values()), damageValues(Battery.BatteryDamage.values()),
                         damageValues(Tripod.TripodDamage.values())))),
-                new CommandHelp("list-eqm", "Equipment", lineEndings("""
-                        LIST-EQM
-                        Format: list-eqm
-                        Example: list-eqm
+                new CommandHelp("eqm-list", "Equipment", lineEndings("""
+                        EQM-LIST
+                        Format: eqm-list
+                        Example: eqm-list
                         Shows all equipment with Item ID, name, type, numeric condition and status in a compact table.
                         Long names end in ...; use eqm-show e/<ID> for full values, subtype details, damage and
                         remarks.
@@ -153,12 +153,12 @@ public final class Help {
                         Example: eqm-delete e/001
                         Requires an existing Item ID. Active loans and bundle membership block deletion.
 
-                        Existing loans remain in list-loan; a replacement using this Item ID has separate history.
+                        Existing loans remain in loan-list; a replacement using this Item ID has separate history.
                         """)),
-                new CommandHelp("add-loan", "Loans", lineEndings("""
-                        ADD-LOAN
-                        Format: add-loan e/<ITEM ID> u/<BORROWER ID> [issued/<DD-MM-YY>] due/<DD-MM-YY>
-                        Example: add-loan e/001 u/002 issued/24-10-26 due/31-10-26
+                new CommandHelp("loan-add", "Loans", lineEndings("""
+                        LOAN-ADD
+                        Format: loan-add e/<ITEM ID> u/<BORROWER ID> [issued/<DD-MM-YY>] due/<DD-MM-YY>
+                        Example: loan-add e/001 u/002 issued/24-10-26 due/31-10-26
                         Item ID, borrower ID and due/ are required. Keep the displayed field order.
 
                         Omitted issued/ defaults to today's date in the application's local time zone, at midnight.
@@ -219,17 +219,17 @@ public final class Help {
                         The issue date must not be later than the due date. Invalid updates leave records unchanged.
                         Successful updates are saved to data/loans.txt before live records change.
                         """)),
-                new CommandHelp("list-loan", "Loans", lineEndings("""
-                        LIST-LOAN
-                        Format: list-loan
-                        Example: list-loan
+                new CommandHelp("loan-list", "Loans", lineEndings("""
+                        LOAN-LIST
+                        Format: loan-list
+                        Example: loan-list
                         Shows Loan ID, Item ID, borrower, DD-MM-YY dates and Active, Returned or Overdue state.
                         Includes a result count and guidance when no loans are recorded.
                         """)),
                 new CommandHelp("loan-view", "Loans", lineEndings("""
                         VIEW LOAN CONDITION ASSESSMENTS
-                        Format: loan-view L-id/<LOAN ID>
-                        Example: loan-view L-id/001
+                        Format: loan-view l/<LOAN ID>
+                        Example: loan-view l/001
                         Compares the saved issue and return type, condition, damage and remarks for one loan.
                         New loans record issue-time serviceability; both assessments keep their saved values.
                         Active loans show Not returned. Missing legacy assessments show Not recorded.
@@ -244,24 +244,24 @@ public final class Help {
                         Legacy loans without a saved snapshot report that the issue condition was not recorded.
                         This read-only command does not change equipment, loans or saved records.
                         """)),
-                new CommandHelp("list-loan-borrower", "Loans", lineEndings("""
-                        LIST-LOAN-BORROWER
-                        Format: list-loan-borrower u/<BORROWER ID>
-                        Example: list-loan-borrower u/002
+                new CommandHelp("loan-list-borrower", "Loans", lineEndings("""
+                        LOAN-LIST-BORROWER
+                        Format: loan-list-borrower u/<BORROWER ID>
+                        Example: loan-list-borrower u/002
                         Shows only active equipment held by the selected borrower, with loan details.
                         Returned loans and loans held by other borrowers are excluded.
                         A borrower is known when at least one active or returned loan uses that ID.
                         An unknown borrower ID and a known borrower with no active loans receive separate messages.
-                        Uses the same dates, states, columns and result counts as list-loan.
+                        Uses the same dates, states, columns and result counts as loan-list.
                         This read-only query does not change equipment, loans or saved files.
                         """)),
-                new CommandHelp("list-loan-overdue", "Loans", lineEndings("""
-                        LIST-LOAN-OVERDUE
-                        Format: list-loan-overdue
-                        Example: list-loan-overdue
+                new CommandHelp("loan-list-overdue", "Loans", lineEndings("""
+                        LOAN-LIST-OVERDUE
+                        Format: loan-list-overdue
+                        Example: loan-list-overdue
                         Shows active loans with due dates earlier than today's local date.
                         Returned loans and loans due today or later are excluded.
-                        Uses the same columns and DD-MM-YY dates as list-loan, with Overdue state and a count.
+                        Uses the same columns and DD-MM-YY dates as loan-list, with Overdue state and a count.
                         This read-only command does not change any records.
                         """)),
                 new CommandHelp("eqm-loan-history", "Equipment", lineEndings("""
@@ -270,14 +270,14 @@ public final class Help {
                         Example: eqm-loan-history e/001
                         Requires an existing Item ID. Includes its physical item's active and returned loans.
                         Sorted by issue date, earliest first, then Loan ID. Reused Item IDs keep separate histories.
-                        Uses the same dates, states, columns and result counts as list-loan.
+                        Uses the same dates, states, columns and result counts as loan-list.
 
-                        Older returned records without a proven item association remain available in list-loan.
+                        Older returned records without a proven item association remain available in loan-list.
                         """)),
-                new CommandHelp("filter-eqm", "Equipment", lineEndings("""
-                        FILTER-EQM
-                        Format: filter-eqm [e/<ID>] [name/<NAME>] [type/<TYPE>] [cond/<N|MIN-MAX>] [status/<STATUS>]
-                        Example: filter-eqm type/camera cond/1-3 status/available
+                new CommandHelp("eqm-filter", "Equipment", lineEndings("""
+                        EQM-FILTER
+                        Format: eqm-filter [e/<ID>] [name/<NAME>] [type/<TYPE>] [cond/<N|MIN-MAX>] [status/<STATUS>]
+                        Example: eqm-filter type/camera cond/1-3 status/available
                         Supply at least one filter, in any order, with each prefix once. All filters must match (AND).
 
                         Names use case-insensitive partial matching; types use case-insensitive full matching.
@@ -285,7 +285,7 @@ public final class Help {
 
                         status/ accepts available or loaned, ignoring letter case.
                         Available excludes active loans and unserviceable items.
-                        Uses the same compact table as list-eqm. Use eqm-show e/<ID> for full equipment values.
+                        Uses the same compact table as eqm-list. Use eqm-show e/<ID> for full equipment values.
                         """)),
                 new CommandHelp("eqm-update", "Equipment", lineEndings("""
                         EQM-UPDATE
@@ -311,10 +311,10 @@ public final class Help {
                         Recording maintenance does not change condition, damage, remarks or serviceability.
                         Success shows the Item ID, name, maintenance date, work description and outcome.
                         """, MaintenanceRecord.MAX_WORK_LENGTH, MaintenanceRecord.MAX_OUTCOME_LENGTH))),
-                new CommandHelp("add-bundle", "Bundles", lineEndings("""
-                        ADD-BUNDLE
-                        Format: add-bundle name/<NAME>
-                        Example: add-bundle name/Studio kit
+                new CommandHelp("bundle-create", "Bundles", lineEndings("""
+                        BUNDLE-CREATE
+                        Format: bundle-create name/<NAME>
+                        Example: bundle-create name/Studio kit
                         Requires a name of 1-100 characters. Bundle IDs are assigned automatically, 001-999.
                         Names must be unique; name comparisons are case-sensitive.
 
@@ -349,10 +349,10 @@ public final class Help {
                         Loaned and unserviceable items may be removed from a bundle.
                         Successful removals are saved immediately; a save failure restores the previous memberships.
                         """)),
-                new CommandHelp("list-bundle", "Bundles", lineEndings("""
-                        LIST-BUNDLE
-                        Format: list-bundle
-                        Example: list-bundle
+                new CommandHelp("bundle-list", "Bundles", lineEndings("""
+                        BUNDLE-LIST
+                        Format: bundle-list
+                        Example: bundle-list
                         Shows saved and current bundles, their equipment and whether their composition is complete.
                         Incomplete bundles list missing required types. Includes bundle and member counts.
                         Save new bundles and additions with exit; successful removals are saved immediately.
@@ -367,7 +367,7 @@ public final class Help {
                         Uses current bundle membership, including loans issued before an item joined the bundle.
                         Removing an item excludes its loans from this view. Names must match exactly, including case.
                         Results are sorted by issue date, earliest first, then Loan ID.
-                        Uses the same DD-MM-YY dates, states, columns and result counts as list-loan.
+                        Uses the same DD-MM-YY dates, states, columns and result counts as loan-list.
                         An empty bundle history and unknown bundle are reported clearly.
                         """)),
                 new CommandHelp("backup", "General", lineEndings("""
@@ -397,9 +397,9 @@ public final class Help {
                         Example: help
                         Shows a compact command menu grouped by equipment, loans, bundles and general commands.
                         Format: help <COMMAND>
-                        Example: help add-loan
+                        Example: help loan-add
                         Shows one command's syntax, examples, required and optional fields, defaults and restrictions.
-                        Use either a full command name or its alias for command topics, such as help list-loan-overdue
+                        Use either a full command name or its alias for command topics, such as help loan-list-overdue
                         or help llo.
                         Format: help all
                         Example: help all
@@ -438,7 +438,7 @@ public final class Help {
             appendMenuGroup(menu, group, groupCommands);
         }
         appendMenuRow(menu, "");
-        appendMenuRow(menu, "Type help <COMMAND OR ALIAS> for details (for example, help add-loan or help al).");
+        appendMenuRow(menu, "Type help <COMMAND OR ALIAS> for details (for example, help loan-add or help al).");
         appendMenuRow(menu, "Type help all for the complete reference.");
         return menu.append(border).toString();
     }

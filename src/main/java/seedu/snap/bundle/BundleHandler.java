@@ -23,10 +23,10 @@ import seedu.snap.ui.BundleView;
 
 /** Parses bundle commands and stores bundles for the current session and saved data. */
 public class BundleHandler {
-    private static final String ADD_BUNDLE_COMMAND = "add-bundle";
+    private static final String ADD_BUNDLE_COMMAND = "bundle-create";
     private static final String ADD_TO_BUNDLE_COMMAND = "bundle-add-eqm";
     private static final String REMOVE_FROM_BUNDLE_COMMAND = "bundle-remove-eqm";
-    private static final String LIST_BUNDLES_COMMAND = "list-bundle";
+    private static final String LIST_BUNDLES_COMMAND = "bundle-list";
     private static final String HISTORY_COMMAND_PREFIX = "bundle-history ";
     private static final String NAME_MARKER = "name/";
     private static final String ID_MARKER = "b/";
@@ -61,9 +61,9 @@ public class BundleHandler {
     }
 
     /**
-     * Creates a bundle from an add-bundle command.
+     * Creates a bundle from a bundle-create command.
      *
-     * @param input command in the form {@code add-bundle name/[NAME]}
+     * @param input command in the form {@code bundle-create name/[NAME]}
      * @return the created bundle
      * @throws BundleAdditionUnsuccessful when the command is invalid
      */
@@ -251,12 +251,12 @@ public class BundleHandler {
     /**
      * Prints all bundles and their contained equipment.
      *
-     * @param input command that must be {@code list-bundle}
+     * @param input command that must be {@code bundle-list}
      * @throws BundleAdditionUnsuccessful when the command is invalid
      */
     public void viewAllBundles(String input) throws BundleAdditionUnsuccessful {
         if (input == null || !input.trim().equals(LIST_BUNDLES_COMMAND)) {
-            throw new BundleAdditionUnsuccessful("Invalid format. Use: list-bundle");
+            throw new BundleAdditionUnsuccessful("Invalid format. Use: bundle-list");
         }
 
         BundleView.print(getBundleList());
@@ -457,7 +457,7 @@ public class BundleHandler {
 
     private String parseBundleName(String input) throws BundleAdditionUnsuccessful {
         if (input == null || !input.trim().startsWith(ADD_BUNDLE_COMMAND + " " + NAME_MARKER)) {
-            throw new BundleAdditionUnsuccessful("Invalid format. Use: add-bundle name/[NAME]");
+            throw new BundleAdditionUnsuccessful("Invalid format. Use: bundle-create name/[NAME]");
         }
         String name = input.trim().substring((ADD_BUNDLE_COMMAND + " " + NAME_MARKER).length()).trim();
         if (name.isBlank() || name.length() > 100) {

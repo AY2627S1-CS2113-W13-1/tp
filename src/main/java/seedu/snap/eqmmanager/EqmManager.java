@@ -144,9 +144,9 @@ public class EqmManager {
             deleteLoan(normalizedInput);
         } else if (normalizedInput.matches("(?U)eqm-delete(?:\\s.*)?")) {
             deleteEquipment(normalizedInput);
-        } else if (normalizedInput.matches("(?U)add-eqm(?:\\s.*)?")) {
+        } else if (normalizedInput.matches("(?U)eqm-add(?:\\s.*)?")) {
             addEquipment(normalizedInput);
-        } else if (normalizedInput.matches("(?sU)add-loan(?:\\s.*)?")) {
+        } else if (normalizedInput.matches("(?sU)loan-add(?:\\s.*)?")) {
             addLoan(normalizedInput);
         } else if (normalizedInput.matches("(?sU)loan-return(?:\\s.*)?")) {
             returnEquipment(normalizedInput);
@@ -162,31 +162,31 @@ public class EqmManager {
             viewLoanIssueCondition(normalizedInput);
         } else if (normalizedInput.matches("(?U)loan-update(?:\\s.*|/.*)?")) {
             updateLoan(normalizedInput);
-        } else if (normalizedInput.matches("(?sU)list-loan-borrower(?:\\s.*|/.*)?")) {
+        } else if (normalizedInput.matches("(?sU)loan-list-borrower(?:\\s.*|/.*)?")) {
             viewActiveLoansForBorrower(normalizedInput);
-        } else if (normalizedInput.matches("(?U)filter-eqm(?:\\s.*)?")) {
+        } else if (normalizedInput.matches("(?U)eqm-filter(?:\\s.*)?")) {
             filterEquipment(normalizedInput);
         } else if (normalizedInput.matches("(?U)eqm-update(?:\\s.*)?")) {
             updateEquipment(normalizedInput);
         } else if (normalizedInput.matches("(?sU)eqm-show(?:\\s.*)?")) {
             showEquipment(normalizedInput);
-        } else if (normalizedInput.equals("list-loan-overdue")) {
+        } else if (normalizedInput.equals("loan-list-overdue")) {
             viewOverdueLoans();
-        } else if (normalizedInput.equals("list-loan")) {
+        } else if (normalizedInput.equals("loan-list")) {
             loans.viewAllLoans();
-        } else if (normalizedInput.equals("add-bundle") || normalizedInput.startsWith("add-bundle ")) {
+        } else if (normalizedInput.equals("bundle-create") || normalizedInput.startsWith("bundle-create ")) {
             addBundle(normalizedInput);
         } else if (normalizedInput.equals("bundle-add-eqm") || normalizedInput.startsWith("bundle-add-eqm ")) {
             addItemsToBundle(normalizedInput);
         } else if (normalizedInput.matches("(?U)bundle-remove-eqm(?:\\s.*)?")) {
             removeItemsFromBundle(normalizedInput);
-        } else if (normalizedInput.equals("list-bundle")) {
+        } else if (normalizedInput.equals("bundle-list")) {
             try {
                 bundles.viewAllBundles(normalizedInput);
             } catch (BundleAdditionUnsuccessful e) {
                 ConsoleOutput.error(e.getMessage());
             }
-        } else if (normalizedInput.equals("list-eqm")) {
+        } else if (normalizedInput.equals("eqm-list")) {
             equipment.viewAllEquipment();
         } else {
             ConsoleOutput.error("Command not recognised. Type help for available commands.");

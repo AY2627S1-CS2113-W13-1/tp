@@ -39,7 +39,7 @@ public class LoanHandler {
     private static final int MAX_LOAN_NUMBER = 999;
     private static final Logger logger = Logger.getLogger(LoanHandler.class.getName());
     private static final String ID_FORMAT = "[0-9]{3}";
-    private static final String LOAN_COMMAND_FORMAT = "Invalid command format. Use: add-loan e/[ITEM ID] "
+    private static final String LOAN_COMMAND_FORMAT = "Invalid command format. Use: loan-add e/[ITEM ID] "
             + "u/[BORROWER ID] [issued/DD-MM-YY] due/[DD-MM-YY]. Omitted issued/ uses today's date.";
     private static final String LEGACY_LOAN_COMMAND = "loan";
     private static final String LEGACY_ITEM_MARKER = "id/";
@@ -468,7 +468,7 @@ public class LoanHandler {
                 && arguments.length != EXPECTED_ADD_ARGUMENT_COUNT - 1) {
             throw new LoanAdditionUnsuccessful(LOAN_COMMAND_FORMAT);
         }
-        return parseLoanArguments(arguments, clock, "add-loan", "e/", "u/");
+        return parseLoanArguments(arguments, clock, "loan-add", "e/", "u/");
     }
 
     /** Requires explicit dates in stored records; loading never supplies a current-date default. */
@@ -702,10 +702,10 @@ public class LoanHandler {
         String normalizedInput = input == null ? "" : input.replaceAll("(?U)^\\s+|\\s+$", "");
         String[] arguments = normalizedInput.isEmpty() ? new String[0] : normalizedInput.split("(?U)\\s+");
         if (arguments.length != 2 || !arguments[0].equals("loan-view")
-                || !arguments[1].startsWith("L-id/")) {
-            throw new LoanViewingUnsuccessful("Invalid command format. Expected: loan-view L-id/[LOAN ID].");
+                || !arguments[1].startsWith("l/")) {
+            throw new LoanViewingUnsuccessful("Invalid command format. Expected: loan-view l/[LOAN ID].");
         }
-        String loanId = arguments[1].substring("L-id/".length());
+        String loanId = arguments[1].substring("l/".length());
         if (!loanId.matches(ID_FORMAT) || loanId.equals("000")) {
             throw new LoanViewingUnsuccessful("Invalid loan ID \"" + loanId
                     + "\". Loan ID must be exactly three digits from 001 to 999.");
@@ -909,7 +909,7 @@ public class LoanHandler {
                 && loan.isReturned() && loan.getEquipmentRecordId() == null);
         if (hasUnattributedHistory) {
             System.out.println("Earlier returned loans for this Item ID cannot be attributed to the current item. "
-                    + "Use list-loan to view them.");
+                    + "Use loan-list to view them.");
         }
     }
 
@@ -917,7 +917,7 @@ public class LoanHandler {
      * Returns active loans held by the borrower in a borrower query.
      * A borrower is known when at least one current or returned loan uses the ID.
      *
-     * @param input command in the form {@code list-loan-borrower u/002}
+     * @param input command in the form {@code loan-list-borrower u/002}
      * @return an unmodifiable snapshot containing only the borrower's active loans
      * @throws LoanBorrowerUnsuccessful if syntax is invalid or the borrower is unknown
      */
@@ -983,7 +983,7 @@ public class LoanHandler {
 
     /** Prints loan records using the same table format as the all-loans command. */
     public void printLoans(List<Loan> records) {
-        printLoans(records, "Loans", "No loans recorded. Type help loan for the command format.");
+        printLoans(records, "Loans", "No loans recorded. Type help loan-list for the command format.");
     }
 
     /** Shares the same rows and current-date state with contextual headings and empty messages. */

@@ -25,7 +25,7 @@ public final class EquipmentFilter {
     /** Parses optional ID, name, type, condition/range, and availability filters in any order. */
     public static EquipmentFilter parse(String input) throws EquipmentFilteringUnsuccessful {
         try {
-            Map<String, String> fields = EquipmentFields.parse(input, "filter-eqm", EquipmentFields.ID_FIELD,
+            Map<String, String> fields = EquipmentFields.parse(input, "eqm-filter", EquipmentFields.ID_FIELD,
                     EquipmentFields.NAME_FIELD, EquipmentFields.TYPE_FIELD,
                     EquipmentFields.CONDITION_FIELD, EquipmentFields.STATUS_FIELD);
             EquipmentFilter filter = new EquipmentFilter(fields);

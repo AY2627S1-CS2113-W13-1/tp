@@ -25,7 +25,7 @@ public final class BundleView {
     public static void print(List<Bundle> bundles) {
         ConsoleOutput.heading("Bundles");
         if (bundles.isEmpty()) {
-            System.out.println("No bundles recorded. Create one with: add-bundle name/Camera kit");
+            System.out.println("No bundles recorded. Create one with: bundle-create name/Camera kit");
         }
         for (Bundle bundle : bundles) {
             System.out.println("Bundle " + bundle.getBundleId() + ": "

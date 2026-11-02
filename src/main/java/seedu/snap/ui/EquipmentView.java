@@ -26,7 +26,7 @@ public final class EquipmentView {
     public static void printInventory(List<Equipment> items) {
         printList(items, "Equipment", "No equipment in the inventory.");
         if (items.isEmpty()) {
-            System.out.println("Add an item: add-eqm name/Camera e/001 type/camera cond/1");
+            System.out.println("Add an item: eqm-add name/Camera e/001 type/camera cond/1");
         }
     }
 
