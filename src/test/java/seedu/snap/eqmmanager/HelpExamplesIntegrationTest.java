@@ -169,7 +169,7 @@ class HelpExamplesIntegrationTest {
         case "filter" -> "1 equipment item.";
         case "show" -> "Equipment 001";
         case "list loans" -> "LOAN ID";
-        case "view loan" -> "Loan 001 issue-time condition:";
+        case "view loan" -> "Loan 001 condition assessments";
         case "list borrower", "list member" -> "Equipment currently held by borrower ID 002:";
         case "list overdue" -> "Overdue";
         case "history" -> "Loan history for item ID 001";

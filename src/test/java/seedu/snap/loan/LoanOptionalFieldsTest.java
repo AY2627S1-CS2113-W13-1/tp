@@ -269,7 +269,7 @@ class LoanOptionalFieldsTest {
                 "return serviceable/yes damage/NONE", "return loan/001 serviceable/ damage/NONE",
                 "return loan/001 serviceable/maybe damage/NONE", "return loan/001 serviceable/yes damage/",
                 "return loan/001 serviceable/yes damage/UNKNOWN", "return loan/001 damage/NONE serviceable/yes",
-                "return loan/001 serviceable/yes damage/NONE cond/4",
+                "return loan/001 serviceable/yes damage/NONE cond/11",
                 "return loan/001 serviceable/yes serviceable/no damage/NONE",
                 "return loan/001 serviceable/yes damage/NONE damage/NONE",
                 "return loan/001 serviceable/yes remarks/Before damage/NONE");

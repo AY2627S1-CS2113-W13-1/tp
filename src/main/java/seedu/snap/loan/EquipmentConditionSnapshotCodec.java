@@ -10,11 +10,6 @@ import java.nio.charset.StandardCharsets;
 final class EquipmentConditionSnapshotCodec {
     static final int FIELD_COUNT = 4;
 
-    private static final String TYPE_PREFIX = "issueType/";
-    private static final String CONDITION_PREFIX = "issueCondition/";
-    private static final String DAMAGE_PREFIX = "issueDamage/";
-    private static final String REMARKS_PREFIX = "issueRemarks/";
-
     private EquipmentConditionSnapshotCodec() {
         // Utility class; do not instantiate.
     }
@@ -27,21 +22,26 @@ final class EquipmentConditionSnapshotCodec {
      * @throws IllegalArgumentException if the snapshot is null
      */
     static String encode(EquipmentConditionSnapshot snapshot) {
+        return encode(snapshot, "issue");
+    }
+
+    /** Shares escaping for issue and return values while keeping their storage prefixes distinct. */
+    static String encode(EquipmentConditionSnapshot snapshot, String stage) {
         if (snapshot == null) {
             throw new IllegalArgumentException(
-                    "Issue-condition snapshot must not be null.");
+                    "Condition snapshot must not be null.");
         }
 
-        return TYPE_PREFIX
+        return (stage + "Type/")
                 + encodeValue(snapshot.getEquipmentType())
                 + " "
-                + CONDITION_PREFIX
+                + (stage + "Condition/")
                 + snapshot.getCondition()
                 + " "
-                + DAMAGE_PREFIX
+                + (stage + "Damage/")
                 + encodeValue(snapshot.getDamage())
                 + " "
-                + REMARKS_PREFIX
+                + (stage + "Remarks/")
                 + encodeValue(snapshot.getRemarks());
     }
 
@@ -56,29 +56,34 @@ final class EquipmentConditionSnapshotCodec {
     static EquipmentConditionSnapshot decode(
             String[] fields,
             int startIndex) {
+        return decode(fields, startIndex, "issue");
+    }
+
+    /** Reads the same validated snapshot values using the selected issue or return prefixes. */
+    static EquipmentConditionSnapshot decode(String[] fields, int startIndex, String stage) {
         if (fields == null
                 || startIndex < 0
                 || startIndex + FIELD_COUNT > fields.length) {
             throw new IllegalArgumentException(
-                    "Incomplete issue-condition snapshot.");
+                    "Incomplete condition snapshot.");
         }
 
         String equipmentType =
                 decodeValue(extractValue(
                         fields[startIndex],
-                        TYPE_PREFIX));
+                        (stage + "Type/")));
         int condition =
                 parseCondition(extractValue(
                         fields[startIndex + 1],
-                        CONDITION_PREFIX));
+                        (stage + "Condition/")));
         String damage =
                 decodeValue(extractValue(
                         fields[startIndex + 2],
-                        DAMAGE_PREFIX));
+                        (stage + "Damage/")));
         String remarks =
                 decodeValue(extractValue(
                         fields[startIndex + 3],
-                        REMARKS_PREFIX));
+                        (stage + "Remarks/")));
 
         return new EquipmentConditionSnapshot(
                 equipmentType,
@@ -97,12 +102,14 @@ final class EquipmentConditionSnapshotCodec {
     /** Decodes one storage token into its original text value. */
     private static String decodeValue(String value) {
         try {
-            return URLDecoder.decode(
-                    value,
-                    StandardCharsets.UTF_8);
+            String decoded = URLDecoder.decode(value, StandardCharsets.UTF_8);
+            if (decoded.matches("(?s).*\\R.*")) {
+                throw new IllegalArgumentException("Condition values must stay on one line.");
+            }
+            return decoded;
         } catch (IllegalArgumentException exception) {
             throw new IllegalArgumentException(
-                    "Invalid encoded issue-condition value.",
+                    "Invalid encoded condition value.",
                     exception);
         }
     }
@@ -125,7 +132,7 @@ final class EquipmentConditionSnapshotCodec {
             return Integer.parseInt(value);
         } catch (NumberFormatException exception) {
             throw new IllegalArgumentException(
-                    "Issue condition must be an integer.",
+                    "Condition must be an integer.",
                     exception);
         }
     }
