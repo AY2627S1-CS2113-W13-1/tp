@@ -16,7 +16,7 @@ class BatteryDetailsParserTest {
             throws EquipmentAdditionUnsuccessful {
         Battery battery = BatteryDetailsParser.createBattery(
                 "Camera Battery",
-                "201",
+                "E201",
                 8,
                 "capacity/2000 mAh battery/Li-ion damage/NONE",
                 "Charged");
@@ -34,7 +34,7 @@ class BatteryDetailsParserTest {
             throws EquipmentAdditionUnsuccessful {
         Battery battery = BatteryDetailsParser.createBattery(
                 "Battery",
-                "202",
+                "E202",
                 7,
                 "",
                 "");
@@ -55,7 +55,7 @@ class BatteryDetailsParserTest {
             throws EquipmentAdditionUnsuccessful {
         Battery battery = BatteryDetailsParser.createBattery(
                 "Battery",
-                "203",
+                "E203",
                 6,
                 "battery/AA",
                 "");
@@ -72,7 +72,7 @@ class BatteryDetailsParserTest {
                 EquipmentAdditionUnsuccessful.class,
                 () -> BatteryDetailsParser.createBattery(
                         "Battery",
-                        "204",
+                        "E204",
                         5,
                         "battery/AA capacity/2000 mAh",
                         ""));
@@ -84,7 +84,7 @@ class BatteryDetailsParserTest {
                 EquipmentAdditionUnsuccessful.class,
                 () -> BatteryDetailsParser.createBattery(
                         "Battery",
-                        "205",
+                        "E205",
                         5,
                         "battery/AA battery/AAA",
                         ""));
@@ -96,7 +96,7 @@ class BatteryDetailsParserTest {
                 EquipmentAdditionUnsuccessful.class,
                 () -> BatteryDetailsParser.createBattery(
                         "Battery",
-                        "206",
+                        "E206",
                         5,
                         "mount/Canon RF",
                         ""));
@@ -108,7 +108,7 @@ class BatteryDetailsParserTest {
                 EquipmentAdditionUnsuccessful.class,
                 () -> BatteryDetailsParser.createBattery(
                         "Battery",
-                        "207",
+                        "E207",
                         5,
                         "damage/CRACKED",
                         ""));

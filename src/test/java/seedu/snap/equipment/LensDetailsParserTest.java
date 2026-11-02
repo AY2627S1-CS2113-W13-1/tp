@@ -16,7 +16,7 @@ class LensDetailsParserTest {
             throws EquipmentAdditionUnsuccessful {
         Lens lens = LensDetailsParser.createLens(
                 "Standard Zoom",
-                "101",
+                "E101",
                 8,
                 "zoom/\u200324-70 mm\u2003 mount/Canon RF "
                         + "sensor/Full frame damage/NONE",
@@ -34,7 +34,7 @@ class LensDetailsParserTest {
             throws EquipmentAdditionUnsuccessful {
         Lens lens = LensDetailsParser.createLens(
                 "Prime Lens",
-                "102",
+                "E102",
                 9,
                 "",
                 "");
@@ -56,7 +56,7 @@ class LensDetailsParserTest {
             throws EquipmentAdditionUnsuccessful {
         Lens lens = LensDetailsParser.createLens(
                 "Portrait Lens",
-                "103",
+                "E103",
                 7,
                 "mount/Nikon Z sensor/Full frame",
                 "");
@@ -74,7 +74,7 @@ class LensDetailsParserTest {
                 EquipmentAdditionUnsuccessful.class,
                 () -> LensDetailsParser.createLens(
                         "Lens",
-                        "104",
+                        "E104",
                         5,
                         "sensor/APS-C mount/Canon RF",
                         ""));
@@ -86,7 +86,7 @@ class LensDetailsParserTest {
                 EquipmentAdditionUnsuccessful.class,
                 () -> LensDetailsParser.createLens(
                         "Lens",
-                        "105",
+                        "E105",
                         5,
                         "mount/Canon RF mount/Nikon Z",
                         ""));
@@ -98,7 +98,7 @@ class LensDetailsParserTest {
                 EquipmentAdditionUnsuccessful.class,
                 () -> LensDetailsParser.createLens(
                         "Lens",
-                        "106",
+                        "E106",
                         5,
                         "capacity/2000mAh",
                         ""));
@@ -110,7 +110,7 @@ class LensDetailsParserTest {
                 EquipmentAdditionUnsuccessful.class,
                 () -> LensDetailsParser.createLens(
                         "Lens",
-                        "107",
+                        "E107",
                         5,
                         "damage/CRACKED",
                         ""));

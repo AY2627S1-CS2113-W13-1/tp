@@ -32,7 +32,7 @@ import seedu.snap.exceptions.LoanUpdateUnsuccessful;
 class LoanUpdateHandlerTest {
     private static final Logger LOAN_LOGGER = Logger.getLogger(LoanHandler.class.getName());
     private static final String ORIGINAL_LOAN =
-            "loan id/001 b/002 issued/01-10-26 due/10-10-26";
+            "loan-add e/E001 u/U002 issued/01-10-26 due/10-10-26";
     private EquipmentHandler equipment;
     private LoanHandler loans;
     private Equipment camera;
@@ -47,8 +47,8 @@ class LoanUpdateHandlerTest {
     @BeforeEach
     void setUp() throws Exception {
         equipment = new EquipmentHandler(temporaryDirectory.resolve("equipment.txt"));
-        camera = equipment.addEquipment("add i/Camera id/001 type/camera cond/4");
-        tripod = equipment.addEquipment("add i/Tripod id/002 type/tripod cond/5");
+        camera = equipment.addEquipment("eqm-add name/Camera e/E001 type/camera cond/4");
+        tripod = equipment.addEquipment("eqm-add name/Tripod e/E002 type/tripod cond/5");
         loanFile = temporaryDirectory.resolve("loans.txt");
         loans = new LoanHandler(equipment, loanFile);
         loans.addLoan(ORIGINAL_LOAN);
@@ -68,30 +68,30 @@ class LoanUpdateHandlerTest {
     void updateLoan_borrowerAndDueDate_updatesOneLoanAndKeepsEquipmentOwnership() throws Exception {
         Loan original = loans.getLoanList().getFirst();
 
-        Loan updated = loans.updateLoan("update loan/001 b/007 due/15-10-26");
+        Loan updated = loans.updateLoan("loan-update l/L001 u/U007 due/15-10-26");
 
         assertSame(original, updated);
-        assertEquals("001", updated.getLoanId());
-        assertEquals("007", updated.getBorrowerId());
+        assertEquals("L001", updated.getLoanId());
+        assertEquals("U007", updated.getBorrowerId());
         assertEquals(LocalDateTime.of(2026, 10, 1, 0, 0), updated.getIssuedDate());
         assertEquals(LocalDateTime.of(2026, 10, 15, 0, 0), updated.getDueDate());
         assertTrue(camera.isLoaned());
-        assertEquals("001", camera.getLoanId());
+        assertEquals("L001", camera.getLoanId());
         assertFalse(tripod.isLoaned());
-        assertTrue(Files.readString(loanFile).contains("b/007 issued/01-10-26 due/15-10-26"));
+        assertTrue(Files.readString(loanFile).contains("b/U007 issued/01-10-26 due/15-10-26"));
     }
 
     @Test
     void updateLoan_borrowerZero_updatesWithinDocumentedBoundary() throws Exception {
-        Loan updated = loans.updateLoan("update loan/001 b/000");
+        Loan updated = loans.updateLoan("loan-update l/L001 u/U000");
 
-        assertEquals("000", updated.getBorrowerId());
-        assertTrue(Files.readString(loanFile).contains("b/000"));
+        assertEquals("U000", updated.getBorrowerId());
+        assertTrue(Files.readString(loanFile).contains("b/U000"));
     }
 
     @Test
     void updateLoan_issueDateAndDueDateEqual_areAccepted() throws Exception {
-        Loan updated = loans.updateLoan("update loan/001 issued/10-10-26 due/10-10-26");
+        Loan updated = loans.updateLoan("loan-update l/L001 issued/10-10-26 due/10-10-26");
 
         assertEquals(LocalDateTime.of(2026, 10, 10, 0, 0), updated.getIssuedDate());
         assertEquals(LocalDateTime.of(2026, 10, 10, 0, 0), updated.getDueDate());
@@ -101,16 +101,16 @@ class LoanUpdateHandlerTest {
     void updateLoan_itemId_rebindsEquipmentWithoutChangingLoanId() throws Exception {
         Loan original = loans.getLoanList().getFirst();
 
-        Loan updated = loans.updateLoan("update loan/001 id/002 b/005 due/20-10-26");
+        Loan updated = loans.updateLoan("loan-update l/L001 e/E002 u/U005 due/20-10-26");
 
         assertSame(original, updated);
-        assertEquals("001", updated.getLoanId());
-        assertEquals("002", updated.getItemId());
-        assertEquals("005", updated.getBorrowerId());
+        assertEquals("L001", updated.getLoanId());
+        assertEquals("E002", updated.getItemId());
+        assertEquals("U005", updated.getBorrowerId());
         assertFalse(camera.isLoaned());
         assertTrue(tripod.isLoaned());
-        assertEquals("001", tripod.getLoanId());
-        assertTrue(Files.readString(loanFile).contains("id/002 b/005"));
+        assertEquals("L001", tripod.getLoanId());
+        assertTrue(Files.readString(loanFile).contains("id/E002 b/U005"));
     }
 
     @Test
@@ -118,10 +118,10 @@ class LoanUpdateHandlerTest {
         Loan original = loans.getLoanList().getFirst();
 
         assertThrows(LoanUpdateUnsuccessful.class,
-                () -> loans.updateLoan("update loan/999 b/007"));
+                () -> loans.updateLoan("loan-update l/L999 u/U007"));
 
         assertSame(original, loans.getLoanList().getFirst());
-        assertEquals("002", original.getBorrowerId());
+        assertEquals("U002", original.getBorrowerId());
         assertTrue(camera.isLoaned());
     }
 
@@ -131,9 +131,9 @@ class LoanUpdateHandlerTest {
         String saved = Files.readString(loanFile);
 
         assertThrows(LoanUpdateUnsuccessful.class,
-                () -> loans.updateLoan("update loan/001 due/30-09-26"));
+                () -> loans.updateLoan("loan-update l/L001 due/30-09-26"));
 
-        assertEquals("002", original.getBorrowerId());
+        assertEquals("U002", original.getBorrowerId());
         assertEquals(LocalDateTime.of(2026, 10, 10, 0, 0), original.getDueDate());
         assertEquals(saved, Files.readString(loanFile));
         assertTrue(logHandler.contains(Level.WARNING, "Loan update rejected: {0}"));
@@ -145,37 +145,37 @@ class LoanUpdateHandlerTest {
         original.setReturned(true);
 
         assertThrows(LoanUpdateUnsuccessful.class,
-                () -> loans.updateLoan("update loan/001 b/007 due/15-10-26"));
+                () -> loans.updateLoan("loan-update l/L001 u/U007 due/15-10-26"));
 
         assertTrue(original.isReturned());
-        assertEquals("002", original.getBorrowerId());
+        assertEquals("U002", original.getBorrowerId());
         assertFalse(camera.isLoaned());
     }
 
     @Test
     void updateLoan_loanedReplacement_rejectsWithoutChangingEitherAssociation() throws Exception {
-        loans.addLoan("loan id/002 b/003 issued/01-10-26 due/10-10-26");
+        loans.addLoan("loan-add e/E002 u/U003 issued/01-10-26 due/10-10-26");
         Loan original = loans.getLoanList().getFirst();
 
         assertThrows(LoanUpdateUnsuccessful.class,
-                () -> loans.updateLoan("update loan/001 id/002"));
+                () -> loans.updateLoan("loan-update l/L001 e/E002"));
 
-        assertEquals("001", original.getItemId());
-        assertEquals("001", camera.getLoanId());
-        assertEquals("002", tripod.getLoanId());
+        assertEquals("E001", original.getItemId());
+        assertEquals("L001", camera.getLoanId());
+        assertEquals("L002", tripod.getLoanId());
     }
 
     @Test
     void updateLoan_unserviceableReplacement_rejectsWithoutChangingHistory() throws Exception {
-        loans.addLoan("loan id/002 b/003 issued/01-10-26 due/10-10-26");
-        loans.returnLoan("return loan/002 serviceable/no damage/NONE");
+        loans.addLoan("loan-add e/E002 u/U003 issued/01-10-26 due/10-10-26");
+        loans.returnLoan("loan-return l/L002 serviceable/no damage/NONE");
         Loan original = loans.getLoanList().getFirst();
         String saved = Files.readString(loanFile);
 
         assertThrows(LoanUpdateUnsuccessful.class,
-                () -> loans.updateLoan("update loan/001 id/002"));
+                () -> loans.updateLoan("loan-update l/L001 e/E002"));
 
-        assertEquals("001", original.getItemId());
+        assertEquals("E001", original.getItemId());
         assertTrue(camera.isLoaned());
         assertFalse(tripod.isLoaned());
         assertFalse(tripod.isServiceable());
@@ -191,19 +191,19 @@ class LoanUpdateHandlerTest {
         assertThrows(LoanUpdateUnsuccessful.class, () -> loans.updateLoan(command), command);
 
         assertSame(original, loans.getLoanList().getFirst());
-        assertEquals("001", original.getItemId());
-        assertEquals("002", original.getBorrowerId());
+        assertEquals("E001", original.getItemId());
+        assertEquals("U002", original.getBorrowerId());
         assertTrue(camera.isLoaned());
         assertFalse(tripod.isLoaned());
         assertEquals(saved, Files.readString(loanFile));
     }
 
     private static Stream<String> invalidUpdateCommands() {
-        return Stream.of(null, "", "update", "update loan", "update loan/001",
-                "update loan/001 b/007 b/008", "update loan/001 issued/11-10-26",
-                "update loan/001 due/31-02-26", "update loan/001 id/999", "update loan/001 id/000",
-                "update loan/001 id/003", "update loan/999 b/007", "update loan/001 unknown/007",
-                "update loan/001 b/007\n due/15-10-26");
+        return Stream.of(null, "", "eqm-update", "loan-update", "loan-update l/L001",
+                "loan-update l/L001 u/U007 u/U008", "loan-update l/L001 issued/11-10-26",
+                "loan-update l/L001 due/31-02-26", "loan-update l/L001 e/E999", "loan-update l/L001 e/E000",
+                "loan-update l/L001 e/E003", "loan-update l/L999 u/U007", "loan-update l/L001 unknown/007",
+                "loan-update l/L001 u/U007\n due/15-10-26");
     }
 
     @Test
@@ -216,9 +216,9 @@ class LoanUpdateHandlerTest {
         Files.writeString(sentinel, "retain blocked path");
 
         assertThrows(LoanUpdateUnsuccessful.class,
-                () -> loans.updateLoan("update loan/001 b/007 due/15-10-26"));
+                () -> loans.updateLoan("loan-update l/L001 u/U007 due/15-10-26"));
 
-        assertEquals("002", original.getBorrowerId());
+        assertEquals("U002", original.getBorrowerId());
         assertTrue(camera.isLoaned());
         assertTrue(Files.isDirectory(loanFile));
         assertEquals("retain blocked path", Files.readString(sentinel));
@@ -241,10 +241,10 @@ class LoanUpdateHandlerTest {
         Files.writeString(sentinel, "retain blocked sequence path");
 
         assertThrows(LoanUpdateUnsuccessful.class,
-                () -> loans.updateLoan("update loan/001 b/007 due/15-10-26"));
+                () -> loans.updateLoan("loan-update l/L001 u/U007 due/15-10-26"));
 
         assertEquals(savedLoans, Files.readString(loanFile));
-        assertEquals("002", original.getBorrowerId());
+        assertEquals("U002", original.getBorrowerId());
         assertTrue(camera.isLoaned());
         assertEquals("retain blocked sequence path", Files.readString(sentinel));
 
@@ -255,7 +255,7 @@ class LoanUpdateHandlerTest {
 
     @Test
     void updateLoan_reloadedHandler_preservesEditedDetailsAndEquipmentAssociation() throws Exception {
-        loans.updateLoan("update loan/001 id/002 b/007 issued/03-10-26 due/15-10-26");
+        loans.updateLoan("loan-update l/L001 e/E002 u/U007 issued/03-10-26 due/15-10-26");
         equipment.saveToStorage();
 
         EquipmentHandler reloadedEquipment = new EquipmentHandler(temporaryDirectory.resolve("equipment.txt"));
@@ -264,20 +264,20 @@ class LoanUpdateHandlerTest {
         reloadedLoans.loadFromStorage();
         Loan reloaded = reloadedLoans.getLoanList().getFirst();
 
-        assertEquals("001", reloaded.getLoanId());
-        assertEquals("002", reloaded.getItemId());
-        assertEquals("007", reloaded.getBorrowerId());
+        assertEquals("L001", reloaded.getLoanId());
+        assertEquals("E002", reloaded.getItemId());
+        assertEquals("U007", reloaded.getBorrowerId());
         assertEquals(LocalDateTime.of(2026, 10, 3, 0, 0), reloaded.getIssuedDate());
         assertEquals(LocalDateTime.of(2026, 10, 15, 0, 0), reloaded.getDueDate());
-        assertFalse(reloadedEquipment.getEquipmentById("001").isLoaned());
-        assertTrue(reloadedEquipment.getEquipmentById("002").isLoaned());
-        assertEquals("001", reloadedEquipment.getEquipmentById("002").getLoanId());
+        assertFalse(reloadedEquipment.getEquipmentById("E001").isLoaned());
+        assertTrue(reloadedEquipment.getEquipmentById("E002").isLoaned());
+        assertEquals("L001", reloadedEquipment.getEquipmentById("E002").getLoanId());
         assertTrue(logHandler.contains(Level.INFO, "Updated loan {0}; item ID {1}, borrower ID {2}."));
     }
 
     @Test
     void updateLoan_malformedCommand_logsWarning() {
-        assertThrows(LoanUpdateUnsuccessful.class, () -> loans.updateLoan("update loan/001 due/31-02-26"));
+        assertThrows(LoanUpdateUnsuccessful.class, () -> loans.updateLoan("loan-update l/L001 due/31-02-26"));
 
         assertTrue(logHandler.contains(Level.WARNING, "Loan update rejected: {0}"));
     }

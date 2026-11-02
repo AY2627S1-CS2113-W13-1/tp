@@ -40,7 +40,7 @@ public class Lens extends Equipment {
      * Creates a lens with unspecified details and no recorded damage.
      *
      * @param name name of the lens
-     * @param id three-digit equipment ID
+     * @param id typed equipment ID from E001 to E999
      * @param condition condition of the lens from 1 to 10
      */
     public Lens(String name, String id, int condition) {
@@ -56,7 +56,7 @@ public class Lens extends Equipment {
      * Creates a lens with its existing type-specific details.
      *
      * @param name name of the lens
-     * @param id three-digit equipment ID
+     * @param id typed equipment ID from E001 to E999
      * @param condition condition of the lens from 1 to 10
      * @param zoomRange zoom range description
      * @param damage damage recorded for the lens
@@ -76,7 +76,7 @@ public class Lens extends Equipment {
      * Creates a lens with type-specific details and optional remarks.
      *
      * @param name name of the lens
-     * @param id three-digit equipment ID
+     * @param id typed equipment ID from E001 to E999
      * @param condition condition of the lens from 1 to 10
      * @param zoomRange zoom range description
      * @param damage damage recorded for the lens
@@ -104,7 +104,7 @@ public class Lens extends Equipment {
      * Creates a lens with all compatibility attributes.
      *
      * @param name name of the lens
-     * @param id three-digit equipment ID
+     * @param id typed equipment ID from E001 to E999
      * @param condition condition of the lens from 1 to 10
      * @param zoomRange zoom range supported by the lens
      * @param damage damage recorded for the lens

@@ -41,14 +41,14 @@ class MaintenanceIntegrationTest {
     @Test
     void maintain_validCommand_reportsSuccessAndPersistsRecord() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory, FIXED_CLOCK);
-        manager.executeInput("add i/Camera id/001 type/camera cond/5");
+        manager.executeInput("eqm-add name/Camera e/E001 type/camera cond/5");
         output.reset();
 
-        manager.executeInput("maintain id/001 date/27-10-26 work/Replaced battery outcome/Completed");
+        manager.executeInput("eqm-maintain e/E001 date/27-10-26 work/Replaced battery outcome/Completed");
 
         String printed = output.toString(StandardCharsets.UTF_8);
         assertTrue(printed.contains("[OK] Maintenance recorded successfully."));
-        assertTrue(printed.contains("Item: 001 \"Camera\""));
+        assertTrue(printed.contains("Item: E001 \"Camera\""));
         assertTrue(printed.contains("Date: 27-10-26"));
         assertTrue(printed.contains("Work: Replaced battery"));
         assertTrue(printed.contains("Outcome: Completed"));
@@ -62,16 +62,16 @@ class MaintenanceIntegrationTest {
     @Test
     void maintain_invalidCommand_reportsErrorAndAcceptsNextValidCommand() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory, FIXED_CLOCK);
-        manager.executeInput("add i/Camera id/001 type/camera cond/5");
+        manager.executeInput("eqm-add name/Camera e/E001 type/camera cond/5");
         output.reset();
 
-        manager.executeInput("maintain id/001 date/31-02-26 work/Repair outcome/Completed");
-        manager.executeInput("maintain id/001 date/27-10-26 work/Repair outcome/Completed");
+        manager.executeInput("eqm-maintain e/E001 date/31-02-26 work/Repair outcome/Completed");
+        manager.executeInput("eqm-maintain e/E001 date/27-10-26 work/Repair outcome/Completed");
 
         String printed = output.toString(StandardCharsets.UTF_8);
         assertTrue(printed.contains("[ERROR] Maintenance date must use DD-MM-YY."));
         assertTrue(printed.contains("[OK] Maintenance recorded successfully."));
-        assertTrue(printed.contains("Item: 001 \"Camera\""));
+        assertTrue(printed.contains("Item: E001 \"Camera\""));
         assertEquals(1, Files.readAllLines(temporaryDirectory.resolve("maintenance.txt")).size());
     }
 
@@ -79,7 +79,7 @@ class MaintenanceIntegrationTest {
     void bye_withoutMaintenanceRecords_createsMaintenanceFile() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory, FIXED_CLOCK);
 
-        manager.executeInput("bye");
+        manager.executeInput("exit");
 
         Path file = temporaryDirectory.resolve("maintenance.txt");
         assertTrue(Files.isRegularFile(file));
@@ -93,7 +93,7 @@ class MaintenanceIntegrationTest {
         Files.writeString(file, original);
         EqmManager manager = new EqmManager(temporaryDirectory, FIXED_CLOCK);
 
-        manager.executeInput("maintain id/001 date/27-10-26 work/Repair outcome/Completed");
+        manager.executeInput("eqm-maintain e/E001 date/27-10-26 work/Repair outcome/Completed");
 
         String printed = output.toString(StandardCharsets.UTF_8);
         assertTrue(printed.contains("Could not load saved data: maintenance.txt:"));

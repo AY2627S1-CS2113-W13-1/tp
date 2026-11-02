@@ -16,6 +16,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import seedu.snap.Identifier;
 import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.MaintenanceRecordUnsuccessful;
@@ -26,8 +27,8 @@ public class MaintenanceHandler {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-uu", Locale.ROOT)
             .withResolverStyle(ResolverStyle.STRICT);
     private static final Pattern COMMAND = Pattern.compile(
-            "(?sU)\\Amaintain\\s+id/([^\\s]+)\\s+date/([^\\s]+)\\s+work/(.*?)\\s+outcome/(.+)\\z");
-    private static final String COMMAND_FORMAT = "Invalid format. Use: maintain id/[ITEM ID] "
+            "(?sU)\\Aeqm-maintain\\s+e/([^\\s]+)\\s+date/([^\\s]+)\\s+work/(.*?)\\s+outcome/(.+)\\z");
+    private static final String COMMAND_FORMAT = "Invalid format. Use: eqm-maintain e/[ITEM ID] "
             + "date/[DD-MM-YY] work/[DESCRIPTION] outcome/[OUTCOME].";
 
     /** Equipment inventory used to resolve the physical record identity for each command. */
@@ -98,7 +99,7 @@ public class MaintenanceHandler {
     /**
      * Adds and persists one maintenance record after validating the target equipment and all fields.
      *
-     * @param input command in the form {@code maintain id/001 date/27-10-26 work/Repair outcome/Completed}
+     * @param input command in the form {@code eqm-maintain e/E001 date/27-10-26 work/Repair outcome/Completed}
      * @return the newly added maintenance record
      * @throws MaintenanceRecordUnsuccessful if the command, equipment ID, date, or record save is invalid
      */
@@ -153,9 +154,11 @@ public class MaintenanceHandler {
             throw new MaintenanceRecordUnsuccessful(COMMAND_FORMAT);
         }
 
-        String itemId = matcher.group(1);
-        if (!isValidItemId(itemId)) {
-            throw new MaintenanceRecordUnsuccessful("Item ID must be from 001 to 999.");
+        String itemId;
+        try {
+            itemId = Identifier.normalize(matcher.group(1), Identifier.Type.EQUIPMENT);
+        } catch (IllegalArgumentException exception) {
+            throw new MaintenanceRecordUnsuccessful("Item ID must be from E001 to E999.");
         }
         LocalDate date;
         try {
@@ -171,11 +174,6 @@ public class MaintenanceHandler {
         if (storageFile != null) {
             MaintenanceStorage.save(storageFile, proposedRecords);
         }
-    }
-
-    /** Checks the visible three-digit item ID accepted by the existing equipment commands. */
-    private static boolean isValidItemId(String itemId) {
-        return itemId != null && itemId.matches("[0-9]{3}") && !itemId.equals("000");
     }
 
     /** Returns whether a maintenance date is later than today in the configured application time zone. */

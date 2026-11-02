@@ -7,10 +7,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import seedu.snap.Identifier;
 import seedu.snap.equipment.CompatibilityResult;
 import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.EquipmentCompatibility;
@@ -23,19 +23,20 @@ import seedu.snap.ui.BundleView;
 
 /** Parses bundle commands and stores bundles for the current session and saved data. */
 public class BundleHandler {
-    private static final String ADD_BUNDLE_COMMAND = "add-bundle";
-    private static final String ADD_TO_BUNDLE_COMMAND = "add-to-bundle";
-    private static final String REMOVE_FROM_BUNDLE_COMMAND = "remove-from-bundle";
-    private static final String LIST_BUNDLES_COMMAND = "list bundles";
-    private static final String HISTORY_COMMAND_PREFIX = "history bundle/";
+    private static final String ADD_BUNDLE_COMMAND = "bundle-create";
+    private static final String ADD_TO_BUNDLE_COMMAND = "bundle-add-eqm";
+    private static final String REMOVE_FROM_BUNDLE_COMMAND = "bundle-remove-eqm";
+    private static final String LIST_BUNDLES_COMMAND = "bundle-list";
+    private static final String HISTORY_COMMAND_PREFIX = "bundle-history ";
     private static final String NAME_MARKER = "name/";
-    private static final String ID_MARKER = "id/";
+    private static final String ID_MARKER = "b/";
     private static final Logger LOGGER = Logger.getLogger(BundleHandler.class.getName());
 
     private final ArrayList<Bundle> bundles = new ArrayList<>();
     private final EquipmentHandler equipmentHandler;
     private final Path storageFile;
     private int nextBundleNumber = 1;
+    private boolean needsMigrationSave;
 
     /** Creates a bundle handler with its own equipment inventory. */
     public BundleHandler() {
@@ -61,9 +62,9 @@ public class BundleHandler {
     }
 
     /**
-     * Creates a bundle from an add-bundle command.
+     * Creates a bundle from a bundle-create command.
      *
-     * @param input command in the form {@code add-bundle name/[NAME]}
+     * @param input command in the form {@code bundle-create name/[NAME]}
      * @return the created bundle
      * @throws BundleAdditionUnsuccessful when the command is invalid
      */
@@ -76,7 +77,7 @@ public class BundleHandler {
         if (nextBundleNumber > 999) {
             throw new BundleAdditionUnsuccessful("No more bundle IDs are available this session.");
         }
-        String bundleId = String.format(Locale.ROOT, "%03d", nextBundleNumber);
+        String bundleId = Identifier.format(nextBundleNumber, Identifier.Type.BUNDLE);
         nextBundleNumber++;
         Bundle bundle = new Bundle(name, bundleId);
         bundles.add(bundle);
@@ -109,7 +110,8 @@ public class BundleHandler {
         if (storageFile == null) {
             return;
         }
-        List<BundleStorage.StoredBundle> storedBundles = BundleStorage.load(storageFile);
+        BundleStorage.LoadedBundles loadedBundles = BundleStorage.load(storageFile);
+        List<BundleStorage.StoredBundle> storedBundles = loadedBundles.bundles();
         ArrayList<Bundle> restoredBundles = new ArrayList<>();
         int highestBundleNumber = 0;
         for (BundleStorage.StoredBundle stored : storedBundles) {
@@ -129,12 +131,14 @@ public class BundleHandler {
                 bundle.addEquipment(item);
             }
             restoredBundles.add(bundle);
-            highestBundleNumber = Math.max(highestBundleNumber, Integer.parseInt(stored.bundleId()));
+            highestBundleNumber = Math.max(highestBundleNumber,
+                    Identifier.number(stored.bundleId(), Identifier.Type.BUNDLE));
         }
 
         bundles.clear();
         bundles.addAll(restoredBundles);
         nextBundleNumber = highestBundleNumber + 1;
+        needsMigrationSave = loadedBundles.migrated();
         assert bundles.size() == storedBundles.size() : "All saved bundles must be restored";
         LOGGER.log(Level.INFO, "Loaded {0} bundle(s) from {1}",
                 new Object[]{bundles.size(), storageFile});
@@ -142,10 +146,11 @@ public class BundleHandler {
 
     /** Saves the current bundle definitions when this handler has a backing file. */
     public void saveToStorage() throws IOException {
-        if (storageFile == null || bundles.isEmpty() && Files.notExists(storageFile)) {
+        if (storageFile == null || bundles.isEmpty() && Files.notExists(storageFile) && !needsMigrationSave) {
             return;
         }
         BundleStorage.save(storageFile, bundles);
+        needsMigrationSave = false;
         LOGGER.log(Level.FINE, "Saved {0} bundle(s) to {1}",
                 new Object[]{bundles.size(), storageFile});
     }
@@ -169,7 +174,7 @@ public class BundleHandler {
     /**
      * Adds every valid equipment ID from a command and reports each result.
      *
-     * @param input command in the form {@code add-to-bundle id/[BUNDLE ID] [EQUIPMENT ID]...}
+     * @param input command in the form {@code bundle-add-eqm b/[BUNDLE ID] [EQUIPMENT ID]...}
      * @return one success or failure message for every requested equipment ID
      * @throws BundleAdditionUnsuccessful when the command syntax is invalid
      */
@@ -182,7 +187,7 @@ public class BundleHandler {
         String[] arguments = input == null ? new String[0] : input.trim().split("\\s+");
         if (arguments.length < 3 || !arguments[0].equals(ADD_TO_BUNDLE_COMMAND)) {
             throw new BundleAdditionUnsuccessful(
-                    "Invalid format. Use: add-to-bundle id/[BUNDLE ID] [EQUIPMENT ID]...");
+                    "Invalid format. Use: bundle-add-eqm b/[BUNDLE ID] [EQUIPMENT ID]...");
         }
 
         String bundleId = parseBundleId(arguments[1]);
@@ -194,7 +199,7 @@ public class BundleHandler {
 
         ArrayList<ItemResult> messages = new ArrayList<>();
         for (int i = 2; i < arguments.length; i++) {
-            messages.add(addItemToBundle(bundle, arguments[i]));
+            messages.add(addItemToBundle(bundle, parseEquipmentId(arguments[i])));
         }
         assert messages.size() == arguments.length - 2 : "Every requested item must produce a result.";
         return Collections.unmodifiableList(messages);
@@ -203,7 +208,7 @@ public class BundleHandler {
     /**
      * Removes every requested equipment ID from one bundle and reports each result.
      *
-     * @param input command in the form {@code remove-from-bundle id/[BUNDLE ID] [EQUIPMENT ID]...}
+     * @param input command in the form {@code bundle-remove-eqm b/[BUNDLE ID] [EQUIPMENT ID]...}
      * @return one success or failure message for every requested equipment ID
      * @throws BundleAdditionUnsuccessful when the command syntax or bundle ID is invalid
      */
@@ -216,7 +221,7 @@ public class BundleHandler {
         String[] arguments = input == null ? new String[0] : input.trim().split("\\s+");
         if (arguments.length < 3 || !arguments[0].equals(REMOVE_FROM_BUNDLE_COMMAND)) {
             throw new BundleAdditionUnsuccessful(
-                    "Invalid format. Use: remove-from-bundle id/[BUNDLE ID] [EQUIPMENT ID]...");
+                    "Invalid format. Use: bundle-remove-eqm b/[BUNDLE ID] [EQUIPMENT ID]...");
         }
 
         String bundleId = parseBundleId(arguments[1]);
@@ -230,7 +235,7 @@ public class BundleHandler {
         ArrayList<ItemResult> messages = new ArrayList<>();
         boolean membershipChanged = false;
         for (int index = 2; index < arguments.length; index++) {
-            String itemId = arguments[index];
+            String itemId = parseEquipmentId(arguments[index]);
             boolean wasMember = bundle.containsEquipmentId(itemId);
             messages.add(removeItemFromBundle(bundle, itemId));
             membershipChanged |= wasMember;
@@ -251,12 +256,12 @@ public class BundleHandler {
     /**
      * Prints all bundles and their contained equipment.
      *
-     * @param input command that must be {@code list bundles}
+     * @param input command that must be {@code bundle-list}
      * @throws BundleAdditionUnsuccessful when the command is invalid
      */
     public void viewAllBundles(String input) throws BundleAdditionUnsuccessful {
         if (input == null || !input.trim().equals(LIST_BUNDLES_COMMAND)) {
-            throw new BundleAdditionUnsuccessful("Invalid format. Use: list bundles");
+            throw new BundleAdditionUnsuccessful("Invalid format. Use: bundle-list");
         }
 
         BundleView.print(getBundleList());
@@ -265,8 +270,8 @@ public class BundleHandler {
     /**
      * Selects all loans for every physical item in a bundle.
      *
-     * @param input command in the form {@code history bundle/id/[ID]} or
-     *              {@code history bundle/name/[NAME]}
+     * @param input command in the form {@code bundle-history b/[ID]} or
+     *              {@code bundle-history name/[NAME]}
      * @param loans handler containing active and returned loan records
      * @return an unmodifiable list sorted by issue date and loan ID
      * @throws BundleHistoryUnsuccessful when the selector is invalid or cannot identify one bundle
@@ -286,7 +291,7 @@ public class BundleHandler {
             history.addAll(loans.getLoanHistoryForEquipment(item));
         }
         history.sort(Comparator.comparing(Loan::getIssuedDate)
-                .thenComparingInt(loan -> Integer.parseInt(loan.getLoanId())));
+                .thenComparingInt(loan -> Identifier.number(loan.getLoanId(), Identifier.Type.LOAN)));
         assert history.stream().allMatch(loan -> loan != null) : "Bundle history must not contain null loans";
         LOGGER.log(Level.FINE, "Selected {0} history record(s) for bundle {1}.",
                 new Object[]{history.size(), bundle.getBundleId()});
@@ -430,14 +435,16 @@ public class BundleHandler {
         String normalized = input == null ? "" : input.trim();
         if (!normalized.startsWith(HISTORY_COMMAND_PREFIX)) {
             throw new BundleHistoryUnsuccessful(
-                    "Invalid format. Use: history bundle/id/[BUNDLE ID] or history bundle/name/[NAME].");
+                    "Invalid format. Use: bundle-history b/[BUNDLE ID] or bundle-history name/[NAME].");
         }
 
         String selector = normalized.substring(HISTORY_COMMAND_PREFIX.length()).trim();
-        if (selector.startsWith("id/")) {
-            String id = selector.substring("id/".length()).trim();
-            if (!id.matches("[0-9]{3}") || id.equals("000")) {
-                throw new BundleHistoryUnsuccessful("Bundle ID must be from 001 to 999.");
+        if (selector.startsWith(ID_MARKER)) {
+            String id = selector.substring(ID_MARKER.length()).trim();
+            try {
+                id = Identifier.normalize(id, Identifier.Type.BUNDLE);
+            } catch (IllegalArgumentException exception) {
+                throw new BundleHistoryUnsuccessful("Bundle ID must be from B001 to B999.");
             }
             return new BundleSelector(id, null);
         }
@@ -449,7 +456,7 @@ public class BundleHandler {
             return new BundleSelector(null, name);
         }
         throw new BundleHistoryUnsuccessful(
-                "Invalid format. Use: history bundle/id/[BUNDLE ID] or history bundle/name/[NAME].");
+                "Invalid format. Use: bundle-history b/[BUNDLE ID] or bundle-history name/[NAME].");
     }
 
     /** Represents one validated bundle history selector. */
@@ -457,7 +464,7 @@ public class BundleHandler {
 
     private String parseBundleName(String input) throws BundleAdditionUnsuccessful {
         if (input == null || !input.trim().startsWith(ADD_BUNDLE_COMMAND + " " + NAME_MARKER)) {
-            throw new BundleAdditionUnsuccessful("Invalid format. Use: add-bundle name/[NAME]");
+            throw new BundleAdditionUnsuccessful("Invalid format. Use: bundle-create name/[NAME]");
         }
         String name = input.trim().substring((ADD_BUNDLE_COMMAND + " " + NAME_MARKER).length()).trim();
         if (name.isBlank() || name.length() > 100) {
@@ -468,13 +475,26 @@ public class BundleHandler {
 
     private String parseBundleId(String argument) throws BundleAdditionUnsuccessful {
         if (!argument.startsWith(ID_MARKER)) {
-            throw new BundleAdditionUnsuccessful("Bundle ID must use the id/[three digits] format.");
+            throw new BundleAdditionUnsuccessful("Bundle ID must use the b/B001 to b/B999 format.");
         }
         String bundleId = argument.substring(ID_MARKER.length());
-        if (!bundleId.matches("[0-9]{3}") || bundleId.equals("000")) {
-            throw new BundleAdditionUnsuccessful("Bundle ID must be from 001 to 999.");
+        try {
+            return Identifier.normalize(bundleId, Identifier.Type.BUNDLE);
+        } catch (IllegalArgumentException exception) {
+            throw new BundleAdditionUnsuccessful("Bundle ID must be from B001 to B999.");
         }
-        return bundleId;
+    }
+
+    /** Validates an equipment ID before a bundle operation can look it up. */
+    private static String parseEquipmentId(String value) throws BundleAdditionUnsuccessful {
+        try {
+            return Identifier.normalize(value, Identifier.Type.EQUIPMENT);
+        } catch (IllegalArgumentException exception) {
+            if (Identifier.isMismatched(value, Identifier.Type.EQUIPMENT)) {
+                throw new BundleAdditionUnsuccessful("Expected an equipment ID beginning with E: " + value + ".");
+            }
+            throw new BundleAdditionUnsuccessful("Equipment ID must be from E001 to E999.");
+        }
     }
 
     private String failureMessage(String itemId, String reason) {

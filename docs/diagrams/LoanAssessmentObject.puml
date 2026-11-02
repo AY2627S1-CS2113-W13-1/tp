@@ -4,9 +4,9 @@ left to right direction
 skinparam objectAttributeIconSize 0
 
 object "loan001:Loan" as Loan {
-  loanId = "001"
-  itemId = "014"
-  borrowerId = "027"
+  loanId = "L001"
+  itemId = "E014"
+  borrowerId = "U027"
   returned = true
 }
 
@@ -29,7 +29,7 @@ object "returnedCondition:EquipmentConditionSnapshot" as ReturnedCondition {
 }
 
 object "currentItem:Camera" as Current {
-  itemId = "014"
+  itemId = "E014"
   condition = 7
   serviceable = false
 }
