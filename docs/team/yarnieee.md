@@ -11,7 +11,8 @@ snAp is a command-line application for photography clubs to manage equipment, bu
 records.
 
 My work focused on the application flow, loan lifecycle, defensive validation, equipment subtypes and bundle
-management.
+management. Recent contributions also cover command consistency, typed identifiers, regression testing and
+UML documentation.
 
 ### Summary of Contributions
 
@@ -53,11 +54,44 @@ management.
   operations, storage and loan-ID persistence.
 - Used assertions and warning-level diagnostics to detect inconsistent loan state and failed operations without
   changing the intended command-line behaviour.
+- **Coverage audit:** Added JaCoCo reporting and regression tests across bundles, backup/restore, equipment,
+  loans, maintenance and command handling. Cases include malformed storage, legacy loan identifiers, equipment
+  ownership and invalid input. [PR #169](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/169)
+  was closed without merging; this work is not recorded here as a released enhancement.
+  ([Issue #167](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/167))
+
+### Recent enhancements under review
+
+The following PR statuses reflect the repository at the time of this update.
+
+- **Command consistency (open):** Standardised equipment, loan and bundle commands around entity-prefixed
+  names, with short aliases maintained centrally in `CommandAliases`. Updated routing, field prefixes, help,
+  guides and tests together so the documented syntax follows the command handlers.
+  ([PR #171](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/171),
+  [Issue #149](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/149))
+- **Typed identifiers (draft):** Added distinct equipment, loan, borrower and bundle ID prefixes, canonical
+  uppercase normalisation and support for loading legacy numeric identifiers. Updated persistence, validation,
+  help, guides and regression tests, including rejection of identifiers that collide after normalisation.
+  ([PR #170](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/170),
+  [Issue #150](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/150))
 
 ### Documentation
 
 - **About Us:** Updated team links and the project documentation landing links. ([PR #1](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/1))
 - **User Guide:** Updated loan command documentation for stable loan IDs and unambiguous deletion. ([PR #76](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/76))
+- **User Guide clarifications (merged):** Documented successful equipment addition and update output,
+  persistence-file creation and transferring bundle data together with equipment and loan files.
+  ([PR #151](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/151))
+- **Bundle compatibility UML (merged):** Added a sequence diagram, rendered SVG, Developer Guide explanation
+  and diagram-index entry. Explained per-item validation, compatibility rejection, permitted unknown results,
+  partial success and saving bundle membership on exit.
+  ([PR #181](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/181),
+  [Issue #176](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/176))
+- **Loan update UML (open):** Added a dedicated Developer Guide subsection, sequence diagram and SVG for
+  metadata updates and equipment reassignment. Documented ownership validation, preserving or recapturing
+  issue-condition snapshots, saving before live mutation and retaining original state after save failures.
+  ([PR #182](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/182),
+  [Issue #177](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/177))
 
 ### Resolved issues
 
@@ -83,3 +117,14 @@ management.
   where necessary and approvals were given after follow-up updates.
 - Also left implementation review comments on [PR #65](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/65)
   to record the subtype damage-enum and issue-coverage details.
+- **Documentation review:** Reviewed and approved the command-help and documentation audit in
+  [PR #144](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/144).
+- **Issue planning:** Defined the scope and acceptance criteria for the coverage audit, command-format
+  standardisation and typed identifiers in
+  [#167](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/167),
+  [#149](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/149) and
+  [#150](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/150). Also opened UML documentation tasks for
+  backup restore, bundle compatibility and loan reassignment in
+  [#175](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/175),
+  [#176](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/176) and
+  [#177](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/177).
