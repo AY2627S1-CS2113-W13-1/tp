@@ -75,6 +75,12 @@ each command from the previous section.
 Help text wraps at 100 columns. A long displayed format or example can span several rows; enter each command
 on one line. Unrecognised-command errors point to `help`.
 
+Typed identifiers use equipment `E001`-`E999`, loans `L001`-`L999`, bundles `B001`-`B999`, and
+borrowers/users `U000`-`U999`. ID prefixes are case-insensitive in commands, so lowercase forms such as `e001`
+are accepted and normalised. Bare numeric IDs and another identifier type are rejected. Listings and saved files
+always use uppercase IDs. Existing saved files with older bare numeric IDs are migrated automatically and written
+in the typed format when the data is next saved.
+
 Every help request, including an unknown topic, leaves equipment, loans, bundles, maintenance, availability, identifiers and
 saved records unchanged. You can then enter another command normally. Help does not save data or end the session.
 If saved data fails to load at startup, only `restore` and `bye` are available until recovery succeeds.
@@ -107,22 +113,22 @@ Use a separate working folder with an empty inventory to reproduce these results
 in order; later reference examples use different Item IDs.
 
 ```text
-add i/Demo camera id/010 type/camera cond/1
+add i/Demo camera id/E010 type/camera cond/1
 filter type/camera cond/1-3 status/available
-update id/010 cond/5
+update id/E010 cond/5
 filter type/camera cond/1-3 status/available
 ```
 
-[![Worked example: camera 010 initially matches condition 1-3; after updating its condition to 5, repeating the filter gives no matches](images/EquipmentWorkflow.svg)](images/EquipmentWorkflow.svg)
+[![Worked example: camera E010 initially matches condition 1-3; after updating its condition to 5, repeating the filter gives no matches](images/EquipmentWorkflow.svg)](images/EquipmentWorkflow.svg)
 
-The first filter displays item `010`. The update changes its condition to `5`, so the repeated filter prints
+The first filter displays item `E010`. The update changes its condition to `5`, so the repeated filter prints
 `No equipment matches the filters.` Its ID, name and `Available` status stay the same.
 
 ## Recording maintenance: `maintain`
 
 Format: `maintain id/<ITEM ID> date/<DD-MM-YY> work/<DESCRIPTION> outcome/<OUTCOME>`
 
-Example: `maintain id/001 date/27-10-26 work/Replaced battery outcome/Completed`
+Example: `maintain id/E001 date/27-10-26 work/Replaced battery outcome/Completed`
 
 This records completed maintenance work for an existing equipment item. The `ITEM ID` must identify an item in the
 current inventory. The date must use `DD-MM-YY` and cannot be later than today's date. Both `DESCRIPTION` and
@@ -142,11 +148,11 @@ A successful command shows an `[OK]` label, the Item ID and name, maintenance da
 
 Format: `add i/<NAME> id/<ITEM ID> type/<TYPE> cond/<CONDITION> [TYPE DETAIL] [damage/<DAMAGE>] [remarks/<REMARKS>]`
 
-Example: `add i/Canon EOS R10 id/001 type/camera cond/1 remarks/Handle with care`
+Example: `add i/Canon EOS R10 id/E001 type/camera cond/1 remarks/Handle with care`
 
 * `NAME` contains 1 to 100 characters after trimming surrounding whitespace. Whitespace-only names,
   including nonbreaking spaces, are rejected.
-* `ITEM ID` uses exactly three digits from `001` to `999` and must not already exist.
+* `ITEM ID` uses an identifier from `E001` to `E999` and must not already exist.
 * `TYPE` is `camera`, `lens`, `battery` or `tripod`. Type names are case-insensitive and stored in lowercase.
 * `CONDITION` is a whole number from `1` to `10`, without leading zeros, signs or decimals.
   Use `1` for pristine and `10` for non-functional as a descriptive rating; the number does not set availability.
@@ -162,12 +168,12 @@ Success prints `[OK] Equipment <ITEM ID> added.` followed by the item's name, ty
 The item appears at the end of `list` and is saved automatically.
 Adding an existing Item ID does not replace its equipment; use `update` to correct the existing item's details.
 
-For example, with Item ID `001` already present:
+For example, with Item ID `E001` already present:
 
 | Command | Error |
 | --- | --- |
-| `add i/Lens id/001 type/lens cond/3` | `Item ID 001 already exists.` |
-| `add i/Tripod id/002 type/tripod cond/11` | `Condition must be a whole number from 1 to 10.` |
+| `add i/Lens id/E001 type/lens cond/3` | `Item ID E001 already exists.` |
+| `add i/Tripod id/E002 type/tripod cond/11` | `Condition must be a whole number from 1 to 10.` |
 
 Rejected additions and failed saves leave the existing equipment unchanged. Correct the input or storage
 problem and enter the command again.
@@ -203,11 +209,11 @@ After `cond/`, you can add the fields for the equipment type, followed by
 Examples:
 
 ```text
-add i/Canon EOS R10 id/006 type/camera cond/1 sensor/APS-C mount/Canon RF thread/1/4"-20 battery/Li-ion damage/NONE
-add i/Standard Zoom id/002 type/lens cond/2 zoom/24-70 mm mount/Canon RF sensor/APS-C damage/NONE
-add i/Spare Battery id/003 type/battery cond/3 capacity/2000 mAh battery/Li-ion damage/NONE
-add i/Travel Tripod id/004 type/tripod cond/2 thread/1/4"-20 damage/NONE
-add i/Backup Camera id/005 type/camera cond/5 damage/OTHER remarks/Damaged control dial
+add i/Canon EOS R10 id/E006 type/camera cond/1 sensor/APS-C mount/Canon RF thread/1/4"-20 battery/Li-ion damage/NONE
+add i/Standard Zoom id/E002 type/lens cond/2 zoom/24-70 mm mount/Canon RF sensor/APS-C damage/NONE
+add i/Spare Battery id/E003 type/battery cond/3 capacity/2000 mAh battery/Li-ion damage/NONE
+add i/Travel Tripod id/E004 type/tripod cond/2 thread/1/4"-20 damage/NONE
+add i/Backup Camera id/E005 type/camera cond/5 damage/OTHER remarks/Damaged control dial
 ```
 
 ### Names and field markers
@@ -219,7 +225,7 @@ Names may contain spaces and slashes. A field prefix after whitespace normally s
 | --- | --- | --- |
 | `USB id/card reader` | Yes | The nonnumeric `id/card` fragment stays in the name. |
 | `fluid/head tripod` | Yes | A slash within a word does not start a field. |
-| `Spare id/001 camera` | No | Numeric ID-like fragments are reserved for the actual Item ID. |
+| `Spare id/E001 camera` | No | Typed ID-like fragments are reserved for the actual Item ID. |
 | `Camera type/lens` | No | `type/` starts a type field after whitespace. |
 
 For `add`, the actual `id/` is the last one before `type/`. Earlier ID-like name fragments cannot start
@@ -246,9 +252,9 @@ Vertical bars in table values appear as `\u007c` to keep the columns separate. U
 
 Format: `show id/<ITEM ID>`
 
-Example: `show id/001`
+Example: `show id/E001`
 
-Use an existing three-digit Item ID from `001` to `999`. The command displays the complete name, type, numeric
+Use an existing Item ID from `E001` to `E999`. The command displays the complete name, type, numeric
 condition, status, serviceability, active Loan ID, all subtype and compatibility fields, damage and remarks.
 Omitted compatibility values appear as `unspecified`; an empty remarks field or absent active Loan ID appears
 as `(none)`. Long values wrap onto indented lines at 100 columns and are not truncated.
@@ -264,7 +270,7 @@ loan was issued, and `list loans` to see borrower IDs and loan dates.
 
 Format: `delete item/<ITEM ID>`
 
-Example: `delete item/001`
+Example: `delete item/E001`
 
 The item is deleted immediately and a success message is printed. The deleted ID can then be used for another item.
 
@@ -300,13 +306,13 @@ A returned loan cannot be made active again. To borrow the same item again, crea
 
 Format: `loan id/<ITEM ID> b/<BORROWER ID> [issued/<DD-MM-YY>] due/<DD-MM-YY>`
 
-Example: `loan id/001 b/002 issued/01-10-26 due/08-10-26`
+Example: `loan id/E001 b/U002 issued/01-10-26 due/08-10-26`
 
-Example with the issue date omitted: `loan id/001 b/002 due/31-12-99`. Replace the due date with the intended
+Example with the issue date omitted: `loan id/E001 b/U002 due/31-12-99`. Replace the due date with the intended
 deadline on or after today.
 
-* `ITEM ID` is the three-digit identifier of existing equipment, from `001` to `999`. The item must be `Available`.
-* `BORROWER ID` is the three-digit identifier of the borrower, from `000` to `999`.
+* `ITEM ID` is the typed identifier of existing equipment, from `E001` to `E999`. The item must be `Available`.
+* `BORROWER ID` is the typed identifier of the borrower, from `U000` to `U999`.
 * `issued/` is optional and defaults to today's date in the application's local time zone, at midnight.
   The date is read once for each command. A supplied issue date overrides this default.
 * `due/` is required. Both dates use `DD-MM-YY`. The issue date must not be later than the due date.
@@ -315,10 +321,10 @@ deadline on or after today.
   `issued/` without a value does not use the default.
 * An item cannot have more than one active loan at the same time.
 
-Each successful loan receives a unique three-digit loan ID. The success message shows this ID, the item ID
+Each successful loan receives a unique typed loan ID. The success message shows this ID, the item ID
 and name, borrower ID, issue date and due date, so a separate listing is not needed to confirm the result.
-Loan IDs start at `001` and increase through `999`. Deleted IDs are never reused, including after a restart.
-Once `999` has been assigned, further new loans are rejected.
+Loan IDs start at `L001` and increase through `L999`. Deleted IDs are never reused, including after a restart.
+Once `L999` has been assigned, further new loans are rejected.
 
 Invalid loan commands leave both the loan records and equipment availability unchanged.
 
@@ -338,7 +344,7 @@ For example:
 
 ```text
 | LOAN ID | ITEM ID | BORROWER ID | ISSUED   | DUE      | STATE    |
-| 001     | 001     | 002         | 01-10-26 | 08-10-26 | Returned |
+| L001    | E001    | U002        | 01-10-26 | 08-10-26 | Returned |
 ```
 
 An empty list displays `No loans recorded. Type help loan for the command format.` and `0 loans.`.
@@ -347,9 +353,9 @@ An empty list displays `No loans recorded. Type help loan for the command format
 
 Format: `list borrower/<BORROWER ID>`
 
-Example: `list borrower/002`. The equivalent alias `list member/002` is also accepted.
+Example: `list borrower/U002`. The equivalent alias `list member/U002` is also accepted.
 
-Use exactly three digits from `000` to `999`. The result shows only equipment currently held by that borrower,
+Use exactly three typed digits from `U000` to `U999`. The result shows only equipment currently held by that borrower,
 with its loan details. Returned loans are excluded. An unknown borrower or one with no active loans produces
 a clear message. The query leaves records unchanged.
 Dates, states and columns match `list loans`. Results end with a loan count, including `0 loans.` for an empty result.
@@ -360,7 +366,7 @@ Dates, states and columns match `list loans`. Results end with a loan count, inc
 
 Format: `view loan/<LOAN ID>`
 
-Example: `view loan/001`
+Example: `view loan/L001`
 
 Use the Loan ID shown by `list loans`. The command compares the equipment type, numeric condition and damage
 recorded when that loan was issued and returned, including saved serviceability. The two remarks are printed
@@ -382,15 +388,15 @@ Loan IDs produce an error.
 
 Format: `history id/<ITEM ID>`
 
-Example: `history id/001`
+Example: `history id/E001`
 
-Use an existing Item ID from `001` to `999`. The history includes both active and returned loans for the
+Use an existing Item ID from `E001` to `E999`. The history includes both active and returned loans for the
 equipment currently registered under that ID. Each row shows the loan ID, borrower, issue date, due date and
 state, using the same display as `list loans`. Rows are ordered by issue date from earliest to latest,
 then by loan ID for equal issue dates.
 This command does not change equipment, loans, availability or saved records.
 
-If the item has no recorded loans, the application prints `No loan history for item ID 001.`
+If the item has no recorded loans, the application prints `No loan history for item ID E001.`
 If the item does not exist, the application reports the missing ID. Invalid commands show the required format.
 
 Deleting equipment and adding another item under the same Item ID starts a separate history, including when
@@ -423,13 +429,13 @@ Format: `return loan/<LOAN ID> serviceable/<yes|no> damage/<DAMAGE> [cond/<CONDI
 Examples:
 
 ```text
-return loan/001 serviceable/yes damage/none remarks/Checked on return
-return loan/002 serviceable/no damage/SENSOR_DAMAGE cond/8 remarks/Sensor needs repair
-return loan/003 serviceable/yes damage/none
-return loan/004 serviceable/no damage/OTHER remarks/Mounting plate damaged
+return loan/L001 serviceable/yes damage/none remarks/Checked on return
+return loan/L002 serviceable/no damage/SENSOR_DAMAGE cond/8 remarks/Sensor needs repair
+return loan/L003 serviceable/yes damage/none
+return loan/L004 serviceable/no damage/OTHER remarks/Mounting plate damaged
 ```
 
-* Use the loan ID from `list loans`, from `001` to `999`. It must identify an active loan.
+* Use the loan ID from `list loans`, from `L001` to `L999`. It must identify an active loan.
 * `loan/`, `serviceable/` and `damage/` are required, once each and in the displayed order.
   The complete command must be on one line.
 * `serviceable/yes` or `serviceable/no` is a mandatory condition assessment. These values are case-insensitive.
@@ -463,9 +469,9 @@ Changing its numeric condition with `update` does not remove the unserviceable a
 
 Format: `delete loan/<LOAN ID>`
 
-Example: `delete loan/001`
+Example: `delete loan/L001`
 
-Use the loan ID shown by `list loans`, from `001` to `999`. This selects one record even when the same item
+Use the loan ID shown by `list loans`, from `L001` to `L999`. This selects one record even when the same item
 has been borrowed more than once. The value is a loan ID, not an equipment ID. Issue-date arguments are no longer
 accepted. If no matching loan exists or the command is invalid, the application reports an error and keeps
 the existing loan records unchanged.
@@ -485,8 +491,8 @@ Format: `update loan/<LOAN ID> [id/<ITEM ID>] [b/<BORROWER ID>] [issued/<DD-MM-Y
 Example:
 
 ```text
-update loan/001 b/007 due/07-11-26
-update loan/001 id/002 b/007 issued/03-10-26 due/07-11-26
+update loan/L001 b/U007 due/07-11-26
+update loan/L001 id/E002 b/U007 issued/03-10-26 due/07-11-26
 ```
 
 Use the unique loan ID shown by `list loans`. Supply at least one field to update, in any order, once each.
@@ -495,13 +501,13 @@ The loan ID remains unchanged, and omitted fields retain their current values. T
 * `id/` changes the equipment assigned to the active loan. The replacement must exist, be serviceable and have
   no active loan. The previous item is released, and the snapshot is replaced with the replacement item's current
   assessment. Supplying the current Item ID keeps the existing assignment and snapshot.
-* `b/` changes the three-digit borrower ID.
+* `b/` changes the typed borrower ID.
 * `issued/` changes the issue date.
 * `due/` changes the due date.
 
 The effective issue date must not be later than the effective due date. Unknown loan IDs, malformed IDs or dates,
 duplicate fields, unavailable equipment and returned loans are rejected. This project stores borrower IDs rather than
-borrower profiles, so borrower validation is limited to the documented three-digit identifier format.
+borrower profiles, so borrower validation is limited to the documented `U000`-`U999` identifier format.
 
 The complete proposed loan list is saved before the live loan and equipment associations change. If validation or
 saving fails, the original loan, equipment availability and saved file remain unchanged. Successful edits remain after
@@ -515,7 +521,7 @@ Examples:
 
 * `filter type/camera cond/1-3 status/available`
 * `filter i/canon`
-* `filter id/001`
+* `filter id/E001`
 * `filter status/loaned`
 
 Supply at least one filter, in any order. Each prefix can appear only once, and every supplied criterion must match.
@@ -523,7 +529,7 @@ For example, the first command above finds cameras that are both available and w
 
 | Field | Matching rule |
 | --- | --- |
-| `id/` | Exact three-digit Item ID from `001` to `999`. |
+| `id/` | Exact Item ID from `E001` to `E999`. |
 | `i/` | Part of the name, ignoring case; spaces are allowed. |
 | `type/` | Full type name, ignoring case: `camera`, `lens`, `battery` or `tripod`. |
 | `cond/` | One value from `1` to `10`, or an inclusive range such as `1-3`. |
@@ -547,8 +553,8 @@ Format: `update id/<ITEM ID> [i/<NAME>] [type/<TYPE>] [cond/<CONDITION>]`
 
 Examples:
 
-* `update id/001 cond/5`
-* `update id/001 i/Film Camera cond/5`
+* `update id/E001 cond/5`
+* `update id/E001 i/Film Camera cond/5`
 
 Supply an existing ID and at least one of `i/`, `type/`, or `cond/`. Fields may appear in any order, once each.
 The ID stays fixed and omitted details keep their current values. Names contain 1-100 characters after trimming;
@@ -560,14 +566,14 @@ ignoring case. A matching `type/` on its own is accepted without changing any de
 Updates keep the item in its current list position and retain its subtype details, damage, remarks,
 availability, loan history and bundle memberships. These other details cannot be edited with `update`.
 
-Success prints `[OK] Equipment 001 updated.` for Item ID `001`, followed by the item's name, type, condition and
+Success prints `[OK] Equipment E001 updated.` for Item ID `E001`, followed by the item's name, type, condition and
 status, and saves the changes.
-With `001` registered as a camera, these commands are rejected:
+With `E001` registered as a camera, these commands are rejected:
 
 | Command | Error |
 | --- | --- |
-| `update id/001 i/Film Camera cond/11` | `Condition must be a whole number from 1 to 10.` |
-| `update id/001 type/lens` | `Equipment type cannot be changed. Item ID 001 must remain camera.` |
+| `update id/E001 i/Film Camera cond/11` | `Condition must be a whole number from 1 to 10.` |
+| `update id/E001 type/lens` | `Equipment type cannot be changed. Item ID E001 must remain camera.` |
 
 The [name and field-marker rules](#names-and-field-markers) apply. `status/` cannot be updated manually.
 Invalid commands or failed saves leave all existing details unchanged. In the first rejected example,
@@ -582,7 +588,7 @@ Example: `add-bundle name/Travel Kit`
 
 The name must contain 1 to 100 characters and must be unique. Names are compared case-sensitively,
 so `Travel Kit` and `travel kit` are different names. A bundle starts empty and incomplete. The application assigns
-three-digit bundle IDs in creation order, starting at `001`, with at most 999 bundles in the saved collection.
+typed bundle IDs in creation order, starting at `B001`, with at most 999 bundles in the saved collection.
 Bundle IDs are separate from equipment IDs.
 
 Bundles and their equipment memberships are saved when you enter `bye` and restored when the application
@@ -592,7 +598,7 @@ restarts. Bundle IDs continue from the highest restored ID. Equipment and loans 
 
 Format: `add-to-bundle id/<BUNDLE ID> <EQUIPMENT ID> [<EQUIPMENT ID> ...]`
 
-Example: `add-to-bundle id/001 001 002 003`
+Example: `add-to-bundle id/B001 E001 E002 E003`
 
 The bundle must exist. Supply one or more equipment IDs, separated by spaces. Each requested item gets
 its own success or error message. Valid items are added even if another requested item is rejected.
@@ -629,7 +635,7 @@ Updating a bundled item's name or condition also updates the item shown in the b
 
 Format: `remove-from-bundle id/<BUNDLE ID> <EQUIPMENT ID> [<EQUIPMENT ID> ...]`
 
-Example: `remove-from-bundle id/001 001`
+Example: `remove-from-bundle id/B001 E001`
 
 The bundle must exist. Each requested equipment ID is removed independently, and an equipment item can be
 deleted only after it has been removed from every bundle that contains it. Successful membership removals are
@@ -655,7 +661,7 @@ at startup.
 
 Format: `history bundle/id/<BUNDLE ID>` or `history bundle/name/<NAME>`
 
-Examples: `history bundle/id/001` and `history bundle/name/Travel Kit`
+Examples: `history bundle/id/B001` and `history bundle/name/Travel Kit`
 
 Select a bundle by ID, or by its exact case-sensitive name. If several bundles share that name, use the ID.
 This displays all active and returned loans for every physical equipment item currently in the selected bundle,
@@ -685,9 +691,9 @@ remain `Loaned` after restarting the application.
 The text file contains one equipment record per line, using the add command format. For example:
 
 ```text
-add i/Canon EOS R10 id/001 type/camera cond/1
-add i/Travel tripod id/003 type/tripod cond/2 thread/1/4 inch damage/NONE
-add i/Canon EOS R10 id/004 type/camera cond/1 remarks/Handle with care
+add i/Canon EOS R10 id/E001 type/camera cond/1
+add i/Travel tripod id/E003 type/tripod cond/2 thread/1/4 inch damage/NONE
+add i/Canon EOS R10 id/E004 type/camera cond/1 remarks/Handle with care
 ```
 
 Saved equipment records use the four supported types and retain their type-specific values and damage.
@@ -705,7 +711,7 @@ startup reports the error instead of using identifiers that could change on the 
 Loan records include the loan ID, item ID, borrower ID, issue date, due date and returned status. For example:
 
 ```text
-loan loanId/001 id/001 b/002 issued/01-10-26 due/08-10-26 returned/false
+loan loanId/L001 id/E001 b/U002 issued/01-10-26 due/08-10-26 returned/false
 ```
 
 Saved loans always contain explicit issue and due dates, including a default issue date chosen by a command.

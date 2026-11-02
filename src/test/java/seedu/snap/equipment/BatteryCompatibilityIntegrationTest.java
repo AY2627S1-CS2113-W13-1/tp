@@ -21,7 +21,7 @@ import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 /** Tests Battery compatibility parsing, display and persistence. */
 class BatteryCompatibilityIntegrationTest {
     private static final String FULL_BATTERY_COMMAND =
-            "add i/Camera Battery id/201 type/battery cond/8 "
+            "add i/Camera Battery id/E201 type/battery cond/8 "
                     + "capacity/2000 mAh battery/Li-ion "
                     + "damage/NONE remarks/Charged";
 
@@ -46,7 +46,7 @@ class BatteryCompatibilityIntegrationTest {
         Battery battery = assertInstanceOf(
                 Battery.class,
                 EquipmentHandler.parseEquipment(
-                        "add i/Battery id/202 "
+                        "add i/Battery id/E202 "
                                 + "type/battery cond/7"));
 
         assertEquals(
@@ -66,7 +66,7 @@ class BatteryCompatibilityIntegrationTest {
         Battery battery = assertInstanceOf(
                 Battery.class,
                 EquipmentHandler.parseEquipment(
-                        "add i/AA Battery id/203 "
+                        "add i/AA Battery id/E203 "
                                 + "type/battery cond/6 battery/AA"));
 
         assertEquals(
@@ -81,13 +81,13 @@ class BatteryCompatibilityIntegrationTest {
     @Test
     void parseEquipment_invalidBatteryFields_throwException() {
         String repeatedType =
-                "add i/Battery id/204 type/battery cond/5 "
+                "add i/Battery id/E204 type/battery cond/5 "
                         + "battery/AA battery/AAA";
         String wrongOrder =
-                "add i/Battery id/205 type/battery cond/5 "
+                "add i/Battery id/E205 type/battery cond/5 "
                         + "battery/AA capacity/2000 mAh";
         String mountField =
-                "add i/Battery id/206 type/battery cond/5 "
+                "add i/Battery id/E206 type/battery cond/5 "
                         + "mount/Canon RF";
 
         assertThrows(
@@ -131,7 +131,7 @@ class BatteryCompatibilityIntegrationTest {
         Path file = temporaryDirectory.resolve("equipment.txt");
         Files.writeString(
                 file,
-                "add i/Legacy Battery id/201 type/battery cond/5 "
+                "add i/Legacy Battery id/E201 type/battery cond/5 "
                         + "capacity/2000 mAh damage/NONE"
                         + System.lineSeparator());
 
@@ -157,7 +157,7 @@ class BatteryCompatibilityIntegrationTest {
 
         Battery updatedBattery = assertInstanceOf(
                 Battery.class,
-                handler.updateEquipment("update id/201 cond/9"));
+                handler.updateEquipment("update id/E201 cond/9"));
 
         assertEquals(9, updatedBattery.getCondition());
         assertFullCompatibility(updatedBattery);
@@ -189,7 +189,7 @@ class BatteryCompatibilityIntegrationTest {
                             output,
                             true,
                             StandardCharsets.UTF_8));
-            handler.showEquipment("show id/201");
+            handler.showEquipment("show id/E201");
         } finally {
             System.setOut(originalOutput);
         }

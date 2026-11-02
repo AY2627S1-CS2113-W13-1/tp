@@ -36,16 +36,13 @@ class LoanConditionSnapshotStorageTest {
         Camera camera =
                 new Camera(
                         "Test Camera",
-                        "001",
+                        "E001",
                         6,
                         "Full frame",
                         CameraDamage.SENSOR_DAMAGE,
                         "Lens + mount / checked ✓");
         Loan original =
-                new Loan(
-                        "001",
-                        camera,
-                        "101",
+                new Loan("L001", camera, "U101",
                         ISSUE_DATE,
                         DUE_DATE);
 
@@ -69,7 +66,7 @@ class LoanConditionSnapshotStorageTest {
         Path file = temporaryDirectory.resolve("loans.txt");
         Files.writeString(
                 file,
-                "loan loanId/001 id/001 b/101 "
+                "loan loanId/L001 id/E001 b/U101 "
                         + "issued/01-10-26 due/20-10-26 "
                         + "returned/false\n");
 
@@ -84,7 +81,7 @@ class LoanConditionSnapshotStorageTest {
         Path file = temporaryDirectory.resolve("loans.txt");
         Files.writeString(
                 file,
-                "loan loanId/001 id/001 b/101 "
+                "loan loanId/L001 id/E001 b/U101 "
                         + "issued/01-10-26 due/20-10-26 "
                         + "returned/false "
                         + "issueType/camera "
@@ -106,7 +103,7 @@ class LoanConditionSnapshotStorageTest {
         Path file = temporaryDirectory.resolve("loans.txt");
         Files.writeString(
                 file,
-                "loan loanId/001 id/001 b/101 "
+                "loan loanId/L001 id/E001 b/U101 "
                         + "issued/01-10-26 due/20-10-26 "
                         + "returned/false "
                         + "issueType/camera "

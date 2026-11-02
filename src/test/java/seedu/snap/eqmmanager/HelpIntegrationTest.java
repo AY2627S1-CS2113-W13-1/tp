@@ -63,23 +63,23 @@ class HelpIntegrationTest {
         System.setOut(new PrintStream(output, true, StandardCharsets.UTF_8));
         dataDirectory = temporaryDirectory.resolve("data");
         manager = new EqmManager(dataDirectory, FIXED_CLOCK);
-        manager.executeInput("add i/Camera id/001 type/camera cond/4 sensor/Full frame remarks/Camera checked");
-        manager.executeInput("add i/Battery id/002 type/battery cond/5 capacity/2000mAh");
-        manager.executeInput("add i/Lens id/003 type/lens cond/6 zoom/24-70mm");
-        manager.executeInput("add i/Tripod id/004 type/tripod cond/7 thread/1-4 inch");
-        manager.executeInput("add i/Workshop battery id/005 type/battery cond/3 capacity/1500mAh");
-        manager.executeInput("add i/Spare battery id/006 type/battery cond/8 capacity/1800mAh");
+        manager.executeInput("add i/Camera id/E001 type/camera cond/4 sensor/Full frame remarks/Camera checked");
+        manager.executeInput("add i/Battery id/E002 type/battery cond/5 capacity/2000mAh");
+        manager.executeInput("add i/Lens id/E003 type/lens cond/6 zoom/24-70mm");
+        manager.executeInput("add i/Tripod id/E004 type/tripod cond/7 thread/1-4 inch");
+        manager.executeInput("add i/Workshop battery id/E005 type/battery cond/3 capacity/1500mAh");
+        manager.executeInput("add i/Spare battery id/E006 type/battery cond/8 capacity/1800mAh");
         manager.executeInput("add-bundle name/Camera kit");
-        manager.executeInput("add-to-bundle id/001 001 002 003 004");
-        manager.executeInput("loan id/005 b/111 due/25-10-26");
-        manager.executeInput("return loan/001 serviceable/no damage/SWELLING remarks/Needs repair");
-        manager.executeInput("loan id/001 b/222 due/25-10-26");
-        manager.executeInput("maintain id/005 date/24-10-26 work/Inspected swelling outcome/Repair required");
+        manager.executeInput("add-to-bundle id/B001 E001 E002 E003 E004");
+        manager.executeInput("loan id/E005 b/U111 due/25-10-26");
+        manager.executeInput("return loan/L001 serviceable/no damage/SWELLING remarks/Needs repair");
+        manager.executeInput("loan id/E001 b/U222 due/25-10-26");
+        manager.executeInput("maintain id/E005 date/24-10-26 work/Inspected swelling outcome/Repair required");
         readField(manager, "bundles", BundleHandler.class).saveToStorage();
         assertTrue(readField(manager, "bundles", BundleHandler.class).getBundleList().getFirst().isComplete());
-        assertTrue(readField(manager, "equipment", EquipmentHandler.class).getEquipmentById("001").isLoaned());
+        assertTrue(readField(manager, "equipment", EquipmentHandler.class).getEquipmentById("E001").isLoaned());
         assertFalse(readField(manager, "equipment", EquipmentHandler.class)
-                .getEquipmentById("005").isServiceable());
+                .getEquipmentById("E005").isServiceable());
         assertEquals(1, readField(manager, "maintenance", MaintenanceHandler.class).getMaintenanceRecords().size());
         output.reset();
     }
@@ -231,7 +231,7 @@ class HelpIntegrationTest {
         manager.executeInput(command);
 
         assertTrue(printedContent().contains("Format: view loan/<LOAN ID>"));
-        assertTrue(printedContent().contains("Example: view loan/001"));
+        assertTrue(printedContent().contains("Example: view loan/L001"));
         assertTrue(printedContent().contains("Missing legacy assessments"));
         assertFalse(printedContent().contains("Unknown help topic"));
         assertFalse(printedContent().contains("Format: loan id/"));
@@ -313,15 +313,15 @@ class HelpIntegrationTest {
         assertSavedFilesUnchanged(originals);
         output.reset();
 
-        manager.executeInput("loan id/006 b/333 due/25-10-26");
+        manager.executeInput("loan id/E006 b/U333 due/25-10-26");
         manager.executeInput("add-bundle name/Next kit");
 
-        assertTrue(printedContent().contains("[OK] Loan 003 issued."));
-        assertTrue(printedContent().contains("[OK] Bundle 002 \"Next kit\" created."));
-        assertEquals("004", readField(manager, "loans", LoanHandler.class).getNextLoanId());
+        assertTrue(printedContent().contains("[OK] Loan L003 issued."));
+        assertTrue(printedContent().contains("[OK] Bundle B002 \"Next kit\" created."));
+        assertEquals("L004", readField(manager, "loans", LoanHandler.class).getNextLoanId());
         assertEquals(3, readField(manager, "loans", LoanHandler.class).getLoanCount());
-        assertEquals("003", readField(manager, "equipment", EquipmentHandler.class)
-                .getEquipmentById("006").getLoanId());
+        assertEquals("L003", readField(manager, "equipment", EquipmentHandler.class)
+                .getEquipmentById("E006").getLoanId());
     }
 
     @Test
@@ -329,15 +329,15 @@ class HelpIntegrationTest {
         executeAllReadOnlyForms(manager, snapshot(manager));
         output.reset();
 
-        manager.executeInput("update id/006 i/Updated spare battery cond/9");
+        manager.executeInput("update id/E006 i/Updated spare battery cond/9");
         manager.executeInput("list loans");
-        manager.executeInput("history id/001");
+        manager.executeInput("history id/E001");
 
         assertTrue(printedContent().contains(" updated."));
         assertTrue(printedContent().contains("BORROWER ID"));
-        assertTrue(printedContent().contains("222"));
+        assertTrue(printedContent().contains("U222"));
         assertEquals("Updated spare battery", readField(manager, "equipment", EquipmentHandler.class)
-                .getEquipmentById("006").getItemName());
+                .getEquipmentById("E006").getItemName());
         assertTrue(readField(manager, "isRunning", Boolean.class));
     }
 
@@ -424,19 +424,19 @@ class HelpIntegrationTest {
         Map<Path, SavedFile> files = savedFiles(dataDirectory);
         output.reset();
 
-        restarted.executeInput("show id/001");
+        restarted.executeInput("show id/E001");
         assertTrue(printed().contains("Name: Camera"));
         assertTrue(printed().contains("Sensor format: Full frame"));
         assertTrue(printed().contains("Status: Loaned"));
-        assertTrue(printed().contains("Active loan ID: 002"));
+        assertTrue(printed().contains("Active loan ID: L002"));
         output.reset();
-        restarted.executeInput("show id/005");
+        restarted.executeInput("show id/E005");
         assertTrue(printed().contains("Status: Unserviceable"));
         assertTrue(printed().contains("Damage: SWELLING"));
         assertTrue(printed().contains("Remarks: Needs repair"));
         assertTrue(printed().contains("Active loan ID: (none)"));
         output.reset();
-        restarted.executeInput("show id/006");
+        restarted.executeInput("show id/E006");
         assertTrue(printed().contains("Status: Available"));
         assertTrue(printed().contains("Active loan ID: (none)"));
         executeAllReadOnlyForms(restarted, before);
@@ -446,27 +446,27 @@ class HelpIntegrationTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"show", "show id/000", "show id/01", "show id/1000", "show id/-01",
-        "show id/１２３", "show id/001 unexpected", "show id/001 id/002", "show id/001 type/camera"})
+    @ValueSource(strings = {"show", "show id/E000", "show id/01", "show id/E1000", "show id/-01",
+        "show id/１２３", "show id/E001 unexpected", "show id/E001 id/E002", "show id/E001 type/camera"})
     void equipmentViews_invalidShowSyntax_reportsFormatWithoutChangingState(String command) throws Exception {
         ApplicationState before = snapshot(manager);
         Map<Path, SavedFile> files = savedFiles(dataDirectory);
 
         manager.executeInput(command);
 
-        assertTrue(printed().contains("Invalid format. Use: show id/[ITEM ID], from 001 to 999."));
+        assertTrue(printed().contains("Invalid format. Use: show id/[ITEM ID], from E001 to E999."));
         assertEquals(before, snapshot(manager));
         assertSavedFilesUnchanged(files);
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"show id/001", "  show\tid/001  ", "show\u2003id/001", "show\u00a0id/001"})
+    @ValueSource(strings = {"show id/E001", "  show\tid/E001  ", "show\u2003id/E001", "show\u00a0id/E001"})
     void equipmentViews_showWhitespace_selectsExactItem(String command) {
         manager.executeInput(command);
 
-        assertTrue(printed().contains("Equipment 001"));
+        assertTrue(printed().contains("Equipment E001"));
         assertTrue(printed().contains("Name: Camera"));
-        assertFalse(printed().contains("Equipment 002"));
+        assertFalse(printed().contains("Equipment E002"));
     }
 
     /** Captures object references as well as their values, including counters that help must not consume. */
@@ -538,12 +538,12 @@ class HelpIntegrationTest {
     /** Repeats help, lists and histories so viewing records cannot save data or consume identifiers. */
     private void executeAllReadOnlyForms(EqmManager target, ApplicationState expected) throws Exception {
         List<String> requests = new ArrayList<>(helpRequests());
-        requests.addAll(List.of("list", "filter cond/1-10", "filter id/999", "show id/001", "show id/002",
-                "show id/003", "show id/004", "show id/005", "show id/006", "show id/999", "show",
-                "show id/000", "show id/001 id/002", "show id/001 remarks/Unexpected"));
-        requests.addAll(List.of("list loans", "list overdue", "history id/001", "history id/005",
-                "history bundle/id/001", "history bundle/name/Camera kit", "list bundles",
-                "list borrower/222", "list member/111", "list borrower/999", "list member/222", "view loan/001"));
+        requests.addAll(List.of("list", "filter cond/1-10", "filter id/E999", "show id/E001", "show id/E002",
+                "show id/E003", "show id/E004", "show id/E005", "show id/E006", "show id/E999", "show",
+                "show id/E000", "show id/E001 id/E002", "show id/E001 remarks/Unexpected"));
+        requests.addAll(List.of("list loans", "list overdue", "history id/E001", "history id/E005",
+                "history bundle/id/B001", "history bundle/name/Camera kit", "list bundles",
+                "list borrower/U222", "list member/U111", "list borrower/U999", "list member/U222", "view loan/L001"));
         for (int repetition = 0; repetition < 2; repetition++) {
             for (String command : requests) {
                 output.reset();

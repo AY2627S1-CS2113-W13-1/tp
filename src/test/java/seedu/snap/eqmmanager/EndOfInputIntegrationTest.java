@@ -111,7 +111,7 @@ class EndOfInputIntegrationTest {
 
         String text = printed();
         int failure = text.indexOf("[ERROR] Could not save data: bundles.txt:");
-        int addition = text.indexOf("[OK] Bundle 001 \"After failed exit\" created.");
+        int addition = text.indexOf("[OK] Bundle B001 \"After failed exit\" created.");
         assertTrue(failure >= 0 && addition > failure);
         assertEquals(3, countOutputLines("snAp > "));
         assertFalse(text.contains("[OK] Goodbye."));

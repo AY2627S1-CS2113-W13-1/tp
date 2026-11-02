@@ -253,7 +253,7 @@ fields, exhausted Loan IDs and write failures are rejected through the same no-p
 
 A return must end the active loan while retaining the original borrowing record.
 It must also record whether the item can be used again. For example,
-`return loan/001 serviceable/no damage/SENSOR_DAMAGE remarks/Needs repair` retains loan `001` as returned
+`return loan/L001 serviceable/no damage/SENSOR_DAMAGE remarks/Needs repair` retains loan `L001` as returned
 and records an unserviceable camera. Deleting that loan instead would lose its borrowing history.
 
 | Class | Responsibility in a return |
@@ -267,7 +267,7 @@ and records an unserviceable camera. Deleting that loan instead would lose its b
 
 #### Successful return
 
-The sequence below assumes an active loan `001` and an assessment valid for its equipment subtype.
+The sequence below assumes an active loan `L001` and an assessment valid for its equipment subtype.
 Parsing and repeated inventory checks are summarised in the first note to keep attention on the order of saving
 and changing records.
 
@@ -277,7 +277,7 @@ and changing records.
 
 [PlantUML source](diagrams/ReturnSequence.puml)
 
-1. `LoanReturn.parse(...)` requires a Loan ID from `001` to `999`, an explicit serviceability decision and
+1. `LoanReturn.parse(...)` requires a Loan ID from `L001` to `L999`, an explicit serviceability decision and
    a damage value. Optional `cond/` follows damage and accepts integers from 1 to 10; omission retains the
    current rating. Final `remarks/` is optional unless damage is `OTHER`, which requires non-empty text.
    Supplied remarks must be one line of at most 200 characters after trimming; final text remains literal.
@@ -352,8 +352,8 @@ and previous files remain unchanged where restoration is possible before retryin
 
 #### Permanent identity
 
-`history id/001` displays active and returned loans for the physical item currently registered as `001`.
-The three-digit Item ID can be reused after deletion. Matching only that value would mix the old and replacement
+`history id/E001` displays active and returned loans for the physical item currently registered as `E001`.
+The typed Item ID can be reused after deletion. Matching only that value would mix the old and replacement
 items' histories, even if the replacement has the same name and type.
 
 Each new `Equipment` receives a UUID stored as the `recordId` string. A loan created from that equipment copies
@@ -379,7 +379,7 @@ item is rejected.
 
 #### Query sequence
 
-The following sequence assumes Item ID `001` exists uniquely. Invalid syntax, a missing item or an ambiguous
+The following sequence assumes Item ID `E001` exists uniquely. Invalid syntax, a missing item or an ambiguous
 Item ID produces `LoanHistoryUnsuccessful` before selection.
 
 [![History query sequence: find the current item, match both identifiers, sort a separate list and display it without saving.](images/HistorySequence.svg)](images/HistorySequence.svg)
@@ -393,6 +393,18 @@ Item ID produces `LoanHistoryUnsuccessful` before selection.
 list instead would change the order used by later `list loans` requests. The query performs no storage operations.
 
 #### Loading older records
+
+Visible identifiers are stored in their typed form: equipment records use `id/E001`, loan records use
+`loanId/L001 id/E001 b/U002`, bundles use `id/B001 items/E001~<record-uuid>`, and the loan sequence uses
+`nextLoanId/L002`. Borrower IDs use the `U000` to `U999` range; permanent equipment record UUIDs remain
+unprefixed. Command input accepts either casing for the typed prefix and normalises it to the canonical uppercase
+form.
+
+The loaders still accept legacy bare numeric values because existing data must remain usable. They infer the
+identifier type from its storage field, normalize the value in memory and write the canonical prefix on the next
+normal save. This migration covers equipment IDs, loan IDs, borrower IDs, bundle IDs, bundle memberships and the
+loan sequence. A legacy value that collides with a canonical value after normalization is rejected as damaged data;
+records are never silently merged.
 
 Older equipment files lack permanent IDs. The parser assigns UUIDs to proposed records, then validates the
 complete file. The migration must be saved successfully before the loaded inventory replaces the current objects.
@@ -429,8 +441,8 @@ saved by a successful equipment migration.
 
 #### Prefix and identifier reference
 
-The same three-digit text can identify different records, so the surrounding prefix and command determine its
-meaning. The most easily confused identifier prefixes are:
+Each identifier contains a type letter and three digits, so its type remains explicit even when the numeric
+parts match. Command field prefixes determine where each identifier is used:
 
 | Prefix | Value identified | Main uses |
 | --- | --- | --- |
@@ -442,8 +454,9 @@ meaning. The most easily confused identifier prefixes are:
 | `bundle/id/` | Bundle ID | bundle-history queries |
 | `bundle/name/` | Bundle name | bundle-history queries |
 
-Item IDs and Loan IDs range from `001` to `999`; Borrower IDs range from `000` to `999`. A Bundle ID is also
-three digits from `001` to `999`. The command-specific help remains authoritative for field order and optionality.
+Item IDs range from `E001` to `E999`, Loan IDs from `L001` to `L999`, Borrower IDs from `U000` to `U999`,
+and Bundle IDs from `B001` to `B999`. Commands accept lowercase type letters and normalize them to uppercase.
+The command-specific help remains authoritative for field order and optionality.
 
 #### Rules and responsibilities
 
@@ -469,7 +482,7 @@ remain mandatory, so the application cannot assume that a return assessment was 
 #### Default issue-date sequence
 
 For this example, assume the application's local date is 24 October 2026 and the equipment is available.
-`loan id/001 b/002 due/31-10-26` stores 24 October 2026 at midnight as its issue date.
+`loan id/E001 b/U002 due/31-10-26` stores 24 October 2026 at midnight as its issue date.
 The diagram omits model construction and ordinary availability checks to focus on when the default is chosen.
 
 [![Optional issue-date sequence: validate required input, read the local date once, save explicit dates and then publish the loan.](images/LoanDateDefault.svg)](images/LoanDateDefault.svg)
@@ -649,8 +662,8 @@ changing equipment or loan records.
 
 #### Command and identity flow
 
-For a command such as `maintain id/001 date/27-10-26 work/Repair outcome/Completed`,
-`EqmManager` delegates to `MaintenanceHandler`. The handler validates the exact command format, the three-digit
+For a command such as `maintain id/E001 date/27-10-26 work/Repair outcome/Completed`,
+`EqmManager` delegates to `MaintenanceHandler`. The handler validates the exact command format, the typed
 visible Item ID and the strict date format; the `MaintenanceRecord` constructor validates the text values and
 maximum lengths. Future dates are rejected by the handler because the records
 represent completed maintenance. The application clock is injected into the handler so this rule is deterministic
@@ -660,8 +673,8 @@ After resolving the current equipment object, the handler creates the record usi
 than storing only the visible Item ID. It saves a proposed list first and appends the new record to the live list
 only after the save succeeds. This prevents an in-memory record from existing without its corresponding file entry.
 
-The permanent record identity is important when an Item ID is reused. Deleting item `001` and later adding another
-item with ID `001` creates a different permanent record identity. Maintenance entries therefore remain attached to
+The permanent record identity is important when an Item ID is reused. Deleting item `E001` and later adding another
+item with ID `E001` creates a different permanent record identity. Maintenance entries therefore remain attached to
 the original physical item instead of appearing in the replacement item's history.
 
 [![Maintenance sequence: console input, validation, permanent identity resolution and saving before appending to live records](images/MaintenanceRecordSequence.svg)](images/MaintenanceRecordSequence.svg)
@@ -821,7 +834,7 @@ The snapshot contains copied values rather than a reference to the equipment. Co
 assessment or equipment update cannot rewrite historical issue-time information.
 `Loan.returnedCopy(assessment)` carries both saved assessments into the returned record.
 
-For `view loan/001`, `EqmManager` delegates to `LoanHandler.viewLoanAssessments(...)`. The handler validates
+For `view loan/L001`, `EqmManager` delegates to `LoanHandler.viewLoanAssessments(...)`. The handler validates
 one Loan ID and compares its saved issue and return assessments. It reads no current equipment values and performs
 no save. Active loans show `Not returned`; missing legacy assessments show `Not recorded`. Remarks are printed
 below the comparison columns to avoid a wide table. New loans copy issue-time serviceability into `Loan` alongside
@@ -915,11 +928,68 @@ capture, permanent Loan ID preservation, failed saves and retry after failure.
 
 ### Equipment management
 
-The shared model above supplies the inventory and availability rules for
-[addition](#adding-equipment-and-rejecting-duplicate-item-ids),
-[filtering](#filtering-equipment-without-changing-records) and
-[updates](#updating-equipment-details). Visible Item IDs range from `001` to `999` and may be reused after
-valid deletion. Loan IDs use the same range but are never reused within a data set.
+Equipment addition, filtering and updates use the same inventory. The shared model also tracks
+availability so borrowing and queries agree about which equipment can be used.
+Start with the shared model, then see [addition](#adding-equipment-and-rejecting-duplicate-item-ids),
+[filtering](#filtering-equipment-without-changing-records) or [updates](#updating-equipment-details).
+
+#### Shared equipment model
+
+`EquipmentHandler` owns the ordered inventory. Loans and bundles share its equipment objects, so they see
+the same details and availability. `getEquipmentList()` provides an unmodifiable view for queries and display;
+additions must go through validation and duplicate checks.
+
+[![Shared equipment classes: inventory ownership, filtering, field parsing, storage and a representative subtype](images/EquipmentClasses.svg)](images/EquipmentClasses.svg)
+
+*Figure 8. Equipment classes and their roles in inventory management.*
+
+[PlantUML source](diagrams/EquipmentClasses.puml)
+
+`Equipment` holds common identity, name, condition and availability state. `Camera` represents one
+concrete subtype; `Lens`, `Battery` and `Tripod` have the same inheritance relationship.
+`EquipmentFields` parses filter and update fields, while `EquipmentStorage` handles file access.
+The add command has its own ordered parser in `EquipmentHandler`.
+
+Solid arrows show stored references; dashed arrows show dependencies. `+`, `-` and `~` mean public,
+private and package-private; underlined operations are static and italic names are abstract.
+Minor fields, getters and the loan/bundle classes are omitted.
+
+##### Availability and loan ownership
+
+An active `Loan` refers to the original equipment object. The equipment records its loan ID and loaned
+flag together through `setLoanId(...)`. Constructing a proposed loan does not reserve the item:
+`LoanHandler.addLoan(...)` checks for an existing active loan, finds one available, serviceable item
+and saves before `Loan.attachEquipment(...)` publishes the association.
+
+[![Equipment availability: saved borrowing and return operations change the shared item's status](images/EquipmentAvailability.svg)](images/EquipmentAvailability.svg)
+
+*Figure 9. Equipment availability changes after successful borrowing and return operations.*
+
+[PlantUML source](diagrams/EquipmentAvailability.puml)
+
+The state diagram shows successful commands; loading and equipment deletion are omitted. With no active
+loan, serviceability decides between `Available` and `Unserviceable`. The integrated
+[return assessment](#returning-equipment-with-an-assessment) sets serviceability separately from numeric
+condition and damage. A name or condition update does not change it.
+
+A saved loan reassignment releases the old item and reserves the replacement through `Loan.applyUpdate(...)`.
+Both effects occur after the proposed loan records are saved. This also explains the reassignment transitions
+in the state diagram.
+
+`Loan.detachEquipment()` clears the item's loan ID only if that loan still owns it, then drops its
+reference. This stops an older loan from releasing an item borrowed under a newer loan. Returns and loan
+deletions save before detaching. Equipment deletion is blocked by the CLI's active-loan check and the
+handler's loaned-flag check; the CLI also checks bundle membership.
+
+Equipment loads before loans at startup. The loan loader validates active associations, clears old
+runtime links and reattaches accepted active loans. Rebuilding links avoids persisting a second loaned
+flag that could disagree with the loan records. `EquipmentAvailabilityTest` covers double borrowing,
+failed reservations, ownership guards, deletion and reborrowing; `MainTest` checks restart and loan-deletion
+behaviour. Return integration tests cover serviceability and save failures.
+
+Visible Item IDs range from `E001` to `E999` and may be reused after valid deletion. Loan IDs range from
+`L001` to `L999` and are never reused within a data set. Borrower IDs range from `U000` to `U999`.
+This identifier limit is separate from the inventory-capacity NFR.
 
 #### Adding equipment and rejecting duplicate Item IDs
 
@@ -932,19 +1002,19 @@ Fields follow the order name, Item ID, type, condition, optional subtype details
 The parser recognises prefixes at field boundaries, including after Unicode whitespace, rather than
 splitting on every space. This preserves names such as `USB id/card reader` and `fluid/head tripod`.
 The last `id/` before `type/` identifies the Item ID; earlier fragments in the name cannot start with
-whitespace, a digit, `+` or `-`. Numeric ID-like fragments stay reserved to detect repeated fields.
+whitespace, a digit, `+` or `-`. Typed ID-like fragments stay reserved to detect repeated fields.
 
 Subtype fields are parsed after `cond/`. The first `remarks/` starts the final literal field, so text such
-as `Check id/001 adapter` is not mistaken for another ID. Subtype parsers handle their own attributes and
+as `Check id/E001 adapter` is not mistaken for another ID. Subtype parsers handle their own attributes and
 damage values, as described under compatibility attributes and optional fields.
 
 ##### Validation, uniqueness and publication
 
-Before construction, common validation checks a name of 1 to 100 characters, an Item ID from `001` to
-`999`, a nonblank type and an integer condition written as `1` to `10`. Blank checks include Unicode
+Before construction, common validation checks a name of 1 to 100 characters, an Item ID from `E001` to
+`E999`, a nonblank type and an integer condition written as `1` to `10`. Blank checks include Unicode
 whitespace and nonbreaking spaces. Only supported subtypes are constructed. Updates reuse these checks.
 
-IDs are compared with existing items using exact equality. A second `id/001` is rejected even if its name
+IDs are compared with existing items using exact equality. A second `id/E001` is rejected even if its name
 or type differs; names may be shared when IDs differ. A deleted item's ID can be reused, but the replacement
 gets a new permanent record identity to keep physical-item histories separate.
 
@@ -985,7 +1055,7 @@ use the same field-boundary rules as equipment updates.
 
 | Criterion | Matching rule |
 | --- | --- |
-| `id/` | Exact three-digit Item ID from `001` to `999` |
+| `id/` | Exact Item ID from `E001` to `E999` |
 | `i/` | Case-insensitive substring of the equipment name |
 | `type/` | Case-insensitive equality with the equipment's full type |
 | `cond/` | One value or an inclusive ascending range within `1` to `10` |
@@ -1027,7 +1097,7 @@ printing matches are summarised as manager self-messages; their helper calls are
 
 AND matching makes combined queries predictable: adding a criterion can only keep or reduce the matches.
 A separate query object allows parsing and matching to be tested independently. Scanning loans for each
-item trades performance for simpler availability checks within the supported three-digit ID range.
+item trades performance for simpler availability checks within the supported typed-ID range.
 An additional availability index would need updating on every loan, return and deletion.
 
 ##### Verification
@@ -1047,7 +1117,7 @@ match the existing type, ignoring case. A matching type alone is accepted, even 
 ##### Parsing and validation
 
 `EquipmentHandler.updateEquipment(...)` uses the same field parser as filtering. Fields may appear in any
-order; empty, repeated or unsupported reserved fields are rejected. An ID from `001` to `999`, exactly one
+order; empty, repeated or unsupported reserved fields are rejected. An ID from `E001` to `E999`, exactly one
 matching item and at least one of `i/`, `type/` or `cond/` are required.
 
 Omitted values come from the target. Common validation is shared with addition, including the name and
@@ -1056,7 +1126,7 @@ for their attributes and damage. All values are checked before saving or assignm
 
 ##### Save before changing the original object
 
-For an existing camera `001`, `update id/001 i/Film Camera cond/5` follows this sequence:
+For an existing camera `E001`, `update id/E001 i/Film Camera cond/5` follows this sequence:
 
 [![Equipment update: validate and save the proposed inventory before changing the existing camera](images/equipment-update-sequence.svg)](images/equipment-update-sequence.svg)
 
@@ -1077,7 +1147,7 @@ its original position, so loans and bundles keep valid references and see the co
 
 ##### Rejection and design choices
 
-For `update id/001 i/Film Camera cond/11`, invalid condition prevents both requested changes.
+For `update id/E001 i/Film Camera cond/11`, invalid condition prevents both requested changes.
 A missing or ambiguous ID, invalid field or changed type is also rejected before saving.
 The handler reports `EquipmentUpdateUnsuccessful`; common validation errors from
 `EquipmentAdditionUnsuccessful` are wrapped with their original messages.
@@ -1335,10 +1405,10 @@ These requirements apply to a single user running one local instance of snAp.
 
 | Term | Meaning in snAp |
 | --- | --- |
-| Item ID | The visible equipment identifier from `001` to `999`; it may be reused after equipment deletion. |
+| Item ID | The visible equipment identifier from `E001` to `E999`; it may be reused after equipment deletion. |
 | Permanent record identity | A UUID identifying one physical equipment record, even when its visible Item ID is later reused. |
-| Loan ID | The identifier of one borrowing record, from `001` to `999`; it is not reused within that data set. |
-| Borrower ID | A three-digit member identifier from `000` to `999`; snAp does not maintain member profiles. |
+| Loan ID | The identifier of one borrowing record, from `L001` to `L999`; it is not reused within that data set. |
+| Borrower ID | A user identifier from `U000` to `U999`; snAp does not maintain member profiles. |
 | Active loan | A loan that has not been returned and currently reserves equipment. |
 | Condition | The descriptive numeric rating from `1` to `10`; it does not itself determine availability. |
 | Serviceability | The return assessment deciding whether an item may be borrowed when it has no active loan. |
@@ -1365,10 +1435,10 @@ changes, interactions and restart behaviour rather than repeating the command re
 help
 help add
 help all
-add i/Test camera id/001 type/camera cond/1
-add i/Test lens id/002 type/lens cond/2
-add i/Test battery id/003 type/battery cond/3
-add i/Backup camera id/004 type/camera cond/4
+add i/Test camera id/E001 type/camera cond/1
+add i/Test lens id/E002 type/lens cond/2
+add i/Test battery id/E003 type/battery cond/3
+add i/Backup camera id/E004 type/camera cond/4
 ```
 
 Expect the compact menu, command-specific help and full reference respectively. The four additions succeed.
@@ -1377,27 +1447,27 @@ Expect the compact menu, command-specific help and full reference respectively. 
 ### Addition, filters and updates
 
 ```text
-add i/Duplicate id/001 type/lens cond/1
-update id/001 cond/11
+add i/Duplicate id/E001 type/lens cond/1
+update id/E001 cond/11
 filter type/camera cond/1-3 status/available
-update id/001 i/Studio camera cond/5
+update id/E001 i/Studio camera cond/5
 filter type/camera cond/1-3 status/available
-update id/001 cond/2
+update id/E001 cond/2
 ```
 
-The first two commands fail without changing the four items. The first filter shows only `001`;
-after its condition becomes `5`, the same filter has no matches. The final update leaves `001` named
+The first two commands fail without changing the four items. The first filter shows only `E001`;
+after its condition becomes `5`, the same filter has no matches. The final update leaves `E001` named
 `Studio camera` with condition `2`. Inspect `list` to check that other details and rows remain unchanged.
 
 ### Maintenance records
 
 ```text
-maintain id/001 date/27-10-26 work/Replaced battery outcome/Completed
+maintain id/E001 date/27-10-26 work/Replaced battery outcome/Completed
 bye
 ```
 
 Restart in the same data folder and confirm that `data/maintenance.txt` still contains the maintenance entry.
-Item `001` must still be named `Studio camera` with condition `2`; recording maintenance does not change its
+Item `E001` must still be named `Studio camera` with condition `2`; recording maintenance does not change its
 assessment. Continue the bundle test below in this folder.
 
 In a separate test folder, add equipment, record maintenance, delete the equipment, then add a replacement using
@@ -1409,42 +1479,42 @@ and a blocked storage path; each request should report an error without changing
 
 ```text
 add-bundle name/Test kit
-add-to-bundle id/001 001 002 003
+add-to-bundle id/B001 E001 E002 E003
 list bundles
-loan id/001 b/002 issued/01-01-20 due/02-01-20
+loan id/E001 b/U002 issued/01-01-20 due/02-01-20
 list loans
-list borrower/002
+list borrower/U002
 list overdue
-view loan/001
-update loan/001 b/003 due/03-01-20
-update id/001 cond/6
-view loan/001
-delete item/001
-return loan/001 serviceable/yes damage/NONE remarks/Checked
-history id/001
-history bundle/id/001
+view loan/L001
+update loan/L001 b/U003 due/03-01-20
+update id/E001 cond/6
+view loan/L001
+delete item/E001
+return loan/L001 serviceable/yes damage/NONE remarks/Checked
+history id/E001
+history bundle/id/B001
 ```
 
-The bundle is complete and contains the original three items. Loan `001` reserves equipment `001`.
+The bundle is complete and contains the original three items. Loan `L001` reserves equipment `E001`.
 The borrower query shows it; on a test date after 3 January 2020 it is overdue. Both snapshot views show the
 issue-time condition `2`, even after the live item becomes condition `6`. Deletion while loaned is rejected.
-Returning keeps the loan record and makes the item available. Both history queries must include loan `001` marked returned.
+Returning keeps the loan record and makes the item available. Both history queries must include loan `L001` marked returned.
 
 ```text
-loan id/004 b/003 issued/01-01-20 due/02-01-20
-return loan/002 serviceable/no damage/OTHER remarks/Loose control
-loan id/004 b/003 issued/01-01-20 due/02-01-20
-loan id/002 b/002 issued/01-01-20 due/02-01-20
-delete loan/003
-remove-from-bundle id/001 001
-delete item/001
+loan id/E004 b/U003 issued/01-01-20 due/02-01-20
+return loan/L002 serviceable/no damage/OTHER remarks/Loose control
+loan id/E004 b/U003 issued/01-01-20 due/02-01-20
+loan id/E002 b/U002 issued/01-01-20 due/02-01-20
+delete loan/L003
+remove-from-bundle id/B001 E001
+delete item/E001
 bye
 ```
 
-The second loan is returned as unserviceable, so borrowing `004` again fails. Loan `003` reserves `002`;
-deleting it releases that item. Removing `001` from the bundle then permits equipment deletion.
-After `bye`, restart in the same folder: expect three equipment items, returned loans `001` and `002`,
-and the bundle containing `002` and `003`. Item `004` must still be unserviceable.
+The second loan is returned as unserviceable, so borrowing `E004` again fails. Loan `L003` reserves `E002`;
+deleting it releases that item. Removing `E001` from the bundle then permits equipment deletion.
+After `bye`, restart in the same folder: expect three equipment items, returned loans `L001` and `L002`,
+and the bundle containing `E002` and `E003`. Item `E004` must still be unserviceable.
 
 ### Backup and restore
 
@@ -1452,7 +1522,7 @@ Continue after restarting the previous test data:
 
 ```text
 backup path/backups/manual-1
-update id/003 cond/8
+update id/E003 cond/8
 restore path/backups/manual-1
 backup path/backups/manual-1
 restore path/backups/does-not-exist
@@ -1461,7 +1531,7 @@ list loans
 bye
 ```
 
-The first backup succeeds. Restoration resets item `003` to condition `3` and retains both returned loans.
+The first backup succeeds. Restoration resets item `E003` to condition `3` and retains both returned loans.
 It clears current bundles because they are outside this backup format. The repeated backup and missing
 restore path are rejected without changing the restored data. Restart once more and use `list bundles`
 to confirm that the cleared bundle state was saved.

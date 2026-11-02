@@ -153,7 +153,7 @@ class EquipmentConditionSnapshotTest {
         Camera camera =
                 new Camera(
                         "Test Camera",
-                        "001",
+                        "E001",
                         6,
                         "Full frame",
                         CameraDamage.SENSOR_DAMAGE,
@@ -173,7 +173,7 @@ class EquipmentConditionSnapshotTest {
         Lens lens =
                 new Lens(
                         "Test Lens",
-                        "002",
+                        "E002",
                         5,
                         "24-70mm",
                         LensDamage.SCRATCHED_GLASS,
@@ -193,7 +193,7 @@ class EquipmentConditionSnapshotTest {
         Battery battery =
                 new Battery(
                         "Test Battery",
-                        "003",
+                        "E003",
                         4,
                         "2400mAh",
                         BatteryDamage.SWELLING,
@@ -213,7 +213,7 @@ class EquipmentConditionSnapshotTest {
         Tripod tripod =
                 new Tripod(
                         "Test Tripod",
-                        "004",
+                        "E004",
                         7,
                         "Quarter inch",
                         TripodDamage.BENT_LEG,

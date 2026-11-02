@@ -173,13 +173,13 @@ class EquipmentCompatibilityTest {
         EquipmentHandler originalHandler = new EquipmentHandler(file);
 
         originalHandler.addEquipment(
-                "add i/Camera id/001 type/camera cond/5 "
+                "add i/Camera id/E001 type/camera cond/5 "
                         + "sensor/Full frame mount/Canon RF");
         originalHandler.addEquipment(
-                "add i/Compatible Lens id/002 type/lens cond/5 "
+                "add i/Compatible Lens id/E002 type/lens cond/5 "
                         + "mount/Canon RF sensor/Full frame");
         originalHandler.addEquipment(
-                "add i/Incompatible Lens id/003 type/lens cond/5 "
+                "add i/Incompatible Lens id/E003 type/lens cond/5 "
                         + "mount/Nikon Z sensor/Full frame");
 
         EquipmentHandler reloadedHandler = new EquipmentHandler(file);
@@ -187,13 +187,13 @@ class EquipmentCompatibilityTest {
 
         Camera camera = assertInstanceOf(
                 Camera.class,
-                reloadedHandler.getEquipmentById("001"));
+                reloadedHandler.getEquipmentById("E001"));
         Lens compatibleLens = assertInstanceOf(
                 Lens.class,
-                reloadedHandler.getEquipmentById("002"));
+                reloadedHandler.getEquipmentById("E002"));
         Lens incompatibleLens = assertInstanceOf(
                 Lens.class,
-                reloadedHandler.getEquipmentById("003"));
+                reloadedHandler.getEquipmentById("E003"));
 
         assertEquals(
                 CompatibilityResult.COMPATIBLE,
@@ -227,7 +227,7 @@ class EquipmentCompatibilityTest {
             String batteryType) {
         return new Camera(
                 "Camera",
-                "001",
+                "E001",
                 8,
                 sensorFormat,
                 Camera.CameraDamage.NONE,
@@ -243,7 +243,7 @@ class EquipmentCompatibilityTest {
             String sensorFormat) {
         return new Lens(
                 "Lens",
-                "101",
+                "E101",
                 8,
                 "24-70 mm",
                 Lens.LensDamage.NONE,
@@ -256,7 +256,7 @@ class EquipmentCompatibilityTest {
     private Battery createBattery(String batteryType) {
         return new Battery(
                 "Battery",
-                "201",
+                "E201",
                 8,
                 "2000 mAh",
                 Battery.BatteryDamage.NONE,
@@ -268,7 +268,7 @@ class EquipmentCompatibilityTest {
     private Tripod createTripod(String thread) {
         return new Tripod(
                 "Tripod",
-                "301",
+                "E301",
                 8,
                 thread,
                 Tripod.TripodDamage.NONE,

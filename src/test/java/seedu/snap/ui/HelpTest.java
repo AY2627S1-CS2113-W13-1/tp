@@ -36,41 +36,41 @@ class HelpTest {
         return Stream.of(
                 Arguments.of("add", "add i/<NAME> id/<ID> type/<TYPE> cond/<N>"
                         + " [TYPE DETAIL] [damage/<DAMAGE>] [remarks/<TEXT>]",
-                        "add i/Canon EOS R10 id/001 type/camera cond/1 "
+                        "add i/Canon EOS R10 id/E001 type/camera cond/1 "
                                 + "sensor/APS-C mount/Canon RF damage/NONE"),
                 Arguments.of("list", "list", "list"),
-                Arguments.of("show", "show id/<ID>", "show id/001"),
-                Arguments.of("delete item", "delete item/<ID>", "delete item/001"),
+                Arguments.of("show", "show id/<ID>", "show id/E001"),
+                Arguments.of("delete item", "delete item/<ID>", "delete item/E001"),
                 Arguments.of("loan", "loan id/<ITEM ID> b/<BORROWER ID> [issued/<DD-MM-YY>] due/<DD-MM-YY>",
-                        "loan id/001 b/002 issued/24-10-26 due/31-10-26"),
+                        "loan id/E001 b/U002 issued/24-10-26 due/31-10-26"),
                 Arguments.of("return", "return loan/<LOAN ID> serviceable/<yes|no> damage/<DAMAGE> "
                         + "[cond/<N>] [remarks/<TEXT>]",
-                        "return loan/001 serviceable/no damage/SENSOR_DAMAGE cond/8 remarks/Sensor needs repair"),
-                Arguments.of("delete loan", "delete loan/<LOAN ID>", "delete loan/001"),
+                        "return loan/L001 serviceable/no damage/SENSOR_DAMAGE cond/8 remarks/Sensor needs repair"),
+                Arguments.of("delete loan", "delete loan/<LOAN ID>", "delete loan/L001"),
                 Arguments.of("update loan", "update loan/<LOAN ID> [id/<ITEM ID>] [b/<BORROWER ID>]"
                                 + " [issued/<DD-MM-YY>] [due/<DD-MM-YY>]",
-                        "update loan/001 id/002 b/007 due/07-11-26"),
+                        "update loan/L001 id/E002 b/U007 due/07-11-26"),
                 Arguments.of("list loans", "list loans", "list loans"),
-                Arguments.of("view loan", "view loan/<LOAN ID>", "view loan/001"),
+                Arguments.of("view loan", "view loan/<LOAN ID>", "view loan/L001"),
                 Arguments.of("backup", "backup path/<DIRECTORY>", "backup path/backups/session-1"),
                 Arguments.of("restore", "restore path/<DIRECTORY>", "restore path/backups/session-1"),
-                Arguments.of("list borrower", "list borrower/<BORROWER ID>", "list borrower/002"),
-                Arguments.of("list borrower", "list member/<MEMBER ID>", "list member/002"),
+                Arguments.of("list borrower", "list borrower/<BORROWER ID>", "list borrower/U002"),
+                Arguments.of("list borrower", "list member/<MEMBER ID>", "list member/U002"),
                 Arguments.of("list overdue", "list overdue", "list overdue"),
-                Arguments.of("history", "history id/<ITEM ID>", "history id/001"),
+                Arguments.of("history", "history id/<ITEM ID>", "history id/E001"),
                 Arguments.of("filter", "filter [id/<ID>] [i/<NAME>] [type/<TYPE>] [cond/<N|MIN-MAX>] [status/<STATUS>]",
                         "filter type/camera cond/1-3 status/available"),
                 Arguments.of("maintain", "maintain id/<ITEM ID> date/<DD-MM-YY> work/<DESCRIPTION> outcome/<OUTCOME>",
-                        "maintain id/001 date/27-10-26 work/Replaced battery outcome/Completed"),
+                        "maintain id/E001 date/27-10-26 work/Replaced battery outcome/Completed"),
                 Arguments.of("update", "update id/<ID> [i/<NAME>] [type/<TYPE>] [cond/<N>]",
-                        "update id/001 i/Studio camera cond/5"),
+                        "update id/E001 i/Studio camera cond/5"),
                 Arguments.of("add-bundle", "add-bundle name/<NAME>", "add-bundle name/Studio kit"),
                 Arguments.of("add-to-bundle", "add-to-bundle id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]",
-                        "add-to-bundle id/001 001 002 003"),
+                        "add-to-bundle id/B001 E001 E002 E003"),
                 Arguments.of("remove-from-bundle", "remove-from-bundle id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]",
-                        "remove-from-bundle id/001 001"),
+                        "remove-from-bundle id/B001 E001"),
                 Arguments.of("list bundles", "list bundles", "list bundles"),
-                Arguments.of("history bundle", "history bundle/id/<BUNDLE ID>", "history bundle/id/001"),
+                Arguments.of("history bundle", "history bundle/id/<BUNDLE ID>", "history bundle/id/B001"),
                 Arguments.of("history bundle", "history bundle/name/<NAME>", "history bundle/name/Studio kit"),
                 Arguments.of("help", "help", "help"),
                 Arguments.of("bye", "bye", "bye"));
@@ -95,7 +95,7 @@ class HelpTest {
         String prose = normaliseWhitespace(text);
         assertTrue(prose.contains("<VALUE> is a placeholder. [field/<VALUE>] is optional."));
         assertTrue(prose.contains("Commands and field prefixes use exact lowercase spelling."));
-        assertTrue(prose.contains("001-999. Borrower IDs: 000-999."));
+        assertTrue(prose.contains("Borrower IDs use U000-U999, with U standing for user."));
         commandExamples().forEach(arguments -> {
             String otherTopic = (String) arguments.get()[0];
             String otherFormat = (String) arguments.get()[1];
@@ -240,8 +240,8 @@ class HelpTest {
     /** Supplies misspellings, partial topics and aliases that must not select a command guide. */
     private static Stream<String> unknownTopics() {
         return Stream.of("unknown", "HELP", "ADD", "helpall", "helpful", "equipment", "loans", "bundles",
-                "delete", "list loan", "list items", "list loans extra", "view", "view loan/001", "view loan extra",
-                "history bundle/id/001", "history bundle/name/Studio kit", "remove-from-bundle id/001 001",
+                "delete", "list loan", "list items", "list loans extra", "view", "view loan/L001", "view loan extra",
+                "history bundle/id/B001", "history bundle/name/Studio kit", "remove-from-bundle id/B001 E001",
                 "help add", "all extra");
     }
 
@@ -303,7 +303,7 @@ class HelpTest {
 
         assertTrue(text.contains("<VALUE> is a placeholder. [field/<VALUE>] is optional."));
         assertTrue(text.contains("Commands and field prefixes use exact lowercase spelling."));
-        assertTrue(text.contains("001-999. Borrower IDs: 000-999."));
+        assertTrue(text.contains("Borrower IDs use U000-U999, with U standing for user."));
         assertTrue(text.contains("Equipment names: 1-" + Equipment.MAX_NAME_LENGTH));
         assertTrue(text.contains("condition: " + Equipment.MIN_CONDITION + "-" + Equipment.MAX_CONDITION));
         assertTrue(text.contains("remarks: 0-" + Equipment.MAX_REMARKS_LENGTH + " characters after trimming."));
@@ -348,7 +348,7 @@ class HelpTest {
         assertTrue(text.contains("local time zone, at midnight."));
         assertTrue(text.contains("Issue date must be on or before the required due date."));
         assertTrue(text.contains("be serviceable and have no active loan."));
-        assertTrue(text.contains("Loan IDs are assigned automatically from 001 to 999"));
+        assertTrue(text.contains("Loan IDs are assigned automatically from L001 to L999"));
         assertTrue(text.contains("explicit serviceable/ and damage/ assessment"));
         assertTrue(text.contains("Remarks/ must be last. For OTHER, provide non-empty text after trimming."));
         assertTrue(text.contains("For other damage values, omitted or empty remarks clear prior notes."));

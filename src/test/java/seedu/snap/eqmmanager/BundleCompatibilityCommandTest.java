@@ -38,22 +38,22 @@ class BundleCompatibilityCommandTest {
     @Test
     void addToBundle_incompatibleAndCompatibleCandidates_reportsAndStoresEachResult() {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("add i/Camera id/001 type/camera cond/1 sensor/APS-C"
+        manager.executeInput("add i/Camera id/E001 type/camera cond/1 sensor/APS-C"
                 + " mount/Canon RF battery/LP-E17");
-        manager.executeInput("add i/Incompatible Lens id/002 type/lens cond/1"
+        manager.executeInput("add i/Incompatible Lens id/E002 type/lens cond/1"
                 + " mount/Nikon Z sensor/APS-C");
-        manager.executeInput("add i/Compatible Battery id/003 type/battery cond/1"
+        manager.executeInput("add i/Compatible Battery id/E003 type/battery cond/1"
                 + " battery/lp-e17");
         manager.executeInput("add-bundle name/Camera Kit");
-        manager.executeInput("add-to-bundle id/001 001");
+        manager.executeInput("add-to-bundle id/B001 E001");
         output.reset();
 
-        manager.executeInput("add-to-bundle id/001 002 003");
+        manager.executeInput("add-to-bundle id/B001 E002 E003");
 
         String printed = output.toString(StandardCharsets.UTF_8);
-        assertTrue(printed.contains("[ERROR] Equipment ID 002 was not added:"
-                + " equipment is incompatible with equipment ID 001."));
-        assertTrue(printed.contains("[OK] Equipment ID 003 added to bundle 001 successfully."
+        assertTrue(printed.contains("[ERROR] Equipment ID E002 was not added:"
+                + " equipment is incompatible with equipment ID E001."));
+        assertTrue(printed.contains("[OK] Equipment ID E003 added to bundle B001 successfully."
                 + " Name: \"Compatible Battery\"."));
         assertEquals(1, printed.lines().filter(line -> line.startsWith("[OK]")).count());
         assertEquals(1, printed.lines().filter(line -> line.startsWith("[ERROR]")).count());

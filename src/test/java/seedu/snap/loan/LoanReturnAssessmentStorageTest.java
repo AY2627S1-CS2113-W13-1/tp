@@ -20,7 +20,7 @@ import seedu.snap.equipment.EquipmentHandler;
 
 /** Tests return-snapshot storage, compatibility and rejection of damaged history. */
 class LoanReturnAssessmentStorageTest {
-    private static final String RECORD = "loan loanId/001 id/001 b/002 issued/01-10-26 due/20-10-26 ";
+    private static final String RECORD = "loan loanId/L001 id/E001 b/U002 issued/01-10-26 due/20-10-26 ";
     private static final String RETURN_FIELDS = "returnType/camera returnCondition/5 returnDamage/NONE "
             + "returnRemarks/Checked returnServiceable/yes";
 
@@ -31,11 +31,11 @@ class LoanReturnAssessmentStorageTest {
     @ValueSource(strings = {"camera", "lens", "battery", "tripod"})
     void saveAndLoad_allSubtypes_roundTripBothAssessmentsAndUnicode(String type) throws Exception {
         EquipmentHandler inventory = new EquipmentHandler();
-        inventory.addEquipment("add i/Test item id/001 type/" + type + " cond/1 remarks/At issue + 100% ✓");
+        inventory.addEquipment("add i/Test item id/E001 type/" + type + " cond/1 remarks/At issue + 100% ✓");
         LoanHandler handler = new LoanHandler(inventory);
-        Loan original = handler.addLoan("loan id/001 b/002 issued/01-10-26 due/20-10-26");
+        Loan original = handler.addLoan("loan id/E001 b/U002 issued/01-10-26 due/20-10-26");
         String remarks = "Checked 中文 + % / cond/9 serviceable/no issueType/camera returnType/lens ✓";
-        handler.returnLoan("return loan/001 serviceable/no damage/OTHER cond/10 remarks/" + remarks);
+        handler.returnLoan("return loan/L001 serviceable/no damage/OTHER cond/10 remarks/" + remarks);
         Path file = directory.resolve("loans.txt");
 
         LoanStorage.save(file, handler.getLoanList());
@@ -71,10 +71,10 @@ class LoanReturnAssessmentStorageTest {
         Path file = directory.resolve("loans.txt");
         Files.writeString(file, RECORD + "returned/false\n");
         EquipmentHandler inventory = new EquipmentHandler();
-        inventory.addEquipment("add i/Camera id/001 type/camera cond/3");
+        inventory.addEquipment("add i/Camera id/E001 type/camera cond/3");
         LoanHandler handler = new LoanHandler(inventory, file);
         handler.loadFromStorage();
-        handler.returnLoan("return loan/001 serviceable/yes damage/NONE cond/5");
+        handler.returnLoan("return loan/L001 serviceable/yes damage/NONE cond/5");
 
         Loan restored = LoanStorage.load(file).getFirst();
         assertNull(restored.getIssueConditionSnapshot());
@@ -101,10 +101,10 @@ class LoanReturnAssessmentStorageTest {
         RETURN_FIELDS + " " + RETURN_FIELDS})
     void load_malformedAssessment_reportsLineAndPreservesLiveRecords(String fields) throws Exception {
         EquipmentHandler inventory = new EquipmentHandler();
-        inventory.addEquipment("add i/Camera id/001 type/camera cond/3");
+        inventory.addEquipment("add i/Camera id/E001 type/camera cond/3");
         Path file = directory.resolve("loans.txt");
         LoanHandler handler = new LoanHandler(inventory, file);
-        Loan active = handler.addLoan("loan id/001 b/002 issued/01-10-26 due/20-10-26");
+        Loan active = handler.addLoan("loan id/E001 b/U002 issued/01-10-26 due/20-10-26");
         Files.writeString(file, RECORD + "returned/true " + fields + "\n");
         String damagedFile = Files.readString(file);
 
@@ -114,7 +114,7 @@ class LoanReturnAssessmentStorageTest {
         assertEquals(List.of(active), handler.getLoanList());
         assertFalse(active.isReturned());
         assertNull(active.getReturnAssessment());
-        assertEquals("001", inventory.getEquipmentList().getFirst().getLoanId());
+        assertEquals("L001", inventory.getEquipmentList().getFirst().getLoanId());
         assertEquals(damagedFile, Files.readString(file));
     }
 
@@ -140,11 +140,11 @@ class LoanReturnAssessmentStorageTest {
     @Test
     void returnLoan_fullLoanIdRange_keepsSeparateAssessmentsAndRoundTrips() throws Exception {
         EquipmentHandler inventory = new EquipmentHandler();
-        inventory.addEquipment("add i/Camera id/001 type/camera cond/1");
+        inventory.addEquipment("add i/Camera id/E001 type/camera cond/1");
         LoanHandler handler = new LoanHandler(inventory);
         int previous = 1;
         for (int number = 1; number <= 999; number++) {
-            Loan loan = handler.addLoan("loan id/001 b/002 issued/01-10-26 due/20-10-26");
+            Loan loan = handler.addLoan("loan id/E001 b/U002 issued/01-10-26 due/20-10-26");
             int condition = number % 10 + 1;
             handler.returnLoan("return loan/" + loan.getLoanId()
                     + " serviceable/yes damage/NONE cond/" + condition + " remarks/Return " + number);
@@ -156,7 +156,7 @@ class LoanReturnAssessmentStorageTest {
         List<Loan> restored = LoanStorage.load(file);
 
         assertEquals(999, restored.size());
-        assertEquals("1000", handler.getNextLoanId());
+        assertEquals("L1000", handler.getNextLoanId());
         for (int index = 0; index < restored.size(); index++) {
             Loan loan = restored.get(index);
             assertEquals((index + 1) % 10 + 1, loan.getReturnAssessment().condition().getCondition());

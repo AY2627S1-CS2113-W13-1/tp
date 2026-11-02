@@ -34,8 +34,8 @@ class RestoreIntegrationTest {
         originalOutput = System.out;
         System.setOut(new PrintStream(output, true, StandardCharsets.UTF_8));
         manager = new EqmManager(temporaryDirectory.resolve("data"));
-        manager.executeInput("add i/Camera id/001 type/camera cond/4 sensor/APS-C");
-        manager.executeInput("loan id/001 b/111 issued/01-10-26 due/02-10-26");
+        manager.executeInput("add i/Camera id/E001 type/camera cond/4 sensor/APS-C");
+        manager.executeInput("loan id/E001 b/U111 issued/01-10-26 due/02-10-26");
         output.reset();
     }
 
@@ -48,8 +48,8 @@ class RestoreIntegrationTest {
     void restoreCommand_validBackup_restoresAvailabilityHistoryAndSequence() throws Exception {
         Path backupDirectory = temporaryDirectory.resolve("backup");
         manager.executeInput("backup path/" + backupDirectory);
-        manager.executeInput("return loan/001 serviceable/yes damage/NONE remarks/");
-        manager.executeInput("add i/Lens id/002 type/lens cond/5 zoom/24-70mm");
+        manager.executeInput("return loan/L001 serviceable/yes damage/NONE remarks/");
+        manager.executeInput("add i/Lens id/E002 type/lens cond/5 zoom/24-70mm");
         output.reset();
 
         manager.executeInput("restore path/" + backupDirectory);
@@ -58,12 +58,12 @@ class RestoreIntegrationTest {
         output.reset();
         manager.executeInput("list loans");
         String loans = printed();
-        assertTrue(loans.contains("001"));
-        assertTrue(loans.contains("111"));
+        assertTrue(loans.contains("L001"));
+        assertTrue(loans.contains("U111"));
         assertTrue(loans.contains("02-10-26"));
         assertTrue(loans.contains("1 loan."));
         assertFalse(loans.contains("Returned"));
-        assertFalse(loans.contains("002"));
+        assertFalse(loans.contains("L002"));
         output.reset();
         manager.executeInput("list");
         assertTrue(printed().contains("Loaned"));
@@ -73,18 +73,18 @@ class RestoreIntegrationTest {
     void restoreCommand_restoredState_survivesRestart() throws Exception {
         Path backupDirectory = temporaryDirectory.resolve("backup");
         manager.executeInput("backup path/" + backupDirectory);
-        manager.executeInput("return loan/001 serviceable/yes damage/NONE remarks/");
+        manager.executeInput("return loan/L001 serviceable/yes damage/NONE remarks/");
         output.reset();
 
         manager.executeInput("restore path/" + backupDirectory);
         EqmManager restarted = new EqmManager(temporaryDirectory.resolve("data"));
         restarted.executeInput("list loans");
 
-        assertTrue(printed().contains("001"));
-        assertTrue(printed().contains("111"));
+        assertTrue(printed().contains("L001"));
+        assertTrue(printed().contains("U111"));
         assertTrue(printed().contains("02-10-26"));
         assertFalse(printed().contains("Returned"));
-        assertEquals("nextLoanId/002" + System.lineSeparator(),
+        assertEquals("nextLoanId/L002" + System.lineSeparator(),
                 Files.readString(temporaryDirectory.resolve("data/loan-sequence.txt")));
     }
 
@@ -106,11 +106,11 @@ class RestoreIntegrationTest {
     void restoreCommand_success_persistsClearedBundlesBeforeRestart() throws Exception {
         Path backupDirectory = temporaryDirectory.resolve("backup");
         manager.executeInput("backup path/" + backupDirectory);
-        manager.executeInput("add i/Extra Lens id/002 type/lens cond/5 zoom/24-70mm");
+        manager.executeInput("add i/Extra Lens id/E002 type/lens cond/5 zoom/24-70mm");
         manager.executeInput("add-bundle name/Persisted old bundle");
-        manager.executeInput("add-to-bundle id/001 002");
+        manager.executeInput("add-to-bundle id/B001 E002");
         manager.executeInput("bye");
-        assertTrue(Files.readString(temporaryDirectory.resolve("data/bundles.txt")).contains("002"));
+        assertTrue(Files.readString(temporaryDirectory.resolve("data/bundles.txt")).contains("E002"));
         manager = new EqmManager(temporaryDirectory.resolve("data"));
         output.reset();
 
@@ -129,7 +129,7 @@ class RestoreIntegrationTest {
     void restoreCommand_startupLoadFailureCanRecoverFromValidBackup() throws Exception {
         Path dataDirectory = temporaryDirectory.resolve("broken-data");
         EqmManager creator = new EqmManager(dataDirectory);
-        creator.executeInput("add i/Camera id/001 type/camera cond/4 sensor/APS-C");
+        creator.executeInput("add i/Camera id/E001 type/camera cond/4 sensor/APS-C");
         Path backupDirectory = temporaryDirectory.resolve("recovery-backup");
         creator.executeInput("backup path/" + backupDirectory);
         Files.writeString(dataDirectory.resolve("equipment.txt"), "not an equipment record\n");
@@ -177,7 +177,7 @@ class RestoreIntegrationTest {
     void restoreCommand_invalidBackup_reportsFailureAndPreservesCurrentState() throws Exception {
         Path backupDirectory = temporaryDirectory.resolve("backup");
         manager.executeInput("backup path/" + backupDirectory);
-        manager.executeInput("return loan/001 serviceable/yes damage/NONE remarks/");
+        manager.executeInput("return loan/L001 serviceable/yes damage/NONE remarks/");
         String equipmentBefore = Files.readString(temporaryDirectory.resolve("data/equipment.txt"));
         String loansBefore = Files.readString(temporaryDirectory.resolve("data/loans.txt"));
         Files.delete(backupDirectory.resolve("loan-sequence.txt"));
@@ -197,10 +197,10 @@ class RestoreIntegrationTest {
     void restoreCommand_malformedMaintenance_preservesEveryLiveFileAndStartupGuard() throws Exception {
         Path dataDirectory = temporaryDirectory.resolve("data");
         Path maintenanceFile = dataDirectory.resolve("maintenance.txt");
-        manager.executeInput("maintain id/001 date/01-01-20 work/Checked camera outcome/Completed");
+        manager.executeInput("maintain id/E001 date/01-01-20 work/Checked camera outcome/Completed");
         Path backupDirectory = temporaryDirectory.resolve("maintenance-backup");
         manager.executeInput("backup path/" + backupDirectory);
-        manager.executeInput("update id/001 cond/7");
+        manager.executeInput("update id/E001 cond/7");
         manager.executeInput("add-bundle name/Keep this bundle");
         manager.executeInput("bye");
         Files.writeString(maintenanceFile, Files.readString(maintenanceFile) + "broken record\n");
@@ -217,7 +217,7 @@ class RestoreIntegrationTest {
         assertTrue(printed().contains("maintenance data could not be loaded"));
         assertFalse(printed().contains("[OK] Backup restored successfully"));
         output.reset();
-        broken.executeInput("maintain id/001 date/01-01-20 work/Another check outcome/Completed");
+        broken.executeInput("maintain id/E001 date/01-01-20 work/Another check outcome/Completed");
         broken.executeInput("list");
         assertTrue(printed().contains("Could not load saved data: maintenance.txt:"));
         assertFalse(printed().contains("Maintenance recorded successfully"));
@@ -235,7 +235,7 @@ class RestoreIntegrationTest {
         Path dataDirectory = temporaryDirectory.resolve("data");
         Path backupDirectory = temporaryDirectory.resolve("unreadable-maintenance-backup");
         manager.executeInput("backup path/" + backupDirectory);
-        manager.executeInput("update id/001 cond/7");
+        manager.executeInput("update id/E001 cond/7");
         byte[] equipmentBefore = Files.readAllBytes(dataDirectory.resolve("equipment.txt"));
         Path maintenanceDirectory = Files.createDirectory(dataDirectory.resolve("maintenance.txt"));
         Path retainedFile = maintenanceDirectory.resolve("keep.txt");
@@ -259,7 +259,7 @@ class RestoreIntegrationTest {
     void restoreCommand_afterMaintenanceRepairAndRestart_retainsHistoryAndAllowsFurtherRecords() throws Exception {
         Path dataDirectory = temporaryDirectory.resolve("data");
         Path maintenanceFile = dataDirectory.resolve("maintenance.txt");
-        manager.executeInput("maintain id/001 date/01-01-20 work/Checked camera outcome/Completed");
+        manager.executeInput("maintain id/E001 date/01-01-20 work/Checked camera outcome/Completed");
         byte[] validMaintenance = Files.readAllBytes(maintenanceFile);
         Path backupDirectory = temporaryDirectory.resolve("repaired-maintenance-backup");
         manager.executeInput("backup path/" + backupDirectory);
@@ -275,7 +275,7 @@ class RestoreIntegrationTest {
 
         assertTrue(printed().contains("[OK] Backup restored successfully"));
         assertArrayEquals(validMaintenance, Files.readAllBytes(maintenanceFile));
-        repaired.executeInput("maintain id/001 date/02-01-20 work/Cleaned camera outcome/Completed");
+        repaired.executeInput("maintain id/E001 date/02-01-20 work/Cleaned camera outcome/Completed");
         repaired.executeInput("bye");
         EqmManager restarted = new EqmManager(dataDirectory);
         restarted.executeInput("bye");
@@ -289,7 +289,7 @@ class RestoreIntegrationTest {
     void restoreCommand_otherLoadingError_recoversWithoutChangingMaintenance(String damagedFile) throws Exception {
         Path dataDirectory = temporaryDirectory.resolve("data");
         Path maintenanceFile = dataDirectory.resolve("maintenance.txt");
-        manager.executeInput("maintain id/001 date/01-01-20 work/Checked camera outcome/Completed");
+        manager.executeInput("maintain id/E001 date/01-01-20 work/Checked camera outcome/Completed");
         byte[] maintenanceBefore = Files.readAllBytes(maintenanceFile);
         Path backupDirectory = temporaryDirectory.resolve("other-loading-error-backup");
         manager.executeInput("backup path/" + backupDirectory);
