@@ -756,6 +756,19 @@ If maintenance failed to load, `restore` is rejected before any live files chang
 contain maintenance records. Other commands remain blocked, and `bye` exits without saving. Preserve a copy of
 the damaged file, then repair or recover `data/maintenance.txt` separately before restarting.
 
+## Current limitations
+
+These limitations can affect recovery or interpretation of records in the current version:
+
+* Maintenance records are retained in `data/maintenance.txt` but cannot be viewed with an in-app command.
+* Recording maintenance does not restore an unserviceable item; there is no repair/reactivation command yet.
+* Backup excludes bundles and maintenance. A successful restore clears current bundle memberships and leaves
+  maintenance unchanged.
+* Equipment filtering accepts only `status/available` and `status/loaned`; it cannot directly select
+  unserviceable items.
+* Bundle history follows the bundle's current membership. Removing an item also removes its loans from that
+  bundle-history view, although the loans remain in the full and item-specific histories.
+
 ## Diagnostic logs
 
 Diagnostics use up to two rotating files, `logs/snap.log.0` and `logs/snap.log.1`, relative to the launch folder.

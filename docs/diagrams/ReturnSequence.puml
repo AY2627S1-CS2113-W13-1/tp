@@ -10,6 +10,8 @@ participant ":EquipmentHandler" as Inventory
 participant "loan:Loan" as Loan
 participant "LoanReturnStorage" as Store <<utility>>
 participant "item:Equipment" as Item
+participant "LoanReturnAssessment" as AssessmentClass <<class>>
+participant "assessment:\nLoanReturnAssessment" as Assessment
 
 Manager -> Handler: returnLoan(input)
 activate Handler
@@ -18,9 +20,21 @@ Parse LoanReturn; find a unique active loan and current item.
 Check object identity, active loan ID and permanent record ID.
 end note
 Handler -> Inventory: prepareReturnAssessment(...)
+activate Inventory
 Inventory --> Handler: detached assessed item
+deactivate Inventory
+Handler -> AssessmentClass: fromEquipment(assessed)
+activate AssessmentClass
+create Assessment
+AssessmentClass -> Assessment: new(condition, serviceable)
+activate Assessment
+deactivate Assessment
+AssessmentClass --> Handler: immutable assessment
+deactivate AssessmentClass
 Handler -> Loan: returnedCopy(assessment)
+activate Loan
 Loan --> Handler: detached returned loan
+deactivate Loan
 Handler -> Store: save(...)
 activate Store
 note over Store
@@ -31,9 +45,15 @@ end note
 Store --> Handler: saved successfully
 deactivate Store
 Handler -> Item: applyReturnAssessment(assessed)
+activate Item
+Item --> Handler
+deactivate Item
 Handler -> Loan: completeReturn(assessment)
 activate Loan
 Loan -> Item: setLoanId(null)
+activate Item
+Item --> Loan
+deactivate Item
 note over Loan, Item
 Clears the active loan flag.
 Serviceability still controls availability.
