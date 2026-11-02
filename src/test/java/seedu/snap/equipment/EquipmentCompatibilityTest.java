@@ -173,13 +173,13 @@ class EquipmentCompatibilityTest {
         EquipmentHandler originalHandler = new EquipmentHandler(file);
 
         originalHandler.addEquipment(
-                "add i/Camera id/E001 type/camera cond/5 "
+                "eqm-add name/Camera e/E001 type/camera cond/5 "
                         + "sensor/Full frame mount/Canon RF");
         originalHandler.addEquipment(
-                "add i/Compatible Lens id/E002 type/lens cond/5 "
+                "eqm-add name/Compatible Lens e/E002 type/lens cond/5 "
                         + "mount/Canon RF sensor/Full frame");
         originalHandler.addEquipment(
-                "add i/Incompatible Lens id/E003 type/lens cond/5 "
+                "eqm-add name/Incompatible Lens e/E003 type/lens cond/5 "
                         + "mount/Nikon Z sensor/Full frame");
 
         EquipmentHandler reloadedHandler = new EquipmentHandler(file);

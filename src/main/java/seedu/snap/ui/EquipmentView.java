@@ -26,7 +26,7 @@ public final class EquipmentView {
     public static void printInventory(List<Equipment> items) {
         printList(items, "Equipment", "No equipment in the inventory.");
         if (items.isEmpty()) {
-            System.out.println("Add an item: add i/Camera id/E001 type/camera cond/1");
+            System.out.println("Add an item: eqm-add name/Camera e/E001 type/camera cond/1");
         }
     }
 
@@ -49,7 +49,7 @@ public final class EquipmentView {
                         Integer.toString(item.getCondition()), status(item));
             }
             System.out.println(TABLE_BORDER);
-            System.out.println("Names ending in ... are shortened. Use show id/<ID> for full details.");
+            System.out.println("Names ending in ... are shortened. Use eqm-show e/<ID> for full details.");
         }
         System.out.println(items.size() + " equipment " + (items.size() == 1 ? "item." : "items."));
     }

@@ -35,7 +35,8 @@ class EquipmentViewTest {
     @Test
     void inventory_longNameAndRemarks_keepsOnlyBoundedSummaryColumns() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
-        handler.addEquipment("add i/" + "A".repeat(100) + " id/E001 type/camera cond/10 remarks/" + "r".repeat(200));
+        handler.addEquipment("eqm-add name/" + "A".repeat(100)
+                + " e/E001 type/camera cond/10 remarks/" + "r".repeat(200));
 
         handler.viewAllEquipment();
 
@@ -49,17 +50,17 @@ class EquipmentViewTest {
         assertTrue(rows.getLast().contains("A".repeat(45) + "..."));
         assertFalse(printed().contains("sensor/"));
         assertFalse(printed().contains("r".repeat(20)));
-        assertTrue(printed().contains("show id/<ID>"));
+        assertTrue(printed().contains("eqm-show e/<ID>"));
         assertTrue(printed().contains("1 equipment item."));
     }
 
     @Test
     void inventory_wideAndJoinedUnicodeNames_preservesGraphemesAndColumnWidths() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
-        handler.addEquipment("add i/" + "相".repeat(30) + " id/E001 type/camera cond/1");
-        handler.addEquipment("add i/" + "😀".repeat(26) + " id/E002 type/lens cond/2");
-        handler.addEquipment("add i/" + "e\u0301".repeat(50) + " id/E003 type/battery cond/3");
-        handler.addEquipment("add i/" + "👩‍👩‍👧‍👦".repeat(8) + " id/E004 type/tripod cond/4");
+        handler.addEquipment("eqm-add name/" + "相".repeat(30) + " e/E001 type/camera cond/1");
+        handler.addEquipment("eqm-add name/" + "😀".repeat(26) + " e/E002 type/lens cond/2");
+        handler.addEquipment("eqm-add name/" + "e\u0301".repeat(50) + " e/E003 type/battery cond/3");
+        handler.addEquipment("eqm-add name/" + "👩‍👩‍👧‍👦".repeat(8) + " e/E004 type/tripod cond/4");
 
         handler.viewAllEquipment();
 
@@ -74,7 +75,7 @@ class EquipmentViewTest {
     @Test
     void inventory_controlCharacters_areVisibleWithoutCreatingExtraRows() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
-        handler.addEquipment("add i/Camera\t\u001b[31m id/E001 type/camera cond/1");
+        handler.addEquipment("eqm-add name/Camera\t\u001b[31m e/E001 type/camera cond/1");
 
         handler.viewAllEquipment();
 
@@ -87,7 +88,7 @@ class EquipmentViewTest {
     @Test
     void inventory_pipeInName_keepsTableColumnsAndOriginalDetails() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
-        Equipment item = handler.addEquipment("add i/Camera | Kit id/E001 type/camera cond/1");
+        Equipment item = handler.addEquipment("eqm-add name/Camera | Kit e/E001 type/camera cond/1");
 
         handler.viewAllEquipment();
 
@@ -107,7 +108,7 @@ class EquipmentViewTest {
         assertEquals("Camera | Kit", item.getItemName());
         output.reset();
 
-        handler.showEquipment("show id/E001");
+        handler.showEquipment("eqm-show e/E001");
 
         assertEquals("Camera | Kit", field("Name"));
     }
@@ -115,8 +116,8 @@ class EquipmentViewTest {
     @Test
     void inventory_andFilteredResults_useIdenticalTablesInOriginalOrder() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
-        handler.addEquipment("add i/Camera id/E002 type/camera cond/1");
-        handler.addEquipment("add i/Lens id/E001 type/lens cond/2");
+        handler.addEquipment("eqm-add name/Camera e/E002 type/camera cond/1");
+        handler.addEquipment("eqm-add name/Lens e/E001 type/lens cond/2");
         handler.viewAllEquipment();
         List<String> inventoryRows = printed().lines().skip(1).toList();
         output.reset();
@@ -152,11 +153,11 @@ class EquipmentViewTest {
         String name = "A".repeat(100);
         String details = "S".repeat(100);
         String remarks = "r".repeat(98) + "  " + "R".repeat(100);
-        Equipment item = handler.addEquipment("add i/" + name + " id/E001 type/camera cond/8 sensor/" + details
+        Equipment item = handler.addEquipment("eqm-add name/" + name + " e/E001 type/camera cond/8 sensor/" + details
                 + " mount/RF thread/1-4 battery/LP-E6 damage/OTHER remarks/" + remarks);
         item.setLoanId("L007");
 
-        handler.showEquipment("show id/E001");
+        handler.showEquipment("eqm-show e/E001");
 
         assertEquals(name, field("Name"));
         assertEquals(details, field("Sensor format"));
@@ -173,20 +174,20 @@ class EquipmentViewTest {
     @Test
     void details_otherSubtypesExposeCompatibilityAndDefaults() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
-        handler.addEquipment("add i/Lens id/E001 type/lens cond/2 zoom/24-70 mount/RF sensor/APS-C");
-        handler.addEquipment("add i/Battery id/E002 type/battery cond/3 capacity/2000mAh battery/LP-E6");
-        handler.addEquipment("add i/Tripod id/E003 type/tripod cond/4");
+        handler.addEquipment("eqm-add name/Lens e/E001 type/lens cond/2 zoom/24-70 mount/RF sensor/APS-C");
+        handler.addEquipment("eqm-add name/Battery e/E002 type/battery cond/3 capacity/2000mAh battery/LP-E6");
+        handler.addEquipment("eqm-add name/Tripod e/E003 type/tripod cond/4");
 
-        handler.showEquipment("show id/E001");
+        handler.showEquipment("eqm-show e/E001");
         assertTrue(printed().contains("Zoom range: 24-70"));
         assertTrue(printed().contains("Lens mount: RF"));
         assertTrue(printed().contains("Sensor format: APS-C"));
         output.reset();
-        handler.showEquipment("show id/E002");
+        handler.showEquipment("eqm-show e/E002");
         assertTrue(printed().contains("Capacity: 2000mAh"));
         assertTrue(printed().contains("Battery type: LP-E6"));
         output.reset();
-        handler.showEquipment("show id/E003");
+        handler.showEquipment("eqm-show e/E003");
         assertTrue(printed().contains("Thread: unspecified"));
         assertTrue(printed().contains("Damage: NONE"));
         assertTrue(printed().contains("Remarks: (none)"));

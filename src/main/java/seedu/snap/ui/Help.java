@@ -11,6 +11,7 @@ import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.Lens;
 import seedu.snap.equipment.Tripod;
 import seedu.snap.maintenance.MaintenanceRecord;
+import seedu.snap.parser.CommandAliases;
 
 /** Provides command help without reading or changing application records. */
 public final class Help {
@@ -51,12 +52,10 @@ public final class Help {
         if (normalised.equals("all")) {
             return TEXT;
         }
-        if (normalised.equals("list member")) {
-            normalised = "list borrower";
-        }
+        String canonicalTopic = CommandAliases.canonicalCommand(normalised);
         for (CommandHelp command : COMMANDS) {
-            if (command.command().equals(normalised)) {
-                return formatReference(command.text(), true) + LINE_SEPARATOR + OVERVIEW;
+            if (command.command().equals(canonicalTopic)) {
+                return formatReference(command.text(), true, command.alias()) + LINE_SEPARATOR + OVERVIEW;
             }
         }
         return ConsoleOutput.formatError("Unknown help topic. Choose a command from the menu.", colourErrors)
@@ -81,6 +80,9 @@ public final class Help {
 
                 Commands and field prefixes use exact lowercase spelling. Use spaces as shown in each format.
 
+                Full command names are recommended for new users and discoverability. Short aliases are provided for
+                experienced or power users who find the full names cumbersome after learning the command set.
+
                 Equipment IDs use E001-E999, loan IDs use L001-L999, and bundle IDs use B001-B999.
                 Borrower IDs use U000-U999, with U standing for user.
                 ID prefixes are case-insensitive in commands; listings and saved data always use uppercase IDs.
@@ -99,11 +101,12 @@ public final class Help {
     /** Keeps each command's description in one immutable entry for every help view. */
     private static List<CommandHelp> createCommands() {
         return List.of(
-                new CommandHelp("add", "Equipment", lineEndings(String.format(Locale.ROOT, """
-                        ADD EQUIPMENT
-                        Format: add i/<NAME> id/<ID> type/<TYPE> cond/<N> [TYPE DETAIL] [damage/<DAMAGE>] \
+                new CommandHelp("eqm-add", "Equipment", lineEndings(String.format(Locale.ROOT, """
+                        EQM-ADD
+                        Format: eqm-add name/<NAME> e/<ID> type/<TYPE> cond/<N> [TYPE DETAIL] [damage/<DAMAGE>] \
                         [remarks/<TEXT>]
-                        Example: add i/Canon EOS R10 id/E001 type/camera cond/1 sensor/APS-C mount/Canon RF damage/NONE
+                        Example: eqm-add name/Canon EOS R10 e/E001 type/camera cond/1 sensor/APS-C \
+                        mount/Canon RF damage/NONE
                         Name, unused Item ID, type and condition are required, in that order.
 
                         Type and damage values are case-insensitive. Use the field and damage list for the type:
@@ -126,18 +129,19 @@ public final class Help {
                         damageValues(Camera.CameraDamage.values()),
                         damageValues(Lens.LensDamage.values()), damageValues(Battery.BatteryDamage.values()),
                         damageValues(Tripod.TripodDamage.values())))),
-                new CommandHelp("list", "Equipment", lineEndings("""
-                        LIST EQUIPMENT
-                        Format: list
-                        Example: list
+                new CommandHelp("eqm-list", "Equipment", lineEndings("""
+                        EQM-LIST
+                        Format: eqm-list
+                        Example: eqm-list
                         Shows all equipment with Item ID, name, type, numeric condition and status in a compact table.
-                        Long names end in ...; use show id/<ID> for full values, subtype details, damage and remarks.
+                        Long names end in ...; use eqm-show e/<ID> for full values, subtype details, damage and
+                        remarks.
                         Status is Available, Loaned or Unserviceable.
                         """)),
-                new CommandHelp("show", "Equipment", lineEndings("""
-                        SHOW EQUIPMENT
-                        Format: show id/<ID>
-                        Example: show id/E001
+                new CommandHelp("eqm-show", "Equipment", lineEndings("""
+                        EQM-SHOW
+                        Format: eqm-show e/<ID>
+                        Example: eqm-show e/E001
                         Requires an existing Item ID from E001 to E999. Extra fields are not accepted.
                         Shows the full name, type, numeric condition, status, serviceability and active Loan ID.
                         Includes all subtype and compatibility fields, damage and remarks, without truncation.
@@ -145,18 +149,18 @@ public final class Help {
                         Tabs and control characters are shown as escapes so they cannot change the layout.
                         This read-only command does not change records, identifiers or saved data.
                         """)),
-                new CommandHelp("delete item", "Equipment", lineEndings("""
-                        DELETE EQUIPMENT
-                        Format: delete item/<ID>
-                        Example: delete item/E001
+                new CommandHelp("eqm-delete", "Equipment", lineEndings("""
+                        EQM-DELETE
+                        Format: eqm-delete e/<ID>
+                        Example: eqm-delete e/E001
                         Requires an existing Item ID. Active loans and bundle membership block deletion.
 
-                        Existing loans remain in list loans; a replacement using this Item ID has separate history.
+                        Existing loans remain in loan-list; a replacement using this Item ID has separate history.
                         """)),
-                new CommandHelp("loan", "Loans", lineEndings("""
-                        ADD LOAN
-                        Format: loan id/<ITEM ID> b/<BORROWER ID> [issued/<DD-MM-YY>] due/<DD-MM-YY>
-                        Example: loan id/E001 b/U002 issued/24-10-26 due/31-10-26
+                new CommandHelp("loan-add", "Loans", lineEndings("""
+                        LOAN-ADD
+                        Format: loan-add e/<ITEM ID> u/<BORROWER ID> [issued/<DD-MM-YY>] due/<DD-MM-YY>
+                        Example: loan-add e/E001 u/U002 issued/24-10-26 due/31-10-26
                         Item ID, borrower ID and due/ are required. Keep the displayed field order.
 
                         Omitted issued/ defaults to today's date in the application's local time zone, at midnight.
@@ -167,18 +171,16 @@ public final class Help {
                         Loan IDs are assigned automatically from L001 to L999 and are never reused after deletion.
                         Success shows the assigned Loan ID, item ID and name, borrower, issue date and due date.
                         """)),
-                new CommandHelp("return", "Loans", lineEndings(String.format(Locale.ROOT, """
-                        RETURN EQUIPMENT
-                        Format: return loan/<LOAN ID> serviceable/<yes|no> damage/<DAMAGE> [cond/<N>] [remarks/<TEXT>]
-                        Example: return loan/L001 serviceable/no damage/SENSOR_DAMAGE cond/8 remarks/Sensor needs repair
+                new CommandHelp("loan-return", "Loans", lineEndings(String.format(Locale.ROOT, """
+                        LOAN-RETURN
+                        Format: loan-return l/<LOAN ID> serviceable/<yes|no> damage/<DAMAGE> [cond/<N>] [remarks/<TEXT>]
+                        Example: loan-return l/L001 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair
                         Requires an active Loan ID and explicit serviceable/ and damage/ assessment, in that order.
                         Serviceable yes/no and subtype damage values are case-insensitive; use NONE for no damage.
+                        Optional cond/ sets a whole-number condition from 1 to 10.
+                        If omitted, the current numeric condition is retained.
 
                         Serviceability determines whether the item may be borrowed again; damage alone does not.
-
-                        Optional cond/ follows damage/ and is a whole number from 1 to 10.
-                        If omitted, the current numeric condition is retained in the return assessment.
-                        View loan/<LOAN ID> compares saved issue and return assessments, including after later loans.
 
                         Remarks/ must be last. For OTHER, provide non-empty text after trimming.
                         For other damage values, omitted or empty remarks clear prior notes.
@@ -198,19 +200,19 @@ public final class Help {
                         damageValues(Camera.CameraDamage.values()),
                         damageValues(Lens.LensDamage.values()), damageValues(Battery.BatteryDamage.values()),
                         damageValues(Tripod.TripodDamage.values())))),
-                new CommandHelp("delete loan", "Loans", lineEndings("""
-                        DELETE LOAN
-                        Format: delete loan/<LOAN ID>
-                        Example: delete loan/L001
+                new CommandHelp("loan-delete", "Loans", lineEndings("""
+                        LOAN-DELETE
+                        Format: loan-delete l/<LOAN ID>
+                        Example: loan-delete l/L001
                         Removes one loan record and its history. Deleting an active loan releases its equipment.
 
                         Deleting returned history leaves newer active loans unchanged. Deleted IDs are never reused.
                         """)),
-                new CommandHelp("update loan", "Loans", lineEndings("""
-                        UPDATE LOAN
-                        Format: update loan/<LOAN ID> [id/<ITEM ID>] [b/<BORROWER ID>] \
+                new CommandHelp("loan-update", "Loans", lineEndings("""
+                        LOAN-UPDATE
+                        Format: loan-update l/<LOAN ID> [e/<ITEM ID>] [u/<BORROWER ID>] \
                         [issued/<DD-MM-YY>] [due/<DD-MM-YY>]
-                        Example: update loan/L001 id/E002 b/U007 due/07-11-26
+                        Example: loan-update l/L001 e/E002 u/U007 due/07-11-26
                         Requires one existing active Loan ID and at least one update field,
                         in any order, each prefix once.
                         The Loan ID remains unchanged; omitted fields retain their current values.
@@ -221,59 +223,65 @@ public final class Help {
                         The issue date must not be later than the due date. Invalid updates leave records unchanged.
                         Successful updates are saved to data/loans.txt before live records change.
                         """)),
-                new CommandHelp("list loans", "Loans", lineEndings("""
-                        LIST LOANS
-                        Format: list loans
-                        Example: list loans
+                new CommandHelp("loan-list", "Loans", lineEndings("""
+                        LOAN-LIST
+                        Format: loan-list
+                        Example: loan-list
                         Shows Loan ID, Item ID, borrower, DD-MM-YY dates and Active, Returned or Overdue state.
                         Includes a result count and guidance when no loans are recorded.
                         """)),
-                new CommandHelp("view loan", "Loans", lineEndings("""
+                new CommandHelp("loan-view", "Loans", lineEndings("""
                         VIEW LOAN CONDITION ASSESSMENTS
-                        Format: view loan/<LOAN ID>
-                        Example: view loan/L001
+                        Format: loan-view l/<LOAN ID>
+                        Example: loan-view l/L001
                         Compares the saved issue and return type, condition, damage and remarks for one loan.
                         New loans record issue-time serviceability; both assessments keep their saved values.
                         Active loans show Not returned. Missing legacy assessments show Not recorded.
                         This read-only command does not change equipment, loans or saved records.
                         """)),
-                new CommandHelp("list borrower", "Loans", lineEndings("""
-                        EQUIPMENT HELD BY MEMBER
-                        Format: list borrower/<BORROWER ID>
-                        Example: list borrower/U002
-                        Format: list member/<MEMBER ID>
-                        Example: list member/U002
-                        The equivalent alias list member/<MEMBER ID> is also accepted.
+                new CommandHelp("loan-show", "Loans", lineEndings("""
+                        LOAN-SHOW
+                        Format: loan-show l/<LOAN ID>
+                        Example: loan-show l/L001
+                        Shows the equipment type, condition, damage and remarks recorded when the loan was issued.
+                        If loan-update assigns another item, this shows the replacement's condition at reassignment.
+                        Legacy loans without a saved snapshot report that the issue condition was not recorded.
+                        This read-only command does not change equipment, loans or saved records.
+                        """)),
+                new CommandHelp("loan-list-borrower", "Loans", lineEndings("""
+                        LOAN-LIST-BORROWER
+                        Format: loan-list-borrower u/<BORROWER ID>
+                        Example: loan-list-borrower u/U002
                         Shows only active equipment held by the selected borrower, with loan details.
                         Returned loans and loans held by other borrowers are excluded.
                         A borrower is known when at least one active or returned loan uses that ID.
                         An unknown borrower ID and a known borrower with no active loans receive separate messages.
-                        Uses the same dates, states, columns and result counts as list loans.
+                        Uses the same dates, states, columns and result counts as loan-list.
                         This read-only query does not change equipment, loans or saved files.
                         """)),
-                new CommandHelp("list overdue", "Loans", lineEndings("""
-                        LIST OVERDUE LOANS
-                        Format: list overdue
-                        Example: list overdue
+                new CommandHelp("loan-list-overdue", "Loans", lineEndings("""
+                        LOAN-LIST-OVERDUE
+                        Format: loan-list-overdue
+                        Example: loan-list-overdue
                         Shows active loans with due dates earlier than today's local date.
                         Returned loans and loans due today or later are excluded.
-                        Uses the same columns and DD-MM-YY dates as list loans, with Overdue state and a count.
+                        Uses the same columns and DD-MM-YY dates as loan-list, with Overdue state and a count.
                         This read-only command does not change any records.
                         """)),
-                new CommandHelp("history", "Loans", lineEndings("""
-                        ITEM LOAN HISTORY
-                        Format: history id/<ITEM ID>
-                        Example: history id/E001
+                new CommandHelp("eqm-loan-history", "Equipment", lineEndings("""
+                        EQM-LOAN-HISTORY
+                        Format: eqm-loan-history e/<ITEM ID>
+                        Example: eqm-loan-history e/E001
                         Requires an existing Item ID. Includes its physical item's active and returned loans.
                         Sorted by issue date, earliest first, then Loan ID. Reused Item IDs keep separate histories.
-                        Uses the same dates, states, columns and result counts as list loans.
+                        Uses the same dates, states, columns and result counts as loan-list.
 
-                        Older returned records without a proven item association remain available in list loans.
+                        Older returned records without a proven item association remain available in loan-list.
                         """)),
-                new CommandHelp("filter", "Equipment", lineEndings("""
-                        FILTER EQUIPMENT
-                        Format: filter [id/<ID>] [i/<NAME>] [type/<TYPE>] [cond/<N|MIN-MAX>] [status/<STATUS>]
-                        Example: filter type/camera cond/1-3 status/available
+                new CommandHelp("eqm-filter", "Equipment", lineEndings("""
+                        EQM-FILTER
+                        Format: eqm-filter [e/<ID>] [name/<NAME>] [type/<TYPE>] [cond/<N|MIN-MAX>] [status/<STATUS>]
+                        Example: eqm-filter type/camera cond/1-3 status/available
                         Supply at least one filter, in any order, with each prefix once. All filters must match (AND).
 
                         Names use case-insensitive partial matching; types use case-insensitive full matching.
@@ -281,22 +289,22 @@ public final class Help {
 
                         status/ accepts available or loaned, ignoring letter case.
                         Available excludes active loans and unserviceable items.
-                        Uses the same compact table as list. Use show id/<ID> for full equipment values.
+                        Uses the same compact table as eqm-list. Use eqm-show e/<ID> for full equipment values.
                         """)),
-                new CommandHelp("update", "Equipment", lineEndings("""
-                        UPDATE EQUIPMENT
-                        Format: update id/<ID> [i/<NAME>] [type/<TYPE>] [cond/<N>]
-                        Example: update id/E001 i/Studio camera cond/5
+                new CommandHelp("eqm-update", "Equipment", lineEndings("""
+                        EQM-UPDATE
+                        Format: eqm-update e/<ID> [name/<NAME>] [type/<TYPE>] [cond/<N>]
+                        Example: eqm-update e/E001 name/Studio camera cond/5
                         Requires an existing Item ID and at least one update field, in any order, each prefix once.
 
                         Omitted fields retain their current values. Type is fixed; type/ must match the current type,
                         ignoring letter case.
                         Updates retain subtype details, damage, remarks, serviceability, loans and bundle membership.
                         """)),
-                new CommandHelp("maintain", "Equipment", lineEndings(String.format(Locale.ROOT, """
-                        RECORD MAINTENANCE
-                        Format: maintain id/<ITEM ID> date/<DD-MM-YY> work/<DESCRIPTION> outcome/<OUTCOME>
-                        Example: maintain id/E001 date/27-10-26 work/Replaced battery outcome/Completed
+                new CommandHelp("eqm-maintain", "Equipment", lineEndings(String.format(Locale.ROOT, """
+                        EQM-MAINTAIN
+                        Format: eqm-maintain e/<ITEM ID> date/<DD-MM-YY> work/<DESCRIPTION> outcome/<OUTCOME>
+                        Example: eqm-maintain e/E001 date/27-10-26 work/Replaced battery outcome/Completed
                         Requires an existing Item ID, a valid maintenance date that is not in the future,
                         a non-empty work description and outcome, in the displayed field order.
                         Work descriptions and outcomes are trimmed and cannot contain tabs or line breaks.
@@ -307,20 +315,20 @@ public final class Help {
                         Recording maintenance does not change condition, damage, remarks or serviceability.
                         Success shows the Item ID, name, maintenance date, work description and outcome.
                         """, MaintenanceRecord.MAX_WORK_LENGTH, MaintenanceRecord.MAX_OUTCOME_LENGTH))),
-                new CommandHelp("add-bundle", "Bundles", lineEndings("""
-                        CREATE BUNDLE
-                        Format: add-bundle name/<NAME>
-                        Example: add-bundle name/Studio kit
+                new CommandHelp("bundle-create", "Bundles", lineEndings("""
+                        BUNDLE-CREATE
+                        Format: bundle-create name/<NAME>
+                        Example: bundle-create name/Studio kit
                         Requires a name of 1-100 characters. Bundle IDs are assigned automatically, B001-B999.
                         Names must be unique; name comparisons are case-sensitive.
 
-                        Save new bundles and additions with bye before exiting.
-                        Bundles and their equipment memberships are restored between application runs after bye.
+                        Save new bundles and additions with exit before exiting.
+                        Bundles and their equipment memberships are restored between application runs after exit.
                         """)),
-                new CommandHelp("add-to-bundle", "Bundles", lineEndings("""
-                        ADD EQUIPMENT TO BUNDLE
-                        Format: add-to-bundle id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]
-                        Example: add-to-bundle id/B001 E001 E002 E003
+                new CommandHelp("bundle-add-eqm", "Bundles", lineEndings("""
+                        BUNDLE-ADD-EQM
+                        Format: bundle-add-eqm b/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]
+                        Example: bundle-add-eqm b/B001 E001 E002 E003
                         Requires an existing bundle and at least one existing, serviceable, unloaned equipment item.
                         An item may appear only once per bundle. Each requested Item ID receives its own result.
                         Results use [OK] or [ERROR], followed by totals and the resulting bundle composition.
@@ -333,41 +341,41 @@ public final class Help {
                         camera/tripod uses thread/. Comparisons ignore letter case.
 
                         Items are checked in the supplied order. A rejected item does not undo earlier additions.
-                        Save additions with bye before exiting.
+                        Save additions with exit before exiting.
                         """)),
-                new CommandHelp("remove-from-bundle", "Bundles", lineEndings("""
-                        REMOVE EQUIPMENT FROM BUNDLE
-                        Format: remove-from-bundle id/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]
-                        Example: remove-from-bundle id/B001 E001
+                new CommandHelp("bundle-remove-eqm", "Bundles", lineEndings("""
+                        BUNDLE-REMOVE-EQM
+                        Format: bundle-remove-eqm b/<BUNDLE ID> <ITEM ID> [<ITEM ID> ...]
+                        Example: bundle-remove-eqm b/B001 E001
                         Requires an existing bundle and at least one Item ID. Each ID receives its own result.
                         Removes the requested memberships without deleting the equipment. This can make an item
                         eligible for deletion after it has been removed from every bundle.
                         Loaned and unserviceable items may be removed from a bundle.
                         Successful removals are saved immediately; a save failure restores the previous memberships.
                         """)),
-                new CommandHelp("list bundles", "Bundles", lineEndings("""
-                        LIST BUNDLES
-                        Format: list bundles
-                        Example: list bundles
+                new CommandHelp("bundle-list", "Bundles", lineEndings("""
+                        BUNDLE-LIST
+                        Format: bundle-list
+                        Example: bundle-list
                         Shows saved and current bundles, their equipment and whether their composition is complete.
                         Incomplete bundles list missing required types. Includes bundle and member counts.
-                        Save new bundles and additions with bye; successful removals are saved immediately.
+                        Save new bundles and additions with exit; successful removals are saved immediately.
                         """)),
-                new CommandHelp("history bundle", "Bundles", lineEndings("""
-                        BUNDLE LOAN HISTORY
-                        Format: history bundle/id/<BUNDLE ID>
-                        Example: history bundle/id/B001
-                        Format: history bundle/name/<NAME>
-                        Example: history bundle/name/Studio kit
+                new CommandHelp("bundle-history", "Bundles", lineEndings("""
+                        BUNDLE-HISTORY
+                        Format: bundle-history b/<BUNDLE ID>
+                        Example: bundle-history b/B001
+                        Format: bundle-history name/<NAME>
+                        Example: bundle-history name/Studio kit
                         Includes active and returned loans for every equipment item in the selected bundle.
                         Uses current bundle membership, including loans issued before an item joined the bundle.
                         Removing an item excludes its loans from this view. Names must match exactly, including case.
                         Results are sorted by issue date, earliest first, then Loan ID.
-                        Uses the same DD-MM-YY dates, states, columns and result counts as list loans.
+                        Uses the same DD-MM-YY dates, states, columns and result counts as loan-list.
                         An empty bundle history and unknown bundle are reported clearly.
                         """)),
                 new CommandHelp("backup", "General", lineEndings("""
-                        BACK UP DATA
+                        BACKUP
                         Format: backup path/<DIRECTORY>
                         Example: backup path/backups/session-1
                         Copies saved equipment.txt, loans.txt and loan-sequence.txt, plus backup-manifest.txt.
@@ -377,7 +385,7 @@ public final class Help {
                         Backup creation does not change live records. Paths may contain spaces after path/.
                         """)),
                 new CommandHelp("restore", "General", lineEndings("""
-                        RESTORE DATA
+                        RESTORE
                         Format: restore path/<DIRECTORY>
                         Example: restore path/backups/session-1
                         Requires an existing backup directory outside the live data directory.
@@ -385,9 +393,7 @@ public final class Help {
                         Successful restores replace equipment, loans and the next Loan ID with the saved backup.
                         All bundles and their saved memberships are cleared. Maintenance records remain unchanged.
                         A failed restore attempts to restore the previous saved records; report any rollback error.
-                        Restore is available after a startup loading error. Other commands are blocked except bye.
-                        If maintenance did not load, restore is blocked too. Exit with bye, preserve and repair
-                        or recover data/maintenance.txt separately, then restart.
+                        Restore is available after a startup loading error. Other commands are blocked except exit.
                         """)),
                 new CommandHelp("help", "General", lineEndings("""
                         HELP
@@ -395,10 +401,10 @@ public final class Help {
                         Example: help
                         Shows a compact command menu grouped by equipment, loans, bundles and general commands.
                         Format: help <COMMAND>
-                        Example: help loan
+                        Example: help loan-add
                         Shows one command's syntax, examples, required and optional fields, defaults and restrictions.
-                        Use the full command name for multiword topics, such as help list overdue or help delete loan.
-                        help list member is an alias for help list borrower.
+                        Use either a full command name or its alias for command topics, such as help loan-list-overdue
+                        or help llo.
                         Format: help all
                         Example: help all
                         Shows the complete command guide.
@@ -406,16 +412,13 @@ public final class Help {
                         Unknown topics report an error and show the command menu.
                         Help never changes records, identifiers or saved data, and never ends the session.
                         """)),
-                new CommandHelp("bye", "General", lineEndings("""
+                new CommandHelp("exit", "General", lineEndings("""
                         EXIT
-                        Format: bye
-                        Example: bye
+                        Format: exit
+                        Example: exit
                         Saves equipment, loans, maintenance records and bundles before exiting. A save failure keeps
-                        the application running; fix the reported file problem and retry bye.
-                        After a startup loading error, bye exits without saving the failed data set.
-                        If input ends, the same final save is attempted once. A failed save is reported and the
-                        application exits with unsaved changes instead of retrying without input.
-                        After a startup loading error, the end of input also exits without saving.
+                        the application running; fix the reported file problem and retry exit.
+                        After a startup loading error, exit exits without saving the failed data set.
                         """)));
     }
 
@@ -423,7 +426,8 @@ public final class Help {
     private static String createText() {
         String commandGap = LINE_SEPARATOR.repeat(2);
         return OVERVIEW + commandGap + COMMANDS.stream()
-                .map(command -> formatReference(command.text(), true)).collect(Collectors.joining(commandGap));
+                .map(command -> formatReference(command.text(), true, command.alias()))
+                .collect(Collectors.joining(commandGap));
     }
 
     /** Groups command names from the reference so the menu cannot omit an existing entry. */
@@ -434,11 +438,11 @@ public final class Help {
         menu.append(border);
         for (String group : List.of("Equipment", "Loans", "Bundles", "General")) {
             List<String> groupCommands = COMMANDS.stream().filter(command -> command.group().equals(group))
-                    .map(CommandHelp::command).toList();
+                    .map(CommandHelp::menuLabel).toList();
             appendMenuGroup(menu, group, groupCommands);
         }
         appendMenuRow(menu, "");
-        appendMenuRow(menu, "Type help <COMMAND> for details (for example, help loan or help list overdue).");
+        appendMenuRow(menu, "Type help <COMMAND OR ALIAS> for details (for example, help loan-add or help al).");
         appendMenuRow(menu, "Type help all for the complete reference.");
         return menu.append(border).toString();
     }
@@ -468,6 +472,11 @@ public final class Help {
 
     /** Separates headings, command examples and note paragraphs while preserving their content. */
     private static String formatReference(String text, boolean showNotesHeading) {
+        return formatReference(text, showNotesHeading, null);
+    }
+
+    /** Separates a command's alias from its title and command syntax. */
+    private static String formatReference(String text, boolean showNotesHeading, String alias) {
         List<String> lines = text.lines().toList();
         String title = lines.getFirst();
         StringBuilder formatted = new StringBuilder();
@@ -476,7 +485,11 @@ public final class Help {
         }
         formatted.append(title).append(LINE_SEPARATOR)
                 .append(showNotesHeading ? COMMAND_DIVIDER : "-".repeat(title.length()))
-                .append(LINE_SEPARATOR).append(LINE_SEPARATOR);
+                .append(LINE_SEPARATOR);
+        if (alias != null) {
+            formatted.append("Alias: ").append(alias).append(LINE_SEPARATOR);
+        }
+        formatted.append(LINE_SEPARATOR);
         boolean needsNotesHeading = showNotesHeading;
         int index = 1;
         while (index < lines.size()) {
@@ -553,5 +566,12 @@ public final class Help {
 
     /** Associates one exact command with its menu group and complete reference. */
     private record CommandHelp(String command, String group, String text) {
+        private String alias() {
+            return CommandAliases.aliasFor(command);
+        }
+
+        private String menuLabel() {
+            return command + " (" + alias() + ")";
+        }
     }
 }

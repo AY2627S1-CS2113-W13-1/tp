@@ -33,10 +33,10 @@ class MainTest {
 
     /** Verifies that user validation and diagnostic logging work independently of Java assertions. */
     private void verifyEquipmentDiagnostics(boolean areAssertionsEnabled) throws Exception {
-        String commands = "add i/Camera id/E001 type/camera cond/1\n"
-                + "add i/Tripod id/E002 type/tripod cond/11\n"
-                + "add i/\u2003 id/E002 type/camera cond/1\n"
-                + "add i/Camera id/E002 type/\u2003 cond/1\nbye\n";
+        String commands = "eqm-add name/Camera e/E001 type/camera cond/1\n"
+                + "eqm-add name/Tripod e/E002 type/tripod cond/11\n"
+                + "eqm-add name/\u2003 e/E002 type/camera cond/1\n"
+                + "eqm-add name/Camera e/E002 type/\u2003 cond/1\nexit\n";
         String output = runApplication(commands, areAssertionsEnabled);
         assertTrue(output.contains("#############"));
         assertTrue(output.indexOf("#############") < output.indexOf("Welcome to snAp."));
@@ -56,7 +56,7 @@ class MainTest {
 
     @Test
     void main_explicitUnicodeLogo_preservesBlocksThroughRedirectedOutput() throws Exception {
-        String output = runApplication("bye\n", true, "unicode");
+        String output = runApplication("exit\n", true, "unicode");
 
         assertEquals(441, output.chars().filter(character -> character == '█').count());
         assertTrue(output.indexOf("█████████████") < output.indexOf("Welcome to snAp."));
@@ -67,7 +67,7 @@ class MainTest {
     @Test
     void main_logDirectoryBlocked_warnsAndContinues() throws Exception {
         Files.writeString(temporaryDirectory.resolve("logs"), "This file prevents directory creation.");
-        String output = runApplication("add i/Camera id/E001 type/camera cond/1\nbye\n", true);
+        String output = runApplication("eqm-add name/Camera e/E001 type/camera cond/1\nexit\n", true);
         assertTrue(output.contains("Warning: Application logging is unavailable:"));
         assertTrue(output.contains("[OK] Equipment E001 added."));
         assertFalse(output.contains("Added equipment with item ID"));
@@ -75,9 +75,9 @@ class MainTest {
 
     @Test
     void main_equipmentAndLoanCommands_shareLogsWithoutConsoleDiagnostics() throws Exception {
-        String output = runApplication("add i/Camera id/E001 type/camera cond/1\n"
-                + "loan id/E001 b/U001 issued/15-10-26 due/16-10-26\n"
-                + "delete loan/L001\ndelete loan/L999\nbye\n", true);
+        String output = runApplication("eqm-add name/Camera e/E001 type/camera cond/1\n"
+                + "loan-add e/E001 u/U001 issued/15-10-26 due/16-10-26\n"
+                + "loan-delete l/L001\nloan-delete l/L999\nexit\n", true);
         assertTrue(output.contains("[OK] Equipment E001 added."));
         assertTrue(output.contains("[OK] Loan L001 deleted."));
         assertTrue(output.contains("No loan found for loan ID L999."));
@@ -94,9 +94,9 @@ class MainTest {
 
     @Test
     void main_restart_loadsPersistedEquipmentAndLoans() throws Exception {
-        String firstRun = runApplication("add i/Camera id/E001 type/camera cond/1"
+        String firstRun = runApplication("eqm-add name/Camera e/E001 type/camera cond/1"
                 + " sensor/Full frame damage/SHUTTER_FAULT\n"
-                + "loan id/E001 b/U002 issued/01-10-26 due/02-10-26\nbye\n", true);
+                + "loan-add e/E001 u/U002 issued/01-10-26 due/02-10-26\nexit\n", true);
 
         assertTrue(firstRun.contains("[OK] Equipment E001 added."));
         assertTrue(firstRun.contains("[OK] Loan L001 issued."));
@@ -107,7 +107,7 @@ class MainTest {
         assertTrue(Files.readString(temporaryDirectory.resolve("data/loans.txt"))
                 .contains("loan loanId/L001 id/E001 b/U002 issued/01-10-26 due/02-10-26 returned/false"));
 
-        String secondRun = runApplication("list\nlist loans\nshow id/E001\nbye\n", true);
+        String secondRun = runApplication("eqm-list\nloan-list\neqm-show e/E001\nexit\n", true);
 
         assertTrue(secondRun.contains("Welcome to snAp. Loaded 1 equipment record(s) and 1 loan(s)."));
         assertTrue(secondRun.contains("Camera"));
@@ -132,7 +132,7 @@ class MainTest {
                 + "loan id/E003 b/U030 issued/01-10-26 due/02-10-26 returned/false\n"
                 + "loan id/E004 b/U040 issued/01-10-26 due/02-10-26 returned/true\n");
 
-        String firstRun = runApplication("list\ndelete loan/L001\nbye\n", true);
+        String firstRun = runApplication("eqm-list\nloan-delete l/L001\nexit\n", true);
 
         assertTrue(firstRun.contains("Welcome to snAp. Loaded 4 equipment record(s) and 4 loan(s)."));
         assertTrue(firstRun.contains(equipmentRow("Camera", "E001", "camera", 7, "Loaned")));
@@ -141,7 +141,7 @@ class MainTest {
         assertTrue(firstRun.contains(equipmentRow("Tripod", "E004", "tripod", 4, "Available")));
         assertTrue(firstRun.contains("[OK] Loan L001 deleted."));
 
-        String secondRun = runApplication("list\nbye\n", true);
+        String secondRun = runApplication("eqm-list\nexit\n", true);
 
         assertTrue(secondRun.contains("Welcome to snAp. Loaded 4 equipment record(s) and 3 loan(s)."));
         assertTrue(secondRun.contains(equipmentRow("Camera", "E001", "camera", 7, "Available")));
@@ -167,7 +167,7 @@ class MainTest {
         Files.writeString(dataDirectory.resolve("equipment.txt"), "not an equipment record\n");
         Files.writeString(dataDirectory.resolve("loans.txt"), "not a loan record\n");
 
-        String output = runApplication("list\nbye\n", true);
+        String output = runApplication("eqm-list\nexit\n", true);
 
         assertTrue(output.contains("Could not load saved data: equipment.txt:"));
         assertTrue(output.contains("loans.txt: Invalid loan record on line 1:"));
@@ -187,7 +187,7 @@ class MainTest {
         Map<String, String> environment = Map.of("SNAP_COLOUR", colourMode,
                 "NO_COLOR", noColour == null ? "" : noColour, "TERM", term == null ? "" : term);
 
-        String output = runApplication("help unknown\nbye\n", true, null, environment);
+        String output = runApplication("help unknown\nexit\n", true, null, environment);
 
         String label = colourExpected ? "\u001b[31m[ERROR]\u001b[0m" : "[ERROR]";
         String error = label + " Unknown help topic. Choose a command from the menu.";
@@ -235,7 +235,7 @@ class MainTest {
         processBuilder.environment().putAll(environment);
         Process process = processBuilder.start();
         try {
-            assertTrue(process.waitFor(15, TimeUnit.SECONDS), "The application should exit after bye");
+            assertTrue(process.waitFor(15, TimeUnit.SECONDS), "The application should exit after the exit command");
             assertEquals(0, process.exitValue(), "Application failure; inspect " + outputFile);
             return Files.readString(outputFile, StandardCharsets.UTF_8);
         } finally {

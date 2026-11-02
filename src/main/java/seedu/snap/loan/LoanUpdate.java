@@ -14,8 +14,8 @@ import seedu.snap.exceptions.LoanUpdateUnsuccessful;
 /** Holds validated optional changes from an update-loan command before any records change. */
 record LoanUpdate(String loanId, String itemId, String borrowerId,
         LocalDateTime issuedDate, LocalDateTime dueDate) {
-    private static final String FORMAT = "Invalid format. Use: update loan/[LOAN ID] "
-            + "[id/[ITEM ID]] [b/[BORROWER ID]] [issued/DD-MM-YY] [due/DD-MM-YY].";
+    private static final String FORMAT = "Invalid format. Use: loan-update l/[LOAN ID] "
+            + "[e/[ITEM ID]] [u/[BORROWER ID]] [issued/DD-MM-YY] [due/DD-MM-YY].";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-uu")
             .withResolverStyle(ResolverStyle.STRICT);
 
@@ -26,12 +26,12 @@ record LoanUpdate(String loanId, String itemId, String borrowerId,
         }
         String trimmed = input.trim();
         String[] arguments = trimmed.isEmpty() ? new String[0] : trimmed.split("(?U)\\s+");
-        if (arguments.length < 3 || !arguments[0].equals("update")
-                || !arguments[1].startsWith("loan/")) {
+        if (arguments.length < 3 || !arguments[0].equals("loan-update")
+                || !arguments[1].startsWith("l/")) {
             throw new LoanUpdateUnsuccessful(FORMAT);
         }
 
-        String loanId = parseIdentifier(arguments[1].substring("loan/".length()), "loan ID",
+        String loanId = parseIdentifier(arguments[1].substring("l/".length()), "loan ID",
                 Identifier.Type.LOAN);
         String itemId = null;
         String borrowerId = null;
@@ -42,13 +42,13 @@ record LoanUpdate(String loanId, String itemId, String borrowerId,
             String argument = arguments[i];
             String field;
             String value;
-            if (argument.startsWith("id/")) {
+            if (argument.startsWith("e/")) {
                 field = "id";
-                value = argument.substring("id/".length());
+                value = argument.substring("e/".length());
                 itemId = parseIdentifier(value, "item ID", Identifier.Type.EQUIPMENT);
-            } else if (argument.startsWith("b/")) {
+            } else if (argument.startsWith("u/")) {
                 field = "b";
-                value = argument.substring("b/".length());
+                value = argument.substring("u/".length());
                 borrowerId = parseIdentifier(value, "borrower ID", Identifier.Type.BORROWER);
             } else if (argument.startsWith("issued/")) {
                 field = "issued";

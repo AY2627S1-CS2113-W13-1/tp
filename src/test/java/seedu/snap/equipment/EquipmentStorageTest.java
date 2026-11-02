@@ -79,10 +79,10 @@ class EquipmentStorageTest {
         Path file = temporaryDirectory.resolve("equipment.txt");
         EquipmentHandler handler = new EquipmentHandler(file);
         String[] commands = {
-            "add i/Camera id/E001 type/CAMERA cond/7 sensor/Full frame damage/SHUTTER_FAULT",
-            "add i/Lens id/E002 type/lens cond/6 zoom/24 to 70 mm damage/AUTOFOCUS_FAULT",
-            "add i/Battery id/E003 type/battery cond/5 capacity/2000 mAh damage/CONTACT_DAMAGE",
-            "add i/Tripod id/E004 type/tripod cond/4 thread/Quarter inch damage/HEAD_FAULT"
+            "eqm-add name/Camera e/E001 type/CAMERA cond/7 sensor/Full frame damage/SHUTTER_FAULT",
+            "eqm-add name/Lens e/E002 type/lens cond/6 zoom/24 to 70 mm damage/AUTOFOCUS_FAULT",
+            "eqm-add name/Battery e/E003 type/battery cond/5 capacity/2000 mAh damage/CONTACT_DAMAGE",
+            "eqm-add name/Tripod e/E004 type/tripod cond/4 thread/Quarter inch damage/HEAD_FAULT"
         };
         for (String command : commands) {
             handler.addEquipment(command);
@@ -152,7 +152,7 @@ class EquipmentStorageTest {
     void load_invalidSubtypeDetails_reportsLineAndPreservesCurrentInventory() throws Exception {
         Path file = temporaryDirectory.resolve("equipment.txt");
         EquipmentHandler handler = new EquipmentHandler(file);
-        Equipment original = handler.addEquipment("add i/Original camera id/E001 type/camera cond/1");
+        Equipment original = handler.addEquipment("eqm-add name/Original camera e/E001 type/camera cond/1");
         Files.writeString(file, "add i/Camera id/E001 type/camera cond/1\n"
                 + "add i/Lens id/E002 type/lens cond/5 damage/SHUTTER_FAULT\n");
 
@@ -170,7 +170,7 @@ class EquipmentStorageTest {
         EquipmentHandler handler = new EquipmentHandler(destination);
 
         assertThrows(EquipmentAdditionUnsuccessful.class,
-                () -> handler.addEquipment("add i/Camera id/E001 type/camera cond/5 sensor/Full frame"));
+                () -> handler.addEquipment("eqm-add name/Camera e/E001 type/camera cond/5 sensor/Full frame"));
 
         assertTrue(handler.getEquipmentList().isEmpty());
         assertEquals("keep this record", Files.readString(destination.resolve("keep.txt")));

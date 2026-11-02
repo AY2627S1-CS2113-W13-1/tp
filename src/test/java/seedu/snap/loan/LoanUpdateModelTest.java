@@ -17,8 +17,8 @@ class LoanUpdateModelTest {
     @Test
     void applyUpdate_rebindsActiveLoanAndPreservesLoanId() throws Exception {
         EquipmentHandler inventory = new EquipmentHandler();
-        Equipment originalEquipment = inventory.addEquipment("add i/Camera id/E001 type/camera cond/4");
-        Equipment replacementEquipment = inventory.addEquipment("add i/Tripod id/E002 type/tripod cond/5");
+        Equipment originalEquipment = inventory.addEquipment("eqm-add name/Camera e/E001 type/camera cond/4");
+        Equipment replacementEquipment = inventory.addEquipment("eqm-add name/Tripod e/E002 type/tripod cond/5");
         Loan original = new Loan("L004", originalEquipment, "U002",
                 LocalDateTime.of(2026, 10, 1, 0, 0), LocalDateTime.of(2026, 10, 2, 0, 0));
         original.attachEquipment(originalEquipment);
@@ -43,8 +43,8 @@ class LoanUpdateModelTest {
     @Test
     void applyUpdate_proposalWithDifferentLoanId_failsAssertion() throws Exception {
         EquipmentHandler inventory = new EquipmentHandler();
-        Equipment originalEquipment = inventory.addEquipment("add i/Camera id/E001 type/camera cond/4");
-        Equipment replacementEquipment = inventory.addEquipment("add i/Tripod id/E002 type/tripod cond/5");
+        Equipment originalEquipment = inventory.addEquipment("eqm-add name/Camera e/E001 type/camera cond/4");
+        Equipment replacementEquipment = inventory.addEquipment("eqm-add name/Tripod e/E002 type/tripod cond/5");
         Loan original = new Loan("L004", originalEquipment, "U002",
                 LocalDateTime.of(2026, 10, 1, 0, 0), LocalDateTime.of(2026, 10, 2, 0, 0));
         original.attachEquipment(originalEquipment);
@@ -61,7 +61,7 @@ class LoanUpdateModelTest {
     @Test
     void applyUpdate_returnedLoan_failsAssertion() throws Exception {
         EquipmentHandler inventory = new EquipmentHandler();
-        Equipment originalEquipment = inventory.addEquipment("add i/Camera id/E001 type/camera cond/4");
+        Equipment originalEquipment = inventory.addEquipment("eqm-add name/Camera e/E001 type/camera cond/4");
         Loan original = new Loan("L004", originalEquipment, "U002",
                 LocalDateTime.of(2026, 10, 1, 0, 0), LocalDateTime.of(2026, 10, 2, 0, 0));
         original.attachEquipment(originalEquipment);

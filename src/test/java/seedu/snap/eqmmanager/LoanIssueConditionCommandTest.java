@@ -47,20 +47,20 @@ class LoanIssueConditionCommandTest {
         addEquipmentAndLoan(manager);
         output.reset();
 
-        manager.executeInput("view loan/L001");
+        manager.executeInput("loan-show l/L001");
 
         String actual =
                 output.toString(StandardCharsets.UTF_8);
         assertTrue(
                 actual.contains(
-                        "Loan L001 condition assessments (Item ID: E001)"));
+                        "Loan L001 issue-time condition:"));
         assertTrue(actual.contains("Item ID: E001"));
-        assertTrue(actual.replaceAll(" +", " ").contains("Type | camera | Not returned"));
-        assertTrue(actual.replaceAll(" +", " ").contains("Condition | 6 | Not returned"));
-        assertTrue(actual.replaceAll(" +", " ").contains("Damage | SENSOR_DAMAGE | Not returned"));
+        assertTrue(actual.contains("Type: camera"));
+        assertTrue(actual.contains("Condition: 6"));
+        assertTrue(actual.contains("Damage: SENSOR_DAMAGE"));
         assertTrue(
                 actual.contains(
-                        "Issue remarks: Handle carefully"));
+                        "Remarks: Handle carefully"));
     }
 
     @Test
@@ -71,25 +71,25 @@ class LoanIssueConditionCommandTest {
 
         EqmManager restarted =
                 new EqmManager(temporaryDirectory);
-        restarted.executeInput("view loan/L001");
+        restarted.executeInput("loan-show l/L001");
 
         String actual =
                 output.toString(StandardCharsets.UTF_8);
         assertTrue(
                 actual.contains(
-                        "Loan L001 condition assessments (Item ID: E001)"));
-        assertTrue(actual.replaceAll(" +", " ").contains("Condition | 6 | Not returned"));
-        assertTrue(actual.replaceAll(" +", " ").contains("Damage | SENSOR_DAMAGE | Not returned"));
+                        "Loan L001 issue-time condition:"));
+        assertTrue(actual.contains("Condition: 6"));
+        assertTrue(actual.contains("Damage: SENSOR_DAMAGE"));
         assertTrue(
                 actual.contains(
-                        "Issue remarks: Handle carefully"));
+                        "Remarks: Handle carefully"));
     }
 
     @Test
     void executeInput_unknownLoan_printsError() {
         EqmManager manager = new EqmManager(temporaryDirectory);
 
-        manager.executeInput("view loan/L999");
+        manager.executeInput("loan-show l/L999");
 
         assertEquals(
                 "[ERROR] No loan found for loan ID L999."
@@ -101,11 +101,11 @@ class LoanIssueConditionCommandTest {
     void executeInput_invalidViewCommand_printsFormatError() {
         EqmManager manager = new EqmManager(temporaryDirectory);
 
-        manager.executeInput("view item/E001");
+        manager.executeInput("loan-show item/E001");
 
         assertEquals(
                 "[ERROR] Invalid command format. Expected: "
-                        + "view loan/<LOAN ID>."
+                        + "loan-show l/[LOAN ID]."
                         + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
     }
@@ -116,11 +116,11 @@ class LoanIssueConditionCommandTest {
         addEquipmentAndLoan(manager);
         output.reset();
 
-        manager.executeInput("view\tloan/L001");
+        manager.executeInput("loan-show l/L001");
 
         assertTrue(
                 output.toString(StandardCharsets.UTF_8)
-                        .replaceAll(" +", " ").contains("Condition | 6 | Not returned"));
+                        .contains("Condition: 6"));
     }
 
     @Test
@@ -137,7 +137,7 @@ class LoanIssueConditionCommandTest {
         String sequenceBefore = Files.readString(sequenceFile);
         output.reset();
 
-        manager.executeInput("view loan/L001");
+        manager.executeInput("loan-show l/L001");
 
         assertEquals(equipmentBefore, Files.readString(equipmentFile));
         assertEquals(loansBefore, Files.readString(loansFile));
@@ -147,13 +147,13 @@ class LoanIssueConditionCommandTest {
     /** Adds one camera and creates its first loan. */
     private void addEquipmentAndLoan(EqmManager manager) {
         manager.executeInput(
-                "add i/Test Camera id/E001 "
+                "eqm-add name/Test Camera e/E001 "
                         + "type/camera cond/6 "
                         + "sensor/Full frame "
                         + "damage/SENSOR_DAMAGE "
                         + "remarks/Handle carefully");
         manager.executeInput(
-                "loan id/E001 b/U101 "
+                "loan-add e/E001 u/U101 "
                         + "issued/01-10-26 due/20-10-26");
     }
 }

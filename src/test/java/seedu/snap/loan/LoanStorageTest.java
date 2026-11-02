@@ -28,7 +28,8 @@ import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 
 /** Tests loan storage validation and failure-safe file replacement. */
 class LoanStorageTest {
-    private static final String LOAN = "loan id/E001 b/U002 issued/01-10-26 due/02-10-26";
+    private static final String LOAN = "loan-add e/E001 u/U002 issued/01-10-26 due/02-10-26";
+    private static final String LEGACY_LOAN = "loan id/E001 b/U002 issued/01-10-26 due/02-10-26";
     @TempDir
     private Path temporaryDirectory;
 
@@ -119,7 +120,7 @@ class LoanStorageTest {
         Path file = temporaryDirectory.resolve("loans.txt");
         Files.writeString(file,
                 "loan id/E001 b/U002 issued/01-09-26 due/02-09-26 returned/true\n"
-                + "loan id/E999 b/U003 issued/01-09-26 due/02-09-26 returned/true\n" + LOAN + "\n");
+                + "loan id/E999 b/U003 issued/01-09-26 due/02-09-26 returned/true\n" + LEGACY_LOAN + "\n");
         LoanHandler handler = new LoanHandler(equipment, file);
 
         handler.loadFromStorage();
@@ -130,7 +131,7 @@ class LoanStorageTest {
         assertTrue(history.isReturned());
         history.setReturned(true);
         assertThrows(IllegalStateException.class, () -> history.setReturned(false));
-        handler.deleteLoan("delete loan/L001");
+        handler.deleteLoan("loan-delete l/L001");
         assertTrue(replacement.isLoaned());
         assertEquals(2, handler.getLoanCount());
         assertTrue(Files.readString(file).contains("id/E999"));
@@ -146,9 +147,9 @@ class LoanStorageTest {
         Path file = temporaryDirectory.resolve("loans.txt");
         LoanHandler handler = new LoanHandler(equipment, file);
         Loan original = handler.addLoan(LOAN);
-        String other = LOAN.replace("id/E001", "id/E002");
+        String other = LEGACY_LOAN.replace("id/E001", "id/E002");
         String[] invalidRecords = {
-            other + "\n" + LOAN.replace("id/E001", "id/E999") + "\n",
+            other + "\n" + LEGACY_LOAN.replace("id/E001", "id/E999") + "\n",
             other + "\n" + other + "\n"
         };
 
@@ -177,7 +178,7 @@ class LoanStorageTest {
         Path file = temporaryDirectory.resolve("loans.txt");
         LoanHandler handler = new LoanHandler(equipment, file);
         Loan original = handler.addLoan(LOAN);
-        Files.writeString(file, LOAN.replace("id/E001", "id/E002") + "\n");
+        Files.writeString(file, LEGACY_LOAN.replace("id/E001", "id/E002") + "\n");
 
         IOException error = assertThrows(IOException.class, handler::loadFromStorage);
 
@@ -191,7 +192,7 @@ class LoanStorageTest {
     @Test
     void load_replacesEquipmentAndLoans_detachesOldReferences() throws Exception {
         EquipmentHandler equipment = new EquipmentHandler(temporaryDirectory.resolve("equipment.txt"));
-        Equipment previousItem = equipment.addEquipment("add i/Camera id/E001 type/camera cond/5");
+        Equipment previousItem = equipment.addEquipment("eqm-add name/Camera e/E001 type/camera cond/5");
         LoanHandler handler = new LoanHandler(equipment, temporaryDirectory.resolve("loans.txt"));
         Loan previousLoan = handler.addLoan(LOAN);
 
@@ -240,7 +241,7 @@ class LoanStorageTest {
         Files.writeString(destination.resolve("keep.txt"), "keep this record");
 
         LoanDeletionUnsuccessful error = assertThrows(LoanDeletionUnsuccessful.class,
-                () -> handler.deleteLoan("delete loan/L001"));
+                () -> handler.deleteLoan("loan-delete l/L001"));
         assertTrue(error.getMessage().startsWith("Could not save loan deletion:"));
 
         assertTrue(camera.isLoaned());
@@ -259,14 +260,14 @@ class LoanStorageTest {
         LoanHandler handler = new LoanHandler(equipment, destination);
         Loan history = handler.addLoan(LOAN);
         history.setReturned(true);
-        Loan active = handler.addLoan("loan id/E001 b/U003 issued/03-10-26 due/04-10-26");
+        Loan active = handler.addLoan("loan-add e/E001 u/U003 issued/03-10-26 due/04-10-26");
         Files.delete(destination);
         Files.createDirectory(destination);
         Path sentinel = destination.resolve("keep.txt");
         Files.writeString(sentinel, "keep this record");
 
         LoanDeletionUnsuccessful error = assertThrows(LoanDeletionUnsuccessful.class,
-                () -> handler.deleteLoan("delete loan/L001"));
+                () -> handler.deleteLoan("loan-delete l/L001"));
 
         assertTrue(error.getMessage().startsWith("Could not save loan deletion:"));
         assertEquals(List.of(history, active), handler.getLoanList());
@@ -276,7 +277,7 @@ class LoanStorageTest {
         Files.delete(sentinel);
         Files.delete(destination);
 
-        assertSame(history, handler.deleteLoan("delete loan/L001"));
+        assertSame(history, handler.deleteLoan("loan-delete l/L001"));
         assertEquals(List.of(active), handler.getLoanList());
         assertTrue(camera.isLoaned());
         List<Loan> saved = LoanStorage.load(destination);
@@ -291,7 +292,7 @@ class LoanStorageTest {
         EquipmentHandler equipment = new EquipmentHandler();
         for (String id : ids) {
             String typedId = id.matches("[0-9]{3}") ? "E" + id : id;
-            equipment.addEquipment("add i/Camera " + typedId + " id/" + typedId + " type/camera cond/5");
+            equipment.addEquipment("eqm-add name/Camera " + typedId + " e/" + typedId + " type/camera cond/5");
         }
         return equipment;
     }

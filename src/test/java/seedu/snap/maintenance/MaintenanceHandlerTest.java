@@ -23,7 +23,7 @@ import seedu.snap.exceptions.MaintenanceRecordUnsuccessful;
 
 /** Tests maintenance command validation, equipment identity binding, and persistence boundaries. */
 class MaintenanceHandlerTest {
-    private static final String ADD_CAMERA = "add i/Camera id/E001 type/camera cond/5";
+    private static final String ADD_CAMERA = "eqm-add name/Camera e/E001 type/camera cond/5";
     private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-10-27T12:00:00Z"), ZoneOffset.UTC);
 
     @TempDir
@@ -42,7 +42,7 @@ class MaintenanceHandlerTest {
         MaintenanceHandler handler = new MaintenanceHandler(equipment);
 
         MaintenanceRecord record = handler.addMaintenanceRecord(
-                "maintain id/E001 date/27-10-26 work/Replaced battery outcome/Completed");
+                "eqm-maintain e/E001 date/27-10-26 work/Replaced battery outcome/Completed");
 
         assertEquals(item.getRecordId(), record.getEquipmentRecordId());
         assertEquals(LocalDate.of(2026, 10, 27), record.getMaintenanceDate());
@@ -58,7 +58,7 @@ class MaintenanceHandlerTest {
         MaintenanceHandler handler = new MaintenanceHandler(equipment);
 
         MaintenanceRecord record = handler.addMaintenanceRecord(
-                "maintain id/e001 date/27-10-26 work/Checked outcome/Completed");
+                "eqm-maintain e/e001 date/27-10-26 work/Checked outcome/Completed");
 
         assertEquals(item.getRecordId(), record.getEquipmentRecordId());
     }
@@ -70,12 +70,12 @@ class MaintenanceHandlerTest {
         MaintenanceHandler handler = new MaintenanceHandler(equipment);
 
         String[] invalidCommands = {
-            "maintain",
-            "maintain id/E001 date/27-10-26 work/Repair",
-            "maintain id/E000 date/27-10-26 work/Repair outcome/Completed",
-            "maintain id/E001 date/31-02-26 work/Repair outcome/Completed",
-            "maintain id/E001 date/27-10-26 work/ outcome/Completed",
-            "maintain id/E001 date/27-10-26 work/Repair outcome/"
+            "eqm-maintain",
+            "eqm-maintain e/E001 date/27-10-26 work/Repair",
+            "eqm-maintain e/E000 date/27-10-26 work/Repair outcome/Completed",
+            "eqm-maintain e/E001 date/31-02-26 work/Repair outcome/Completed",
+            "eqm-maintain e/E001 date/27-10-26 work/ outcome/Completed",
+            "eqm-maintain e/E001 date/27-10-26 work/Repair outcome/"
         };
 
         for (String command : invalidCommands) {
@@ -93,7 +93,7 @@ class MaintenanceHandlerTest {
 
         MaintenanceRecordUnsuccessful exception = assertThrows(MaintenanceRecordUnsuccessful.class,
                 () -> handler.addMaintenanceRecord(
-                        "maintain id/E001 date/27-10-26 work/ outcome/Completed"));
+                        "eqm-maintain e/E001 date/27-10-26 work/ outcome/Completed"));
 
         assertTrue(exception.getMessage().startsWith("Maintenance work must be"));
         assertFalse(exception.getMessage().startsWith("Could not save"));
@@ -108,7 +108,7 @@ class MaintenanceHandlerTest {
 
         MaintenanceRecordUnsuccessful exception = assertThrows(MaintenanceRecordUnsuccessful.class,
                 () -> handler.addMaintenanceRecord(
-                        "maintain id/E001 date/28-10-26 work/Repair outcome/Planned"));
+                        "eqm-maintain e/E001 date/28-10-26 work/Repair outcome/Planned"));
 
         assertEquals("Maintenance date cannot be in the future.", exception.getMessage());
         assertTrue(handler.getMaintenanceRecords().isEmpty());
@@ -120,7 +120,7 @@ class MaintenanceHandlerTest {
 
         MaintenanceRecordUnsuccessful exception = assertThrows(MaintenanceRecordUnsuccessful.class,
                 () -> handler.addMaintenanceRecord(
-                        "maintain id/E001 date/27-10-26 work/Repair outcome/Completed"));
+                        "eqm-maintain e/E001 date/27-10-26 work/Repair outcome/Completed"));
 
         assertEquals("Equipment ID E001 does not exist.", exception.getMessage());
         assertTrue(handler.getMaintenanceRecords().isEmpty());
@@ -134,7 +134,7 @@ class MaintenanceHandlerTest {
         Equipment item = equipment.addEquipment(ADD_CAMERA);
         MaintenanceHandler handler = new MaintenanceHandler(equipment, maintenanceFile, FIXED_CLOCK);
 
-        handler.addMaintenanceRecord("maintain id/E001 date/27-10-26 work/Repair outcome/Completed");
+        handler.addMaintenanceRecord("eqm-maintain e/E001 date/27-10-26 work/Repair outcome/Completed");
 
         EquipmentHandler reloadedEquipment = new EquipmentHandler(equipmentFile);
         reloadedEquipment.loadFromStorage();
@@ -151,10 +151,10 @@ class MaintenanceHandlerTest {
         Equipment original = equipment.addEquipment(ADD_CAMERA);
         MaintenanceHandler handler = new MaintenanceHandler(equipment, null, FIXED_CLOCK);
 
-        handler.addMaintenanceRecord("maintain id/E001 date/27-10-26 work/Original repair outcome/Completed");
-        equipment.deleteEquipment("delete item/E001");
+        handler.addMaintenanceRecord("eqm-maintain e/E001 date/27-10-26 work/Original repair outcome/Completed");
+        equipment.deleteEquipment("eqm-delete e/E001");
         Equipment replacement = equipment.addEquipment(ADD_CAMERA);
-        handler.addMaintenanceRecord("maintain id/E001 date/27-10-26 work/Replacement repair outcome/Completed");
+        handler.addMaintenanceRecord("eqm-maintain e/E001 date/27-10-26 work/Replacement repair outcome/Completed");
 
         assertNotEquals(original.getRecordId(), replacement.getRecordId());
         assertEquals(original.getRecordId(), handler.getMaintenanceRecords().get(0).getEquipmentRecordId());
@@ -172,7 +172,7 @@ class MaintenanceHandlerTest {
 
         assertThrows(MaintenanceRecordUnsuccessful.class,
                 () -> handler.addMaintenanceRecord(
-                        "maintain id/E001 date/27-10-26 work/Repair outcome/Completed"));
+                        "eqm-maintain e/E001 date/27-10-26 work/Repair outcome/Completed"));
 
         assertTrue(handler.getMaintenanceRecords().isEmpty());
         assertEquals("keep this record", Files.readString(destination.resolve("keep.txt")));

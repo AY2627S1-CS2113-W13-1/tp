@@ -21,7 +21,7 @@ import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 /** Tests Battery compatibility parsing, display and persistence. */
 class BatteryCompatibilityIntegrationTest {
     private static final String FULL_BATTERY_COMMAND =
-            "add i/Camera Battery id/E201 type/battery cond/8 "
+            "eqm-add name/Camera Battery e/E201 type/battery cond/8 "
                     + "capacity/2000 mAh battery/Li-ion "
                     + "damage/NONE remarks/Charged";
 
@@ -46,7 +46,7 @@ class BatteryCompatibilityIntegrationTest {
         Battery battery = assertInstanceOf(
                 Battery.class,
                 EquipmentHandler.parseEquipment(
-                        "add i/Battery id/E202 "
+                        "eqm-add name/Battery e/E202 "
                                 + "type/battery cond/7"));
 
         assertEquals(
@@ -66,7 +66,7 @@ class BatteryCompatibilityIntegrationTest {
         Battery battery = assertInstanceOf(
                 Battery.class,
                 EquipmentHandler.parseEquipment(
-                        "add i/AA Battery id/E203 "
+                        "eqm-add name/AA Battery e/E203 "
                                 + "type/battery cond/6 battery/AA"));
 
         assertEquals(
@@ -81,13 +81,13 @@ class BatteryCompatibilityIntegrationTest {
     @Test
     void parseEquipment_invalidBatteryFields_throwException() {
         String repeatedType =
-                "add i/Battery id/E204 type/battery cond/5 "
+                "eqm-add name/Battery e/E204 type/battery cond/5 "
                         + "battery/AA battery/AAA";
         String wrongOrder =
-                "add i/Battery id/E205 type/battery cond/5 "
+                "eqm-add name/Battery e/E205 type/battery cond/5 "
                         + "battery/AA capacity/2000 mAh";
         String mountField =
-                "add i/Battery id/E206 type/battery cond/5 "
+                "eqm-add name/Battery e/E206 type/battery cond/5 "
                         + "mount/Canon RF";
 
         assertThrows(
@@ -157,7 +157,7 @@ class BatteryCompatibilityIntegrationTest {
 
         Battery updatedBattery = assertInstanceOf(
                 Battery.class,
-                handler.updateEquipment("update id/E201 cond/9"));
+                handler.updateEquipment("eqm-update e/E201 cond/9"));
 
         assertEquals(9, updatedBattery.getCondition());
         assertFullCompatibility(updatedBattery);
@@ -189,7 +189,7 @@ class BatteryCompatibilityIntegrationTest {
                             output,
                             true,
                             StandardCharsets.UTF_8));
-            handler.showEquipment("show id/E201");
+            handler.showEquipment("eqm-show e/E201");
         } finally {
             System.setOut(originalOutput);
         }

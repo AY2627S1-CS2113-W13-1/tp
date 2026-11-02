@@ -32,9 +32,9 @@ class LoanEquipmentIdentityStorageTest {
         Path equipmentFile = temporaryDirectory.resolve("equipment.txt");
         Path loanFile = temporaryDirectory.resolve("loans.txt");
         EquipmentHandler inventory = new EquipmentHandler(equipmentFile);
-        Equipment camera = inventory.addEquipment("add i/Camera id/E001 type/camera cond/4");
+        Equipment camera = inventory.addEquipment("eqm-add name/Camera e/E001 type/camera cond/4");
         LoanHandler handler = new LoanHandler(inventory, loanFile);
-        Loan original = handler.addLoan("loan id/E001 b/U111 issued/01-10-26 due/02-10-26");
+        Loan original = handler.addLoan("loan-add e/E001 u/U111 issued/01-10-26 due/02-10-26");
         String validLoans = Files.readString(loanFile);
         String invalid = "loan loanId/L001 id/E001 b/U111 issued/01-10-26 due/02-10-26 " + metadata + "\n";
         String equipmentBefore = Files.readString(equipmentFile);
@@ -46,7 +46,7 @@ class LoanEquipmentIdentityStorageTest {
 
         assertTrue(error.getMessage().contains("line 1"));
         assertEquals(List.of(original), handler.getLoanList());
-        assertSame(original, handler.getLoanHistory("history id/E001").getFirst());
+        assertSame(original, handler.getLoanHistory("eqm-loan-history e/E001").getFirst());
         assertEquals(original.getLoanId(), camera.getLoanId());
         assertTrue(camera.isLoaned());
         assertEquals("L002", handler.getNextLoanId());
@@ -57,7 +57,7 @@ class LoanEquipmentIdentityStorageTest {
         Files.writeString(loanFile, validLoans);
         handler.loadFromStorage();
 
-        assertEquals(camera.getRecordId(), handler.getLoanHistory("history id/E001").getFirst()
+        assertEquals(camera.getRecordId(), handler.getLoanHistory("eqm-loan-history e/E001").getFirst()
                 .getEquipmentRecordId());
         assertEquals("L001", camera.getLoanId());
     }

@@ -11,7 +11,7 @@ import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 
 /** Tests equipment addition boundaries, malformed input, and recovery without changing other features. */
 class EquipmentAdditionTest {
-    private static final String FORMAT_ERROR = "Invalid format. Use: add i/[ITEM] id/[ITEM ID] "
+    private static final String FORMAT_ERROR = "Invalid format. Use: eqm-add name/[ITEM] e/[ITEM ID] "
             + "type/[TYPE] cond/[CONDITION]";
 
     @Test
@@ -95,10 +95,10 @@ class EquipmentAdditionTest {
         EquipmentHandler handler = seededInventory();
         String[] commands = {
             "addi/Camera id/E002 type/camera cond/1",
-            "add i/Cameraid/002 type/camera cond/1",
-            "add i/Camera id/E002type/camera cond/1",
-            "add i/Camera id/E002 type/cameracond/1",
-            "add i/Cameraid/002type/cameracond/1"
+            "eqm-add name/Camerae/002 type/camera cond/1",
+            "eqm-add name/Camera e/E002type/camera cond/1",
+            "eqm-add name/Camera e/E002 type/cameracond/1",
+            "eqm-add name/Camerae/002type/cameracond/1"
         };
         for (String input : commands) {
             assertRejected(handler, input, FORMAT_ERROR);
@@ -107,7 +107,7 @@ class EquipmentAdditionTest {
 
     @Test
     void parseEquipment_textIdPrefixesInName_preservesName() throws EquipmentAdditionUnsuccessful {
-        String[] names = {"USB id/card reader", "id/card reader", "USB id/card id/tag reader"};
+        String[] names = {"USB e/card reader", "e/card reader", "USB e/card e/tag reader"};
         for (String name : names) {
             Equipment item = EquipmentHandler.parseEquipment(command(name, "002", "lens", "1"));
             assertEquals(name, item.getItemName());
@@ -121,12 +121,12 @@ class EquipmentAdditionTest {
             throws EquipmentAdditionUnsuccessful {
         EquipmentHandler handler = seededInventory();
         String[] inputs = {
-            "add i/USB id/E003 reader id/E002 type/lens cond/1",
-            "add i/USB id/+03 reader id/E002 type/lens cond/1",
-            "add i/USB id/-03 reader id/E002 type/lens cond/1",
-            "add i/USB id/ reader id/E002 type/lens cond/1",
-            "add i/USB id/E002 id/card type/lens cond/1",
-            "add i/USB id/E002 type/lens id/card cond/1"
+            "eqm-add name/USB e/E003 reader e/E002 type/lens cond/1",
+            "eqm-add name/USB e/+03 reader e/E002 type/lens cond/1",
+            "eqm-add name/USB e/-03 reader e/E002 type/lens cond/1",
+            "eqm-add name/USB e/ reader e/E002 type/lens cond/1",
+            "eqm-add name/USB e/E002 e/card type/lens cond/1",
+            "eqm-add name/USB e/E002 type/lens e/card cond/1"
         };
         for (String input : inputs) {
             assertRejected(handler, input, FORMAT_ERROR);
@@ -145,7 +145,8 @@ class EquipmentAdditionTest {
 
     @Test
     void parseEquipment_fieldWhitespace_trimsValues() throws EquipmentAdditionUnsuccessful {
-        Equipment item = EquipmentHandler.parseEquipment("add   i/  Film Camera  \tid/E001  type/ camera  cond/1  ");
+        Equipment item = EquipmentHandler.parseEquipment("eqm-add name/  Film Camera  \te/E001  type/ "
+                + "camera  cond/1  ");
         assertEquals("Film Camera", item.getItemName());
         assertEquals("E001", item.getItemId());
         assertEquals("camera", item.getType());
@@ -188,18 +189,18 @@ class EquipmentAdditionTest {
     void addEquipment_malformedCommands_preservesInventory() throws EquipmentAdditionUnsuccessful {
         EquipmentHandler handler = seededInventory();
         String[] commands = {
-            null, "", " ", "add", "additions i/Camera id/E002 type/camera cond/1",
+            null, "", " ", "eqm-add", "additions name/Camera e/E002 type/camera cond/1",
             "add Camera id/E002 type/camera cond/1",
-            "add i/Camera type/camera cond/1",
-            "add i/Camera id/E002 cond/1",
-            "add i/Camera id/E002 type/camera",
+            "eqm-add name/Camera type/camera cond/1",
+            "eqm-add name/Camera e/E002 cond/1",
+            "eqm-add name/Camera e/E002 type/camera",
             "add id/E002 i/Camera type/camera cond/1",
-            "add i/Camera type/camera id/E002 cond/1",
+            "eqm-add name/Camera type/camera e/E002 cond/1",
             "add unexpected i/Camera id/E002 type/camera cond/1",
-            "add i/Camera i/Tripod id/E002 type/camera cond/1",
-            "add i/Camera id/E002 id/E003 type/camera cond/1",
-            "add i/Camera id/E002 type/camera type/battery cond/1",
-            "add i/Camera id/E002 type/camera cond/1 cond/2"
+            "eqm-add name/Camera name/Tripod e/E002 type/camera cond/1",
+            "eqm-add name/Camera e/E002 e/E003 type/camera cond/1",
+            "eqm-add name/Camera e/E002 type/camera type/battery cond/1",
+            "eqm-add name/Camera e/E002 type/camera cond/1 cond/2"
         };
         for (String input : commands) {
             List<Equipment> before = List.copyOf(handler.getEquipmentList());
@@ -214,7 +215,7 @@ class EquipmentAdditionTest {
         EquipmentHandler handler = seededInventory();
         assertRejected(handler, command("Camera", "001", "camera", "11"),
                 "Condition must be a whole number from 1 to 10.");
-        assertRejected(handler, "add i/Camera id/E001", FORMAT_ERROR);
+        assertRejected(handler, "eqm-add name/Camera e/E001", FORMAT_ERROR);
     }
 
     @Test
@@ -247,7 +248,7 @@ class EquipmentAdditionTest {
     private String command(String name, String id, String type, String condition, String remarks) {
         String remarkField = remarks.isEmpty() ? "" : " remarks/" + remarks;
         String typedId = id != null && id.matches("[0-9]{3}") ? "E" + id : id;
-        return "add i/" + name + " id/" + typedId + " type/" + type + " cond/" + condition + remarkField;
+        return "eqm-add name/" + name + " e/" + typedId + " type/" + type + " cond/" + condition + remarkField;
     }
 
     /** Checks the error reason and protects the inventory's contents and order on every rejection. */

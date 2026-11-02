@@ -27,8 +27,8 @@ public class MaintenanceHandler {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-uu", Locale.ROOT)
             .withResolverStyle(ResolverStyle.STRICT);
     private static final Pattern COMMAND = Pattern.compile(
-            "(?sU)\\Amaintain\\s+id/([^\\s]+)\\s+date/([^\\s]+)\\s+work/(.*?)\\s+outcome/(.+)\\z");
-    private static final String COMMAND_FORMAT = "Invalid format. Use: maintain id/[ITEM ID] "
+            "(?sU)\\Aeqm-maintain\\s+e/([^\\s]+)\\s+date/([^\\s]+)\\s+work/(.*?)\\s+outcome/(.+)\\z");
+    private static final String COMMAND_FORMAT = "Invalid format. Use: eqm-maintain e/[ITEM ID] "
             + "date/[DD-MM-YY] work/[DESCRIPTION] outcome/[OUTCOME].";
 
     /** Equipment inventory used to resolve the physical record identity for each command. */
@@ -99,7 +99,7 @@ public class MaintenanceHandler {
     /**
      * Adds and persists one maintenance record after validating the target equipment and all fields.
      *
-     * @param input command in the form {@code maintain id/E001 date/27-10-26 work/Repair outcome/Completed}
+     * @param input command in the form {@code eqm-maintain e/E001 date/27-10-26 work/Repair outcome/Completed}
      * @return the newly added maintenance record
      * @throws MaintenanceRecordUnsuccessful if the command, equipment ID, date, or record save is invalid
      */

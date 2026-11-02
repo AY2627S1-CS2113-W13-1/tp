@@ -176,7 +176,7 @@ class EquipmentOptionalFieldsTest {
         handler.saveReturnAssessment(original, assessed);
         original.applyReturnAssessment(assessed);
 
-        assertSame(original, handler.updateEquipment("update id/E001 i/Updated cond/8"));
+        assertSame(original, handler.updateEquipment("eqm-update e/E001 name/Updated cond/8"));
         EquipmentHandler restarted = new EquipmentHandler(file);
         restarted.loadFromStorage();
         Equipment restored = restarted.getEquipmentList().getFirst();
@@ -193,8 +193,8 @@ class EquipmentOptionalFieldsTest {
     void addEquipment_requiredFieldsRemainRequired() {
         EquipmentHandler handler = new EquipmentHandler();
         String[] commands = {
-            "add id/E001 type/camera cond/7", "add i/Camera type/camera cond/7",
-            "add i/Camera id/E001 cond/7", "add i/Camera id/E001 type/camera"
+            "add e/E001 type/camera cond/7", "eqm-add name/Camera type/camera cond/7",
+            "eqm-add name/Camera e/E001 cond/7", "eqm-add name/Camera e/E001 type/camera"
         };
         for (String command : commands) {
             assertThrows(EquipmentAdditionUnsuccessful.class, () -> handler.addEquipment(command));
@@ -205,6 +205,6 @@ class EquipmentOptionalFieldsTest {
     /** Builds only the required command fields, leaving optional additions explicit in each test. */
     private static String command(EquipmentType type, String id) {
         String typedId = id != null && id.matches("[0-9]{3}") ? "E" + id : id;
-        return "add i/Equipment id/" + typedId + " type/" + type.type() + " cond/7";
+        return "eqm-add name/Equipment e/" + typedId + " type/" + type.type() + " cond/7";
     }
 }

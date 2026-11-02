@@ -44,7 +44,7 @@ class LoanBorrowerIntegrationTest {
         EqmManager manager = createManagerWithLoans();
         output.reset();
 
-        manager.executeInput("list borrower/U002");
+        manager.executeInput("loan-list-borrower u/U002");
 
         String printed = output.toString(StandardCharsets.UTF_8);
         assertTrue(printed.contains("Equipment currently held by borrower ID U002:"));
@@ -58,17 +58,17 @@ class LoanBorrowerIntegrationTest {
     }
 
     @Test
-    void listMember_invalidAndUnknownCommands_reportErrorsAndKeepSessionUsable() {
+    void legacyMemberCommand_isRejectedAndNewQueryRemainsUsable() {
         EqmManager manager = createManagerWithLoans();
         output.reset();
 
-        manager.executeInput("list member/U999");
-        manager.executeInput("list borrower/abc");
-        manager.executeInput("list borrower/U002");
+        manager.executeInput("loan-list-borrower u/U999");
+        manager.executeInput("loan-list-borrower u/abc");
+        manager.executeInput("loan-list-borrower u/U002");
 
         String printed = output.toString(StandardCharsets.UTF_8);
         assertTrue(printed.contains("No member found for borrower ID U999."));
-        assertTrue(printed.contains("Invalid format. Use: list borrower/[BORROWER ID], from U000 to U999."));
+        assertTrue(printed.contains("Invalid format. Use: loan-list-borrower u/[BORROWER ID], from U000 to U999."));
         assertTrue(printed.contains("Equipment currently held by borrower ID U002:"));
     }
 
@@ -77,11 +77,11 @@ class LoanBorrowerIntegrationTest {
         EqmManager manager = createManagerWithLoans();
         output.reset();
 
-        manager.executeInput("list borrower");
-        manager.executeInput("list member");
+        manager.executeInput("loan-list-borrower");
+        manager.executeInput("loan-list-borrower");
 
         String printed = output.toString(StandardCharsets.UTF_8);
-        String error = "[ERROR] Invalid format. Use: list borrower/[BORROWER ID], from U000 to U999.";
+        String error = "[ERROR] Invalid format. Use: loan-list-borrower u/[BORROWER ID], from U000 to U999.";
         assertEquals(2, printed.lines().filter(error::equals).count());
         assertFalse(printed.contains("NAME"));
     }
@@ -89,12 +89,12 @@ class LoanBorrowerIntegrationTest {
     @Test
     void listBorrower_knownBorrowerWithNoActiveLoans_reportsEmptyResult() {
         EqmManager manager = new EqmManager(temporaryDirectory, FIXED_CLOCK);
-        manager.executeInput("add i/Camera id/E001 type/camera cond/4");
-        manager.executeInput("loan id/E001 b/U002 issued/01-10-26 due/10-10-26");
-        manager.executeInput("return loan/L001 serviceable/yes damage/NONE remarks/");
+        manager.executeInput("eqm-add name/Camera e/E001 type/camera cond/4");
+        manager.executeInput("loan-add e/E001 u/U002 issued/01-10-26 due/10-10-26");
+        manager.executeInput("loan-return l/L001 serviceable/yes damage/NONE remarks/");
         output.reset();
 
-        manager.executeInput("list borrower/U002");
+        manager.executeInput("loan-list-borrower u/U002");
 
         assertTrue(output.toString(StandardCharsets.UTF_8)
                 .contains("No active loans found for borrower ID U002."));
@@ -113,7 +113,7 @@ class LoanBorrowerIntegrationTest {
         EqmManager restarted = new EqmManager(temporaryDirectory, FIXED_CLOCK);
         output.reset();
 
-        restarted.executeInput("list borrower/U002");
+        restarted.executeInput("loan-list-borrower u/U002");
 
         String printed = output.toString(StandardCharsets.UTF_8);
         assertTrue(printed.contains("Equipment currently held by borrower ID U002:"));
@@ -127,13 +127,13 @@ class LoanBorrowerIntegrationTest {
     /** Creates active, returned and unrelated loans for the routing scenarios. */
     private EqmManager createManagerWithLoans() {
         EqmManager manager = new EqmManager(temporaryDirectory, FIXED_CLOCK);
-        manager.executeInput("add i/Camera id/E001 type/camera cond/4");
-        manager.executeInput("add i/Tripod id/E002 type/tripod cond/5");
-        manager.executeInput("add i/Lens id/E003 type/lens cond/5");
-        manager.executeInput("loan id/E001 b/U002 issued/01-10-26 due/10-10-26");
-        manager.executeInput("loan id/E002 b/U002 issued/03-10-26 due/12-10-26");
-        manager.executeInput("loan id/E003 b/U003 issued/03-10-26 due/12-10-26");
-        manager.executeInput("return loan/L001 serviceable/yes damage/NONE remarks/");
+        manager.executeInput("eqm-add name/Camera e/E001 type/camera cond/4");
+        manager.executeInput("eqm-add name/Tripod e/E002 type/tripod cond/5");
+        manager.executeInput("eqm-add name/Lens e/E003 type/lens cond/5");
+        manager.executeInput("loan-add e/E001 u/U002 issued/01-10-26 due/10-10-26");
+        manager.executeInput("loan-add e/E002 u/U002 issued/03-10-26 due/12-10-26");
+        manager.executeInput("loan-add e/E003 u/U003 issued/03-10-26 due/12-10-26");
+        manager.executeInput("loan-return l/L001 serviceable/yes damage/NONE remarks/");
         return manager;
     }
 

@@ -19,7 +19,7 @@ class LoanUpdateTest {
     @Test
     void parse_allFieldsInAnyOrder_returnsValidatedValues() throws LoanUpdateUnsuccessful {
         LoanUpdate update = LoanUpdate.parse(
-                "update loan/L007 due/15-10-26 id/E003 b/U004 issued/10-10-26");
+                "loan-update l/L007 due/15-10-26 e/E003 u/U004 issued/10-10-26");
 
         assertEquals("L007", update.loanId());
         assertEquals("E003", update.itemId());
@@ -35,7 +35,7 @@ class LoanUpdateTest {
     @Test
     void parse_lowercaseIds_normalisesValues() throws LoanUpdateUnsuccessful {
         LoanUpdate update = LoanUpdate.parse(
-                "update loan/l007 due/15-10-26 id/e003 b/u004 issued/10-10-26");
+                "loan-update l/l007 due/15-10-26 e/e003 u/u004 issued/10-10-26");
 
         assertEquals("L007", update.loanId());
         assertEquals("E003", update.itemId());
@@ -44,7 +44,7 @@ class LoanUpdateTest {
 
     @Test
     void parse_partialFields_leavesOmittedValuesUnset() throws LoanUpdateUnsuccessful {
-        LoanUpdate update = LoanUpdate.parse("update loan/L007 b/U004");
+        LoanUpdate update = LoanUpdate.parse("loan-update l/L007 u/U004");
 
         assertEquals("L007", update.loanId());
         assertNull(update.itemId());
@@ -55,8 +55,8 @@ class LoanUpdateTest {
 
     @Test
     void parse_borrowerBoundaryValues_acceptsDocumentedRange() throws LoanUpdateUnsuccessful {
-        LoanUpdate zero = LoanUpdate.parse("update loan/L001 b/U000");
-        LoanUpdate maximum = LoanUpdate.parse("update loan/L001 b/U999");
+        LoanUpdate zero = LoanUpdate.parse("loan-update l/L001 u/U000");
+        LoanUpdate maximum = LoanUpdate.parse("loan-update l/L001 u/U999");
 
         assertEquals("U000", zero.borrowerId());
         assertEquals("U999", maximum.borrowerId());
@@ -69,11 +69,11 @@ class LoanUpdateTest {
     }
 
     private static Stream<String> invalidCommands() {
-        return Stream.of(null, "", "update", "update loan/L001", "update item/E001 b/U002",
-                "update loan/L000 b/U002", "update loan/01 b/U002", "update loan/L001 id/E000",
-                "update loan/L001 b/00", "update loan/L001 b/L002", "update loan/L001 id/L002",
-                "update loan/L001 id/E002 id/E003", "update loan/L001 unknown/002",
-                "update loan/L001 due/31-02-26", "update loan/L001 issued/20-10-26 due/19-10-26",
-                "update loan/L001 b/U002\n due/20-10-26");
+        return Stream.of(null, "", "eqm-update", "loan-update l/L001", "update item/E001 u/U002",
+                "loan-update l/L000 u/U002", "loan-update l/01 u/U002", "loan-update l/L001 e/E000",
+                "loan-update l/L001 u/00", "loan-update l/L001 u/L002", "loan-update l/L001 e/L002",
+                "loan-update l/L001 e/E002 e/E003", "loan-update l/L001 unknown/002",
+                "loan-update l/L001 due/31-02-26", "loan-update l/L001 issued/20-10-26 due/19-10-26",
+                "loan-update l/L001 u/U002\n due/20-10-26");
     }
 }

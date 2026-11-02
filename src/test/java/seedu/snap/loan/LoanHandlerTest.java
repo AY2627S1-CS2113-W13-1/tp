@@ -32,10 +32,10 @@ import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 /** Tests loan IDs, availability and deletion of individual loan records. */
 public class LoanHandlerTest {
     private static final String FIRST_LOAN =
-            "loan id/E001 b/U002 issued/01-10-26 due/02-10-26";
+            "loan-add e/E001 u/U002 issued/01-10-26 due/02-10-26";
 
     private static final String SECOND_LOAN =
-            "loan id/E003 b/U004 issued/03-10-26 due/04-10-26";
+            "loan-add e/E003 u/U004 issued/03-10-26 due/04-10-26";
 
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
     private PrintStream originalOutput;
@@ -72,7 +72,7 @@ public class LoanHandlerTest {
     void addLoan_lowercaseIds_normalisesStoredValues() throws LoanAdditionUnsuccessful {
         LoanHandler loanHandler = new LoanHandler(equipment);
 
-        Loan loan = loanHandler.addLoan("loan id/e001 b/u002 issued/01-10-26 due/02-10-26");
+        Loan loan = loanHandler.addLoan("loan-add e/e001 u/u002 issued/01-10-26 due/02-10-26");
 
         assertEquals("L001", loan.getLoanId());
         assertEquals("E001", loan.getItemId());
@@ -84,7 +84,7 @@ public class LoanHandlerTest {
         LoanHandler loanHandler = new LoanHandler(equipment);
 
         assertThrows(LoanAdditionUnsuccessful.class,
-                () -> loanHandler.addLoan("loan id/E999 b/U002 issued/01-10-26 due/02-10-26"));
+                () -> loanHandler.addLoan("loan-add e/E999 u/U002 issued/01-10-26 due/02-10-26"));
 
         assertEquals(0, loanHandler.getLoanCount());
         assertTrue(loanHandler.getLoanList().isEmpty());
@@ -98,7 +98,7 @@ public class LoanHandlerTest {
         LoanHandler loanHandler = new LoanHandler(equipment);
 
         assertThrows(LoanAdditionUnsuccessful.class,
-                () -> loanHandler.addLoan("loan id/E000 b/U002 issued/01-10-26 due/02-10-26"));
+                () -> loanHandler.addLoan("loan-add e/E000 u/U002 issued/01-10-26 due/02-10-26"));
 
         assertEquals("L001", loanHandler.getNextLoanId());
         assertTrue(loanHandler.getLoanList().isEmpty());
@@ -109,10 +109,10 @@ public class LoanHandlerTest {
     void addLoan_rejectsBareAndWrongTypeIdentifiers() {
         LoanHandler loanHandler = new LoanHandler(equipment);
         String[] commands = {
-            "loan id/001 b/U002 issued/01-10-26 due/02-10-26",
-            "loan id/B001 b/U002 issued/01-10-26 due/02-10-26",
-            "loan id/E001 b/001 issued/01-10-26 due/02-10-26",
-            "loan id/E001 b/L001 issued/01-10-26 due/02-10-26"
+            "loan-add e/001 u/U002 issued/01-10-26 due/02-10-26",
+            "loan-add e/B001 u/U002 issued/01-10-26 due/02-10-26",
+            "loan-add e/E001 u/001 issued/01-10-26 due/02-10-26",
+            "loan-add e/E001 u/L001 issued/01-10-26 due/02-10-26"
         };
 
         for (String command : commands) {
@@ -126,7 +126,7 @@ public class LoanHandlerTest {
     void addLoan_zeroBorrowerId_acceptsAndAssignsLoanId() throws LoanAdditionUnsuccessful {
         LoanHandler loanHandler = new LoanHandler(equipment);
 
-        Loan loan = loanHandler.addLoan("loan id/E001 b/U000 issued/01-10-26 due/02-10-26");
+        Loan loan = loanHandler.addLoan("loan-add e/E001 u/U000 issued/01-10-26 due/02-10-26");
 
         assertEquals("U000", loan.getBorrowerId());
         assertEquals("L001", loan.getLoanId());
@@ -139,8 +139,8 @@ public class LoanHandlerTest {
         Path file = temporaryDirectory.resolve("data/loans.txt");
         Path equipmentFile = temporaryDirectory.resolve("data/equipment.txt");
         EquipmentHandler firstInventory = new EquipmentHandler(equipmentFile);
-        firstInventory.addEquipment("add i/Camera id/E001 type/camera cond/1");
-        firstInventory.addEquipment("add i/Tripod id/E003 type/tripod cond/2");
+        firstInventory.addEquipment("eqm-add name/Camera e/E001 type/camera cond/1");
+        firstInventory.addEquipment("eqm-add name/Tripod e/E003 type/tripod cond/2");
         LoanHandler firstHandler = new LoanHandler(firstInventory, file);
         firstHandler.addLoan(FIRST_LOAN);
 
@@ -158,7 +158,7 @@ public class LoanHandlerTest {
         assertEquals(firstInventory.getEquipmentList().getFirst().getRecordId(),
                 secondHandler.getLoanList().getFirst().getEquipmentRecordId());
 
-        secondHandler.deleteLoan("delete loan/L001");
+        secondHandler.deleteLoan("loan-delete l/L001");
         EquipmentHandler thirdInventory = new EquipmentHandler(equipmentFile);
         thirdInventory.loadFromStorage();
         LoanHandler thirdHandler = new LoanHandler(thirdInventory, file);
@@ -196,14 +196,14 @@ public class LoanHandlerTest {
     @Test
     void deleteEquipment_activeLoan_blocksDeletionAndIdReuse() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("add i/Camera id/E001 type/camera cond/1");
-        manager.executeInput("add i/Tripod id/E002 type/tripod cond/5");
+        manager.executeInput("eqm-add name/Camera e/E001 type/camera cond/1");
+        manager.executeInput("eqm-add name/Tripod e/E002 type/tripod cond/5");
         manager.executeInput(FIRST_LOAN);
         output.reset();
 
-        manager.executeInput("delete item/E001");
-        manager.executeInput("add i/Replacement id/E001 type/battery cond/3");
-        manager.executeInput("delete item/E002");
+        manager.executeInput("eqm-delete e/E001");
+        manager.executeInput("eqm-add name/Replacement e/E001 type/battery cond/3");
+        manager.executeInput("eqm-delete e/E002");
 
         assertEquals("[ERROR] Cannot delete item ID E001 while it has an active loan." + System.lineSeparator()
                 + "[ERROR] Item ID E001 already exists." + System.lineSeparator()
@@ -217,11 +217,11 @@ public class LoanHandlerTest {
     void deleteEquipment_returnedLoan_allowsDeletionAndIdReuse() throws Exception {
         writeLoanRecords("loan id/E001 b/U002 issued/01-10-26 due/02-10-26 returned/true");
         EqmManager manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("add i/Camera id/E001 type/camera cond/1");
+        manager.executeInput("eqm-add name/Camera e/E001 type/camera cond/1");
         output.reset();
 
-        manager.executeInput("delete item/E001");
-        manager.executeInput("add i/Replacement id/E001 type/battery cond/3");
+        manager.executeInput("eqm-delete e/E001");
+        manager.executeInput("eqm-add name/Replacement e/E001 type/battery cond/3");
 
         assertEquals("[OK] Equipment E001 \"Camera\" deleted." + System.lineSeparator()
                 + "[OK] Equipment E001 added." + System.lineSeparator()
@@ -242,7 +242,7 @@ public class LoanHandlerTest {
         EqmManager manager = new EqmManager(temporaryDirectory);
         output.reset();
 
-        manager.executeInput("delete item/E001");
+        manager.executeInput("eqm-delete e/E001");
 
         assertEquals("[ERROR] Cannot delete item ID E001 while it has an active loan." + System.lineSeparator(),
                 output.toString(StandardCharsets.UTF_8));
@@ -252,13 +252,13 @@ public class LoanHandlerTest {
     @Test
     void deleteEquipment_loanDeleted_allowsDeletionAndIdReuse() throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("add i/Camera id/E001 type/camera cond/1");
+        manager.executeInput("eqm-add name/Camera e/E001 type/camera cond/1");
         manager.executeInput(FIRST_LOAN);
         output.reset();
 
-        manager.executeInput("delete loan/L001");
-        manager.executeInput("delete item/E001");
-        manager.executeInput("add i/Replacement id/E001 type/battery cond/3");
+        manager.executeInput("loan-delete l/L001");
+        manager.executeInput("eqm-delete e/E001");
+        manager.executeInput("eqm-add name/Replacement e/E001 type/battery cond/3");
 
         assertEquals("[OK] Loan L001 deleted." + System.lineSeparator()
                 + "  Item: E001 \"Camera\"" + System.lineSeparator()
@@ -280,8 +280,8 @@ public class LoanHandlerTest {
     /** Creates the equipment required by the loan fixtures without sharing availability between tests. */
     private EquipmentHandler createInventory() throws EquipmentAdditionUnsuccessful {
         EquipmentHandler inventory = new EquipmentHandler();
-        inventory.addEquipment("add i/Camera id/E001 type/camera cond/1");
-        inventory.addEquipment("add i/Tripod id/E003 type/tripod cond/2");
+        inventory.addEquipment("eqm-add name/Camera e/E001 type/camera cond/1");
+        inventory.addEquipment("eqm-add name/Tripod e/E003 type/tripod cond/2");
         return inventory;
     }
 
@@ -294,7 +294,7 @@ public class LoanHandlerTest {
         loanHandler.addLoan(SECOND_LOAN);
 
         Loan deletedLoan =
-                loanHandler.deleteLoan("delete loan/L001");
+                loanHandler.deleteLoan("loan-delete l/L001");
 
         assertEquals("E001", deletedLoan.getItemId());
         assertEquals(1, loanHandler.getLoanCount());
@@ -312,7 +312,7 @@ public class LoanHandlerTest {
         LoanDeletionUnsuccessful exception = assertThrows(
                 LoanDeletionUnsuccessful.class,
                 () -> loanHandler.deleteLoan(
-                        "delete loan/L999"));
+                        "loan-delete l/L999"));
 
         assertEquals(
                 "No loan found for loan ID L999.",
@@ -332,7 +332,7 @@ public class LoanHandlerTest {
         LoanDeletionUnsuccessful exception = assertThrows(
                 LoanDeletionUnsuccessful.class,
                 () -> loanHandler.deleteLoan(
-                        "delete loan/01"));
+                        "loan-delete l/01"));
 
         assertEquals(
                 "Invalid loan ID \"01\". Loan ID must be exactly L001 to L999.",
@@ -348,10 +348,10 @@ public class LoanHandlerTest {
 
         LoanDeletionUnsuccessful exception = assertThrows(
                 LoanDeletionUnsuccessful.class,
-                () -> loanHandler.deleteLoan("delete loan"));
+                () -> loanHandler.deleteLoan("loan-delete"));
 
         assertEquals(
-                "Invalid command format. Expected: delete loan/[LOAN ID].",
+                "Invalid command format. Expected: loan-delete l/[LOAN ID].",
                 exception.getMessage());
         assertEquals(1, loanHandler.getLoanCount());
     }
@@ -365,7 +365,7 @@ public class LoanHandlerTest {
         assertThrows(
                 LoanDeletionUnsuccessful.class,
                 () -> loanHandler.deleteLoan(
-                        "delete loan item/001"));
+                        "eqm-delete e/001"));
 
         assertEquals(1, loanHandler.getLoanCount());
     }
@@ -376,15 +376,15 @@ public class LoanHandlerTest {
         LoanHandler loanHandler = new LoanHandler(equipment);
         Loan history = loanHandler.addLoan(FIRST_LOAN);
         history.setReturned(true);
-        Loan active = loanHandler.addLoan("loan id/E001 b/U005 issued/05-10-26 due/06-10-26");
+        Loan active = loanHandler.addLoan("loan-add e/E001 u/U005 issued/05-10-26 due/06-10-26");
         assertEquals("L001", history.getLoanId());
         assertEquals("L002", active.getLoanId());
 
-        assertSame(history, loanHandler.deleteLoan("delete loan/L001"));
+        assertSame(history, loanHandler.deleteLoan("loan-delete l/L001"));
         assertEquals(List.of(active), loanHandler.getLoanList());
         assertTrue(equipment.getEquipmentList().getFirst().isLoaned());
 
-        Loan deletedLoan = loanHandler.deleteLoan("delete loan/L002");
+        Loan deletedLoan = loanHandler.deleteLoan("loan-delete l/L002");
         assertSame(active, deletedLoan);
         assertEquals("U005", deletedLoan.getBorrowerId());
         assertEquals(0, loanHandler.getLoanCount());
@@ -397,10 +397,10 @@ public class LoanHandlerTest {
         LoanHandler handler = new LoanHandler(equipment, file);
         Loan original = handler.addLoan(FIRST_LOAN);
         String saved = Files.readString(file);
-        for (String command : new String[]{null, "", "delete", "delete loan", "delete loan/",
-            "delete loan/L000", "delete loan/01", "delete loan/L999", "delete loan/L001 extra",
-            "delete-loan id/E001", "delete loan/L001 issued/31-02-26",
-            "delete loan/L001 issued/03-10-26", "delete loan/L001 issued/01-10-26 extra"}) {
+        for (String command : new String[]{null, "", "delete", "loan-delete", "loan-delete l/",
+            "loan-delete l/L000", "loan-delete l/01", "loan-delete l/L999", "loan-delete l/L001 extra",
+            "delete-loan id/E001", "loan-delete l/L001 issued/31-02-26",
+            "loan-delete l/L001 issued/03-10-26", "loan-delete l/L001 issued/01-10-26 extra"}) {
             assertThrows(LoanDeletionUnsuccessful.class, () -> handler.deleteLoan(command), command);
             assertEquals(List.of(original), handler.getLoanList());
             assertEquals(1, handler.getLoanCount());
@@ -418,9 +418,9 @@ public class LoanHandlerTest {
         returnedLoan.setReturned(true);
         Loan overdueLoan = loanHandler.addLoan(SECOND_LOAN);
 
-        equipment.addEquipment("add i/Battery id/E005 type/battery cond/3");
+        equipment.addEquipment("eqm-add name/Battery e/E005 type/battery cond/3");
         Loan futureLoan = loanHandler.addLoan(
-                "loan id/E005 b/U006 issued/05-10-26 due/06-10-26");
+                "loan-add e/E005 u/U006 issued/05-10-26 due/06-10-26");
 
         List<Loan> originalLoans = List.copyOf(loanHandler.getLoanList());
         List<Loan> overdueLoans = loanHandler.getOverdueLoans(
@@ -503,7 +503,7 @@ public class LoanHandlerTest {
         new LoanHandler(equipment).viewAllLoans();
 
         String actual = output.toString(StandardCharsets.UTF_8);
-        assertTrue(actual.contains("No loans recorded. Type help loan for the command format."));
+        assertTrue(actual.contains("No loans recorded. Type help loan-list for the command format."));
         assertTrue(actual.endsWith("0 loans." + System.lineSeparator()));
     }
 

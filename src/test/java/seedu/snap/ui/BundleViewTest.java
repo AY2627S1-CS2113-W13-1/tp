@@ -24,11 +24,11 @@ class BundleViewTest {
         assertEquals(List.of("camera", "lens", "battery"), bundle.getMissingEquipmentTypes());
         assertEquals("Incomplete (missing camera, lens, battery)", BundleView.composition(bundle));
         assertThrows(UnsupportedOperationException.class, () -> bundle.getMissingEquipmentTypes().clear());
-        bundle.addEquipment(equipment.addEquipment("add i/Camera id/E001 type/camera cond/1"));
+        bundle.addEquipment(equipment.addEquipment("eqm-add name/Camera e/E001 type/camera cond/1"));
         assertEquals("Incomplete (missing lens, battery)", BundleView.composition(bundle));
-        bundle.addEquipment(equipment.addEquipment("add i/Lens id/E002 type/lens cond/2"));
+        bundle.addEquipment(equipment.addEquipment("eqm-add name/Lens e/E002 type/lens cond/2"));
         assertEquals("Incomplete (missing battery)", BundleView.composition(bundle));
-        bundle.addEquipment(equipment.addEquipment("add i/Battery id/E003 type/battery cond/3"));
+        bundle.addEquipment(equipment.addEquipment("eqm-add name/Battery e/E003 type/battery cond/3"));
         assertEquals("Complete", BundleView.composition(bundle));
         assertTrue(bundle.getMissingEquipmentTypes().isEmpty());
         assertTrue(bundle.isComplete());
@@ -42,7 +42,7 @@ class BundleViewTest {
             System.setOut(captured);
             BundleView.print(List.of());
             assertTrue(output.toString(StandardCharsets.UTF_8).contains("0 bundles."));
-            assertTrue(output.toString(StandardCharsets.UTF_8).contains("add-bundle name/Camera kit"));
+            assertTrue(output.toString(StandardCharsets.UTF_8).contains("bundle-create name/Camera kit"));
             output.reset();
             Bundle bundle = new Bundle("Kit\t\u001b[31m", "B001");
             BundleView.print(List.of(bundle));

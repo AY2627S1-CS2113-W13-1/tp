@@ -43,43 +43,43 @@ class EquipmentDamageValidationTest {
     private static Stream<Arguments> expandedDamageCommands() {
         return Stream.of(
                 Arguments.of(
-                        "add i/Camera id/E001 type/camera cond/5 "
+                        "eqm-add name/Camera e/E001 type/camera cond/5 "
                                 + "damage/WATER_DAMAGE",
                         "WATER_DAMAGE"),
                 Arguments.of(
-                        "add i/Camera id/E001 type/camera cond/5 "
+                        "eqm-add name/Camera e/E001 type/camera cond/5 "
                                 + "damage/BODY_CRACK",
                         "BODY_CRACK"),
                 Arguments.of(
-                        "add i/Camera id/E001 type/camera cond/5 "
+                        "eqm-add name/Camera e/E001 type/camera cond/5 "
                                 + "damage/MISSING_CAP",
                         "MISSING_CAP"),
                 Arguments.of(
-                        "add i/Lens id/E002 type/lens cond/5 "
+                        "eqm-add name/Lens e/E002 type/lens cond/5 "
                                 + "damage/WATER_DAMAGE",
                         "WATER_DAMAGE"),
                 Arguments.of(
-                        "add i/Lens id/E002 type/lens cond/5 "
+                        "eqm-add name/Lens e/E002 type/lens cond/5 "
                                 + "damage/CRACKED_GLASS",
                         "CRACKED_GLASS"),
                 Arguments.of(
-                        "add i/Lens id/E002 type/lens cond/5 "
+                        "eqm-add name/Lens e/E002 type/lens cond/5 "
                                 + "damage/MISSING_CAP",
                         "MISSING_CAP"),
                 Arguments.of(
-                        "add i/Battery id/E003 type/battery cond/5 "
+                        "eqm-add name/Battery e/E003 type/battery cond/5 "
                                 + "damage/WATER_DAMAGE",
                         "WATER_DAMAGE"),
                 Arguments.of(
-                        "add i/Battery id/E003 type/battery cond/5 "
+                        "eqm-add name/Battery e/E003 type/battery cond/5 "
                                 + "damage/LEAKING",
                         "LEAKING"),
                 Arguments.of(
-                        "add i/Tripod id/E004 type/tripod cond/5 "
+                        "eqm-add name/Tripod e/E004 type/tripod cond/5 "
                                 + "damage/WATER_DAMAGE",
                         "WATER_DAMAGE"),
                 Arguments.of(
-                        "add i/Tripod id/E004 type/tripod cond/5 "
+                        "eqm-add name/Tripod e/E004 type/tripod cond/5 "
                                 + "damage/MISSING_PART",
                         "MISSING_PART"));
     }
@@ -106,19 +106,19 @@ class EquipmentDamageValidationTest {
 
         return Stream.of(
                 Arguments.of(
-                        "add i/Camera id/E001 type/camera cond/5 "
+                        "eqm-add name/Camera e/E001 type/camera cond/5 "
                                 + "damage/OTHER" + remarks,
                         "camera"),
                 Arguments.of(
-                        "add i/Lens id/E002 type/lens cond/5 "
+                        "eqm-add name/Lens e/E002 type/lens cond/5 "
                                 + "damage/OTHER" + remarks,
                         "lens"),
                 Arguments.of(
-                        "add i/Battery id/E003 type/battery cond/5 "
+                        "eqm-add name/Battery e/E003 type/battery cond/5 "
                                 + "damage/OTHER" + remarks,
                         "battery"),
                 Arguments.of(
-                        "add i/Tripod id/E004 type/tripod cond/5 "
+                        "eqm-add name/Tripod e/E004 type/tripod cond/5 "
                                 + "damage/OTHER" + remarks,
                         "tripod"));
     }
@@ -142,19 +142,19 @@ class EquipmentDamageValidationTest {
     private static Stream<Arguments> otherDamageCommandsWithoutRemarks() {
         return Stream.of(
                 Arguments.of(
-                        "add i/Camera id/E001 type/camera cond/5 "
+                        "eqm-add name/Camera e/E001 type/camera cond/5 "
                                 + "damage/OTHER",
                         "camera"),
                 Arguments.of(
-                        "add i/Lens id/E002 type/lens cond/5 "
+                        "eqm-add name/Lens e/E002 type/lens cond/5 "
                                 + "damage/OTHER",
                         "lens"),
                 Arguments.of(
-                        "add i/Battery id/E003 type/battery cond/5 "
+                        "eqm-add name/Battery e/E003 type/battery cond/5 "
                                 + "damage/OTHER",
                         "battery"),
                 Arguments.of(
-                        "add i/Tripod id/E004 type/tripod cond/5 "
+                        "eqm-add name/Tripod e/E004 type/tripod cond/5 "
                                 + "damage/OTHER remarks/   ",
                         "tripod"));
     }
@@ -170,16 +170,16 @@ class EquipmentDamageValidationTest {
     /** Supplies new damage values that belong only to a different equipment subtype. */
     private static Stream<Arguments> damageFromAnotherSubtype() {
         return Stream.of(
-                Arguments.of("add i/Camera id/E001 type/camera cond/5 damage/CRACKED_GLASS", "camera"),
-                Arguments.of("add i/Lens id/E002 type/lens cond/5 damage/LEAKING", "lens"),
-                Arguments.of("add i/Battery id/E003 type/battery cond/5 damage/MISSING_PART", "battery"),
-                Arguments.of("add i/Tripod id/E004 type/tripod cond/5 damage/BODY_CRACK", "tripod"));
+                Arguments.of("eqm-add name/Camera e/E001 type/camera cond/5 damage/CRACKED_GLASS", "camera"),
+                Arguments.of("eqm-add name/Lens e/E002 type/lens cond/5 damage/LEAKING", "lens"),
+                Arguments.of("eqm-add name/Battery e/E003 type/battery cond/5 damage/MISSING_PART", "battery"),
+                Arguments.of("eqm-add name/Tripod e/E004 type/tripod cond/5 damage/BODY_CRACK", "tripod"));
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"camera", "lens", "battery", "tripod"})
     void parseEquipment_otherRemarksBoundary_acceptsValidLengthAndRejectsTooLong(String type) throws Exception {
-        String prefix = "add i/Item id/E001 type/" + type + " cond/5 damage/other remarks/";
+        String prefix = "eqm-add name/Item e/E001 type/" + type + " cond/5 damage/other remarks/";
         String longest = "r".repeat(Equipment.MAX_REMARKS_LENGTH);
 
         Equipment shortest = EquipmentHandler.parseEquipment(prefix + " r ");
@@ -202,16 +202,16 @@ class EquipmentDamageValidationTest {
                 new EquipmentHandler(file);
 
         firstHandler.addEquipment(
-                "add i/Camera id/E001 type/camera cond/5 "
+                "eqm-add name/Camera e/E001 type/camera cond/5 "
                         + "damage/WATER_DAMAGE");
         firstHandler.addEquipment(
-                "add i/Lens id/E002 type/lens cond/5 "
+                "eqm-add name/Lens e/E002 type/lens cond/5 "
                         + "damage/CRACKED_GLASS");
         firstHandler.addEquipment(
-                "add i/Battery id/E003 type/battery cond/5 "
+                "eqm-add name/Battery e/E003 type/battery cond/5 "
                         + "damage/LEAKING");
         firstHandler.addEquipment(
-                "add i/Tripod id/E004 type/tripod cond/5 "
+                "eqm-add name/Tripod e/E004 type/tripod cond/5 "
                         + "damage/OTHER remarks/Mounting plate missing");
 
         EquipmentHandler secondHandler =

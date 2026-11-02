@@ -20,34 +20,34 @@ class LoanBorrowerQueryTest {
 
     @Test
     void parse_borrowerCommand_returnsBorrowerId() throws Exception {
-        LoanBorrowerQuery query = LoanBorrowerQuery.parse("list borrower/U002");
+        LoanBorrowerQuery query = LoanBorrowerQuery.parse("loan-list-borrower u/U002");
 
         assertEquals("U002", query.borrowerId());
     }
 
     @Test
     void parse_lowercaseBorrowerId_returnsCanonicalValue() throws Exception {
-        LoanBorrowerQuery query = LoanBorrowerQuery.parse("list borrower/u002");
+        LoanBorrowerQuery query = LoanBorrowerQuery.parse("loan-list-borrower u/u002");
 
         assertEquals("U002", query.borrowerId());
     }
 
     @Test
     void parse_memberAlias_returnsBorrowerId() throws Exception {
-        LoanBorrowerQuery query = LoanBorrowerQuery.parse("  list member/U007  ");
+        LoanBorrowerQuery query = LoanBorrowerQuery.parse("  loan-list-borrower u/U007  ");
 
         assertEquals("U007", query.borrowerId());
     }
 
     @Test
     void parse_boundaryBorrowerIds_acceptsZeroAndMaximum() throws Exception {
-        assertEquals("U000", LoanBorrowerQuery.parse("list borrower/U000").borrowerId());
-        assertEquals("U999", LoanBorrowerQuery.parse("list borrower/U999").borrowerId());
+        assertEquals("U000", LoanBorrowerQuery.parse("loan-list-borrower u/U000").borrowerId());
+        assertEquals("U999", LoanBorrowerQuery.parse("loan-list-borrower u/U999").borrowerId());
     }
 
     @Test
     void parse_unicodeWhitespaceAroundCommand_acceptsTrimmedInput() throws Exception {
-        LoanBorrowerQuery query = LoanBorrowerQuery.parse("\tlist\u2003member/U007\u00a0");
+        LoanBorrowerQuery query = LoanBorrowerQuery.parse("\tloan-list-borrower\u2003u/U007\u00a0");
 
         assertEquals("U007", query.borrowerId());
     }
@@ -58,12 +58,13 @@ class LoanBorrowerQueryTest {
         LoanBorrowerUnsuccessful error = assertThrows(LoanBorrowerUnsuccessful.class,
                 () -> LoanBorrowerQuery.parse(command));
 
-        assertEquals("Invalid format. Use: list borrower/[BORROWER ID], from U000 to U999.", error.getMessage());
+        assertEquals("Invalid format. Use: loan-list-borrower u/[BORROWER ID], from U000 to U999.", error.getMessage());
     }
 
     private static Stream<String> invalidCommands() {
-        return Stream.of(null, "", "list", "list borrower", "list borrower/", "list borrower/00",
-                "list borrower/U1000", "list borrower/abc", "list member/U001 extra", "List borrower/001",
-                "list borrower/U001\n");
+        return Stream.of(null, "", "eqm-list", "loan-list-borrower", "loan-list-borrower u/", "loan-list-borrower u/00",
+                "loan-list-borrower u/U1000", "loan-list-borrower u/abc", "loan-list-borrower u/U001 "
+                        + "extra", "List borrower/001",
+                "loan-list-borrower u/U001\n");
     }
 }

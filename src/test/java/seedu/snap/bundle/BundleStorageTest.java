@@ -73,7 +73,7 @@ class BundleStorageTest {
     @Test
     void load_missingEquipment_preservesExistingBundles() throws Exception {
         EquipmentHandler equipment = new EquipmentHandler();
-        equipment.addEquipment("add i/Camera id/E001 type/camera cond/5 sensor/Full frame");
+        equipment.addEquipment("eqm-add name/Camera e/E001 type/camera cond/5 sensor/Full frame");
         Path file = temporaryDirectory.resolve("bundles.txt");
         String missingRecordId = UUID.randomUUID().toString();
         String encodedName = Base64.getUrlEncoder().withoutPadding()
@@ -81,7 +81,7 @@ class BundleStorageTest {
         Files.writeString(file, "bundle id/B001 name64/" + encodedName
                 + " items/001~" + missingRecordId + System.lineSeparator());
         BundleHandler handler = new BundleHandler(equipment, file);
-        handler.addBundle("add-bundle name/Existing bundle");
+        handler.addBundle("bundle-create name/Existing bundle");
 
         IOException exception = assertThrows(IOException.class, handler::loadFromStorage);
 
@@ -93,7 +93,7 @@ class BundleStorageTest {
     @Test
     void load_legacyBareIdentifiers_migratesBundleAndMembershipOnSave() throws Exception {
         EquipmentHandler equipment = new EquipmentHandler();
-        equipment.addEquipment("add i/Camera id/E001 type/camera cond/5 sensor/Full frame");
+        equipment.addEquipment("eqm-add name/Camera e/E001 type/camera cond/5 sensor/Full frame");
         String recordId = equipment.getEquipmentList().getFirst().getRecordId();
         Path file = temporaryDirectory.resolve("bundles.txt");
         String encodedName = Base64.getUrlEncoder().withoutPadding()
@@ -113,7 +113,7 @@ class BundleStorageTest {
     @Test
     void load_lowercaseIdentifiers_migratesAndPersistsUppercaseValues() throws Exception {
         EquipmentHandler equipment = new EquipmentHandler();
-        equipment.addEquipment("add i/Camera id/E001 type/camera cond/5 sensor/Full frame");
+        equipment.addEquipment("eqm-add name/Camera e/E001 type/camera cond/5 sensor/Full frame");
         String recordId = equipment.getEquipmentList().getFirst().getRecordId();
         Path file = temporaryDirectory.resolve("bundles.txt");
         String encodedName = Base64.getUrlEncoder().withoutPadding()
@@ -148,13 +148,13 @@ class BundleStorageTest {
     @Test
     void save_blockedDestination_preservesSentinel() throws Exception {
         EquipmentHandler equipment = new EquipmentHandler();
-        equipment.addEquipment("add i/Camera id/E001 type/camera cond/5 sensor/Full frame");
+        equipment.addEquipment("eqm-add name/Camera e/E001 type/camera cond/5 sensor/Full frame");
         Path file = temporaryDirectory.resolve("bundles.txt");
         Files.createDirectory(file);
         Path sentinel = file.resolve("keep.txt");
         Files.writeString(sentinel, "keep this data");
         BundleHandler handler = new BundleHandler(equipment, file);
-        handler.addBundle("add-bundle name/Travel Kit");
+        handler.addBundle("bundle-create name/Travel Kit");
 
         assertThrows(IOException.class, handler::saveToStorage);
 
@@ -164,16 +164,16 @@ class BundleStorageTest {
     @Test
     void removeMembership_saveFailure_restoresMembership() throws Exception {
         EquipmentHandler equipment = new EquipmentHandler();
-        equipment.addEquipment("add i/Camera id/E001 type/camera cond/5 sensor/Full frame");
+        equipment.addEquipment("eqm-add name/Camera e/E001 type/camera cond/5 sensor/Full frame");
         Path file = temporaryDirectory.resolve("bundles.txt");
         Files.createDirectory(file);
         Files.writeString(file.resolve("keep.txt"), "keep this data");
         BundleHandler handler = new BundleHandler(equipment, file);
-        handler.addBundle("add-bundle name/Travel Kit");
-        handler.addItemsToBundle("add-to-bundle id/B001 E001");
+        handler.addBundle("bundle-create name/Travel Kit");
+        handler.addItemsToBundle("bundle-add-eqm b/B001 E001");
 
         BundleAdditionUnsuccessful exception = assertThrows(BundleAdditionUnsuccessful.class,
-                () -> handler.removeItemsFromBundle("remove-from-bundle id/B001 E001"));
+                () -> handler.removeItemsFromBundle("bundle-remove-eqm b/B001 E001"));
 
         assertTrue(exception.getMessage().contains("Could not save bundle removal:"));
         assertTrue(handler.containsEquipmentId("E001"));

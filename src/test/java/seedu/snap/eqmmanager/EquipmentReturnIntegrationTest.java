@@ -24,9 +24,9 @@ import seedu.snap.loan.LoanHandler;
 
 /** Exercises return commands through the application, including persistence and command recovery. */
 class EquipmentReturnIntegrationTest {
-    private static final String LOAN_COMMAND = "loan id/E001 b/U002 issued/01-10-26 due/02-10-26";
+    private static final String LOAN_COMMAND = "loan-add e/E001 u/U002 issued/01-10-26 due/02-10-26";
     private static final String RETURN_COMMAND =
-            "return loan/L001 serviceable/yes damage/NONE remarks/Checked by staff";
+            "loan-return l/L001 serviceable/yes damage/NONE remarks/Checked by staff";
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
     private PrintStream originalOutput;
     private EqmManager manager;
@@ -39,7 +39,7 @@ class EquipmentReturnIntegrationTest {
         originalOutput = System.out;
         System.setOut(new PrintStream(output, true, StandardCharsets.UTF_8));
         manager = new EqmManager(temporaryDirectory);
-        manager.executeInput("add i/Camera id/E001 type/camera cond/4 sensor/Full frame remarks/Before loan");
+        manager.executeInput("eqm-add name/Camera e/E001 type/camera cond/4 sensor/Full frame remarks/Before loan");
         manager.executeInput(LOAN_COMMAND);
         output.reset();
     }
@@ -56,7 +56,7 @@ class EquipmentReturnIntegrationTest {
         assertTrue(printed().contains("[OK] Loan L001 returned."));
         assertTrue(Files.readString(temporaryDirectory.resolve("loans.txt")).contains("returned/true"));
         output.reset();
-        manager.executeInput("filter id/E001 status/available");
+        manager.executeInput("eqm-filter e/E001 status/available");
         assertTrue(printed().contains("Camera"));
 
         EqmManager restarted = new EqmManager(temporaryDirectory);
@@ -72,17 +72,17 @@ class EquipmentReturnIntegrationTest {
 
     @Test
     void returnCommand_unserviceableReturn_staysUnavailableAcrossRestartAndEquipmentUpdate() throws Exception {
-        manager.executeInput("return loan/L001 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair");
+        manager.executeInput("loan-return l/L001 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair");
         EqmManager restarted = new EqmManager(temporaryDirectory);
         output.reset();
 
-        restarted.executeInput("filter id/E001 status/available");
+        restarted.executeInput("eqm-filter e/E001 status/available");
         assertTrue(printed().contains("No equipment matches the filters."));
         output.reset();
         restarted.executeInput(LOAN_COMMAND);
         assertFalse(printed().contains("[OK]"));
-        restarted.executeInput("update id/E001 i/Workshop Camera cond/5");
-        restarted.executeInput("bye");
+        restarted.executeInput("eqm-update e/E001 name/Workshop Camera cond/5");
+        restarted.executeInput("exit");
 
         EquipmentHandler inventory = new EquipmentHandler(temporaryDirectory.resolve("equipment.txt"));
         inventory.loadFromStorage();
@@ -106,9 +106,9 @@ class EquipmentReturnIntegrationTest {
         String equipmentBefore = Files.readString(temporaryDirectory.resolve("equipment.txt"));
         String loansBefore = Files.readString(temporaryDirectory.resolve("loans.txt"));
 
-        manager.executeInput("return loan/L001 serviceable/maybe damage/NONE remarks/Rejected");
-        manager.executeInput("return loan/L999 serviceable/yes damage/NONE remarks/Unknown");
-        manager.executeInput("return loan/L001 serviceable/yes");
+        manager.executeInput("loan-return l/L001 serviceable/maybe damage/NONE remarks/Rejected");
+        manager.executeInput("loan-return l/L999 serviceable/yes damage/NONE remarks/Unknown");
+        manager.executeInput("loan-return l/L001 serviceable/yes");
 
         assertFalse(printed().contains("[OK] Loan L001 returned."));
         assertEquals(equipmentBefore, Files.readString(temporaryDirectory.resolve("equipment.txt")));
@@ -117,7 +117,7 @@ class EquipmentReturnIntegrationTest {
         manager.executeInput(RETURN_COMMAND);
         assertTrue(printed().contains("[OK] Loan L001 returned."));
         output.reset();
-        manager.executeInput("return loan/L001 serviceable/no damage/SHUTTER_FAULT remarks/Second attempt");
+        manager.executeInput("loan-return l/L001 serviceable/no damage/SHUTTER_FAULT remarks/Second attempt");
         assertFalse(printed().contains("[OK] Loan L001 returned."));
         EquipmentHandler inventory = new EquipmentHandler(temporaryDirectory.resolve("equipment.txt"));
         inventory.loadFromStorage();
@@ -146,7 +146,7 @@ class EquipmentReturnIntegrationTest {
         assertEquals(originalSequence, Files.readString(sequenceFile));
         assertEquals("keep", Files.readString(sentinel));
         output.reset();
-        manager.executeInput("filter id/E001 status/loaned");
+        manager.executeInput("eqm-filter e/E001 status/loaned");
         assertTrue(printed().contains("Camera"));
         Files.delete(sentinel);
         Files.delete(loanFile);
