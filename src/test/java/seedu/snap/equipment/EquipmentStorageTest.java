@@ -80,16 +80,19 @@ class EquipmentStorageTest {
     }
 
     @Test
-    void load_canonicalIdLikeRemarks_preservesRemarks() throws IOException {
+    void load_canonicalIdLikeRemarks_preservesRecordWithoutRewriting() throws Exception {
         Path file = temporaryDirectory.resolve("equipment.txt");
         String remarks = "Keep literal id/123 type/camera";
-        Files.writeString(file, "add i/Camera id/E001 type/camera cond/1 remarks/" + remarks + "\n");
+        EquipmentHandler handler = new EquipmentHandler(file);
+        handler.addEquipment(
+                "eqm-add name/Camera e/E001 type/camera cond/1 remarks/" + remarks);
+        String recordBeforeLoad = Files.readString(file);
 
         List<Equipment> loaded = EquipmentStorage.load(file);
 
         assertEquals("E001", loaded.getFirst().getItemId());
         assertEquals(remarks, loaded.getFirst().getRemarks());
-        assertTrue(Files.readString(file).contains("remarks/" + remarks));
+        assertEquals(recordBeforeLoad, Files.readString(file));
     }
 
     @Test
@@ -107,7 +110,7 @@ class EquipmentStorageTest {
         assertTrue(savedRecord.contains("remarks/" + remarks));
     }
 
-    // @@author MatthewLeon888
+    // @@author
 
     @Test
     void load_collidingLegacyAndCanonicalIds_rejectsFile() throws IOException {
