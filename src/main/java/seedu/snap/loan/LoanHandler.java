@@ -615,7 +615,6 @@ public class LoanHandler {
                 + alternatePrefix + "DD-MM-YY.");
     }
 
-    // @@author rktheg
     /**
      * Checks whether an item currently has an unreturned loan.
      *
@@ -631,7 +630,6 @@ public class LoanHandler {
         }
         return false;
     }
-    // @@author
 
     // @@author Rohita-29
 

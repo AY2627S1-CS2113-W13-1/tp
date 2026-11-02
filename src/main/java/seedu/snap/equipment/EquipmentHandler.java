@@ -85,7 +85,6 @@ public class EquipmentHandler {
      * @return the added equipment
      * @throws EquipmentAdditionUnsuccessful when the command is invalid or the item ID already exists
      */
-    // @@author rktheg
     public Equipment addEquipment(String input) throws EquipmentAdditionUnsuccessful {
         int previousSize = inventory.size();
         Equipment equipment;
