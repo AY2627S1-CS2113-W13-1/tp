@@ -74,7 +74,7 @@ class EquipmentUpdateTest {
     void updateEquipment_nameBoundariesUnicodeAndPrefixText_acceptsValidValues()
             throws EquipmentUpdateUnsuccessful {
         for (String name : new String[]{"A", "A".repeat(100), "Camera 相机", "USB e/card reader",
-                "fluid/head tripod"}) {
+            "fluid/head tripod"}) {
             handler.updateEquipment("eqm-update e/001 name/" + name);
             assertEquals(name, camera.getItemName());
         }

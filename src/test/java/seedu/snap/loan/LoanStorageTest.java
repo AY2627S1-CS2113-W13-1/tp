@@ -88,9 +88,9 @@ class LoanStorageTest {
         Path file = temporaryDirectory.resolve("loans.txt");
         LoanHandler handler = new LoanHandler(equipment, file);
         Loan original = handler.addLoan(LOAN);
-        String other = LOAN.replace("e/001", "e/002");
+        String other = LEGACY_LOAN.replace("id/001", "id/002");
         String[] invalidRecords = {
-            other + "\n" + LOAN.replace("e/001", "e/999") + "\n",
+            other + "\n" + LEGACY_LOAN.replace("id/001", "id/999") + "\n",
             other + "\n" + other + "\n"
         };
 
@@ -119,7 +119,7 @@ class LoanStorageTest {
         Path file = temporaryDirectory.resolve("loans.txt");
         LoanHandler handler = new LoanHandler(equipment, file);
         Loan original = handler.addLoan(LOAN);
-        Files.writeString(file, LOAN.replace("e/001", "e/002") + "\n");
+        Files.writeString(file, LEGACY_LOAN.replace("id/001", "id/002") + "\n");
 
         IOException error = assertThrows(IOException.class, handler::loadFromStorage);
 

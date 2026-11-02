@@ -65,7 +65,7 @@ class EndOfInputIntegrationTest {
         assertTrue(Files.isRegularFile(dataDirectory.resolve("bundles.txt")));
         assertEquals(1, countOutputLines("[OK] Goodbye."));
         output.reset();
-        EqmManager restarted = managerWithInput("bundle-list\nbye\n");
+        EqmManager restarted = managerWithInput("bundle-list\nexit\n");
         restarted.run();
         assertTrue(printed().contains("Retained kit"));
         assertFalse(printed().contains("[ERROR]"));

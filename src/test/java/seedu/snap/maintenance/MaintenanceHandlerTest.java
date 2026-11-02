@@ -30,6 +30,27 @@ class MaintenanceHandlerTest {
     private Path temporaryDirectory;
 
     @Test
+    void constructor_missingDependencies_rejectsInvalidConfiguration() {
+        assertThrows(IllegalArgumentException.class, () -> new MaintenanceHandler(null));
+        assertThrows(IllegalArgumentException.class,
+                () -> new MaintenanceHandler(new EquipmentHandler(), null, null));
+    }
+
+    @Test
+    void loadFromStorage_inMemoryHandler_preservesPendingRecords() throws Exception {
+        EquipmentHandler equipment = new EquipmentHandler();
+        equipment.addEquipment(ADD_CAMERA);
+        MaintenanceHandler handler = new MaintenanceHandler(equipment, null, FIXED_CLOCK);
+        MaintenanceRecord record = handler.addMaintenanceRecord(
+                "eqm-maintain e/001 date/27-10-26 work/Inspection outcome/Passed");
+
+        handler.loadFromStorage();
+
+        assertEquals(null, handler.getStorageFile());
+        assertEquals(List.of(record), handler.getMaintenanceRecords());
+    }
+
+    @Test
     void addMaintenanceRecord_validCommand_bindsToPhysicalEquipment() throws Exception {
         EquipmentHandler equipment = new EquipmentHandler();
         Equipment item = equipment.addEquipment(ADD_CAMERA);

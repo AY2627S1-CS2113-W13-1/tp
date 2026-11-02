@@ -46,10 +46,10 @@ class EquipmentStorageTest {
         Path file = temporaryDirectory.resolve("equipment.txt");
         EquipmentHandler handler = new EquipmentHandler(file);
         String[] commands = {
-            "add i/Camera id/001 type/CAMERA cond/7 sensor/Full frame damage/SHUTTER_FAULT",
-            "add i/Lens id/002 type/lens cond/6 zoom/24 to 70 mm damage/AUTOFOCUS_FAULT",
-            "add i/Battery id/003 type/battery cond/5 capacity/2000 mAh damage/CONTACT_DAMAGE",
-            "add i/Tripod id/004 type/tripod cond/4 thread/Quarter inch damage/HEAD_FAULT"
+            "eqm-add name/Camera e/001 type/CAMERA cond/7 sensor/Full frame damage/SHUTTER_FAULT",
+            "eqm-add name/Lens e/002 type/lens cond/6 zoom/24 to 70 mm damage/AUTOFOCUS_FAULT",
+            "eqm-add name/Battery e/003 type/battery cond/5 capacity/2000 mAh damage/CONTACT_DAMAGE",
+            "eqm-add name/Tripod e/004 type/tripod cond/4 thread/Quarter inch damage/HEAD_FAULT"
         };
         for (String command : commands) {
             handler.addEquipment(command);

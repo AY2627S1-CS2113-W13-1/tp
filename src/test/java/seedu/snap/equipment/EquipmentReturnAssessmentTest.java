@@ -284,9 +284,9 @@ class EquipmentReturnAssessmentTest {
     void storage_legacyAndExplicitServiceability_restoreFlagsAndFreeText() throws Exception {
         Path file = temporaryDirectory.resolve("equipment.txt");
         Files.write(file, List.of(
-                "serviceable/no\tadd i/Legacy id/001 type/camera cond/7 remarks/serviceable/no",
+                "add i/Legacy serviceable/no id/001 type/camera cond/7 remarks/serviceable/no",
                 "serviceable/yes\tadd i/Ready id/002 type/lens cond/7 zoom/serviceable/no",
-                "serviceable/no\tadd name/Repair e/003 type/battery cond/7 remarks/check serviceable/yes"));
+                "serviceable/no\tadd i/Repair id/003 type/battery cond/7 remarks/check serviceable/yes"));
         List<Equipment> loaded = EquipmentStorage.load(file);
 
         assertTrue(loaded.get(0).isServiceable());

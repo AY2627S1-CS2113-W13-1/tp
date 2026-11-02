@@ -220,7 +220,7 @@ class HelpIntegrationTest {
 
         assertTrue(printedContent().contains("Format: loan-list-overdue"));
         assertTrue(printedContent().contains("Returned loans and loans due today or later are excluded."));
-        assertFalse(printedContent().contains("Format: loan-list"));
+        assertFalse(printed().lines().anyMatch(line -> line.strip().equals("loan-list")));
     }
 
     @ParameterizedTest
@@ -368,9 +368,9 @@ class HelpIntegrationTest {
         assertEquals(7, responses.length, "Each of the six input prompts must have dividers and surrounding spacing.");
         assertTrue(responses[0].contains("Welcome to snAp."));
         assertTrue(responses[1].contains("snAp command menu"));
-        assertTrue(responses[2].contains("ADD LOAN"));
+        assertTrue(responses[2].contains("LOAN-ADD"));
         assertTrue(responses[3].contains("Unknown help topic"));
-        assertTrue(responses[4].contains("ADD EQUIPMENT"));
+        assertTrue(responses[4].contains("EQM-ADD"));
         assertTrue(responses[5].contains("EXIT"));
         assertEquals("[OK] Goodbye." + newline, responses[6]);
     }
@@ -582,7 +582,10 @@ class HelpIntegrationTest {
                 continue;
             }
             for (String topic : content.split(" \\| ")) {
-                requests.add("help " + topic);
+                String canonical = topic.substring(0, topic.indexOf(" (")).strip();
+                String alias = topic.substring(topic.indexOf(" (") + 2, topic.length() - 1);
+                requests.add("help " + canonical);
+                requests.add("help " + alias);
             }
         }
         return requests;
@@ -591,8 +594,8 @@ class HelpIntegrationTest {
     /** Checks the discovery menu independently of the production text generator. */
     private void assertMenuPrinted() {
         assertTrue(printedContent().contains("help all"));
-        assertTrue(printedContent().contains("help <COMMAND>"));
-        assertTrue(printedContent().contains("help loan-list-overdue"));
+        assertTrue(printedContent().contains("help <COMMAND OR ALIAS>"));
+        assertTrue(printedContent().contains("help loan-add"));
         assertTrue(printedContent().contains("loan-list-overdue"));
         assertTrue(printedContent().contains("loan-show"));
         assertTrue(printedContent().contains("eqm-delete"));

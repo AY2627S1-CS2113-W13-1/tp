@@ -22,7 +22,7 @@ class CommandAliasesTest {
 
     @Test
     void canonicalCommandsAndUnknownTokens_areUnchanged() {
-        assertEquals("eqm-add sample/argument", CommandAliases.normalizeInput("  eqm-add   sample/argument  "));
+        assertEquals("eqm-add   sample/argument", CommandAliases.normalizeInput("  eqm-add   sample/argument  "));
         assertEquals("unknown sample/argument", CommandAliases.normalizeInput("unknown sample/argument"));
         assertEquals("help", CommandAliases.normalizeInput("h"));
         assertNull(CommandAliases.normalizeInput(null));

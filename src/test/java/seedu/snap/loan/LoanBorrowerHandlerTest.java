@@ -146,7 +146,7 @@ class LoanBorrowerHandlerTest {
 
     /** Adds a persisted loan with fixed dates so each selection case is deterministic. */
     private Loan addLoan(String itemId, String borrowerId, String issued, String due) throws Exception {
-        loans.addLoan("loan-add e/" + itemId + " u/" + borrowerId
+        return loans.addLoan("loan-add e/" + itemId + " u/" + borrowerId
                 + " issued/" + issued + " due/" + due);
     }
 

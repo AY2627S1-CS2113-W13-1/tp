@@ -421,7 +421,7 @@ class EquipmentLoanHistoryTest {
 
     /** Creates loans with distinct borrower IDs so history selection is independent of table layout. */
     private Loan addLoan(String itemId, String borrowerId, String issued, String due) throws Exception {
-        loans.addLoan("loan-add e/" + itemId + " u/" + borrowerId + " issued/" + issued + " due/" + due);
+        return loans.addLoan("loan-add e/" + itemId + " u/" + borrowerId + " issued/" + issued + " due/" + due);
     }
 
     /** Completes a loan without removing the record needed by history queries. */

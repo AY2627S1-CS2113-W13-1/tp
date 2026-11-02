@@ -101,7 +101,7 @@ class LoanIssueConditionCommandTest {
     void executeInput_invalidViewCommand_printsFormatError() {
         EqmManager manager = new EqmManager(temporaryDirectory);
 
-        manager.executeInput("view item/001");
+        manager.executeInput("loan-show item/001");
 
         assertEquals(
                 "[ERROR] Invalid command format. Expected: "
@@ -116,7 +116,7 @@ class LoanIssueConditionCommandTest {
         addEquipmentAndLoan(manager);
         output.reset();
 
-        manager.executeInput("view\tloan/001");
+        manager.executeInput("loan-show\tl/001");
 
         assertTrue(
                 output.toString(StandardCharsets.UTF_8)

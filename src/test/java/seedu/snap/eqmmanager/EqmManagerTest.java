@@ -203,8 +203,8 @@ class EqmManagerTest {
         output.reset();
         String expectedMessage = "Invalid delete syntax. ITEM ID must be from 001 to 999.";
         String[] invalidCommands = {
-            "delete",
-            "delete camera/001",
+            "eqm-delete",
+            "eqm-delete camera/001",
             "eqm-delete e/1",
             "eqm-delete e/000",
             "eqm-delete e/1000",

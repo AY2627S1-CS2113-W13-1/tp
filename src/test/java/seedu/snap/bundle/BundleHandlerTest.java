@@ -47,6 +47,29 @@ class BundleHandlerTest {
     }
 
     @Test
+    void malformedCommands_rejectWithoutChangingBundles() throws Exception {
+        assertThrows(IllegalArgumentException.class, () -> new BundleHandler(null));
+        for (String input : new String[]{null, "bundle-create", "bundle-create wrong/Kit"}) {
+            assertThrows(BundleAdditionUnsuccessful.class, () -> bundleHandler.addBundle(input));
+        }
+        for (String input : new String[]{null, "bundle-list extra"}) {
+            assertThrows(BundleAdditionUnsuccessful.class, () -> bundleHandler.viewAllBundles(input));
+        }
+        for (String input : new String[]{null, "bundle-add-eqm", "bundle-add-eqm b/abc 001",
+            "bundle-add-eqm b/000 001"}) {
+            assertThrows(BundleAdditionUnsuccessful.class, () -> bundleHandler.addItemsToBundle(input));
+        }
+        LoanHandler loans = new LoanHandler(equipmentHandler);
+        assertThrows(IllegalArgumentException.class,
+                () -> bundleHandler.getBundleLoanHistory("bundle-history b/001", null));
+        assertThrows(BundleHistoryUnsuccessful.class,
+                () -> bundleHandler.getBundleLoanHistory("bundle-history name/Missing", loans));
+        assertThrows(BundleHistoryUnsuccessful.class,
+                () -> bundleHandler.getBundleLoanHistory("bundle-history wrong/001", loans));
+        assertTrue(bundleHandler.getBundleList().isEmpty());
+    }
+
+    @Test
     void addBundle_assignsThreeDigitSessionIds() throws BundleAdditionUnsuccessful {
         Bundle first = bundleHandler.addBundle("bundle-create name/Travel Kit");
         Bundle second = bundleHandler.addBundle("bundle-create name/Studio Kit");

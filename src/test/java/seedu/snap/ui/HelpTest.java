@@ -47,7 +47,7 @@ class HelpTest {
                                 + "[issued/<DD-MM-YY>] due/<DD-MM-YY>",
                         "loan-add e/001 u/002 issued/24-10-26 due/31-10-26"),
                 Arguments.of("loan-return", "loan-return l/<LOAN ID> serviceable/<yes|no> "
-                                + "damage/<DAMAGE> [remarks/<TEXT>]",
+                                + "damage/<DAMAGE> [cond/<N>] [remarks/<TEXT>]",
                         "loan-return l/001 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair"),
                 Arguments.of("loan-delete", "loan-delete l/<LOAN ID>", "loan-delete l/001"),
                 Arguments.of("loan-update", "loan-update l/<LOAN ID> [e/<ITEM ID>] [u/<BORROWER ID>]"
@@ -147,7 +147,7 @@ class HelpTest {
         for (String topic : TOPICS) {
             assertTrue(text.contains(topic + " (" + CommandAliases.aliasFor(topic) + ")"), topic);
         }
-        assertTrue(text.contains("help <COMMAND>"));
+        assertTrue(text.contains("help <COMMAND OR ALIAS>"));
         assertTrue(text.contains("help all"));
         assertFalse(text.contains("sensor/<TEXT>"));
         assertFalse(text.contains("[TYPE DETAIL]"));
@@ -199,7 +199,8 @@ class HelpTest {
         assertEquals("=".repeat(100), lines.getFirst());
         assertEquals("LOAN-ADD", lines.get(1));
         assertEquals(lines.getFirst(), lines.get(2));
-        assertTrue(lines.get(3).isBlank());
+        assertEquals("Alias: al", lines.get(3));
+        assertTrue(lines.get(4).isBlank());
         assertTrue(text.indexOf("Format:") < text.indexOf("snAp command help"));
         assertTrue(text.contains(System.lineSeparator() + "Notes:" + System.lineSeparator()));
     }
@@ -225,7 +226,8 @@ class HelpTest {
             assertTrue(lines.get(index - 2).isBlank(), "Leave two blank lines before " + heading);
             assertEquals(divider, lines.get(index - 1), heading);
             assertEquals(divider, lines.get(index + 1), heading);
-            assertTrue(lines.get(index + 2).isBlank(), "Separate the heading from its command syntax: " + heading);
+            assertTrue(lines.get(index + 2).startsWith("Alias: "), heading);
+            assertTrue(lines.get(index + 3).isBlank(), "Separate the heading from its command syntax: " + heading);
             previousHeading = index;
         }
     }

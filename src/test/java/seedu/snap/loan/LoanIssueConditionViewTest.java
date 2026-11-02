@@ -116,7 +116,22 @@ class LoanIssueConditionViewTest {
         assertTrue(actual.contains("Status: Active"));
         assertTrue(actual.contains("Condition | Not recorded | Not returned"));
         assertTrue(actual.contains("Issue remarks: Not recorded"));
+        output.reset();
+        handler.viewLoanIssueCondition("loan-show l/001");
+        assertTrue(output.toString(StandardCharsets.UTF_8).contains(
+                "Loan 001 issue-time condition: Not recorded"));
 
+    }
+
+    @Test
+    void viewLoanIssueCondition_invalidSyntaxAndIds_rejectWithoutChangingRecords() {
+        LoanHandler handler = new LoanHandler(new EquipmentHandler());
+        for (String input : new String[]{null, "", "loan-show", "loan-show item/001", "loan-show l/01",
+            "loan-show l/000", "loan-show l/abc"}) {
+            assertThrows(LoanViewingUnsuccessful.class, () -> handler.viewLoanIssueCondition(input));
+            assertTrue(handler.getLoanList().isEmpty());
+            assertEquals("001", handler.getNextLoanId());
+        }
     }
 
     @Test
@@ -132,7 +147,7 @@ class LoanIssueConditionViewTest {
 
         assertEquals(
                 "Invalid command format. Expected: "
-                        + "loan-view l/<LOAN ID>.",
+                        + "loan-view l/[LOAN ID].",
                 exception.getMessage());
     }
 

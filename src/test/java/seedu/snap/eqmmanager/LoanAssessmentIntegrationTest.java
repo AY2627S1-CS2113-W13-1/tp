@@ -149,7 +149,7 @@ class LoanAssessmentIntegrationTest {
 
     @Test
     void help_explainsOptionalRatingAndHistoricalComparison() {
-        manager.executeInput("help return");
+        manager.executeInput("help loan-return");
         manager.executeInput("help loan-view");
 
         String helpText = printed().replaceAll("\\s+", " ");

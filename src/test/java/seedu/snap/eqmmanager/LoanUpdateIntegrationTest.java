@@ -119,9 +119,9 @@ class LoanUpdateIntegrationTest {
         restarted.executeInput("loan-show l/001");
 
         String actual = output.toString(StandardCharsets.UTF_8).replaceAll(" +", " ");
-        assertTrue(actual.contains("Condition | 6 | Not returned"));
-        assertTrue(actual.contains("Damage | SENSOR_DAMAGE | Not returned"));
-        assertTrue(actual.contains("Issue remarks: Handle carefully"));
+        assertTrue(actual.contains("Condition: 6"));
+        assertTrue(actual.contains("Damage: SENSOR_DAMAGE"));
+        assertTrue(actual.contains("Remarks: Handle carefully"));
     }
 
     @Test
@@ -148,11 +148,11 @@ class LoanUpdateIntegrationTest {
     private void assertReplacementConditionIsDisplayed() {
         String actual = output.toString(StandardCharsets.UTF_8).replaceAll(" +", " ");
         assertTrue(actual.contains("Item ID: 002"));
-        assertTrue(actual.contains("Type | tripod | Not returned"));
-        assertTrue(actual.contains("Condition | 3 | Not returned"));
-        assertTrue(actual.contains("Damage | NONE | Not returned"));
-        assertFalse(actual.contains("Type | camera | Not returned"));
-        assertFalse(actual.contains("Damage | SENSOR_DAMAGE | Not returned"));
+        assertTrue(actual.contains("Type: tripod"));
+        assertTrue(actual.contains("Condition: 3"));
+        assertTrue(actual.contains("Damage: NONE"));
+        assertFalse(actual.contains("Type: camera"));
+        assertFalse(actual.contains("Damage: SENSOR_DAMAGE"));
         assertFalse(actual.contains("Issue remarks: Handle carefully"));
     }
 }

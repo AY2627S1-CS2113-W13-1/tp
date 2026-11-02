@@ -14,6 +14,13 @@ import seedu.snap.exceptions.LoanBorrowerUnsuccessful;
 /** Tests strict parsing of commands that query equipment held by a borrower. */
 class LoanBorrowerQueryTest {
     @Test
+    void constructor_invalidBorrowerIds_rejectsDirectQueries() {
+        for (String id : new String[]{null, "", "01", "1000", "abc"}) {
+            assertThrows(IllegalArgumentException.class, () -> new LoanBorrowerQuery(id));
+        }
+    }
+
+    @Test
     void parse_borrowerCommand_returnsBorrowerId() throws Exception {
         LoanBorrowerQuery query = LoanBorrowerQuery.parse("loan-list-borrower u/002");
 
