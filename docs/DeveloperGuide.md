@@ -1105,12 +1105,6 @@ No overdue loans found.
 
 The handler records the number of matching loans through diagnostic logging, including the valid zero-result case.
 
-[![Overdue-loan sequence: obtain one reference date, evaluate each loan and display the matching read-only list.](images/OverdueLoanSequence.svg)](images/OverdueLoanSequence.svg)
-
-*Figure 17. The overdue query derives current state from one reference date and does not save or mutate records.*
-
-[PlantUML source](diagrams/OverdueLoanSequence.puml)
-
 #### Defensive behaviour
 
 The reference date must not be `null`. A null reference date represents a programming error because users do not provide it directly. `Loan.isOverdue(...)` and `LoanHandler.getOverdueLoans(...)` therefore reject it with a `NullPointerException`.

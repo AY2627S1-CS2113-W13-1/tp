@@ -77,8 +77,9 @@ keeping equipment references consistent when an item is borrowed or updated.
   component responsibilities and storage descriptions, simplified duplicated prose and updated the architecture
   source and rendered diagram.
   ([#152](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/152), merged)
-- **Cross-feature DG peer review:** Reviewed the existing loan-issuance, backup/restore and overdue-loan designs,
-  audited all 18 diagram sources, added focused diagrams, and tightened the user stories and manual-testing path.
+- **Cross-feature DG peer review:** Reviewed the existing loan-issuance and backup/restore designs, audited the
+  diagram sources, added focused loan-issuance, restore and loan-assessment diagrams, and tightened the user stories
+  and manual-testing path.
   This is documentation and verification work for features implemented by their original contributors, not a
   claim of implementation ownership. ([#168](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/168))
 

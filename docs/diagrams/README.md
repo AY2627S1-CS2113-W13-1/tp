@@ -27,7 +27,6 @@ The equipment-management designs also include:
 | [LoanAdditionSequence.puml](LoanAdditionSequence.puml) | Saving a valid new loan before reserving its equipment. |
 | [ReturnSequence.puml](ReturnSequence.puml) | Applying a saved return assessment to the original objects. |
 | [ReturnSaveFailure.puml](ReturnSaveFailure.puml) | Restoring captured files after a return save fails. |
-| [OverdueLoanSequence.puml](OverdueLoanSequence.puml) | Read-only overdue-loan selection using one reference date. |
 | [BackupRestoreSequence.puml](BackupRestoreSequence.puml) | Staged restore validation and rollback of live files. |
 | [LoanAssessmentObject.puml](LoanAssessmentObject.puml) | One returned loan's immutable issue and return snapshots. |
 
