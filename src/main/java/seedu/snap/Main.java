@@ -20,12 +20,10 @@ public class Main {
         configureStandardOutput();
         AppLogging logging = AppLogging.start();
         try (logging) {
-            // @@author yarnieee
             EqmManager eqmManager = new EqmManager();
             eqmManager.run();
         }
     }
-    // @@author
 
     /**
      * Uses UTF-8 for piped output, including Gradle runs, so Windows does not replace Unicode with question marks.

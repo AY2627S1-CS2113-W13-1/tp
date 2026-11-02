@@ -141,20 +141,16 @@ public class Bundle {
         for (int index = 0; index < equipment.size(); index++) {
             if (equipment.get(index).getItemId().equals(itemId)) {
                 equipment.remove(index);
-                // @@author yarnieee
                 updateCompletionState();
-                // @@author
                 assert !containsEquipmentId(itemId) : "Removed equipment must not remain in the bundle.";
                 LOGGER.log(Level.INFO, "Removed equipment {0} from bundle {1}.",
                         new Object[] {itemId, bundleId});
-                // @@author yarnieee
                 return true;
             }
         }
         return false;
     }
 
-    // @@author
     /** Restores a previous equipment snapshot after a failed persistence operation. */
     void restoreEquipment(List<Equipment> previousEquipment) {
         if (previousEquipment == null) {
