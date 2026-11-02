@@ -1,0 +1,46 @@
+@startuml LoanAssessmentObject
+!include style.puml
+left to right direction
+skinparam objectAttributeIconSize 0
+
+object "loan001:Loan" as Loan {
+  loanId = "001"
+  itemId = "014"
+  borrowerId = "027"
+  returned = true
+}
+
+object "issue:EquipmentConditionSnapshot" as Issue {
+  equipmentType = "camera"
+  condition = 8
+  damage = NONE
+  remarks = ""
+}
+
+object "returnAssessment:LoanReturnAssessment" as Return {
+  serviceable = false
+}
+
+object "returnedCondition:EquipmentConditionSnapshot" as ReturnedCondition {
+  equipmentType = "camera"
+  condition = 6
+  damage = SENSOR_DAMAGE
+  remarks = "Needs repair"
+}
+
+object "currentItem:Camera" as Current {
+  itemId = "014"
+  condition = 7
+  serviceable = false
+}
+
+Loan *-- Issue : issueConditionSnapshot
+Loan *-- Return : returnAssessment
+Return *-- ReturnedCondition : condition
+Loan .. Current : same physical record identity
+
+note bottom of Current
+Current equipment may change later.
+The two loan snapshots retain copied values.
+end note
+@enduml

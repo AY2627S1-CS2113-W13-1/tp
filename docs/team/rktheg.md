@@ -43,6 +43,11 @@ keeping equipment references consistent when an item is borrowed or updated.
   cleanup. Handled logging setup I/O failures with a warning so commands can continue. Added equipment
   invariants and tests for shared diagnostics, cleanup and validation with assertions enabled and disabled.
   ([#30](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/30))
+- **Immutable loan return assessments:** Extended each loan to retain separate issue-time and return-time
+  condition snapshots, including serviceability, without consulting mutable current equipment. Added compatible
+  storage codecs, legacy-record handling, command output and regression coverage for restarts, Item ID reuse,
+  failed saves and repeated borrowing.
+  ([#166](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/166))
 
 ### Documentation
 
@@ -50,18 +55,32 @@ keeping equipment references consistent when an item is borrowed or updated.
   [filtering](../UserGuide.md#filtering-equipment-filter) and
   [updates](../UserGuide.md#updating-equipment-update), including condition ranges, rejected commands and
   preservation of existing records. Evidence is in the feature PRs above.
+- **Loan-assessment documentation:** Updated the
+  [return](../UserGuide.md#returning-equipment-return) and
+  [loan-assessment](../UserGuide.md#comparing-a-loans-condition-assessments-view-loan) guidance, and documented
+  [per-loan condition preservation](../DeveloperGuide.md#preserving-condition-assessments-for-each-loan) in the
+  DG. Added sequence and object diagrams showing that issue and return snapshots belong to the loan and remain
+  independent of later equipment changes. ([#166](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/166), merged)
 - **Developer Guide:** Documented [equipment management](../DeveloperGuide.md#equipment-management), covering
   the shared inventory, addition, availability, filtering and updates, plus logging and assertions. Explained
   validation, save failures, design choices and testing. Added the application architecture, shared class
   diagram, command sequences, availability states and logging lifecycle, with editable PlantUML sources
-  and SVG images. Shared the vibrant theme with explicit UML visibility symbols.
+  and SVG images. Introduced shared PlantUML styling and consistent UML visibility notation.
   ([#80](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/80),
   [#88](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/88),
   [#82](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/82), all merged)
 - **Guide review fixes:** Added a worked example and recovery guidance to the UG, and updated diagrams to
   current code. Completed the DG acknowledgements, scope, user stories, glossary and a verified manual test
   path, and refined seven NFRs.
-  ([#131](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/131), awaiting review)
+  ([#131](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/131), merged)
+- **Architecture consistency review:** Reconciled the DG with the implemented maintenance feature, corrected
+  component responsibilities and storage descriptions, simplified duplicated prose and updated the architecture
+  source and rendered diagram.
+  ([#152](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/152), merged)
+- **Cross-feature DG peer review:** Reviewed the existing loan-issuance, backup/restore and overdue-loan designs,
+  added focused diagrams, and tightened the user stories and manual-testing path. This is documentation and
+  verification work for features implemented by their original contributors, not a claim of implementation
+  ownership.
 
 ### Team tasks and reviews
 

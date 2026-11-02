@@ -1,0 +1,32 @@
+@startuml OverdueLoanSequence
+!include style.puml
+hide footbox
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 170
+
+participant ":EqmManager" as Manager
+participant ":LoanHandler" as Handler
+participant "loan:Loan" as Loan
+participant "LoanView" as View <<utility>>
+
+Manager -> Manager: LocalDate.now(clock)
+Manager -> Handler: viewOverdueLoans(referenceDate)
+activate Handler
+Handler -> Handler: getOverdueLoans(referenceDate)
+loop each stored loan
+    Handler -> Loan: isOverdue(referenceDate)
+    activate Loan
+    Loan --> Handler: not returned and due before date
+    deactivate Loan
+end
+Handler -> View: print(matches, referenceDate, ...)
+activate View
+View --> Handler
+deactivate View
+Handler --> Manager
+deactivate Handler
+note over Handler, View
+The query preserves stored order and performs no save.
+An empty result prints "No overdue loans found."
+end note
+@enduml

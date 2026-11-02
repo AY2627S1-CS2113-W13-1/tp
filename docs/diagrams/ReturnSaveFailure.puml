@@ -14,7 +14,7 @@ activate Store
 loop each configured file
     Store -> Store: FileSnapshot.capture(file)
     create participant "snapshot:FileSnapshot" as Snapshot
-    Store -> Snapshot: new(path, state, bytes)
+    Store -> Snapshot: new(path, existed, regularFile, contents)
     Snapshot --> Store: snapshot
 end
 note right of Store

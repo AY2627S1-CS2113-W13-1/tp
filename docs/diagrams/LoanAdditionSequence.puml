@@ -1,0 +1,47 @@
+@startuml LoanAdditionSequence
+!include style.puml
+hide footbox
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 170
+
+participant ":EqmManager" as Manager
+participant ":LoanHandler" as Handler
+participant ":EquipmentHandler" as Inventory
+participant "item:Equipment" as Item
+participant "loan:Loan" as Loan
+participant "LoanStorage" as Storage <<utility>>
+
+Manager -> Handler: addLoan(input)
+activate Handler
+Handler -> Handler: parseLoanCommand(input)
+Handler -> Handler: hasActiveLoanForItem(itemId)
+Handler -> Inventory: findAvailableEquipment(itemId)
+activate Inventory
+alt item missing, loaned or unserviceable
+    Inventory --> Handler: LoanAdditionUnsuccessful
+    deactivate Inventory
+    Handler --> Manager: LoanAdditionUnsuccessful
+else item is available
+    Inventory --> Handler: item
+    deactivate Inventory
+    create Loan
+    Handler -> Loan: new(loanId, item, borrower, dates)
+    activate Loan
+    Loan --> Handler: detached loan with issue snapshot
+    deactivate Loan
+    Handler -> Storage: save(proposedLoans, nextLoanNumber + 1)
+    activate Storage
+    Storage --> Handler: saved successfully
+    deactivate Storage
+    Handler -> Loan: attachEquipment(item)
+    activate Loan
+    Loan -> Item: setLoanId(loanId)
+    activate Item
+    Item --> Loan
+    deactivate Item
+    Loan --> Handler
+    deactivate Loan
+    Handler --> Manager: loan
+end
+deactivate Handler
+@enduml

@@ -31,12 +31,13 @@ Manager ..> Bundles
 Manager ..> Maintenance
 Loans .right.> Equipment : inventory
 Bundles .left.> Equipment : inventory
-Maintenance ..> Equipment : identity lookup
+Maintenance .down.> Equipment
 Equipment ..> Storage : loads / saves
 Loans ..> Storage : loads / saves
 Bundles ..> Storage : loads / saves
 Maintenance ..> Storage : loads / saves
 Storage ..> Files : reads / writes
+Manager .down.> Files : backup / restore
 
 legend bottom left
 Arrows show dependencies, not execution order.

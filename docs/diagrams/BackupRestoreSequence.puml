@@ -1,0 +1,58 @@
+@startuml BackupRestoreSequence
+!include style.puml
+hide footbox
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 180
+
+participant ":EqmManager" as Manager
+participant ":BackupHandler" as Backup
+participant "backup files" as Source
+participant "staging directory" as Stage
+participant "live data files" as Live
+participant "equipment, loan and\nbundle handlers" as Handlers
+
+Manager -> Backup: restoreBackup(input)
+activate Backup
+Backup -> Source: read files and verify manifest
+activate Source
+Source --> Backup: snapshot
+deactivate Source
+Backup -> Stage: writeLiveFiles(snapshot)
+activate Stage
+Stage --> Backup
+deactivate Stage
+Backup -> Handlers: load staged equipment and loans
+activate Handlers
+Handlers --> Backup: validated records
+deactivate Handlers
+note over Stage, Handlers
+Temporary handlers validate the staged records
+before any live file is replaced.
+end note
+Backup -> Live: capture original files
+activate Live
+Live --> Backup: original snapshots
+deactivate Live
+Backup -> Live: replace equipment, loans and sequence
+activate Live
+Live --> Backup
+deactivate Live
+Backup -> Handlers: clear and save bundles; reload handlers
+activate Handlers
+alt replacement, bundle clearing or reload fails
+    Handlers --> Backup: failure
+    deactivate Handlers
+    loop captured original files
+        Backup -> Live: restore()
+        Live --> Backup
+    end
+    Backup -> Handlers: reload restored records
+    Handlers --> Backup
+    Backup --> Manager: BackupUnsuccessful
+else all changes succeed
+    Handlers --> Backup: reloaded state
+    deactivate Handlers
+    Backup --> Manager: source path
+end
+deactivate Backup
+@enduml
