@@ -47,19 +47,21 @@ existing records when an operation fails.
   bundles (`B001`) and borrowers (`U001`). Normalised lowercase input to canonical uppercase IDs and migrated
   legacy numeric saved records while rejecting collisions after normalisation. Updated validation, storage,
   command help, guides and tests across the affected features.
-  ([PR #170](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/170), merged)
+  ([PR #170](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/170))
 - **Consistent commands and aliases:** Standardised equipment, loan and bundle commands, including `eqm-add`,
   `loan-add` and `bundle-create`, with consistent field prefixes. Centralised short aliases in `CommandAliases`
   so routing and help use the same mapping; for example, `ae` invokes `eqm-add`. Updated documentation,
   examples and regression tests alongside the command handlers.
-  ([PR #171](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/171), merged)
+  ([PR #171](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/171))
 
 ### Testing and quality
 
 - Added focused unit and integration tests for loan creation, invalid commands, equipment subclasses, bundle
   validation, storage and loan-ID persistence, including failed saves and restart behaviour.
 - Added regression coverage for typed-ID validation, case normalisation, legacy migration and collisions, and
-  for canonical command names, aliases and command-help consistency in PRs #170 and #171.
+  for canonical command names, aliases and command-help consistency in
+  [PR #170](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/170) and
+  [PR #171](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/171).
 - Used assertions and diagnostic logging to detect inconsistent loan counts, invalid internal state and failed
   operations while retaining the intended command-line behaviour.
 - Prepared a broader JaCoCo coverage audit and regression tests for malformed storage, equipment ownership,
@@ -79,25 +81,25 @@ existing records when an operation fails.
 - **Bundle compatibility design:** Added a Developer Guide explanation, sequence diagram, rendered SVG and
   diagram-index entry. Documented per-item validation, rejection of known incompatibilities, permitted unknown
   comparisons, partial success and saving bundle membership on exit.
-  ([PR #181](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/181), merged)
+  ([PR #181](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/181))
 - **Loan update and reassignment design:** Added a Developer Guide subsection, sequence diagram and rendered SVG
   covering ownership validation, metadata-only updates and equipment reassignment. Explained preserving or
   recapturing issue-condition snapshots, saving proposals before changing live objects and retaining original
   state after failed saves. These UML contributions document the existing bundle-compatibility and loan-update
   implementations.
-  ([PR #182](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/182), merged)
+  ([PR #182](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/182))
 - **Team documentation:** Updated the About Us page and team documentation links.
   ([PR #1](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/1))
 
 ### Team contributions and reviews
 
 - **Code reviews:** Reviewed teammate work in [PR #12](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/12),
-  [#14](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/14),
-  [#15](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/15),
-  [#17](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/17),
-  [#22](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/22),
-  [#23](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/23) and
-  [#69](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/69). Feedback covered integration with the current
+  [PR #14](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/14),
+  [PR #15](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/15),
+  [PR #17](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/17),
+  [PR #22](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/22),
+  [PR #23](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/23) and
+  [PR #69](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/69). Feedback covered integration with the current
   codebase, Javadocs, input validation, deletion semantics, code quality and persistence; changes were requested
   where necessary and approvals were given after follow-up updates.
 - Also left implementation review comments on [PR #65](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/65)
