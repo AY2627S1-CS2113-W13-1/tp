@@ -44,6 +44,12 @@ The maintenance and backup designs include:
 | [MaintenanceRecordSequence.puml](MaintenanceRecordSequence.puml) | Command routing, validation, permanent identity resolution and save-before-append success and failure paths. |
 | [MaintenanceBackupClasses.puml](MaintenanceBackupClasses.puml) | Maintenance record ownership, shared handlers, storage dependencies and backup/restore boundaries. |
 
+The loan-update design includes:
+
+| Source | Design illustrated |
+| --- | --- |
+| [LoanUpdateSequence.puml](LoanUpdateSequence.puml) | Save-before-change loan updates and equipment reassignment. |
+
 The current images were rendered with [PlantUML](https://plantuml.com/download) 1.2026.9 and Java 25.
 From the repository root, replace `path/to/plantuml.jar` with your local JAR path and run, for example:
 

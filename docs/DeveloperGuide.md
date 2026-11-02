@@ -861,6 +861,37 @@ reuse, legacy files, restarts, backup/restore, read-only viewing and failed save
 
 `LoanConditionSnapshotStorageTest` verifies direct save/load round trips, legacy records and malformed snapshot data. `LoanIssueConditionViewTest` covers handler-level output for recorded and missing snapshots, invalid and unknown loan IDs, and formatting. `LoanIssueConditionCommandTest` covers CLI routing, persistence across application restart, and that viewing leaves `equipment.txt`, `loans.txt` and `loan-sequence.txt` unchanged.
 
+### Updating an active loan and reassigning equipment
+
+`update loan/001 b/003 due/31-10-26` changes borrower or date fields while keeping the active equipment object.
+Supplying an item field, such as `update loan/001 id/002`, requests a reassignment to another physical equipment
+record. `LoanHandler.updateLoan(...)` parses the optional fields with `LoanUpdate.parse(...)`, finds exactly one
+active loan, verifies its current equipment ownership and rejects a missing, loaned or unserviceable replacement.
+This extends the [availability and loan ownership](#availability-and-loan-ownership) rules and the
+[issue-condition snapshots](#preserving-equipment-condition-when-a-loan-is-issued).
+
+The handler fills omitted values from the current loan and creates a detached proposal with
+`Loan.updatedCopy(...)`. A same-item update keeps the existing issue-condition snapshot and serviceability. A
+reassignment captures the replacement's condition, damage and remarks in a new `EquipmentConditionSnapshot`,
+with issue serviceability stored separately on `Loan`. The proposal keeps the original Loan ID and replaces the matching entry in a copied
+loan list.
+
+[![Loan update sequence: validate a proposal, save it, then release the old equipment and bind a replacement.](images/LoanUpdateSequence.svg)](images/LoanUpdateSequence.svg)
+
+*Figure 15. Loan updates save a detached proposal before changing loan fields or equipment ownership.*
+
+[PlantUML source](diagrams/LoanUpdateSequence.puml)
+
+`LoanHandler.save(...)` writes the proposed loans and unchanged next-loan counter before
+`Loan.applyUpdate(...)` changes the live loan. When the replacement differs, `applyUpdate(...)` clears the old
+equipment's loan ID and assigns the Loan ID to the replacement; metadata-only updates leave the association intact.
+A save failure therefore leaves the original borrower, dates, snapshot and equipment flags unchanged. A successful
+update preserves the Loan ID and loan count, while later views use the replacement's captured issue assessment.
+
+`LoanUpdateTest` covers optional fields, duplicate fields, date ordering and identifier boundaries.
+`LoanUpdateIntegrationTest` covers metadata-only updates, reassignment, replacement serviceability, snapshot
+capture, permanent Loan ID preservation, failed saves and retry after failure.
+
 ### Equipment management
 
 The shared model above supplies the inventory and availability rules for
@@ -907,7 +938,7 @@ Duplicate IDs are rejected because replacing an existing entry could detach loan
 [![Equipment addition: reject an existing Item ID or save before appending a new item](images/EquipmentAdditionSequence.svg)](images/EquipmentAdditionSequence.svg)
 
 <!-- @@author holsoma -->
-*Figure 15. Equipment addition rejects duplicate Item IDs and saves new items before insertion.*
+*Figure 16. Equipment addition rejects duplicate Item IDs and saves new items before insertion.*
 <!-- @@author -->
 
 [PlantUML source](diagrams/EquipmentAdditionSequence.puml)
@@ -962,7 +993,7 @@ save files or consume identifiers.
 [![Equipment filtering: parse criteria, inspect current loans and display original matching items without saving](images/EquipmentFilterSequence.svg)](images/EquipmentFilterSequence.svg)
 
 <!-- @@author holsoma -->
-*Figure 16. Equipment filtering displays matching items without changing records or saved files.*
+*Figure 17. Equipment filtering displays matching items without changing records or saved files.*
 <!-- @@author -->
 
 [PlantUML source](diagrams/EquipmentFilterSequence.puml)
@@ -1009,7 +1040,7 @@ For an existing camera `001`, `update id/001 i/Film Camera cond/5` follows this 
 [![Equipment update: validate and save the proposed inventory before changing the existing camera](images/equipment-update-sequence.svg)](images/equipment-update-sequence.svg)
 
 <!-- @@author holsoma -->
-*Figure 17. Equipment updates validate and save proposed details before changing the original object.*
+*Figure 18. Equipment updates validate and save proposed details before changing the original object.*
 <!-- @@author -->
 
 [PlantUML source](diagrams/equipment-updates/equipment-update-sequence.puml)
@@ -1067,7 +1098,7 @@ diagnostics out of normal command output.
 [![Logging lifecycle: configure shared output, run the application and close the session](images/LoggingLifecycle.svg)](images/LoggingLifecycle.svg)
 
 <!-- @@author holsoma -->
-*Figure 18. Shared logging is configured at startup and closed when the application ends.*
+*Figure 19. Shared logging is configured at startup and closed when the application ends.*
 <!-- @@author -->
 
 [PlantUML source](diagrams/LoggingLifecycle.puml)
@@ -1132,11 +1163,11 @@ The reference date is supplied to the method instead of being obtained directly 
 
 [![Overdue-loan classes: the manager delegates to a loan handler, which manages loans that own the overdue rule](images/OverdueLoanClasses.svg)](images/OverdueLoanClasses.svg)
 
-*Figure 19. Classes responsible for identifying and displaying overdue loans.*
+*Figure 20. Classes responsible for identifying and displaying overdue loans.*
 
 [PlantUML source](diagrams/OverdueLoanClasses.puml)
 
-Figure 19 focuses on the three classes that own command routing, selection and the overdue rule. The navigable
+Figure 20 focuses on the three classes that own command routing, selection and the overdue rule. The navigable
 associations show that one `EqmManager` delegates to one `LoanHandler`, which manages zero or more `Loan` objects.
 The temporary result collection and display utility are omitted because they do not change
 these responsibilities.
@@ -1147,11 +1178,11 @@ When the user enters `list overdue`, `EqmManager` obtains the current local date
 
 [![Overdue-loan sequence: read one reference date, evaluate each managed loan and display the selected records](images/OverdueLoanSequence.svg)](images/OverdueLoanSequence.svg)
 
-*Figure 20. The `list overdue` command reuses one reference date and does not change managed records.*
+*Figure 21. The `list overdue` command reuses one reference date and does not change managed records.*
 
 [PlantUML source](diagrams/OverdueLoanSequence.puml)
 
-Figure 20 reuses the single reference date while the handler evaluates each managed loan. The `loop` represents
+Figure 21 reuses the single reference date while the handler evaluates each managed loan. The `loop` represents
 the managed collection, and the guarded `opt` fragment adds only matching loans. Display formatting is delegated
 to `LoanView`; diagnostic logging and individual print calls are omitted. The query performs no storage calls or
 model mutations.
