@@ -64,7 +64,7 @@ class EquipmentStorageTest {
     }
 
     @Test
-    void load_legacyAndCanonicalIds_collidingAfterMigration_rejectsFile() throws IOException {
+    void load_collidingLegacyAndCanonicalIds_rejectsFile() throws IOException {
         Path file = temporaryDirectory.resolve("equipment.txt");
         Files.writeString(file, "add i/Legacy camera id/001 type/camera cond/1\n"
                 + "add i/Canonical camera id/E001 type/camera cond/1\n");

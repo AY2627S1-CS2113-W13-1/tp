@@ -86,7 +86,7 @@ class MainTest {
         assertFalse(output.contains("WARNING:"));
         assertFalse(output.contains("INFO:"));
         String logs = Files.readString(temporaryDirectory.resolve("logs/snap.log.0"));
-        for (String message : new String[]{"Added equipment with item ID E001", "Deleted loan 001 for item ID E001",
+        for (String message : new String[]{"Added equipment with item ID E001", "Deleted loan L001 for item ID E001",
             "No loan found for loan ID L999"}) {
             assertEquals(1L, logs.lines().filter(line -> line.contains(message)).count());
         }
@@ -114,7 +114,7 @@ class MainTest {
         assertTrue(secondRun.contains("Sensor format: Full frame"));
         assertTrue(secondRun.contains("Damage: SHUTTER_FAULT"));
         assertTrue(secondRun.contains("E001"));
-        assertTrue(secondRun.contains("E002"));
+        assertTrue(secondRun.contains("U002"));
     }
 
     @Test

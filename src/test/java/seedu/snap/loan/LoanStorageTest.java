@@ -89,7 +89,7 @@ class LoanStorageTest {
     }
 
     @Test
-    void load_legacyAndCanonicalLoanIds_collidingAfterMigration_rejectsFile() throws Exception {
+    void load_collidingLegacyAndCanonicalLoanIds_rejectsFile() throws Exception {
         EquipmentHandler equipment = inventoryWithItems("001");
         Path file = temporaryDirectory.resolve("loans.txt");
         Files.writeString(file, "loan loanId/001 id/001 b/002 issued/01-10-26 due/02-10-26\n"

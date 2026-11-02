@@ -102,7 +102,7 @@ class LoanUpdateIntegrationTest {
         restarted.executeInput("list loans");
 
         String actual = output.toString(StandardCharsets.UTF_8);
-        assertTrue(actual.contains("| 001     | 001     | 007         |"));
+        assertTrue(actual.contains("| L001    | E001    | U007        |"));
         assertTrue(actual.contains("15-10-26"));
     }
 

@@ -98,7 +98,7 @@ class EquipmentViewTest {
         assertEquals("camera", cells[3].strip());
         assertEquals("1", cells[4].strip());
         assertEquals("Available", cells[5].strip());
-        assertEquals(96, row.length());
+        assertEquals(97, row.length());
         output.reset();
 
         handler.viewEquipment(List.of(item));

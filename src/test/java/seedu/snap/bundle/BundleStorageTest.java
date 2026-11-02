@@ -94,7 +94,7 @@ class BundleStorageTest {
     }
 
     @Test
-    void load_legacyAndCanonicalBundleIds_collidingAfterMigration_rejectsFile() throws Exception {
+    void load_collidingLegacyAndCanonicalBundleIds_rejectsFile() throws Exception {
         Path file = temporaryDirectory.resolve("bundles.txt");
         String encodedName = Base64.getUrlEncoder().withoutPadding()
                 .encodeToString("Kit".getBytes(StandardCharsets.UTF_8));
