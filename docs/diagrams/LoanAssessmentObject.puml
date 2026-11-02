@@ -4,9 +4,11 @@ left to right direction
 skinparam objectAttributeIconSize 0
 
 object "loan001:Loan" as Loan {
+' @@author yarnieee
   loanId = "L001"
   itemId = "E014"
   borrowerId = "U027"
+' @@author
   returned = true
 }
 
@@ -29,7 +31,9 @@ object "returnedCondition:EquipmentConditionSnapshot" as ReturnedCondition {
 }
 
 object "currentItem:Camera" as Current {
+' @@author yarnieee
   itemId = "E014"
+' @@author
   condition = 7
   serviceable = false
 }

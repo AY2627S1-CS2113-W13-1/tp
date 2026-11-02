@@ -1,14 +1,18 @@
+// @@author yarnieee
 package seedu.snap.loan;
 
+// @@author
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Clock;
+// @@author yarnieee
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
 import java.util.ArrayList;
+// @@author
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -19,11 +23,15 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.Objects;
+// @@author yarnieee
 
 import seedu.snap.Identifier;
+// @@author
 import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.EquipmentHandler;
+// @@author yarnieee
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
+// @@author
 import seedu.snap.exceptions.LoanBorrowerUnsuccessful;
 import seedu.snap.exceptions.LoanDeletionUnsuccessful;
 import seedu.snap.exceptions.LoanReturnUnsuccessful;
@@ -31,13 +39,18 @@ import seedu.snap.exceptions.LoanHistoryUnsuccessful;
 import seedu.snap.ui.LoanView;
 import seedu.snap.exceptions.LoanViewingUnsuccessful;
 import seedu.snap.exceptions.LoanUpdateUnsuccessful;
+// @@author yarnieee
 
 /** Parses loan commands and stores successfully created loans. */
 public class LoanHandler {
+    // @@author
     private static final int EXPECTED_ADD_ARGUMENT_COUNT = 5;
+    // @@author yarnieee
     private static final int FIRST_LOAN_NUMBER = 1;
     private static final int MAX_LOAN_NUMBER = 999;
+    // @@author
     private static final Logger logger = Logger.getLogger(LoanHandler.class.getName());
+    // @@author yarnieee
     private static final String LOAN_COMMAND_FORMAT = "Invalid command format. Use: loan-add e/[ITEM ID] "
             + "u/[BORROWER ID] [issued/DD-MM-YY] due/[DD-MM-YY]. Omitted issued/ uses today's date.";
     private static final String LEGACY_LOAN_COMMAND = "loan";
@@ -46,6 +59,7 @@ public class LoanHandler {
     private static final Pattern HISTORY_COMMAND = Pattern.compile("(?U)\\Aeqm-loan-history\\s+e/([Ee][0-9]{3})\\z");
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-uu")
             .withResolverStyle(ResolverStyle.STRICT);
+    // @@author
 
     /** Inventory whose item availability is maintained by this handler. */
     private final EquipmentHandler equipment;
@@ -56,23 +70,33 @@ public class LoanHandler {
     /** File used for persistence, or null when the handler is intentionally in-memory only. */
     private final Path storageFile;
     /** File storing the next identifier independently of deleted loan records. */
+    // @@author yarnieee
     private final Path sequenceFile;
+    // @@author
     /** Supplies the local date once when an interactive loan command omits its issue date. */
     private final Clock clock;
+    // @@author yarnieee
     private int nextLoanNumber = FIRST_LOAN_NUMBER;
+    // @@author
 
     /** Creates an in-memory loan handler, mainly useful for isolated unit tests. */
     public LoanHandler(EquipmentHandler equipment) {
+        // @@author yarnieee
         this(equipment, null, null);
+        // @@author
     }
 
     /** Creates a loan handler backed by the supplied text file. */
     public LoanHandler(EquipmentHandler equipment, Path storageFile) {
+        // @@author yarnieee
         this(equipment, storageFile, defaultSequenceFile(storageFile));
     }
 
+    // @@author
     /** Creates a handler with explicit loan and sequence files and a required equipment inventory. */
+    // @@author yarnieee
     public LoanHandler(EquipmentHandler equipment, Path storageFile, Path sequenceFile) {
+        // @@author
         this(equipment, storageFile, sequenceFile, Clock.systemDefaultZone());
     }
 
@@ -84,7 +108,9 @@ public class LoanHandler {
         assert equipment != null : "Loan handler requires an inventory";
         this.equipment = equipment;
         this.storageFile = storageFile;
+        // @@author yarnieee
         this.sequenceFile = sequenceFile;
+        // @@author
         this.clock = clock;
     }
 
@@ -145,8 +171,10 @@ public class LoanHandler {
                 throw new IOException("Invalid active loan for item ID " + loan.getItemId() + ": "
                         + exception.getMessage(), exception);
             }
+            // @@author yarnieee
         }
 
+        // @@author
         // Persist migration before changing the current list, counter, equipment flags or links.
         if (result.migrated() || identitiesAdded) {
             LoanStorage.save(storageFile, loaded, sequenceFile, result.nextLoanNumber());
@@ -169,10 +197,13 @@ public class LoanHandler {
         numLoans = loans.size();
         nextLoanNumber = result.nextLoanNumber();
         assert numLoans == loans.size() : "numLoans should match the size of the loans list";
+        // @@author yarnieee
         assert nextLoanNumber >= FIRST_LOAN_NUMBER && nextLoanNumber <= MAX_LOAN_NUMBER + 1
                 : "Next loan number must remain within its supported range";
+        // @@author
         logger.log(Level.INFO, "Loaded {0} loan(s) from {1}", new Object[]{numLoans, storageFile});
     }
+    // @@author yarnieee
 
 
     /**
@@ -183,19 +214,24 @@ public class LoanHandler {
      * @throws LoanAdditionUnsuccessful when the command cannot be added
      */
     public Loan addLoan(String input) throws LoanAdditionUnsuccessful {
+        // @@author
         Loan parsed = parseLoanCommand(input);
         String itemId = parsed.getItemId();
+        // @@author yarnieee
 
         if (hasActiveLoanForItem(itemId)) {
             logger.log(Level.WARNING, "Loan rejected: item ID {0} already has an active loan.", itemId);
             throw new LoanAdditionUnsuccessful("An active loan already exists for item ID " + itemId + ".");
         }
 
+        // @@author
         Equipment item = findAvailableEquipment(itemId);
+        // @@author yarnieee
         if (nextLoanNumber > MAX_LOAN_NUMBER) {
             throw new LoanAdditionUnsuccessful("No loan IDs remain; the maximum is 999.");
         }
         String loanId = formatLoanId(nextLoanNumber);
+        // @@author
         Loan loan = new Loan(loanId, item, parsed.getBorrowerId(), parsed.getIssuedDate(), parsed.getDueDate());
         assert loan != null : "Created loan must not be null.";
         ArrayList<Loan> updatedLoans = new ArrayList<>(loans);
@@ -205,18 +241,22 @@ public class LoanHandler {
         } catch (IOException e) {
             logger.log(Level.WARNING, "Loan addition could not be saved", e);
             throw new LoanAdditionUnsuccessful("Could not save loan: " + e.getMessage());
+            // @@author yarnieee
         }
 
         loans.add(loan);
         numLoans++;
         nextLoanNumber++;
+        // @@author
         loan.attachEquipment(item);
+        // @@author yarnieee
         assert item.isLoaned() : "A successfully added loan must mark equipment as loaned";
         assert numLoans == loans.size() : "numLoans should match the size of the loans list";
         logger.log(Level.INFO, "Added loan {0} for item ID {1}.", new Object[]{loanId, itemId});
         return loan;
     }
 
+    // @@author
     // @@author MatthewLeon888
     /** Updates one active loan after validating every supplied field and saving the proposal first. */
     public Loan updateLoan(String input) throws LoanUpdateUnsuccessful {
@@ -313,14 +353,18 @@ public class LoanHandler {
         for (Equipment item : equipment.getEquipmentList()) {
             if (item.getItemId().equals(itemId)) {
                 if (match != null) {
+                    // @@author yarnieee
                     logger.log(Level.WARNING, "Loan rejected: item ID {0} is ambiguous.", itemId);
+                    // @@author
                     throw new LoanAdditionUnsuccessful("Item ID " + itemId + " is not unique.");
                 }
                 match = item;
             }
         }
         if (match == null) {
+            // @@author yarnieee
             logger.log(Level.WARNING, "Loan rejected: item ID {0} does not exist.", itemId);
+            // @@author
             throw new LoanAdditionUnsuccessful("Item ID " + itemId + " does not exist.");
         }
         return match;
@@ -330,7 +374,9 @@ public class LoanHandler {
     private Equipment findAvailableEquipment(String itemId) throws LoanAdditionUnsuccessful {
         Equipment match = findEquipment(itemId);
         if (match.isLoaned()) {
+            // @@author yarnieee
             logger.log(Level.WARNING, "Loan rejected: item ID {0} is already loaned out.", itemId);
+            // @@author
             throw new LoanAdditionUnsuccessful("Item ID " + itemId + " is already loaned out.");
         }
         if (!match.isServiceable()) {
@@ -432,6 +478,7 @@ public class LoanHandler {
         if (arguments.length != 2 || !arguments[0].equals("loan-delete") || !arguments[1].startsWith("l/")) {
             throw new LoanDeletionUnsuccessful("Invalid command format. Expected: loan-delete l/[LOAN ID].");
         }
+        // @@author yarnieee
         String loanId = parseDeleteLoanId(arguments[1]);
         Loan loan = null;
         for (Loan candidate : loans) {
@@ -440,11 +487,14 @@ public class LoanHandler {
                     throw new LoanDeletionUnsuccessful("Loan ID " + loanId + " is not unique.");
                 }
                 loan = candidate;
+                // @@author
             }
         }
+        // @@author yarnieee
         if (loan == null) {
             logger.log(Level.WARNING, "No loan found for loan ID {0}.", loanId);
             throw new LoanDeletionUnsuccessful("No loan found for loan ID " + loanId + ".");
+            // @@author
         }
 
         ArrayList<Loan> updatedLoans = new ArrayList<>(loans);
@@ -473,7 +523,9 @@ public class LoanHandler {
                 && arguments.length != EXPECTED_ADD_ARGUMENT_COUNT - 1) {
             throw new LoanAdditionUnsuccessful(LOAN_COMMAND_FORMAT);
         }
+        // @@author yarnieee
         return parseLoanArguments(arguments, clock, "loan-add", "e/", "u/");
+        // @@author
     }
 
     /** Requires explicit dates in stored records; loading never supplies a current-date default. */
@@ -487,18 +539,22 @@ public class LoanHandler {
     }
 
     /** Shares ID, supplied-date and date-order validation between commands and complete stored records. */
+    // @@author yarnieee
     private static Loan parseLoanArguments(String[] arguments, Clock clock, String command,
             String itemMarker, String borrowerMarker) throws LoanAdditionUnsuccessful {
         if (!arguments[0].equals(command)) {
+            // @@author
             throw new LoanAdditionUnsuccessful(LOAN_COMMAND_FORMAT);
         }
 
+        // @@author yarnieee
         String alternateItemPrefix = command.equals(LEGACY_LOAN_COMMAND) ? "/id" : null;
         String alternateBorrowerPrefix = command.equals(LEGACY_LOAN_COMMAND) ? "/b" : null;
         String itemId = parseArgument(arguments[1], itemMarker, alternateItemPrefix, "item ID",
                 Identifier.Type.EQUIPMENT);
         String borrowerId = parseArgument(arguments[2], borrowerMarker, alternateBorrowerPrefix, "borrower ID",
                 Identifier.Type.BORROWER);
+        // @@author
         LocalDateTime issuedDate;
         LocalDateTime dueDate;
         if (arguments.length == EXPECTED_ADD_ARGUMENT_COUNT) {
@@ -560,6 +616,7 @@ public class LoanHandler {
      * @return the validated typed loan ID
      * @throws LoanDeletionUnsuccessful when the format is invalid
      */
+    // @@author yarnieee
     private String parseDeleteLoanId(String argument) throws LoanDeletionUnsuccessful {
         String loanId = argument.substring("l/".length());
         try {
@@ -567,6 +624,7 @@ public class LoanHandler {
         } catch (IllegalArgumentException exception) {
             throw new LoanDeletionUnsuccessful("Invalid loan ID \"" + loanId
                     + "\". Loan ID must be exactly L001 to L999.");
+            // @@author
         }
     }
 
@@ -589,6 +647,7 @@ public class LoanHandler {
      * @return the parsed date at midnight
      */
     private static LocalDateTime parseDateArgument(String argument, String prefix, String alternatePrefix)
+            // @@author yarnieee
             throws LoanAdditionUnsuccessful {
         String value;
         if (argument.startsWith(prefix)) {
@@ -607,14 +666,17 @@ public class LoanHandler {
         }
     }
 
+    // @@author
     /**
      * Creates an error for an invalid date argument.
      */
     private static LoanAdditionUnsuccessful dateFormatError(String prefix, String alternatePrefix) {
+        // @@author yarnieee
         return new LoanAdditionUnsuccessful("Invalid date format. Expected " + prefix + "DD-MM-YY or "
                 + alternatePrefix + "DD-MM-YY.");
     }
 
+    // @@author
     /**
      * Checks whether an item currently has an unreturned loan.
      *
@@ -622,14 +684,18 @@ public class LoanHandler {
      * @return whether deletion must be blocked to preserve an active loan's equipment association
      */
     public boolean hasActiveLoanForItem(String itemId) {
+        // @@author yarnieee
         assert itemId != null : "Active-loan checks require an item ID";
         for (Loan loan : loans) {
+            // @@author
             if (loan.getItemId().equals(itemId) && !loan.isReturned()) {
+                // @@author yarnieee
                 return true;
             }
         }
         return false;
     }
+    // @@author
 
     // @@author Rohita-29
 
@@ -866,7 +932,9 @@ public class LoanHandler {
      * Prints out all equipment in inventory
      */
     public void viewAllLoans() {
+        // @@author yarnieee
         assert numLoans == loans.size() : "numLoans should match the size of the loans list";
+        // @@author
         logger.log(Level.INFO, "Viewing {0} loan(s)", numLoans);
         printLoans(loans);
     }
@@ -929,7 +997,9 @@ public class LoanHandler {
                 && loan.isReturned() && loan.getEquipmentRecordId() == null);
         if (hasUnattributedHistory) {
             System.out.println("Earlier returned loans for this Item ID cannot be attributed to the current item. "
+                    // @@author yarnieee
                     + "Use loan-list to view them.");
+            // @@author
         }
     }
 
@@ -996,20 +1066,26 @@ public class LoanHandler {
     private static String parseHistoryItemId(String input) throws LoanHistoryUnsuccessful {
         if (input != null && !input.matches("(?s).*\\R.*")) {
             Matcher matcher = HISTORY_COMMAND.matcher(input.replaceAll("(?U)^\\s+|\\s+$", ""));
+            // @@author yarnieee
             if (matcher.matches()) {
                 try {
                     return Identifier.normalize(matcher.group(1), Identifier.Type.EQUIPMENT);
                 } catch (IllegalArgumentException exception) {
                     // Fall through to the standard history format error.
                 }
+                // @@author
             }
         }
+        // @@author yarnieee
         throw new LoanHistoryUnsuccessful("Invalid format. Use: eqm-loan-history e/[ITEM ID], from E001 to E999.");
+        // @@author
     }
 
     /** Prints loan records using the same table format as the all-loans command. */
     public void printLoans(List<Loan> records) {
+        // @@author yarnieee
         printLoans(records, "Loans", "No loans recorded. Type help loan-list for the command format.");
+        // @@author
     }
 
     /** Shares the same rows and current-date state with contextual headings and empty messages. */
@@ -1024,12 +1100,16 @@ public class LoanHandler {
     }
 
     /** Formats identifiers independently of the computer's default locale. */
+    // @@author yarnieee
     private static String formatLoanId(int loanNumber) {
         return Identifier.format(loanNumber, Identifier.Type.LOAN);
     }
 
+    // @@author
     /** Places the sequence beside the loan file by default. */
     private static Path defaultSequenceFile(Path file) {
         return file == null ? null : file.toAbsolutePath().resolveSibling("loan-sequence.txt");
+        // @@author yarnieee
     }
 }
+    // @@author

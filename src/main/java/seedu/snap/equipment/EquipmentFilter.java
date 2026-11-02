@@ -8,7 +8,9 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+// @@author yarnieee
 import seedu.snap.Identifier;
+// @@author
 import seedu.snap.exceptions.EquipmentFilteringUnsuccessful;
 import seedu.snap.loan.LoanHandler;
 
@@ -26,7 +28,9 @@ public final class EquipmentFilter {
     /** Parses optional ID, name, type, condition/range, and availability filters in any order. */
     public static EquipmentFilter parse(String input) throws EquipmentFilteringUnsuccessful {
         try {
+            // @@author yarnieee
             Map<String, String> fields = EquipmentFields.parse(input, "eqm-filter", EquipmentFields.ID_FIELD,
+                    // @@author
                     EquipmentFields.NAME_FIELD, EquipmentFields.TYPE_FIELD,
                     EquipmentFields.CONDITION_FIELD, EquipmentFields.STATUS_FIELD);
             EquipmentFilter filter = new EquipmentFilter(fields);
@@ -41,12 +45,14 @@ public final class EquipmentFilter {
     /** Validates scalar values before any inventory is inspected. */
     private void validate() {
         String id = fields.get(EquipmentFields.ID_FIELD);
+        // @@author yarnieee
         if (id != null) {
             try {
                 fields.put(EquipmentFields.ID_FIELD, Identifier.normalize(id, Identifier.Type.EQUIPMENT));
             } catch (IllegalArgumentException exception) {
                 throw new IllegalArgumentException("Item ID must be from E001 to E999.", exception);
             }
+            // @@author
         }
         String name = fields.get(EquipmentFields.NAME_FIELD);
         if (name != null && name.length() > Equipment.MAX_NAME_LENGTH) {

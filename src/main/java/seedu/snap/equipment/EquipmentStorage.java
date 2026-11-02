@@ -9,10 +9,12 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+// @@author yarnieee
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import seedu.snap.Identifier;
+// @@author
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 
 // @@author MatthewLeon888

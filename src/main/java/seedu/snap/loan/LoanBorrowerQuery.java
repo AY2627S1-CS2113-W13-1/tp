@@ -3,7 +3,9 @@ package seedu.snap.loan;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+// @@author yarnieee
 import seedu.snap.Identifier;
+// @@author
 import seedu.snap.exceptions.LoanBorrowerUnsuccessful;
 
 // @@author MatthewLeon888

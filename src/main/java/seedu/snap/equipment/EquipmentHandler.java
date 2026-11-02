@@ -6,16 +6,22 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+// @@author yarnieee
 import java.util.Locale;
+// @@author
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+// @@author yarnieee
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import seedu.snap.Identifier;
+// @@author
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
+// @@author yarnieee
 import seedu.snap.exceptions.EquipmentDeletionUnsuccessful;
+// @@author
 import seedu.snap.exceptions.EquipmentUpdateUnsuccessful;
 import seedu.snap.exceptions.EquipmentViewingUnsuccessful;
 import seedu.snap.ui.EquipmentView;
@@ -24,18 +30,24 @@ import seedu.snap.ui.EquipmentView;
 public class EquipmentHandler {
     /** Diagnostic logger; the application sends outcomes and detailed traces to local files. */
     private static final Logger logger = Logger.getLogger(EquipmentHandler.class.getName());
+    // @@author yarnieee
     private static final String ADD_COMMAND = "eqm-add";
     private static final String ADD_FORMAT_ERROR = "Invalid format. Use: eqm-add name/[ITEM] e/[ITEM ID] "
+            // @@author
             + "type/[TYPE] cond/[CONDITION]";
+    // @@author yarnieee
     private static final String LEGACY_ADD_COMMAND = "add";
     private static final String LEGACY_ITEM_MARKER = "i/";
     private static final String LEGACY_ID_MARKER = "id/";
     private static final String LEGACY_ADD_FORMAT_ERROR = "Invalid format. Use: add i/[ITEM] id/[ITEM ID] "
+            // @@author
             + "type/[TYPE] cond/[CONDITION]";
+    // @@author yarnieee
     private static final Pattern DELETE_PATTERN = Pattern.compile("eqm-delete\\s+e/([Ee][0-9]{3})");
     private static final Pattern SHOW_PATTERN = Pattern.compile("(?U)eqm-show\\s+e/([Ee][0-9]{3})");
     private static final String ITEM_MARKER = "name/";
     private static final String ID_MARKER = "e/";
+    // @@author
     private static final String TYPE_MARKER = "type/";
     private static final String CONDITION_MARKER = "cond/";
     private static final String[] DETAIL_MARKERS =
@@ -242,6 +254,7 @@ public class EquipmentHandler {
         save(inventory);
     }
 
+    // @@author yarnieee
     /**
      * Finds equipment by its item ID.
      *
@@ -257,7 +270,9 @@ public class EquipmentHandler {
         }
         for (Equipment equipment : inventory) {
             if (equipment.getItemId().equals(canonicalItemId)) {
+                // @@author
                 logger.log(Level.INFO, "Found {0} with item ID {1}.",
+                        // @@author yarnieee
                         new Object[] {equipment.getType(), canonicalItemId});
                 return equipment;
             }
@@ -266,6 +281,7 @@ public class EquipmentHandler {
         return null;
     }
 
+    // @@author
     /**
      * Finds the equipment targeted by a delete command without changing the inventory.
      *
@@ -273,26 +289,34 @@ public class EquipmentHandler {
      * @return the equipment that matches the command's item ID
      * @throws EquipmentDeletionUnsuccessful when the command is invalid or the ID is missing or duplicated
      */
+    // @@author yarnieee
     public Equipment getEquipmentForDeletion(String input) throws EquipmentDeletionUnsuccessful {
         String itemId = parseDeleteItemId(input);
+        // @@author
         Equipment match = null;
+        // @@author yarnieee
         for (Equipment equipment : inventory) {
             if (equipment.getItemId().equals(itemId)) {
+                // @@author
                 if (match != null) {
                     logger.log(Level.WARNING, "Equipment deletion rejected: duplicate ID {0}.", itemId);
                     throw new EquipmentDeletionUnsuccessful(
                             "Equipment ID " + itemId + " is not unique. No equipment was deleted.");
                 }
                 match = equipment;
+                // @@author yarnieee
             }
         }
+        // @@author
         if (match == null) {
             logger.log(Level.FINE, "Equipment deletion rejected: ID {0} does not exist.", itemId);
             throw new EquipmentDeletionUnsuccessful("Equipment ID " + itemId + " does not exist.");
         }
         return match;
+        // @@author yarnieee
     }
 
+    // @@author
     /**
      * Removes the equipment identified by a valid delete command.
      *
@@ -300,8 +324,10 @@ public class EquipmentHandler {
      * @return the removed equipment
      * @throws EquipmentDeletionUnsuccessful when the command is invalid or the ID is missing or duplicated
      */
+    // @@author yarnieee
     public Equipment deleteEquipment(String input) throws EquipmentDeletionUnsuccessful {
         Equipment equipment = getEquipmentForDeletion(input);
+        // @@author
         if (equipment.isLoaned()) {
             throw new EquipmentDeletionUnsuccessful("Cannot delete item ID " + equipment.getItemId()
                     + " while it has an active loan.");
@@ -322,9 +348,11 @@ public class EquipmentHandler {
         assert wasRemoved : "Equipment found for deletion must still be in the inventory";
         assert inventory.size() == previousSize - 1 : "Deletion must remove exactly one equipment record";
         logger.log(Level.INFO, "Deleted equipment with ID {0}.", equipment.getItemId());
+        // @@author yarnieee
         return equipment;
     }
 
+    // @@author
     /** Saves the supplied inventory when this handler has a backing file. */
     private void save(List<Equipment> equipment) throws IOException {
         if (storageFile != null) {
@@ -342,13 +370,17 @@ public class EquipmentHandler {
      * @throws EquipmentAdditionUnsuccessful when the command is invalid
      */
     static Equipment parseEquipment(String userInput) throws EquipmentAdditionUnsuccessful {
+        // @@author yarnieee
         return parseEquipmentRecord(userInput, ADD_COMMAND, ITEM_MARKER, ID_MARKER, ADD_FORMAT_ERROR);
+        // @@author
     }
+    // @@author yarnieee
 
     /** Parses the legacy command-style representation used only by existing saved equipment files. */
     static Equipment parseStoredEquipment(String userInput) throws EquipmentAdditionUnsuccessful {
         return parseEquipmentRecord(userInput, LEGACY_ADD_COMMAND, LEGACY_ITEM_MARKER, LEGACY_ID_MARKER,
                 LEGACY_ADD_FORMAT_ERROR);
+        // @@author
     }
 
     /** Parses an equipment record using either the interactive or legacy storage syntax. */
@@ -361,21 +393,29 @@ public class EquipmentHandler {
         int itemIndex = findFieldMarker(addDetails, itemMarker, 0);
         int typeIndex = findFieldMarker(addDetails, TYPE_MARKER, 0);
         int conditionIndex = findFieldMarker(addDetails, CONDITION_MARKER, 0);
+        // @@author yarnieee
         int idIndex = findIdFieldMarker(addDetails, typeIndex, idMarker);
+        // @@author
         int conditionValueStart = conditionIndex + CONDITION_MARKER.length();
         int remarksIndex = conditionIndex == -1 ? -1 : findFieldMarker(addDetails, REMARKS_MARKER, conditionValueStart);
+        // @@author yarnieee
         // The final remarks field is free text, including literal strings such as id/E001 and type/camera.
+        // @@author
         String structuralDetails = remarksIndex == -1 ? addDetails : addDetails.substring(0, remarksIndex);
+        // @@author yarnieee
         validateFieldMarkers(structuralDetails, itemIndex, idIndex, typeIndex, conditionIndex,
                 itemMarker, idMarker, formatError);
+        // @@author
 
         String itemName = EquipmentFields.trimWhitespace(
+                // @@author yarnieee
                 addDetails.substring(itemIndex + itemMarker.length(), idIndex));
         String id = EquipmentFields.trimWhitespace(addDetails.substring(idIndex + idMarker.length(), typeIndex));
         try {
             id = normalizeItemId(id);
         } catch (IllegalArgumentException exception) {
             throw new EquipmentAdditionUnsuccessful("Item ID must be from E001 to E999.");
+            // @@author
         }
         String type = EquipmentFields.trimWhitespace(
                 addDetails.substring(typeIndex + TYPE_MARKER.length(), conditionIndex));
@@ -425,34 +465,48 @@ public class EquipmentHandler {
     }
 
     /** Finds the last ID prefix before the type field, allowing earlier id/card-like name text. */
+    // @@author yarnieee
     private static int findIdFieldMarker(String details, int typeIndex, String idMarker) {
         int idIndex = findFieldMarker(details, idMarker, 0);
         int nextIdIndex = findFieldMarker(details, idMarker, idIndex + idMarker.length());
+        // @@author
         while (nextIdIndex != -1 && nextIdIndex < typeIndex) {
             idIndex = nextIdIndex;
+            // @@author yarnieee
             nextIdIndex = findFieldMarker(details, idMarker, idIndex + idMarker.length());
+            // @@author
         }
         return idIndex;
     }
 
     /** Rejects missing, reordered, or repeated delimiters, except permitted ID text within the name. */
     private static void validateFieldMarkers(String details, int itemIndex, int idIndex, int typeIndex,
+            // @@author yarnieee
             int conditionIndex, String itemMarker, String idMarker, String formatError)
+            // @@author
             throws EquipmentAdditionUnsuccessful {
         boolean markersAreInOrder = itemIndex == 0
                 && idIndex > itemIndex
                 && typeIndex > idIndex
                 && conditionIndex > typeIndex;
         if (!markersAreInOrder) {
+            // @@author yarnieee
             throw new EquipmentAdditionUnsuccessful(formatError);
+            // @@author
         }
+        // @@author yarnieee
         for (String marker : new String[]{itemMarker, idMarker, TYPE_MARKER, CONDITION_MARKER}) {
+            // @@author
             int firstIndex = findFieldMarker(details, marker, 0);
+            // @@author yarnieee
             if (marker.equals(idMarker)) {
                 firstIndex = skipNameIdFragments(details, firstIndex, idIndex, idMarker, formatError);
+                // @@author
             }
             if (findFieldMarker(details, marker, firstIndex + marker.length()) != -1) {
+                // @@author yarnieee
                 throw new EquipmentAdditionUnsuccessful(formatError);
+                // @@author
             }
         }
     }
@@ -524,7 +578,9 @@ public class EquipmentHandler {
             throw new EquipmentAdditionUnsuccessful("Item name must contain 1 to 100 characters.");
         }
         if (!Equipment.isValidItemId(id)) {
+            // @@author yarnieee
             throw new EquipmentAdditionUnsuccessful("Item ID must be from E001 to E999.");
+            // @@author
         }
         if (!Equipment.hasText(type)) {
             throw new EquipmentAdditionUnsuccessful("Type cannot be empty.");
@@ -559,17 +615,22 @@ public class EquipmentHandler {
     }
 
     /** Allows id/card-like name text, reserving empty, numeric, and signed ID values for command syntax. */
+    // @@author yarnieee
     private static boolean isNameIdText(String details, int markerIndex, String idMarker) {
         int valueIndex = markerIndex + idMarker.length();
+        // @@author
         if (valueIndex >= details.length()) {
             return false;
         }
         char firstCharacter = details.charAt(valueIndex);
         return !EquipmentFields.isWhitespace(firstCharacter) && !Character.isDigit(firstCharacter)
+                // @@author yarnieee
                 && firstCharacter != '+' && firstCharacter != '-'
                 && !EquipmentFields.isTypedItemId(details, valueIndex);
+        // @@author
     }
 
+    // @@author yarnieee
     /**
      * Extracts and validates the item ID from a delete command.
      *
@@ -580,7 +641,9 @@ public class EquipmentHandler {
     private String parseDeleteItemId(String input) throws EquipmentDeletionUnsuccessful {
         Matcher matcher = input == null ? null : DELETE_PATTERN.matcher(input.trim());
         if (matcher == null || !matcher.matches()) {
+            // @@author
             logger.fine("Equipment deletion rejected: invalid command syntax.");
+            // @@author yarnieee
             throw new EquipmentDeletionUnsuccessful(
                     "Invalid delete syntax. ITEM ID must be from E001 to E999.");
         }
@@ -593,6 +656,7 @@ public class EquipmentHandler {
         }
     }
 
+    // @@author
     /**
      * Prints out all equipment in inventory
      */
@@ -610,6 +674,7 @@ public class EquipmentHandler {
     /** Validates an exact item-detail command and prints full values without saving or changing records. */
     public void showEquipment(String input) throws EquipmentViewingUnsuccessful {
         Matcher matcher = input == null ? null : SHOW_PATTERN.matcher(EquipmentFields.trimWhitespace(input));
+        // @@author yarnieee
         if (matcher == null || !matcher.matches()) {
             throw new EquipmentViewingUnsuccessful("Invalid format. Use: eqm-show e/[ITEM ID], from E001 to E999.");
         }
@@ -618,10 +683,15 @@ public class EquipmentHandler {
             itemId = normalizeItemId(matcher.group(1));
         } catch (IllegalArgumentException exception) {
             throw new EquipmentViewingUnsuccessful("Invalid format. Use: eqm-show e/[ITEM ID], from E001 to E999.");
+            // @@author
         }
+        // @@author yarnieee
         Equipment item = getEquipmentById(itemId);
+        // @@author
         if (item == null) {
+            // @@author yarnieee
             throw new EquipmentViewingUnsuccessful("Item ID " + itemId + " does not exist.");
+            // @@author
         }
         EquipmentView.printDetails(item);
     }
@@ -652,15 +722,21 @@ public class EquipmentHandler {
     }
 
     /** Checks that prefixes before the actual ID belong to textual name fragments. */
+    // @@author yarnieee
     private static int skipNameIdFragments(String details, int firstIndex, int idIndex, String idMarker,
             String formatError)
+            // @@author
             throws EquipmentAdditionUnsuccessful {
         int currentIndex = firstIndex;
         while (currentIndex < idIndex) {
+            // @@author yarnieee
             if (!isNameIdText(details, currentIndex, idMarker)) {
                 throw new EquipmentAdditionUnsuccessful(formatError);
+                // @@author
             }
+            // @@author yarnieee
             currentIndex = findFieldMarker(details, idMarker, currentIndex + idMarker.length());
+            // @@author
         }
         return currentIndex;
     }
@@ -668,14 +744,20 @@ public class EquipmentHandler {
     /** Updates supplied details together while preserving identity and inventory order. */
     public Equipment updateEquipment(String input) throws EquipmentUpdateUnsuccessful {
         try {
+            // @@author yarnieee
             Map<String, String> fields = EquipmentFields.parse(input, "eqm-update", EquipmentFields.ID_FIELD,
+                    // @@author
                     EquipmentFields.NAME_FIELD, EquipmentFields.TYPE_FIELD,
                     EquipmentFields.CONDITION_FIELD);
             String id = fields.get(EquipmentFields.ID_FIELD);
+            // @@author yarnieee
             fields.put(EquipmentFields.ID_FIELD, normalizeItemId(id));
             id = fields.get(EquipmentFields.ID_FIELD);
+            // @@author
             if (!Equipment.isValidItemId(id)) {
+                // @@author yarnieee
                 throw new EquipmentUpdateUnsuccessful("Item ID must be from E001 to E999.");
+                // @@author
             }
             if (fields.size() == 1) {
                 throw new EquipmentUpdateUnsuccessful("Supply a name, type, or condition to update.");
@@ -745,6 +827,7 @@ public class EquipmentHandler {
         return target;
     }
 
+    // @@author yarnieee
     /** Converts a user-supplied equipment ID to the uppercase value used by the model. */
     private static String normalizeItemId(String itemId) {
         try {
@@ -753,4 +836,5 @@ public class EquipmentHandler {
             throw new IllegalArgumentException("Item ID must be from E001 to E999.", exception);
         }
     }
+    // @@author
 }

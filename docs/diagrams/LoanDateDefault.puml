@@ -9,7 +9,9 @@ participant ":LoanHandler" as Handler
 participant "LocalDate" as Date <<Java API>>
 participant "LoanStorage" as Store <<utility>>
 
+' @@author yarnieee
 Manager -> Handler: addLoan("loan-add e/E001 u/U002 due/31-10-26")
+' @@author
 activate Handler
 Handler -> Handler: parseLoanCommand(input)
 activate Handler

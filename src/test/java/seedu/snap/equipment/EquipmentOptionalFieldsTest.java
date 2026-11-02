@@ -68,7 +68,9 @@ class EquipmentOptionalFieldsTest {
         assertEquals(type.marker() + (attributeSupplied ? type.value() : "unspecified")
                 + " damage/" + (damageSupplied ? type.damage() : "NONE"), item.getDetails());
         assertEquals(remarksSupplied ? REMARKS : "", item.getRemarks());
+        // @@author yarnieee
         assertEquals("E001", item.getItemId());
+        // @@author
         assertEquals(7, item.getCondition());
     }
 
@@ -176,7 +178,9 @@ class EquipmentOptionalFieldsTest {
         handler.saveReturnAssessment(original, assessed);
         original.applyReturnAssessment(assessed);
 
+        // @@author yarnieee
         assertSame(original, handler.updateEquipment("eqm-update e/E001 name/Updated cond/8"));
+        // @@author
         EquipmentHandler restarted = new EquipmentHandler(file);
         restarted.loadFromStorage();
         Equipment restored = restarted.getEquipmentList().getFirst();
@@ -193,8 +197,10 @@ class EquipmentOptionalFieldsTest {
     void addEquipment_requiredFieldsRemainRequired() {
         EquipmentHandler handler = new EquipmentHandler();
         String[] commands = {
+            // @@author yarnieee
             "add e/E001 type/camera cond/7", "eqm-add name/Camera type/camera cond/7",
             "eqm-add name/Camera e/E001 cond/7", "eqm-add name/Camera e/E001 type/camera"
+            // @@author
         };
         for (String command : commands) {
             assertThrows(EquipmentAdditionUnsuccessful.class, () -> handler.addEquipment(command));
@@ -204,7 +210,9 @@ class EquipmentOptionalFieldsTest {
 
     /** Builds only the required command fields, leaving optional additions explicit in each test. */
     private static String command(EquipmentType type, String id) {
+        // @@author yarnieee
         String typedId = id != null && id.matches("[0-9]{3}") ? "E" + id : id;
         return "eqm-add name/Equipment e/" + typedId + " type/" + type.type() + " cond/7";
+        // @@author
     }
 }

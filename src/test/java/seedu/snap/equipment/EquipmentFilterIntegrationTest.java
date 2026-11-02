@@ -31,15 +31,19 @@ class EquipmentFilterIntegrationTest {
     void apply_allSubclasses_preservesObjectsDetailsAndSavedRecords() throws Exception {
         Path file = temporaryDirectory.resolve("equipment.txt");
         EquipmentHandler equipment = new EquipmentHandler(file);
+        // @@author yarnieee
         equipment.addEquipment("eqm-add name/Camera e/E001 type/camera cond/1 sensor/full frame damage/SENSOR_DAMAGE");
         equipment.addEquipment("eqm-add name/Lens e/E002 type/lens cond/2 zoom/24-70mm damage/SCRATCHED_GLASS");
         equipment.addEquipment("eqm-add name/Battery e/E003 type/battery cond/3 capacity/2000mAh damage/SWELLING");
         equipment.addEquipment("eqm-add name/Tripod e/E004 type/tripod cond/4 thread/1-4 inch damage/BENT_LEG");
+        // @@author
         List<Equipment> original = List.copyOf(equipment.getEquipmentList());
         String saved = Files.readString(file);
         LoanHandler loans = new LoanHandler(equipment);
 
+        // @@author yarnieee
         List<Equipment> matches = EquipmentFilter.parse("eqm-filter status/available cond/1-4")
+                // @@author
                 .apply(equipment.getEquipmentList(), loans);
 
         assertEquals(original, matches);
@@ -84,30 +88,44 @@ class EquipmentFilterIntegrationTest {
     @Test
     void apply_returnedHistoryAndActiveLoan_preservesAvailabilityAndDeletionChecks() throws Exception {
         EquipmentHandler equipment = new EquipmentHandler();
+        // @@author yarnieee
         Equipment camera = equipment.addEquipment("eqm-add name/Camera e/E001 type/camera cond/1 sensor/full frame");
+        // @@author
         LoanHandler loans = new LoanHandler(equipment);
+        // @@author yarnieee
         Loan returned = loans.addLoan("loan-add e/E001 u/U002 issued/01-10-26 due/02-10-26");
+        // @@author
         returned.setReturned(true);
+        // @@author yarnieee
         EquipmentFilter available = EquipmentFilter.parse("eqm-filter status/available");
         EquipmentFilter loaned = EquipmentFilter.parse("eqm-filter status/loaned");
+        // @@author
         assertEquals(List.of(camera), available.apply(equipment.getEquipmentList(), loans));
 
+        // @@author yarnieee
         Loan active = loans.addLoan("loan-add e/E001 u/U003 issued/03-10-26 due/04-10-26");
         loans.deleteLoan("loan-delete l/L001");
+        // @@author
 
         assertTrue(available.apply(equipment.getEquipmentList(), loans).isEmpty());
         assertSame(camera, loaned.apply(equipment.getEquipmentList(), loans).getFirst());
         assertTrue(camera.isLoaned());
         assertEquals(List.of(active), loans.getLoanList());
+        // @@author yarnieee
         assertThrows(EquipmentDeletionUnsuccessful.class, () -> equipment.deleteEquipment("eqm-delete e/E001"));
+        // @@author
         assertThrows(LoanAdditionUnsuccessful.class,
+                // @@author yarnieee
                 () -> loans.addLoan("loan-add e/E001 u/U004 issued/05-10-26 due/06-10-26"));
+        // @@author
         assertEquals("sensor/full frame damage/NONE", camera.getDetails());
 
         active.setReturned(true);
         assertFalse(camera.isLoaned());
         assertTrue(loaned.apply(equipment.getEquipmentList(), loans).isEmpty());
         assertSame(camera, available.apply(equipment.getEquipmentList(), loans).getFirst());
+        // @@author yarnieee
         assertSame(camera, equipment.deleteEquipment("eqm-delete e/E001"));
+        // @@author
     }
 }

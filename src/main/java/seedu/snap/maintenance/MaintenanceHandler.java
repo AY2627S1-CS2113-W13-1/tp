@@ -16,7 +16,9 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+// @@author yarnieee
 import seedu.snap.Identifier;
+// @@author
 import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.MaintenanceRecordUnsuccessful;

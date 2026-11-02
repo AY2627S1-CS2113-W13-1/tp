@@ -35,8 +35,10 @@ class EquipmentViewTest {
     @Test
     void inventory_longNameAndRemarks_keepsOnlyBoundedSummaryColumns() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
+        // @@author yarnieee
         handler.addEquipment("eqm-add name/" + "A".repeat(100)
                 + " e/E001 type/camera cond/10 remarks/" + "r".repeat(200));
+        // @@author
 
         handler.viewAllEquipment();
 
@@ -44,27 +46,35 @@ class EquipmentViewTest {
         assertTrue(lines.stream().allMatch(line -> line.length() <= 100));
         List<String> rows = lines.stream().filter(line -> line.startsWith("|")).toList();
         assertEquals(2, rows.size());
+        // @@author yarnieee
         assertTrue(rows.stream().allMatch(line -> line.length() == 97));
+        // @@author
         assertEquals(List.of("ID", "NAME", "TYPE", "CONDITION", "STATUS"),
                 List.of(rows.getFirst().split("\\|", -1)).subList(1, 6).stream().map(String::strip).toList());
         assertTrue(rows.getLast().contains("A".repeat(45) + "..."));
         assertFalse(printed().contains("sensor/"));
         assertFalse(printed().contains("r".repeat(20)));
+        // @@author yarnieee
         assertTrue(printed().contains("eqm-show e/<ID>"));
+        // @@author
         assertTrue(printed().contains("1 equipment item."));
     }
 
     @Test
     void inventory_wideAndJoinedUnicodeNames_preservesGraphemesAndColumnWidths() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
+        // @@author yarnieee
         handler.addEquipment("eqm-add name/" + "相".repeat(30) + " e/E001 type/camera cond/1");
         handler.addEquipment("eqm-add name/" + "😀".repeat(26) + " e/E002 type/lens cond/2");
         handler.addEquipment("eqm-add name/" + "e\u0301".repeat(50) + " e/E003 type/battery cond/3");
         handler.addEquipment("eqm-add name/" + "👩‍👩‍👧‍👦".repeat(8) + " e/E004 type/tripod cond/4");
+        // @@author
 
         handler.viewAllEquipment();
 
+        // @@author yarnieee
         List<String> rows = printed().lines().filter(line -> line.startsWith("| E00")).toList();
+        // @@author
         assertEquals(" " + "相".repeat(22) + "...  ", rows.get(0).split("\\|", -1)[2]);
         assertEquals(" " + "😀".repeat(22) + "...  ", rows.get(1).split("\\|", -1)[2]);
         assertEquals(" " + "e\u0301".repeat(45) + "... ", rows.get(2).split("\\|", -1)[2]);
@@ -75,7 +85,9 @@ class EquipmentViewTest {
     @Test
     void inventory_controlCharacters_areVisibleWithoutCreatingExtraRows() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
+        // @@author yarnieee
         handler.addEquipment("eqm-add name/Camera\t\u001b[31m e/E001 type/camera cond/1");
+        // @@author
 
         handler.viewAllEquipment();
 
@@ -88,18 +100,24 @@ class EquipmentViewTest {
     @Test
     void inventory_pipeInName_keepsTableColumnsAndOriginalDetails() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
+        // @@author yarnieee
         Equipment item = handler.addEquipment("eqm-add name/Camera | Kit e/E001 type/camera cond/1");
+        // @@author
 
         handler.viewAllEquipment();
 
+        // @@author yarnieee
         String row = printed().lines().filter(line -> line.startsWith("| E001 |")).findFirst().orElseThrow();
+        // @@author
         String[] cells = row.split("\\|", -1);
         assertEquals(7, cells.length);
         assertEquals("Camera \\u007c Kit", cells[2].strip());
         assertEquals("camera", cells[3].strip());
         assertEquals("1", cells[4].strip());
         assertEquals("Available", cells[5].strip());
+        // @@author yarnieee
         assertEquals(97, row.length());
+        // @@author
         output.reset();
 
         handler.viewEquipment(List.of(item));
@@ -108,7 +126,9 @@ class EquipmentViewTest {
         assertEquals("Camera | Kit", item.getItemName());
         output.reset();
 
+        // @@author yarnieee
         handler.showEquipment("eqm-show e/E001");
+        // @@author
 
         assertEquals("Camera | Kit", field("Name"));
     }
@@ -116,8 +136,10 @@ class EquipmentViewTest {
     @Test
     void inventory_andFilteredResults_useIdenticalTablesInOriginalOrder() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
+        // @@author yarnieee
         handler.addEquipment("eqm-add name/Camera e/E002 type/camera cond/1");
         handler.addEquipment("eqm-add name/Lens e/E001 type/lens cond/2");
+        // @@author
         handler.viewAllEquipment();
         List<String> inventoryRows = printed().lines().skip(1).toList();
         output.reset();
@@ -125,7 +147,9 @@ class EquipmentViewTest {
         handler.viewEquipment(handler.getEquipmentList());
 
         assertEquals(inventoryRows, printed().lines().skip(1).toList());
+        // @@author yarnieee
         assertTrue(printed().indexOf("| E002 |") < printed().indexOf("| E001 |"));
+        // @@author
         assertTrue(printed().contains("2 equipment items."));
     }
 
@@ -137,7 +161,9 @@ class EquipmentViewTest {
                 .findFirst().orElseThrow().substring("Add an item: ".length());
         assertTrue(printed().contains("0 equipment items."));
         Equipment added = handler.addEquipment(example);
+        // @@author yarnieee
         assertEquals("E001", added.getItemId());
+        // @@author
         output.reset();
 
         handler.viewEquipment(List.of());
@@ -153,11 +179,15 @@ class EquipmentViewTest {
         String name = "A".repeat(100);
         String details = "S".repeat(100);
         String remarks = "r".repeat(98) + "  " + "R".repeat(100);
+        // @@author yarnieee
         Equipment item = handler.addEquipment("eqm-add name/" + name + " e/E001 type/camera cond/8 sensor/" + details
+                // @@author
                 + " mount/RF thread/1-4 battery/LP-E6 damage/OTHER remarks/" + remarks);
+        // @@author yarnieee
         item.setLoanId("L007");
 
         handler.showEquipment("eqm-show e/E001");
+        // @@author
 
         assertEquals(name, field("Name"));
         assertEquals(details, field("Sensor format"));
@@ -168,26 +198,34 @@ class EquipmentViewTest {
         assertTrue(printed().contains("Battery type: LP-E6"));
         assertTrue(printed().contains("Damage: OTHER"));
         assertTrue(printed().contains("Status: Loaned"));
+        // @@author yarnieee
         assertTrue(printed().contains("Active loan ID: L007"));
+        // @@author
     }
 
     @Test
     void details_otherSubtypesExposeCompatibilityAndDefaults() throws Exception {
         EquipmentHandler handler = new EquipmentHandler();
+        // @@author yarnieee
         handler.addEquipment("eqm-add name/Lens e/E001 type/lens cond/2 zoom/24-70 mount/RF sensor/APS-C");
         handler.addEquipment("eqm-add name/Battery e/E002 type/battery cond/3 capacity/2000mAh battery/LP-E6");
         handler.addEquipment("eqm-add name/Tripod e/E003 type/tripod cond/4");
 
         handler.showEquipment("eqm-show e/E001");
+        // @@author
         assertTrue(printed().contains("Zoom range: 24-70"));
         assertTrue(printed().contains("Lens mount: RF"));
         assertTrue(printed().contains("Sensor format: APS-C"));
         output.reset();
+        // @@author yarnieee
         handler.showEquipment("eqm-show e/E002");
+        // @@author
         assertTrue(printed().contains("Capacity: 2000mAh"));
         assertTrue(printed().contains("Battery type: LP-E6"));
         output.reset();
+        // @@author yarnieee
         handler.showEquipment("eqm-show e/E003");
+        // @@author
         assertTrue(printed().contains("Thread: unspecified"));
         assertTrue(printed().contains("Damage: NONE"));
         assertTrue(printed().contains("Remarks: (none)"));

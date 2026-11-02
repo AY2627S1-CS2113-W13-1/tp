@@ -1,3 +1,4 @@
+// @@author yarnieee
 package seedu.snap;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -84,3 +85,4 @@ class IdentifierTest {
                 () -> Identifier.normalize("e000", Identifier.Type.EQUIPMENT));
     }
 }
+// @@author

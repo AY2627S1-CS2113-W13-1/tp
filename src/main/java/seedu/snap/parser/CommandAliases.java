@@ -1,3 +1,4 @@
+// @@author yarnieee
 package seedu.snap.parser;
 
 import java.util.HashMap;
@@ -71,3 +72,4 @@ public final class CommandAliases {
         return Map.copyOf(reverse);
     }
 }
+// @@author

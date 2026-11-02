@@ -1,3 +1,4 @@
+// @@author yarnieee
 package seedu.snap.parser;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -46,3 +47,4 @@ class CommandAliasesTest {
                 Arguments.of("restore", "rs"), Arguments.of("help", "h"), Arguments.of("exit", "x"));
     }
 }
+// @@author

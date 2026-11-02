@@ -1,3 +1,4 @@
+' @@author yarnieee
 @startuml BundleCompatibilitySequence
 !include style.puml
 hide footbox
@@ -61,3 +62,4 @@ stop later IDs. Additions change the in-memory bundle immediately;
 the bundle file is written during the normal exit save.
 end note
 @enduml
+' @@author

@@ -8,7 +8,9 @@ participant ":EqmManager" as Manager
 participant ":LoanHandler" as Handler
 participant ":EquipmentHandler" as Inventory
 
+' @@author yarnieee
 Manager -> Handler: viewLoanHistory("eqm-loan-history e/E001")
+' @@author
 activate Handler
 Handler -> Handler: getLoanHistory(input)
 activate Handler
@@ -18,7 +20,9 @@ end note
 Handler -> Inventory: getEquipmentList()
 Inventory --> Handler: current inventory
 note right of Handler
+' @@author yarnieee
 findEquipment("E001") requires one match.
+' @@author
 Use that item's permanent record ID.
 end note
 loop each managed loan
@@ -33,7 +37,9 @@ else selected history contains loans
     Handler -> Handler: printLoans(history)
 end
 opt returned loans for this Item ID have no permanent identity
+' @@author yarnieee
     Handler -> Handler: print omission note directing user to loan-list
+' @@author
 end
 Handler --> Manager: display completed
 deactivate Handler

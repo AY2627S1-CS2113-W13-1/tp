@@ -1,8 +1,11 @@
+// @@author yarnieee
 package seedu.snap.bundle;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+// @@author
 import static org.junit.jupiter.api.Assertions.assertSame;
+// @@author yarnieee
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -10,19 +13,27 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+// @@author
 import java.util.Locale;
+// @@author yarnieee
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+// @@author
 import seedu.snap.equipment.Equipment;
+// @@author yarnieee
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.BundleAdditionUnsuccessful;
+// @@author
 import seedu.snap.exceptions.BundleHistoryUnsuccessful;
+// @@author yarnieee
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
+// @@author
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 import seedu.snap.loan.Loan;
 import seedu.snap.loan.LoanHandler;
+// @@author yarnieee
 
 /** Tests bundle command parsing, validation, partial additions, and listing. */
 class BundleHandlerTest {
@@ -33,7 +44,9 @@ class BundleHandlerTest {
     void setUp() throws EquipmentAdditionUnsuccessful {
         equipmentHandler = new EquipmentHandler();
         equipmentHandler.addEquipment("eqm-add name/Camera e/E001 type/camera cond/8 sensor/Full frame"
+                // @@author
                 + " damage/SHUTTER_FAULT remarks/Handle with care");
+        // @@author yarnieee
         equipmentHandler.addEquipment("eqm-add name/Battery e/E002 type/battery cond/8 capacity/2000 mAh damage/NONE");
         equipmentHandler.addEquipment("eqm-add name/Battery 2 e/E003 type/battery cond/8");
         equipmentHandler.addEquipment("eqm-add name/Tripod e/E004 type/tripod cond/8 thread/Quarter inch damage/NONE");
@@ -57,15 +70,23 @@ class BundleHandlerTest {
             "bundle-add-eqm b/000 001"}) {
             assertThrows(BundleAdditionUnsuccessful.class, () -> bundleHandler.addItemsToBundle(input));
         }
+        // @@author
         LoanHandler loans = new LoanHandler(equipmentHandler);
+        // @@author yarnieee
         assertThrows(IllegalArgumentException.class,
                 () -> bundleHandler.getBundleLoanHistory("bundle-history b/001", null));
+        // @@author
         assertThrows(BundleHistoryUnsuccessful.class,
+                // @@author yarnieee
                 () -> bundleHandler.getBundleLoanHistory("bundle-history name/Missing", loans));
+        // @@author
         assertThrows(BundleHistoryUnsuccessful.class,
+                // @@author yarnieee
                 () -> bundleHandler.getBundleLoanHistory("bundle-history wrong/001", loans));
+        // @@author
         assertTrue(bundleHandler.getBundleList().isEmpty());
     }
+    // @@author yarnieee
 
     @Test
     void addBundle_assignsThreeDigitSessionIds() throws BundleAdditionUnsuccessful {
@@ -79,6 +100,7 @@ class BundleHandlerTest {
 
     @Test
     void addBundle_invalidName_throwsException() {
+        // @@author
         for (String name : new String[]{"", "   ", "\u2003", "A".repeat(101)}) {
             assertThrows(BundleAdditionUnsuccessful.class,
                     () -> bundleHandler.addBundle("bundle-create name/" + name));
@@ -101,12 +123,15 @@ class BundleHandlerTest {
         try {
             Locale.setDefault(Locale.forLanguageTag("ar-EG"));
 
+            // @@author yarnieee
             Bundle bundle = bundleHandler.addBundle("bundle-create name/Travel Kit");
 
             assertEquals("B001", bundle.getBundleId());
+            // @@author
         } finally {
             Locale.setDefault(originalLocale);
         }
+        // @@author yarnieee
     }
 
     @Test
@@ -151,9 +176,13 @@ class BundleHandlerTest {
 
     @Test
     void addItemsToBundle_rejectsUnknownLoanedAndDuplicateItems()
+            // @@author
             throws BundleAdditionUnsuccessful, LoanAdditionUnsuccessful {
+        // @@author yarnieee
         Bundle bundle = bundleHandler.addBundle("bundle-create name/Travel Kit");
+        // @@author
         LoanHandler loans = new LoanHandler(equipmentHandler);
+        // @@author yarnieee
         loans.addLoan("loan-add e/E006 u/U001 issued/01-10-26 due/02-10-26");
 
         List<String> messages = bundleHandler.addItemsToBundle("bundle-add-eqm b/B001 E999 E006 E001 E001");
@@ -165,13 +194,18 @@ class BundleHandlerTest {
         assertFalse(bundle.isComplete());
     }
 
+    // @@author
     @Test
     void addItemsToBundle_returnedItem_canJoinBundle() throws Exception {
+        // @@author yarnieee
         Bundle bundle = bundleHandler.addBundle("bundle-create name/Travel Kit");
         bundleHandler.addItemsToBundle("bundle-add-eqm b/B001 E001 E002");
+        // @@author
         LoanHandler loans = new LoanHandler(equipmentHandler);
+        // @@author yarnieee
         Loan loan = loans.addLoan("loan-add e/E005 u/U001 issued/01-10-26 due/02-10-26");
         assertTrue(bundleHandler.addItemsToBundle("bundle-add-eqm b/B001 E005")
+                // @@author
                 .getFirst().contains("currently loaned"));
         assertFalse(bundle.isComplete());
 
@@ -185,17 +219,24 @@ class BundleHandlerTest {
 
     @Test
     void addItemsToBundle_deletedLoan_releasesItemForBundle() throws Exception {
+        // @@author yarnieee
         Bundle bundle = bundleHandler.addBundle("bundle-create name/Travel Kit");
+        // @@author
         LoanHandler loans = new LoanHandler(equipmentHandler);
+        // @@author yarnieee
         loans.addLoan("loan-add e/E001 u/U001 issued/01-10-26 due/02-10-26");
 
         loans.deleteLoan("loan-delete l/L001");
         List<String> messages = bundleHandler.addItemsToBundle("bundle-add-eqm b/B001 E001");
+        // @@author
 
         assertTrue(messages.getFirst().contains("successfully"));
+        // @@author yarnieee
         assertEquals(List.of(equipmentHandler.getEquipmentById("E001")), bundle.getEquipmentList());
+        // @@author
     }
 
+    // @@author yarnieee
     @Test
     void addItemsToBundle_allowsBatteryLensAdditionsAfterCompletion()
             throws BundleAdditionUnsuccessful {
@@ -246,6 +287,7 @@ class BundleHandlerTest {
         }
     }
 
+    // @@author
     @Test
     void removeItemsFromBundle_removesMembersAndReportsEachResult() throws Exception {
         Bundle bundle = bundleHandler.addBundle("bundle-create name/Travel Kit");
@@ -272,6 +314,7 @@ class BundleHandlerTest {
 
     @Test
     void containsEquipmentId_checksAllBundlesWithoutChangingContents() throws BundleAdditionUnsuccessful {
+        // @@author yarnieee
         Bundle first = bundleHandler.addBundle("bundle-create name/First Kit");
         Bundle second = bundleHandler.addBundle("bundle-create name/Second Kit");
         assertFalse(bundleHandler.containsEquipmentId("E001"));
@@ -282,6 +325,7 @@ class BundleHandlerTest {
         assertTrue(bundleHandler.containsEquipmentId("E005"));
         assertFalse(bundleHandler.containsEquipmentId("E003"));
         assertFalse(bundleHandler.containsEquipmentId("E999"));
+        // @@author
         assertTrue(first.getEquipmentList().isEmpty());
         assertEquals(3, second.getEquipmentList().size());
         assertTrue(second.isComplete());
@@ -289,11 +333,13 @@ class BundleHandlerTest {
 
     @Test
     void updateEquipment_bundledItem_preservesReferenceDetailsAndCompletion() throws Exception {
+        // @@author yarnieee
         Bundle bundle = bundleHandler.addBundle("bundle-create name/Travel Kit");
         bundleHandler.addItemsToBundle("bundle-add-eqm b/B001 E001 E002 E005");
         Equipment camera = equipmentHandler.getEquipmentById("E001");
 
         equipmentHandler.updateEquipment("eqm-update e/E001 name/Updated Camera cond/3");
+        // @@author
 
         assertSame(camera, bundle.getEquipmentList().getFirst());
         assertEquals("Updated Camera", bundle.getEquipmentList().getFirst().getItemName());
@@ -326,26 +372,38 @@ class BundleHandlerTest {
 
     @Test
     void getBundleLoanHistory_combinesActiveAndReturnedLoansInChronologicalOrder() throws Exception {
+        // @@author yarnieee
         Bundle bundle = bundleHandler.addBundle("bundle-create name/Travel Kit");
         bundleHandler.addItemsToBundle("bundle-add-eqm b/B001 E001 E002");
+        // @@author
         LoanHandler loans = new LoanHandler(equipmentHandler);
+        // @@author yarnieee
         Loan firstLoan = loans.addLoan("loan-add e/E001 u/U111 issued/01-10-26 due/02-10-26");
         Loan secondLoan = loans.addLoan("loan-add e/E002 u/U222 issued/03-10-26 due/04-10-26");
+        // @@author
         secondLoan.setReturned(true);
 
+        // @@author yarnieee
         List<Loan> history = bundleHandler.getBundleLoanHistory("bundle-history b/B001", loans);
+        // @@author
 
         assertEquals(List.of(firstLoan, secondLoan), history);
+        // @@author yarnieee
         assertEquals("U111", history.getFirst().getBorrowerId());
+        // @@author
         assertTrue(history.get(1).isReturned());
+        // @@author yarnieee
         assertEquals("B001", bundle.getBundleId());
+        // @@author
     }
 
     @Test
     void getBundleLoanHistory_canSelectByNameAndHandlesEmptyHistory() throws Exception {
+        // @@author yarnieee
         bundleHandler.addBundle("bundle-create name/Travel Kit");
 
         List<Loan> history = bundleHandler.getBundleLoanHistory("bundle-history name/Travel Kit",
+                // @@author
                 new LoanHandler(equipmentHandler));
 
         assertTrue(history.isEmpty());
@@ -354,12 +412,18 @@ class BundleHandlerTest {
     @Test
     void getBundleLoanHistory_rejectsInvalidAndUnknownSelectors() {
         LoanHandler loans = new LoanHandler(equipmentHandler);
+        // @@author yarnieee
         for (String input : new String[]{"bundle-history b/B000", "bundle-history b/01",
             "bundle-history name/", "eqm-loan-history e/E001"}) {
+            // @@author
             assertThrows(BundleHistoryUnsuccessful.class,
                     () -> bundleHandler.getBundleLoanHistory(input, loans));
         }
         assertThrows(BundleHistoryUnsuccessful.class,
+                // @@author yarnieee
                 () -> bundleHandler.getBundleLoanHistory("bundle-history b/B001", loans));
+        // @@author
     }
+    // @@author yarnieee
 }
+// @@author

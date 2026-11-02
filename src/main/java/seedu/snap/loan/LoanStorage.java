@@ -8,13 +8,17 @@ import java.nio.file.StandardCopyOption;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+// @@author yarnieee
 import java.util.HashSet;
+// @@author
 import java.util.List;
+// @@author yarnieee
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import seedu.snap.Identifier;
+// @@author
 import seedu.snap.exceptions.LoanAdditionUnsuccessful;
 
 // @@author MatthewLeon888

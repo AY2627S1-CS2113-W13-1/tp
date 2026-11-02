@@ -14,8 +14,10 @@ import seedu.snap.equipment.Tripod;
 /** Renders compact equipment tables and complete item details without changing equipment records. */
 public final class EquipmentView {
     private static final int LINE_WIDTH = 100;
+    // @@author yarnieee
     private static final int[] COLUMN_WIDTHS = {4, 48, 7, 9, 13};
     private static final String TABLE_BORDER = "+------+" + "-".repeat(50)
+            // @@author
             + "+---------+-----------+---------------+";
 
     private EquipmentView() {
@@ -26,7 +28,9 @@ public final class EquipmentView {
     public static void printInventory(List<Equipment> items) {
         printList(items, "Equipment", "No equipment in the inventory.");
         if (items.isEmpty()) {
+            // @@author yarnieee
             System.out.println("Add an item: eqm-add name/Camera e/E001 type/camera cond/1");
+            // @@author
         }
     }
 
@@ -49,7 +53,9 @@ public final class EquipmentView {
                         Integer.toString(item.getCondition()), status(item));
             }
             System.out.println(TABLE_BORDER);
+            // @@author yarnieee
             System.out.println("Names ending in ... are shortened. Use eqm-show e/<ID> for full details.");
+            // @@author
         }
         System.out.println(items.size() + " equipment " + (items.size() == 1 ? "item." : "items."));
     }

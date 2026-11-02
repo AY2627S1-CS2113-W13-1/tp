@@ -1,3 +1,4 @@
+// @@author yarnieee
 package seedu.snap.equipment;
 
 import java.util.logging.Level;
@@ -6,6 +7,7 @@ import java.util.logging.Logger;
 /** Represents a battery in the equipment inventory. */
 public class Battery extends Equipment {
     private static final String TYPE = "battery";
+    // @@author
     private static final Logger LOGGER =
             Logger.getLogger(Battery.class.getName());
 
@@ -40,7 +42,9 @@ public class Battery extends Equipment {
      * @param id typed equipment ID from E001 to E999
      * @param condition condition of the battery from 1 to 10
      */
+    // @@author yarnieee
     public Battery(String name, String id, int condition) {
+        // @@author
         this(
                 name,
                 id,
@@ -140,10 +144,12 @@ public class Battery extends Equipment {
 
     // @@author
 
+    // @@author yarnieee
     @Override
     public String getType() {
         return TYPE;
     }
+    // @@author
 
     public String getCapacity() {
         return capacity;
@@ -186,4 +192,6 @@ public class Battery extends Equipment {
     }
 
     // @@author
+    // @@author yarnieee
 }
+// @@author

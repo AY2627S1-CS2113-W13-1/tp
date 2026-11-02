@@ -31,9 +31,13 @@ import seedu.snap.exceptions.LoanReturnUnsuccessful;
 
 /** Verifies return assessments, retained loan records and recovery from failed saves. */
 class LoanReturnTest {
+    // @@author yarnieee
     private static final String LOAN_COMMAND = "loan-add e/E001 u/U002 issued/01-10-26 due/02-10-26";
+    // @@author
     private static final String RETURN_COMMAND =
+            // @@author yarnieee
             "loan-return l/L001 serviceable/yes damage/NONE remarks/Checked at counter";
+    // @@author
     private EquipmentHandler equipment;
     private Camera camera;
     private LoanHandler loans;
@@ -51,7 +55,9 @@ class LoanReturnTest {
         loanFile = temporaryDirectory.resolve("loans.txt");
         sequenceFile = temporaryDirectory.resolve("loan-sequence.txt");
         equipment = new EquipmentHandler(equipmentFile);
+        // @@author yarnieee
         camera = (Camera) equipment.addEquipment("eqm-add name/Camera e/E001 type/camera cond/4"
+                // @@author
                 + " sensor/APS-C damage/SENSOR_DAMAGE remarks/Original assessment");
         loans = new LoanHandler(equipment, loanFile, sequenceFile);
         original = loans.addLoan(LOAN_COMMAND);
@@ -59,7 +65,9 @@ class LoanReturnTest {
 
     @Test
     void returnLoan_serviceableItem_keepsIdentityHistoryAndSubtypeDetails() throws Exception {
+        // @@author yarnieee
         Bundle bundle = new Bundle("Camera kit", "B001");
+        // @@author
         bundle.addEquipment(camera);
         String savedSequence = Files.readString(sequenceFile);
 
@@ -78,23 +86,31 @@ class LoanReturnTest {
         assertEquals(List.of(original), loans.getLoanList());
         assertEquals(1, loans.getLoanCount());
         assertTrue(original.isReturned());
+        // @@author yarnieee
         assertEquals("U002", original.getBorrowerId());
         assertEquals("L002", loans.getNextLoanId());
+        // @@author
         assertEquals(savedSequence, Files.readString(sequenceFile));
         assertTrue(Files.readString(loanFile).contains("returned/true"));
+        // @@author yarnieee
         assertSame(camera, EquipmentFilter.parse("eqm-filter e/E001 status/available")
+                // @@author
                 .apply(equipment.getEquipmentList(), loans).getFirst());
     }
 
+    // @@author yarnieee
     @Test
     void returnLoan_lowercaseLoanId_isAcceptedAndDisplayedCanonically() throws Exception {
         assertSame(original, loans.returnLoan(
                 "loan-return l/l001 serviceable/yes damage/NONE remarks/Checked at counter"));
 
+        // @@author
         assertTrue(original.isReturned());
+        // @@author yarnieee
         assertEquals("L001", original.getLoanId());
     }
 
+    // @@author
     @Test
     void returnLoan_changedConditionAssessmentAndReloan_snapshotsSurviveRestart()
             throws Exception {
@@ -107,12 +123,18 @@ class LoanReturnTest {
         assertEquals("Original assessment", firstSnapshot.getRemarks());
 
         loans.returnLoan(
+                // @@author yarnieee
                 "loan-return l/L001 serviceable/yes "
+                        // @@author
                         + "damage/SHUTTER_FAULT "
                         + "remarks/Assessed after return");
+        // @@author yarnieee
         equipment.updateEquipment("eqm-update e/E001 cond/8");
+        // @@author
         Loan second = loans.addLoan(
+                // @@author yarnieee
                 "loan-add e/E001 u/U003 issued/03-10-26 due/04-10-26");
+        // @@author
 
         EquipmentConditionSnapshot secondSnapshot =
                 second.getIssueConditionSnapshot();
@@ -147,8 +169,10 @@ class LoanReturnTest {
         assertNotNull(restoredSecondSnapshot);
         assertTrue(restoredFirst.isReturned());
         assertFalse(restoredSecond.isReturned());
+        // @@author yarnieee
         assertEquals("L001", restoredFirst.getLoanId());
         assertEquals("L002", restoredSecond.getLoanId());
+        // @@author
         assertEquals(4, restoredFirstSnapshot.getCondition());
         assertEquals(
                 "SENSOR_DAMAGE",
@@ -167,14 +191,20 @@ class LoanReturnTest {
 
     @Test
     void returnLoan_unserviceableItem_survivesReloadAndCannotBeLoanedAgain() throws Exception {
+        // @@author yarnieee
         loans.returnLoan("loan-return l/L001 serviceable/no damage/SHUTTER_FAULT remarks/Needs repair");
+        // @@author
 
         assertFalse(camera.isLoaned());
         assertFalse(camera.isServiceable());
+        // @@author yarnieee
         assertTrue(EquipmentFilter.parse("eqm-filter e/E001 status/available")
+                // @@author
                 .apply(equipment.getEquipmentList(), loans).isEmpty());
         assertThrows(LoanAdditionUnsuccessful.class, () -> loans.addLoan(LOAN_COMMAND));
+        // @@author yarnieee
         assertEquals("L002", loans.getNextLoanId());
+        // @@author
 
         EquipmentHandler reloadedEquipment = new EquipmentHandler(equipmentFile);
         reloadedEquipment.loadFromStorage();
@@ -191,12 +221,16 @@ class LoanReturnTest {
         assertEquals(4, restored.getCondition());
         assertTrue(reloadedLoans.getLoanList().getFirst().isReturned());
         assertThrows(LoanAdditionUnsuccessful.class, () -> reloadedLoans.addLoan(LOAN_COMMAND));
+        // @@author yarnieee
         assertEquals("L002", reloadedLoans.getNextLoanId());
+        // @@author
     }
 
     @Test
     void returnLoan_assessmentValuesIgnoreCaseAndEmptyRemarksClearOldRemarks() throws Exception {
+        // @@author yarnieee
         loans.returnLoan("loan-return l/L001 serviceable/YeS damage/sHuTtEr_FaUlT remarks/");
+        // @@author
 
         assertTrue(camera.isServiceable());
         assertEquals(CameraDamage.SHUTTER_FAULT, camera.getDamage());
@@ -208,7 +242,9 @@ class LoanReturnTest {
     void returnLoan_maximumLengthRemarks_areSavedAndReloaded() throws Exception {
         String remarks = "x".repeat(200);
 
+        // @@author yarnieee
         loans.returnLoan("loan-return l/L001 serviceable/yes damage/NONE remarks/" + remarks);
+        // @@author
 
         EquipmentHandler reloaded = new EquipmentHandler(equipmentFile);
         reloaded.loadFromStorage();
@@ -220,7 +256,9 @@ class LoanReturnTest {
     @ValueSource(strings = {"yes", "no"})
     void returnLoan_otherDamageWithRemarks_survivesRestart(String serviceability) throws Exception {
         String remarks = "Damage outside listed categories";
+        // @@author yarnieee
         String command = "loan-return l/L001 serviceable/" + serviceability
+                // @@author
                 + " damage/other remarks/" + remarks;
         boolean expectedServiceable = "yes".equals(serviceability);
 
@@ -248,7 +286,9 @@ class LoanReturnTest {
     void returnLoan_fieldPrefixesInsideFinalRemarks_areSavedAsLiteralText() throws Exception {
         String remarks = "Checked serviceable/no damage/SENSOR_DAMAGE label on case";
 
+        // @@author yarnieee
         loans.returnLoan("loan-return l/L001 serviceable/yes damage/NONE remarks/" + remarks);
+        // @@author
 
         EquipmentHandler reloaded = new EquipmentHandler(equipmentFile);
         reloaded.loadFromStorage();
@@ -267,13 +307,17 @@ class LoanReturnTest {
         String savedSequence = Files.readString(sequenceFile);
 
         assertThrows(LoanReturnUnsuccessful.class,
+                // @@author yarnieee
                 () -> loans.returnLoan("loan-return l/L001 serviceable/no damage/SHUTTER_FAULT remarks/Rejected"));
+        // @@author
         assertThrows(IllegalStateException.class, () -> original.setReturned(false));
         original.setReturned(true);
 
         assertEquals(List.of(original, next), loans.getLoanList());
+        // @@author yarnieee
         assertEquals("L002", next.getLoanId());
         assertEquals("L003", loans.getNextLoanId());
+        // @@author
         assertTrue(camera.isLoaned());
         assertEquals(next.getLoanId(), camera.getLoanId());
         assertEquals(CameraDamage.NONE, camera.getDamage());
@@ -300,13 +344,16 @@ class LoanReturnTest {
 
         assertTrue(history.isReturned());
         assertFalse(current.isReturned());
+        // @@author yarnieee
         assertEquals("L002", restored.getLoanId());
+        // @@author
         assertTrue(restored.isLoaned());
         assertEquals(2, reloadedLoans.getLoanCount());
     }
 
     /** Covers missing, malformed, misplaced and unsupported return assessment fields. */
     private static Stream<String> invalidReturnCommands() {
+        // @@author yarnieee
         return Stream.of(null, "", "loan-return", "loan-return l/L001", "loan-return l/L000 serviceable/yes "
                 + "damage/NONE remarks/",
                 "loan-return l/01 serviceable/yes damage/NONE remarks/",
@@ -323,17 +370,22 @@ class LoanReturnTest {
                 "loan-return l/L001 serviceable/yes damage/OTHER remarks/",
                 "loan-return l/L001 serviceable/no damage/other remarks/   ",
                 "loan-return l/L001 damage/NONE serviceable/yes remarks/",
+                // @@author
                 "return serviceable/yes loan/001 damage/NONE remarks/",
+                // @@author yarnieee
                 "loan-return l/L001 loan/L001 serviceable/yes damage/NONE remarks/",
                 "loan-return l/L001 serviceable/yes serviceable/no damage/NONE remarks/",
                 "loan-return l/L001 serviceable/yes damage/NONE cond/11 remarks/",
+                // @@author
                 "Return loan/001 serviceable/yes damage/NONE remarks/",
                 "return Loan/001 serviceable/yes damage/NONE remarks/",
+                // @@author yarnieee
                 "loan-return l/L001 Serviceable/yes damage/NONE remarks/",
                 "loan-return l/L001 serviceable/yes Damage/NONE remarks/",
                 "loan-return l/L001 serviceable/yes damage/NONE Remarks/",
                 "loan-return l/L001 serviceable/yes damage/NONE remarks/" + "x".repeat(201),
                 "loan-return l/L001 serviceable/yes damage/NONE remarks/first\nsecond");
+        // @@author
     }
 
     @ParameterizedTest
@@ -355,20 +407,26 @@ class LoanReturnTest {
 
     @Test
     void returnLoan_staleEquipmentLoanId_rejectsWithoutChangingOtherState() throws Exception {
+        // @@author yarnieee
         camera.setLoanId("L099");
+        // @@author
         String savedEquipment = Files.readString(equipmentFile);
         String savedLoans = Files.readString(loanFile);
 
         assertThrows(LoanReturnUnsuccessful.class, () -> loans.returnLoan(RETURN_COMMAND));
 
         assertFalse(original.isReturned());
+        // @@author yarnieee
         assertEquals("L099", camera.getLoanId());
+        // @@author
         assertTrue(camera.isLoaned());
         assertEquals(CameraDamage.SENSOR_DAMAGE, camera.getDamage());
         assertEquals("Original assessment", camera.getRemarks());
         assertEquals(savedEquipment, Files.readString(equipmentFile));
         assertEquals(savedLoans, Files.readString(loanFile));
+        // @@author yarnieee
         camera.setLoanId("L001");
+        // @@author
         assertSame(original, loans.returnLoan(RETURN_COMMAND));
     }
 
@@ -383,7 +441,9 @@ class LoanReturnTest {
 
         assertFalse(original.isReturned());
         assertTrue(camera.isLoaned());
+        // @@author yarnieee
         assertEquals("L001", camera.getLoanId());
+        // @@author
         assertFalse(replacement.isLoaned());
         assertNull(replacement.getLoanId());
         assertEquals("Original assessment", replacement.getRemarks());
@@ -438,7 +498,9 @@ class LoanReturnTest {
         assertTrue(original.isReturned());
         assertFalse(camera.isLoaned());
         assertTrue(camera.isServiceable());
+        // @@author yarnieee
         assertEquals("L002", loans.getNextLoanId());
+        // @@author
         assertEquals(savedSequence, Files.readString(sequenceFile));
 
         EquipmentHandler restartedEquipment = new EquipmentHandler(equipmentFile);
@@ -455,11 +517,15 @@ class LoanReturnTest {
         assertSame(original, loans.getLoanList().getFirst());
         assertEquals(List.of(original), loans.getLoanList());
         assertEquals(1, loans.getLoanCount());
+        // @@author yarnieee
         assertEquals("L002", loans.getNextLoanId());
+        // @@author
         assertFalse(original.isReturned());
         assertTrue(camera.isLoaned());
         assertTrue(camera.isServiceable());
+        // @@author yarnieee
         assertEquals("L001", camera.getLoanId());
+        // @@author
         assertEquals(CameraDamage.SENSOR_DAMAGE, camera.getDamage());
         assertEquals("Original assessment", camera.getRemarks());
         assertEquals("APS-C", camera.getSensorFormat());

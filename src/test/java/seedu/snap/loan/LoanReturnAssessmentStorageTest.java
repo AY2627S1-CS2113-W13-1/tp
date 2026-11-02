@@ -20,7 +20,9 @@ import seedu.snap.equipment.EquipmentHandler;
 
 /** Tests return-snapshot storage, compatibility and rejection of damaged history. */
 class LoanReturnAssessmentStorageTest {
+    // @@author yarnieee
     private static final String RECORD = "loan loanId/L001 id/E001 b/U002 issued/01-10-26 due/20-10-26 ";
+    // @@author
     private static final String RETURN_FIELDS = "returnType/camera returnCondition/5 returnDamage/NONE "
             + "returnRemarks/Checked returnServiceable/yes";
 
@@ -31,11 +33,17 @@ class LoanReturnAssessmentStorageTest {
     @ValueSource(strings = {"camera", "lens", "battery", "tripod"})
     void saveAndLoad_allSubtypes_roundTripBothAssessmentsAndUnicode(String type) throws Exception {
         EquipmentHandler inventory = new EquipmentHandler();
+        // @@author yarnieee
         inventory.addEquipment("eqm-add name/Test item e/E001 type/" + type + " cond/1 remarks/At issue + 100% ✓");
+        // @@author
         LoanHandler handler = new LoanHandler(inventory);
+        // @@author yarnieee
         Loan original = handler.addLoan("loan-add e/E001 u/U002 issued/01-10-26 due/20-10-26");
+        // @@author
         String remarks = "Checked 中文 + % / cond/9 serviceable/no issueType/camera returnType/lens ✓";
+        // @@author yarnieee
         handler.returnLoan("loan-return l/L001 serviceable/no damage/OTHER cond/10 remarks/" + remarks);
+        // @@author
         Path file = directory.resolve("loans.txt");
 
         LoanStorage.save(file, handler.getLoanList());
@@ -71,10 +79,14 @@ class LoanReturnAssessmentStorageTest {
         Path file = directory.resolve("loans.txt");
         Files.writeString(file, RECORD + "returned/false\n");
         EquipmentHandler inventory = new EquipmentHandler();
+        // @@author yarnieee
         inventory.addEquipment("eqm-add name/Camera e/E001 type/camera cond/3");
+        // @@author
         LoanHandler handler = new LoanHandler(inventory, file);
         handler.loadFromStorage();
+        // @@author yarnieee
         handler.returnLoan("loan-return l/L001 serviceable/yes damage/NONE cond/5");
+        // @@author
 
         Loan restored = LoanStorage.load(file).getFirst();
         assertNull(restored.getIssueConditionSnapshot());
@@ -101,10 +113,14 @@ class LoanReturnAssessmentStorageTest {
         RETURN_FIELDS + " " + RETURN_FIELDS})
     void load_malformedAssessment_reportsLineAndPreservesLiveRecords(String fields) throws Exception {
         EquipmentHandler inventory = new EquipmentHandler();
+        // @@author yarnieee
         inventory.addEquipment("eqm-add name/Camera e/E001 type/camera cond/3");
+        // @@author
         Path file = directory.resolve("loans.txt");
         LoanHandler handler = new LoanHandler(inventory, file);
+        // @@author yarnieee
         Loan active = handler.addLoan("loan-add e/E001 u/U002 issued/01-10-26 due/20-10-26");
+        // @@author
         Files.writeString(file, RECORD + "returned/true " + fields + "\n");
         String damagedFile = Files.readString(file);
 
@@ -114,7 +130,9 @@ class LoanReturnAssessmentStorageTest {
         assertEquals(List.of(active), handler.getLoanList());
         assertFalse(active.isReturned());
         assertNull(active.getReturnAssessment());
+        // @@author yarnieee
         assertEquals("L001", inventory.getEquipmentList().getFirst().getLoanId());
+        // @@author
         assertEquals(damagedFile, Files.readString(file));
     }
 
@@ -140,13 +158,19 @@ class LoanReturnAssessmentStorageTest {
     @Test
     void returnLoan_fullLoanIdRange_keepsSeparateAssessmentsAndRoundTrips() throws Exception {
         EquipmentHandler inventory = new EquipmentHandler();
+        // @@author yarnieee
         inventory.addEquipment("eqm-add name/Camera e/E001 type/camera cond/1");
+        // @@author
         LoanHandler handler = new LoanHandler(inventory);
         int previous = 1;
         for (int number = 1; number <= 999; number++) {
+            // @@author yarnieee
             Loan loan = handler.addLoan("loan-add e/E001 u/U002 issued/01-10-26 due/20-10-26");
+            // @@author
             int condition = number % 10 + 1;
+            // @@author yarnieee
             handler.returnLoan("loan-return l/" + loan.getLoanId()
+                    // @@author
                     + " serviceable/yes damage/NONE cond/" + condition + " remarks/Return " + number);
             assertEquals(previous, loan.getIssueConditionSnapshot().getCondition());
             previous = condition;
@@ -156,7 +180,9 @@ class LoanReturnAssessmentStorageTest {
         List<Loan> restored = LoanStorage.load(file);
 
         assertEquals(999, restored.size());
+        // @@author yarnieee
         assertEquals("L1000", handler.getNextLoanId());
+        // @@author
         for (int index = 0; index < restored.size(); index++) {
             Loan loan = restored.get(index);
             assertEquals((index + 1) % 10 + 1, loan.getReturnAssessment().condition().getCondition());

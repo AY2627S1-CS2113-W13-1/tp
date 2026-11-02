@@ -1,3 +1,4 @@
+// @@author yarnieee
 package seedu.snap.equipment;
 
 import java.util.logging.Level;
@@ -8,6 +9,7 @@ public class Camera extends Equipment {
     private static final String TYPE = "camera";
     private static final Logger LOGGER = Logger.getLogger(Camera.class.getName());
 
+    // @@author
     /** Damage states that can be recorded for a camera. */
     public enum CameraDamage {
         NONE,
@@ -42,7 +44,9 @@ public class Camera extends Equipment {
      * @param id Three-digit equipment ID.
      * @param condition Condition of the camera from 1 to 10.
      */
+    // @@author yarnieee
     public Camera(String name, String id, int condition) {
+        // @@author
         this(name, id, condition, "unspecified", CameraDamage.NONE);
     }
 
@@ -108,10 +112,12 @@ public class Camera extends Equipment {
     // @@author
 
 
+    // @@author yarnieee
     @Override
     public String getType() {
         return TYPE;
     }
+    // @@author
 
     public String getSensorFormat() {
         return sensorFormat;
@@ -172,4 +178,6 @@ public class Camera extends Equipment {
                 .toString();
     }
     // @@author
+    // @@author yarnieee
 }
+// @@author

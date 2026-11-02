@@ -43,11 +43,14 @@ Building from source requires JDK 25 and internet access on the first Gradle run
 | Format | What it displays | Example |
 | --- | --- | --- |
 | `help` | The same boxed command menu shown at startup | `help` |
+<!-- @@author yarnieee -->
 | `help <command>` | The format, example, fields, defaults and restrictions for one command | `help loan-add` |
+<!-- @@author -->
 | `help all` | The complete command reference | `help all` |
 
 Replace `<command>` with one of these exact lowercase topics:
 
+<!-- @@author yarnieee -->
 * Equipment: `eqm-add`, `eqm-list`, `eqm-show`, `eqm-delete`, `eqm-filter`, `eqm-update`, `eqm-maintain`, `eqm-loan-history`.
 * Loans: `loan-add`, `loan-return`, `loan-delete`, `loan-update`, `loan-list`, `loan-list-borrower`, `loan-view`, `loan-show`, `loan-list-overdue`.
 * Bundles: `bundle-create`, `bundle-add-eqm`, `bundle-remove-eqm`, `bundle-list`, `bundle-history`.
@@ -55,10 +58,13 @@ Replace `<command>` with one of these exact lowercase topics:
 
 Include the whole topic for commands with more than one word, for example `help loan-list-overdue` or
 `help loan-delete`. Extra whitespace around or between words is accepted. The group names are menu labels;
+<!-- @@author -->
 they are not help topics. An unknown topic, such as `help loans`, displays an error followed by the compact
 menu so that you can choose a supported topic.
+<!-- @@author yarnieee -->
 Short aliases are available for every command. They are mnemonic shortcuts intended for experienced or power users
 after the full command names become cumbersome; the full names remain recommended for new users and discovery.
+<!-- @@author -->
 
 Help uses `<VALUE>` for a value you must replace and `[field/<VALUE>]` for a field you can omit.
 Command details have separate headings, formats, examples and notes, with blank lines between them.
@@ -67,15 +73,19 @@ each command from the previous section.
 Help text wraps at 100 columns. A long displayed format or example can span several rows; enter each command
 on one line. Unrecognised-command errors point to `help`.
 
+<!-- @@author yarnieee -->
 Typed identifiers use equipment `E001`-`E999`, loans `L001`-`L999`, bundles `B001`-`B999`, and
 borrowers/users `U000`-`U999`. ID prefixes are case-insensitive in commands, so lowercase forms such as `e001`
 are accepted and normalised. Bare numeric IDs and another identifier type are rejected. Listings and saved files
 always use uppercase IDs. Existing saved files with older bare numeric IDs are migrated automatically and written
 in the typed format when the data is next saved.
 
+<!-- @@author -->
 Every help request, including an unknown topic, leaves equipment, loans, bundles, maintenance, availability, identifiers and
 saved records unchanged. You can then enter another command normally. Help does not save data or end the session.
+<!-- @@author yarnieee -->
 If saved data fails to load at startup, only `restore` and `exit` are available until recovery succeeds.
+<!-- @@author -->
 
 ## Optional fields and defaults
 
@@ -86,6 +96,7 @@ except that empty remarks are valid unless damage is `OTHER`.
 
 | Command | Optional field | When omitted |
 | --- | --- | --- |
+<!-- @@author yarnieee -->
 | `eqm-add` | Subtype and compatibility details | `unspecified` |
 | `eqm-add` | `damage/` | `NONE` |
 | `eqm-add` | `remarks/` | Empty text; rejected if damage is `OTHER` |
@@ -94,6 +105,7 @@ except that empty remarks are valid unless damage is `OTHER`.
 | `eqm-update` | Name, type or condition | Keep the existing value; supply an ID and at least one field |
 | `loan-update` | Item, borrower, issue date or due date | Keep the existing value; supply a loan ID and at least one field |
 | `eqm-filter` | Any individual criterion | No restriction for that criterion; supply at least one criterion |
+<!-- @@author -->
 
 Equipment name, Item ID, type and numeric condition remain required when adding equipment.
 Loans require Item ID, borrower ID and due date. Returns require loan ID, serviceability and damage.
@@ -111,9 +123,11 @@ eqm-update e/E010 cond/5
 eqm-filter type/camera cond/1-3 status/available
 ```
 
+<!-- @@author yarnieee -->
 [![Worked example: camera E010 initially matches condition 1-3; after updating its condition to 5, repeating the filter gives no matches](images/EquipmentWorkflow.svg)](images/EquipmentWorkflow.svg)
 
 The first filter displays item `E010`. The update changes its condition to `5`, so the repeated filter prints
+<!-- @@author -->
 `No equipment matches the filters.` Its ID, name and `Available` status stay the same.
 
 <!-- @@author MatthewLeon888 -->
@@ -138,15 +152,19 @@ Invalid commands, unknown Item IDs, invalid dates and failed saves leave existin
 A successful command shows an `[OK]` label, the Item ID and name, maintenance date, work description and outcome.
 <!-- @@author -->
 
+<!-- @@author yarnieee -->
 ## Adding equipment: `eqm-add`
 
 Format: `eqm-add name/<NAME> e/<ITEM ID> type/<TYPE> cond/<CONDITION> [TYPE DETAIL] [damage/<DAMAGE>] [remarks/<REMARKS>]`
 
 Example: `eqm-add name/Canon EOS R10 e/E001 type/camera cond/1 remarks/Handle with care`
+<!-- @@author -->
 
 * `NAME` contains 1 to 100 characters after trimming surrounding whitespace. Whitespace-only names,
   including nonbreaking spaces, are rejected.
+<!-- @@author yarnieee -->
 * `ITEM ID` uses an identifier from `E001` to `E999` and must not already exist.
+<!-- @@author -->
 * `TYPE` is `camera`, `lens`, `battery` or `tripod`. Type names are case-insensitive and stored in lowercase.
 * `CONDITION` is a whole number from `1` to `10`, without leading zeros, signs or decimals.
   Use `1` for pristine and `10` for non-functional as a descriptive rating; the number does not set availability.
@@ -158,16 +176,20 @@ Example: `eqm-add name/Canon EOS R10 e/E001 type/camera cond/1 remarks/Handle wi
 **Condition and availability are separate:** even an item added with `cond/10` starts as `Available`.
 Borrowing is controlled by its [availability status](#equipment-availability), not a numeric threshold.
 
+<!-- @@author yarnieee -->
 Success prints `[OK] Equipment <ITEM ID> added.` followed by the item's name, type, condition and status.
 The item appears at the end of `eqm-list` and is saved automatically.
 Adding an existing Item ID does not replace its equipment; use `eqm-update` to correct the existing item's details.
 
 For example, with Item ID `E001` already present:
+<!-- @@author -->
 
 | Command | Error |
 | --- | --- |
+<!-- @@author yarnieee -->
 | `eqm-add name/Lens e/E001 type/lens cond/3` | `Item ID E001 already exists.` |
 | `eqm-add name/Tripod e/E002 type/tripod cond/11` | `Condition must be a whole number from 1 to 10.` |
+<!-- @@author -->
 
 Rejected additions and failed saves leave the existing equipment unchanged. Correct the input or storage
 problem and enter the command again.
@@ -193,10 +215,14 @@ After `cond/`, you can add the fields for the equipment type, followed by
 * Fields belonging to another equipment type, invalid damage values,
   repeated fields and fields in the wrong order are rejected.
 * Compatibility comparisons ignore letter case.
+<!-- @@author yarnieee -->
 * `bundle-add-eqm` checks these attributes against existing bundle members and rejects known mismatches.
+<!-- @@author -->
   There is no separate command that displays compatibility results.
 * Missing comparison data does not block bundle addition. A known conflicting attribute still causes rejection,
+<!-- @@author yarnieee -->
   even when another comparison field was omitted. See [Adding equipment to a bundle](#adding-equipment-to-a-bundle-bundle-add-eqm).
+<!-- @@author -->
 * Compatibility attributes are saved, restored and preserved when the
   equipment name or condition is updated.
 
@@ -213,31 +239,40 @@ eqm-add name/Backup Camera e/E005 type/camera cond/5 damage/OTHER remarks/Damage
 ### Names and field markers
 
 Names may contain spaces and slashes. A field prefix after whitespace normally starts another field;
+<!-- @@author yarnieee -->
 `e/card`-like text is an exception when it appears within a name.
+<!-- @@author -->
 
 | Name fragment | Allowed? | Explanation |
 | --- | --- | --- |
+<!-- @@author yarnieee -->
 | `USB e/card reader` | Yes | The nonnumeric `e/card` fragment stays in the name. |
+<!-- @@author -->
 | `fluid/head tripod` | Yes | A slash within a word does not start a field. |
 | `Spare id/E001 camera` | Yes | `id/` is not an interactive command field and stays in the name. |
 | `Camera type/lens` | No | `type/` starts a type field after whitespace. |
 
+<!-- @@author yarnieee -->
 For `eqm-add`, the actual `e/` is the last one before `type/`. Earlier ID-like name fragments cannot start
+<!-- @@author -->
 with whitespace, a digit, `+` or `-`. Required fields appear once, in the documented order.
 Optional prefixes such as `sensor/` and `remarks/` are recognised only after `cond/`, so
 `Camera sensor/cleaning kit` is a valid name. The first `remarks/` after the condition begins the final
 literal remarks field. There is no quoting or escaping syntax.
 
+<!-- @@author yarnieee -->
 ## Viewing equipment: `eqm-list`
 
 Format: `eqm-list`
 
 Example: `eqm-list`
+<!-- @@author -->
 
 This displays equipment in inventory order using a 96-column table with `ID`, `NAME`, `TYPE`, `CONDITION`
 and `STATUS`. Status is `Available`, `Loaned` or `Unserviceable`, using the existing loan and return-assessment
 rules. The result count appears below the table.
 
+<!-- @@author yarnieee -->
 Names that do not fit end in `...`. Type-specific fields, damage and remarks are available through `eqm-show`,
 so long values do not expand the table. An empty inventory shows a count of zero and a valid `eqm-add` example.
 Vertical bars in table values appear as `\u007c` to keep the columns separate. Use `eqm-show` to see the original text.
@@ -249,6 +284,7 @@ Format: `eqm-show e/<ITEM ID>`
 Example: `eqm-show e/E001`
 
 Use an existing Item ID from `E001` to `E999`. The command displays the complete name, type, numeric
+<!-- @@author -->
 condition, status, serviceability, active Loan ID, all subtype and compatibility fields, damage and remarks.
 Omitted compatibility values appear as `unspecified`; an empty remarks field or absent active Loan ID appears
 as `(none)`. Long values wrap onto indented lines at 100 columns and are not truncated.
@@ -257,6 +293,7 @@ Tabs and control characters appear as visible escapes, such as `\t`, so that sto
 layout. The stored values are preserved. Extra fields, repeated IDs, invalid IDs and unknown items produce a
 clear error. Equipment listings, filters and detail requests leave records, identifiers and saved data unchanged.
 
+<!-- @@author yarnieee -->
 `eqm-show` describes the equipment's current state. Use `loan-view l/<LOAN ID>` for its condition when a particular
 loan was issued, and `loan-list` to see borrower IDs and loan dates.
 
@@ -265,6 +302,7 @@ loan was issued, and `loan-list` to see borrower IDs and loan dates.
 Format: `eqm-delete e/<ITEM ID>`
 
 Example: `eqm-delete e/E001`
+<!-- @@author -->
 
 The item is deleted immediately and a success message is printed. The deleted ID can then be used for another item.
 
@@ -272,7 +310,9 @@ Equipment with an active (unreturned) loan cannot be deleted. This prevents its 
 for a different item while the original loan is still active. Deletion is allowed once there are no active
 loans for that ID; returned loan records do not block deletion.
 
+<!-- @@author yarnieee -->
 Equipment that belongs to a bundle cannot be deleted. Use `bundle-remove-eqm` to remove the item from every
+<!-- @@author -->
 bundle that contains it before deleting the equipment. This keeps each persisted bundle's contents and completion
 status consistent with the inventory.
 
@@ -281,7 +321,9 @@ An ID that does not exist produces an error without changing the saved records.
 
 ## Equipment availability
 
+<!-- @@author yarnieee -->
 Check the `STATUS` column in `eqm-list` or eqm-filter results:
+<!-- @@author -->
 
 | Status | Meaning | Borrowing again |
 | --- | --- | --- |
@@ -289,13 +331,16 @@ Check the `STATUS` column in `eqm-list` or eqm-filter results:
 | `Loaned` | The item already has an active loan. | Return it before creating another loan. |
 | `Unserviceable` | The item was returned with `serviceable/no`. | It cannot be borrowed or added to a bundle. |
 
+<!-- @@author yarnieee -->
 New items start as `Available`. Use `loan-return` to keep the borrowing history and assess the item:
+<!-- @@author -->
 `serviceable/yes` makes it available again; `serviceable/no` makes it unserviceable. Status is restored
 after restarting. Changing an item's name or numeric condition does not change its availability.
 Removing an older returned loan does not affect a newer active loan or the item's assessment.
 
 A returned loan cannot be made active again. To borrow the same item again, create a new loan.
 
+<!-- @@author yarnieee -->
 ## Loaning out equipment: `loan-add`
 
 Format: `loan-add e/<ITEM ID> u/<BORROWER ID> [issued/<DD-MM-YY>] due/<DD-MM-YY>`
@@ -303,10 +348,13 @@ Format: `loan-add e/<ITEM ID> u/<BORROWER ID> [issued/<DD-MM-YY>] due/<DD-MM-YY>
 Example: `loan-add e/E001 u/U002 issued/01-10-26 due/08-10-26`
 
 Example with the issue date omitted: `loan-add e/E001 u/U002 due/31-12-99`. Replace the due date with the intended
+<!-- @@author -->
 deadline on or after today.
 
+<!-- @@author yarnieee -->
 * `ITEM ID` is the typed identifier of existing equipment, from `E001` to `E999`. The item must be `Available`.
 * `BORROWER ID` is the typed identifier of the borrower, from `U000` to `U999`.
+<!-- @@author -->
 * `issued/` is optional and defaults to today's date in the application's local time zone, at midnight.
   The date is read once for each command. A supplied issue date overrides this default.
 * `due/` is required. Both dates use `DD-MM-YY`. The issue date must not be later than the due date.
@@ -315,18 +363,24 @@ deadline on or after today.
   `issued/` without a value does not use the default.
 * An item cannot have more than one active loan at the same time.
 
+<!-- @@author yarnieee -->
 Each successful loan receives a unique typed loan ID. The success message shows this ID, the item ID
+<!-- @@author -->
 and name, borrower ID, issue date and due date, so a separate listing is not needed to confirm the result.
+<!-- @@author yarnieee -->
 Loan IDs start at `L001` and increase through `L999`. Deleted IDs are never reused, including after a restart.
 Once `L999` has been assigned, further new loans are rejected.
+<!-- @@author -->
 
 Invalid loan commands leave both the loan records and equipment availability unchanged.
 
+<!-- @@author yarnieee -->
 ## Viewing loans: `loan-list`
 
 Format: `loan-list`
 
 Example: `loan-list`
+<!-- @@author -->
 
 This displays all recorded loans with these columns: `LOAN ID`, `ITEM ID`, `BORROWER ID`, `ISSUED`, `DUE`
 and `STATE`. Dates use `DD-MM-YY`, without a time. `STATE` is `Returned` for returned loans, `Overdue` for
@@ -341,7 +395,9 @@ For example:
 | L001    | E001    | U002        | 01-10-26 | 08-10-26 | Returned |
 ```
 
+<!-- @@author yarnieee -->
 An empty list displays `No loans recorded. Type help loan-list for the command format.` and `0 loans.`.
+<!-- @@author -->
 
 <!-- @@author MatthewLeon888 -->
 ## Viewing equipment held by a borrower: `loan-list-borrower`
@@ -358,6 +414,7 @@ Dates, states and columns match `loan-list`. Results end with a loan count, incl
 
 <a id="viewing-the-issue-time-equipment-condition-view-loan"></a>
 
+<!-- @@author yarnieee -->
 ## Comparing a loan's condition assessments: `loan-view`
 
 Format: `loan-view l/<LOAN ID>`
@@ -365,6 +422,7 @@ Format: `loan-view l/<LOAN ID>`
 Example: `loan-view l/L001`
 
 Use the Loan ID shown by `loan-list`. The command compares the equipment type, numeric condition and damage
+<!-- @@author -->
 recorded when that loan was issued and returned, including saved serviceability. The two remarks are printed
 below the columns so long notes remain readable.
 
@@ -373,7 +431,9 @@ below the columns so long notes remain readable.
 * New loans record issue-time serviceability. Older records without that field show `Not recorded`, even if
   their other issue-condition fields are present; the application does not infer historical values from current equipment.
 
+<!-- @@author yarnieee -->
 Reassigning an active loan to another item with `loan-update` replaces its issue assessment with that item's current
+<!-- @@author -->
 assessment. Changing only the borrower or dates keeps the existing assessment.
 
 Later equipment updates, returns and Item ID reuse do not change these saved assessments. Deleting the loan
@@ -397,6 +457,7 @@ without a saved issue assessment report `Not recorded` rather than using the equ
 This read-only command works for active and returned loans and does not change records or saved files. Invalid
 commands and unknown Loan IDs produce an error.
 
+<!-- @@author yarnieee -->
 ## Viewing an item's loan history: `eqm-loan-history`
 
 Format: `eqm-loan-history e/<ITEM ID>`
@@ -404,19 +465,27 @@ Format: `eqm-loan-history e/<ITEM ID>`
 Example: `eqm-loan-history e/E001`
 
 Use an existing Item ID from `E001` to `E999`. The history includes both active and returned loans for the
+<!-- @@author -->
 equipment currently registered under that ID. Each row shows the loan ID, borrower, issue date, due date and
+<!-- @@author yarnieee -->
 state, using the same display as `loan-list`. Rows are ordered by issue date from earliest to latest,
+<!-- @@author -->
 then by loan ID for equal issue dates.
 This command does not change equipment, loans, availability or saved records.
 
+<!-- @@author yarnieee -->
 If the item has no recorded loans, the application prints `No loan history for item ID E001.`
+<!-- @@author -->
 If the item does not exist, the application reports the missing ID. Invalid commands show the required format.
 
 Deleting equipment and adding another item under the same Item ID starts a separate history, including when
+<!-- @@author yarnieee -->
 the replacement has the same name and type. The previous item's loans remain in `loan-list`, but are excluded
+<!-- @@author -->
 from the replacement's history. This separation survives restarting and normal equipment updates and returns.
 
 Older saved returned loans may lack enough information to prove which item they belonged to. Such loans remain
+<!-- @@author yarnieee -->
 in `loan-list` and are excluded from item-specific histories. If they use the queried Item ID, the history view
 explains this and points to `loan-list`. Existing active loans can be associated with the current item when loaded.
 
@@ -425,9 +494,12 @@ explains this and points to `loan-list`. Existing active loans can be associated
 Format: `loan-list-overdue`
 
 Example: `loan-list-overdue`
+<!-- @@author -->
 
 This displays every active loan whose due date is earlier than the current local date. The results show the
+<!-- @@author yarnieee -->
 same columns, dates, state and count as `loan-list`, in the same order as the stored loans.
+<!-- @@author -->
 
 Returned loans are excluded. A loan due today is not overdue, regardless of its time, and becomes overdue only
 on the following date if it remains active. If no loans are overdue, the application displays
@@ -435,9 +507,11 @@ on the following date if it remains active. If no loans are overdue, the applica
 
 This is a read-only command. It does not modify loan records, equipment availability or saved files.
 
+<!-- @@author yarnieee -->
 ## Returning equipment: `loan-return`
 
 Format: `loan-return l/<LOAN ID> serviceable/<yes|no> damage/<DAMAGE> [cond/<CONDITION>] [remarks/<REMARKS>]`
+<!-- @@author -->
 
 Examples:
 
@@ -448,7 +522,9 @@ loan-return l/L003 serviceable/yes damage/none
 loan-return l/L004 serviceable/no damage/OTHER remarks/Mounting plate damaged
 ```
 
+<!-- @@author yarnieee -->
 * Use the loan ID from `loan-list`, from `L001` to `L999`. It must identify an active loan.
+<!-- @@author -->
 * `l/`, `serviceable/` and `damage/` are required, once each and in the displayed order.
   The complete command must be on one line.
 * `serviceable/yes` or `serviceable/no` is a mandatory condition assessment. These values are case-insensitive.
@@ -462,7 +538,9 @@ loan-return l/L004 serviceable/no damage/OTHER remarks/Mounting plate damaged
   characters after trimming. All text after `remarks/`, including prefix-like text, is treated as remarks.
 * The assessment updates the item's damage, remarks and serviceability, and its numeric condition if `cond/` is given.
   Its name, type-specific attributes and bundle memberships are retained. A separate immutable copy is stored with
+<!-- @@author yarnieee -->
   that Loan ID, alongside the issue assessment; use `loan-view l/<LOAN ID>` to compare them after later changes or restarts.
+<!-- @@author -->
 
 A successful return keeps the loan record and its ID, displays its state as `Returned`, and clears its active
 equipment link. The success message shows the Loan ID, item ID and name, and the item's resulting `Available`
@@ -476,6 +554,7 @@ After fixing the file or directory problem, retry the same command. If restorati
 asks you to check the saved files before retrying.
 
 There is currently no repair command to make unserviceable equipment serviceable again.
+<!-- @@author yarnieee -->
 Changing its numeric condition with `eqm-update` does not remove the unserviceable assessment.
 
 ## Deleting a loan: `loan-delete`
@@ -485,6 +564,7 @@ Format: `loan-delete l/<LOAN ID>`
 Example: `loan-delete l/L001`
 
 Use the loan ID shown by `loan-list`, from `L001` to `L999`. This selects one record even when the same item
+<!-- @@author -->
 has been borrowed more than once. The value is a loan ID, not an equipment ID. Issue-date arguments are no longer
 accepted. If no matching loan exists or the command is invalid, the application reports an error and keeps
 the existing loan records unchanged.
@@ -528,16 +608,20 @@ saving fails, the original loan, equipment availability and saved file remain un
 restarting the application.
 <!-- @@author -->
 
+<!-- @@author yarnieee -->
 ## Filtering equipment: `eqm-filter`
 
 Format: `eqm-filter [e/<ITEM ID>] [name/<NAME>] [type/<TYPE>] [cond/<CONDITION>] [status/<STATUS>]`
+<!-- @@author -->
 
 Examples:
 
+<!-- @@author yarnieee -->
 * `eqm-filter type/camera cond/1-3 status/available`
 * `eqm-filter name/canon`
 * `eqm-filter e/E001`
 * `eqm-filter status/loaned`
+<!-- @@author -->
 
 Supply at least one filter, in any order. Each prefix can appear only once, and every supplied criterion must match.
 For example, the first command above finds cameras that are both available and within condition `1` to `3`.
@@ -552,68 +636,90 @@ For example, the first command above finds cameras that are both available and w
 
 Condition ranges must be ascending. Values such as `3-1`, `01` or `2.5` are rejected.
 `available` excludes active loans and unserviceable items; returned loans do not block availability.
+<!-- @@author yarnieee -->
 There is no `status/unserviceable` filter. To see those items, use `eqm-list` or omit the status criterion.
+<!-- @@author -->
 An unrecognised type, such as `type/microphone`, produces no matches.
 
 The [name and field-marker rules](#names-and-field-markers) also apply here. Empty or repeated fields are rejected. Filtering leaves equipment
 unchanged and prints matches in inventory order, or `No equipment matches the filters.` when none match.
+<!-- @@author yarnieee -->
 Matching rows use the same compact columns and truncation rules as `eqm-list`, followed by a result count.
+<!-- @@author -->
 Use `eqm-show e/<ITEM ID>` for full values. An `eqm-filter` command with no matches shows a count of zero and a clear message.
 An invalid `eqm-filter` command also leaves equipment and loan records unchanged; correct it and try again.
 See the [worked example](#equipment-worked-example) for a query with known results.
 
+<!-- @@author yarnieee -->
 ## Updating equipment: `eqm-update`
 
 Format: `eqm-update e/<ITEM ID> [name/<NAME>] [type/<TYPE>] [cond/<CONDITION>]`
+<!-- @@author -->
 
 Examples:
 
+<!-- @@author yarnieee -->
 * `eqm-update e/E001 cond/5`
 * `eqm-update e/E001 name/Film Camera cond/5`
 
 Supply an existing ID and at least one of `name/`, `type/`, or `cond/`. Fields may appear in any order, once each.
+<!-- @@author -->
 The ID stays fixed and omitted details keep their current values. Names contain 1-100 characters after trimming;
 whitespace-only names are rejected. Conditions are whole numbers from `1` to `10`, without leading zeros,
+<!-- @@author yarnieee -->
 signs or decimals. Condition ranges are accepted by `eqm-filter` only.
+<!-- @@author -->
 
 Equipment types cannot be changed. If supplied, `type/` checks the existing type and must match it,
 ignoring case. A matching `type/` on its own is accepted without changing any details.
 Updates keep the item in its current list position and retain its subtype details, damage, remarks,
+<!-- @@author yarnieee -->
 availability, loan history and bundle memberships. These other details cannot be edited with `eqm-update`.
 
 Success prints `[OK] Equipment E001 updated.` for Item ID `E001`, followed by the item's name, type, condition and
 status, and saves the changes.
 With `E001` registered as a camera, these commands are rejected:
+<!-- @@author -->
 
 | Command | Error |
 | --- | --- |
+<!-- @@author yarnieee -->
 | `eqm-update e/E001 name/Film Camera cond/11` | `Condition must be a whole number from 1 to 10.` |
 | `eqm-update e/E001 type/lens` | `Equipment type cannot be changed. Item ID E001 must remain camera.` |
+<!-- @@author -->
 
 The [name and field-marker rules](#names-and-field-markers) apply. `status/` cannot be updated manually.
 Invalid commands or failed saves leave all existing details unchanged. In the first rejected example,
 neither the name nor condition changes. An ID that does not exist is rejected rather than creating equipment.
 Correct the command or storage problem and try again.
 
+<!-- @@author yarnieee -->
 ## Creating a bundle: `bundle-create`
 
 Format: `bundle-create name/<NAME>`
 
 Example: `bundle-create name/Travel Kit`
+<!-- @@author -->
 
 The name must contain 1 to 100 characters and must be unique. Names are compared case-sensitively,
 so `Travel Kit` and `travel kit` are different names. A bundle starts empty and incomplete. The application assigns
+<!-- @@author yarnieee -->
 typed bundle IDs in creation order, starting at `B001`, with at most 999 bundles in the saved collection.
+<!-- @@author -->
 Bundle IDs are separate from equipment IDs.
 
+<!-- @@author yarnieee -->
 Bundles and their equipment memberships are saved when you enter `exit` and restored when the application
+<!-- @@author -->
 restarts. Bundle IDs continue from the highest restored ID. Equipment and loans remain saved separately.
 
+<!-- @@author yarnieee -->
 ## Adding equipment to a bundle: `bundle-add-eqm`
 
 Format: `bundle-add-eqm b/<BUNDLE ID> <EQUIPMENT ID> [<EQUIPMENT ID> ...]`
 
 Example: `bundle-add-eqm b/B001 E001 E002 E003`
+<!-- @@author -->
 
 The bundle must exist. Supply one or more equipment IDs, separated by spaces. Each requested item gets
 its own success or error message. Valid items are added even if another requested item is rejected.
@@ -642,25 +748,31 @@ For a camera and lens, a known mismatch in either field causes rejection, even i
 Lens-battery, lens-tripod, battery-tripod and same-type pairs do not fail the compatibility check.
 The limits of one camera and one tripod still apply.
 
+<!-- @@author yarnieee -->
 Returning a serviceable item or deleting its active loan makes it available for a later `bundle-add-eqm` command.
+<!-- @@author -->
 Unserviceable equipment cannot be added to a bundle. Existing bundle memberships are retained on return.
 Updating a bundled item's name or condition also updates the item shown in the bundle.
 
+<!-- @@author yarnieee -->
 ## Removing equipment from a bundle: `bundle-remove-eqm`
 
 Format: `bundle-remove-eqm b/<BUNDLE ID> <EQUIPMENT ID> [<EQUIPMENT ID> ...]`
 
 Example: `bundle-remove-eqm b/B001 E001`
+<!-- @@author -->
 
 The bundle must exist. Each requested equipment ID is removed independently, and an equipment item can be
 deleted only after it has been removed from every bundle that contains it. Successful membership removals are
 saved immediately; a save failure restores the previous membership.
 
+<!-- @@author yarnieee -->
 ## Viewing bundles: `bundle-list`
 
 Format: `bundle-list`
 
 Example: `bundle-list`
+<!-- @@author -->
 
 This displays each bundle's ID, full name, contained equipment and member count, followed by the total bundle
 count. `Composition: Complete` means the existing equipment-count requirements are met. An incomplete bundle
@@ -668,8 +780,10 @@ names its missing required types, for example `Incomplete (missing lens, battery
 These descriptions concern composition; they do not promise equipment compatibility or availability.
 Borrowing an item later does not remove it from its bundle.
 
+<!-- @@author yarnieee -->
 An empty list suggests `bundle-create name/Camera kit` and displays `0 bundles.`. The display reminds you to save
 new bundles and additions with `exit`; successful removals are saved immediately. Saved bundles are restored
+<!-- @@author -->
 at startup.
 
 <!-- @@author MatthewLeon888 -->
@@ -695,13 +809,17 @@ Successful equipment additions, updates, deletions and return assessments are sa
 Successful loan additions, updates, returns and deletions are saved in
 `data/loans.txt`, the next unused loan ID is saved in `data/loan-sequence.txt`, and bundle memberships are saved
 in `data/bundles.txt`. Records are loaded when the application starts again. A final save is also attempted when
+<!-- @@author yarnieee -->
 `exit` is entered; if it fails, the application reports the affected file and lets you retry.
+<!-- @@author -->
 If console input ends, the application attempts the same final save once and exits. If that save fails,
 it reports the affected files and warns about unsaved changes before stopping; it cannot accept a retry
 without input. Resolve the storage problem and check the saved records before restarting.
+<!-- @@author yarnieee -->
 The data directory and the equipment, loan, sequence and maintenance files are created when they are first saved,
 including during the final save performed by `exit`. `bundles.txt` is created when bundle data is first saved and may
 be absent if no bundles have been created.
+<!-- @@author -->
 Each item's availability and associated loan ID are rebuilt from active loans at startup, so loaned items
 remain `Loaned` after restarting the application.
 
@@ -717,7 +835,9 @@ Saved equipment records use the four supported types and retain their type-speci
 Existing records of supported types without optional fields are also accepted, using `unspecified` and `NONE`.
 Records created before remarks were supported may omit the `remarks/` field; they load with empty remarks.
 Records with `damage/OTHER` require non-empty remarks; invalid saved records are reported when loaded.
+<!-- @@author yarnieee -->
 Remarks are shown by `eqm-show e/<ITEM ID>` and are restored when the application starts again.
+<!-- @@author -->
 Saved records may start with `serviceable/yes` or `serviceable/no`, followed by a tab and the add record.
 This prefix is storage metadata, not an add-command field. Older records without the prefix are serviceable.
 New records also start with `recordId/` and a permanent equipment identifier, followed by a tab before
@@ -743,12 +863,14 @@ Existing loan records without loan IDs are assigned IDs in file order on first l
 These IDs remain stable on later restarts. The sequence file preserves the next unused ID even when loan records
 are deleted. Equipment records retain their details and remarks; loan associations are restored from the loan records.
 
+<!-- @@author yarnieee -->
 To transfer your records, save with `exit`, then copy `data/equipment.txt`, `data/loans.txt`,
 `data/loan-sequence.txt` and `data/maintenance.txt` to the same location on the other computer. Copy
 `data/bundles.txt` as well when bundles have been created. If a file cannot be read
 or contains invalid or duplicate records, the application reports the problem and accepts only `restore` or `exit`.
 Use `restore` to recover from a valid backup, or `exit` to exit before correcting the saved files. In this state,
 `exit` exits without saving over the damaged files.
+<!-- @@author -->
 
 <!-- @@author MatthewLeon888 -->
 ## Backing up and restoring records
@@ -811,7 +933,9 @@ Successful changes start with `[OK]`; rejected commands and save failures start 
 * File errors show the reason and ask you to check the file or directory permissions.
 * Saves are written to temporary files before replacing the saved records, preserving previous records if writing fails.
 * Command validation errors show an `[ERROR]` message and let you enter another command at the command prompt.
+<!-- @@author yarnieee -->
 * If saved records cannot be loaded, only `restore` and `exit` are available. `exit` exits without saving in this state.
+<!-- @@author -->
   If console input ends in this state, the application also exits without saving.
 
 ## Command Summary
@@ -821,6 +945,7 @@ Successful changes start with `[OK]`; rejected commands and save failures start 
 | Show the compact command menu | `help` |
 | Show one command's format, example and defaults | `help <command>` |
 | Show the complete command reference | `help all` |
+<!-- @@author yarnieee -->
 | Add equipment | `eqm-add name/<NAME> e/<ITEM ID> type/<TYPE> cond/<CONDITION>` with optional details, damage and remarks |
 | Delete equipment | `eqm-delete e/<ITEM ID>` |
 | Add loan | `loan-add e/<ITEM ID> u/<BORROWER ID> [issued/<DD-MM-YY>] due/<DD-MM-YY>` |
@@ -833,8 +958,10 @@ Successful changes start with `[OK]`; rejected commands and save failures start 
 | View a borrower's current equipment | `loan-list-borrower u/<BORROWER ID>` |
 | Compare loan condition assessments | `loan-view l/<LOAN ID>` |
 | Show issue-time loan condition | `loan-show l/<LOAN ID>` |
+<!-- @@author -->
 | Back up equipment and loan records | `backup path/<DIRECTORY>` |
 | Restore equipment and loan records | `restore path/<DIRECTORY>` |
+<!-- @@author yarnieee -->
 | View item loan history | `eqm-loan-history e/<ITEM ID>` |
 | View bundle loan history | `bundle-history b/<BUNDLE ID>` or `bundle-history name/<NAME>` |
 | Record maintenance work | `eqm-maintain e/<ITEM ID> date/<DD-MM-YY> work/<DESCRIPTION> outcome/<OUTCOME>` |
@@ -867,3 +994,4 @@ the full command names become cumbersome; use the full names while learning the 
 | `bundle-list` | `lb` | `bundle-history` | `bh` |
 | `backup` | `bk` | `restore` | `rs` |
 | `help` | `h` | `exit` | `x` |
+<!-- @@author -->

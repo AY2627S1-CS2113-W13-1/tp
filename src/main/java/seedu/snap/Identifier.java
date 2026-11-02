@@ -1,3 +1,4 @@
+// @@author yarnieee
 package seedu.snap;
 
 import java.util.Locale;
@@ -113,3 +114,4 @@ public final class Identifier {
         return prefix != expected.prefix && "ELBU".indexOf(prefix) >= 0;
     }
 }
+// @@author

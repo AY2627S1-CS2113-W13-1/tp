@@ -1,3 +1,4 @@
+// @@author yarnieee
 package seedu.snap.bundle;
 
 import java.util.ArrayList;
@@ -19,7 +20,9 @@ public class Bundle {
 
     private final String bundleName;
     private final String bundleId;
+    // @@author
     /** References to inventory items so updates to their names and conditions remain visible in the bundle. */
+    // @@author yarnieee
     private final ArrayList<Equipment> equipment = new ArrayList<>();
     private boolean isComplete;
 
@@ -54,6 +57,7 @@ public class Bundle {
         return isComplete;
     }
 
+    // @@author
     /** Names missing required types using the same type counts as the composition check. A tripod is optional. */
     public List<String> getMissingEquipmentTypes() {
         List<String> missing = new ArrayList<>();
@@ -65,6 +69,7 @@ public class Bundle {
         return List.copyOf(missing);
     }
 
+    // @@author yarnieee
     /**
      * Returns the equipment currently contained in this bundle.
      *
@@ -122,6 +127,7 @@ public class Bundle {
                 new Object[] {item.getItemId(), bundleId});
     }
 
+    // @@author
     /**
      * Removes one equipment item from this bundle and refreshes its completion state.
      *
@@ -156,6 +162,7 @@ public class Bundle {
         assert equipment.equals(previousEquipment) : "Bundle rollback must restore all equipment";
     }
 
+    // @@author yarnieee
     /** Recomputes whether the bundle meets all required type counts. */
     private void updateCompletionState() {
         int cameraCount = countType(CAMERA_TYPE);
@@ -171,3 +178,4 @@ public class Bundle {
                 && Identifier.isValid(bundleId, Identifier.Type.BUNDLE);
     }
 }
+    // @@author

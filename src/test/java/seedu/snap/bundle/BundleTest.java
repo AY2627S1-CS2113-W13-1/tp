@@ -1,9 +1,12 @@
+// @@author yarnieee
 package seedu.snap.bundle;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+// @@author
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+// @@author yarnieee
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
@@ -11,7 +14,9 @@ import org.junit.jupiter.api.Test;
 import seedu.snap.equipment.Battery;
 import seedu.snap.equipment.Camera;
 import seedu.snap.equipment.Lens;
+// @@author
 import seedu.snap.equipment.Tripod;
+// @@author yarnieee
 
 /** Tests bundle identity, contents, and completion state. */
 class BundleTest {
@@ -49,6 +54,7 @@ class BundleTest {
         assertTrue(bundle.isComplete());
         assertEquals(4, bundle.getEquipmentList().size());
     }
+    // @@author
 
     @Test
     void removeEquipmentById_updatesContentsAndCompletion() {
@@ -67,13 +73,17 @@ class BundleTest {
 
     @Test
     void removeEquipmentById_unknownItem_leavesBundleUnchanged() {
+        // @@author yarnieee
         Bundle bundle = new Bundle("Travel Kit", "B001");
         bundle.addEquipment(new Camera("Camera", "E001", 8, "Full frame", Camera.CameraDamage.NONE));
 
         assertFalse(bundle.removeEquipmentById("E999"));
+        // @@author
 
         assertEquals(1, bundle.getEquipmentList().size());
+        // @@author yarnieee
         assertTrue(bundle.containsEquipmentId("E001"));
+        // @@author
     }
 
     @Test
@@ -92,14 +102,20 @@ class BundleTest {
 
     @Test
     void getEquipmentList_preservesObjectsAndRejectsExternalChanges() {
+        // @@author yarnieee
         Bundle bundle = new Bundle("Travel Kit", "B001");
         Camera camera = new Camera("Camera", "E001", 8, "Full frame", Camera.CameraDamage.SHUTTER_FAULT);
+        // @@author
         bundle.addEquipment(camera);
 
         assertSame(camera, bundle.getEquipmentList().getFirst());
         assertEquals("sensor/Full frame damage/SHUTTER_FAULT", bundle.getEquipmentList().getFirst().getDetails());
         assertThrows(UnsupportedOperationException.class, () -> bundle.getEquipmentList().clear());
+        // @@author yarnieee
         assertTrue(bundle.containsEquipmentId("E001"));
         assertFalse(bundle.containsEquipmentId("E002"));
+        // @@author
     }
+    // @@author yarnieee
 }
+// @@author

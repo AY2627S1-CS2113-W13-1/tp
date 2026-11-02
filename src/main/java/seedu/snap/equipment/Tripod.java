@@ -1,3 +1,4 @@
+// @@author yarnieee
 package seedu.snap.equipment;
 
 import java.util.logging.Level;
@@ -8,6 +9,7 @@ public class Tripod extends Equipment {
     private static final String TYPE = "tripod";
     private static final Logger LOGGER = Logger.getLogger(Tripod.class.getName());
 
+    // @@author
     /** Damage states that can be recorded for a tripod. */
     public enum TripodDamage {
         NONE,
@@ -33,7 +35,9 @@ public class Tripod extends Equipment {
      * @param id Three-digit equipment ID.
      * @param condition Condition of the tripod from 1 to 10.
      */
+    // @@author yarnieee
     public Tripod(String name, String id, int condition) {
+        // @@author
         this(name, id, condition, "unspecified", TripodDamage.NONE);
     }
 
@@ -60,6 +64,7 @@ public class Tripod extends Equipment {
         assert damage != null : "Tripod damage must be specified.";
         this.thread = thread;
         this.damage = damage;
+        // @@author yarnieee
         assert TYPE.equals(getType()) : "Tripod type must remain tripod.";
         LOGGER.log(Level.INFO, "Created tripod with item ID {0}.", id);
     }
@@ -68,6 +73,7 @@ public class Tripod extends Equipment {
     public String getType() {
         return TYPE;
     }
+    // @@author
 
     public String getThread() {
         return thread;
@@ -90,4 +96,6 @@ public class Tripod extends Equipment {
     public String getDetails() {
         return "thread/" + thread + " damage/" + damage.name();
     }
+    // @@author yarnieee
 }
+// @@author

@@ -25,7 +25,9 @@ public final class BundleView {
     public static void print(List<Bundle> bundles) {
         ConsoleOutput.heading("Bundles");
         if (bundles.isEmpty()) {
+            // @@author yarnieee
             System.out.println("No bundles recorded. Create one with: bundle-create name/Camera kit");
+            // @@author
         }
         for (Bundle bundle : bundles) {
             System.out.println("Bundle " + bundle.getBundleId() + ": "
@@ -45,7 +47,9 @@ public final class BundleView {
 
     /** Describes current persistence, which supersedes the original session-only bundle limitation. */
     public static void persistenceNote() {
+        // @@author yarnieee
         System.out.println("Save new bundles and additions with exit; saved bundles are restored at startup.");
+        // @@author
         System.out.println("Successful membership removals are saved immediately.");
     }
 }

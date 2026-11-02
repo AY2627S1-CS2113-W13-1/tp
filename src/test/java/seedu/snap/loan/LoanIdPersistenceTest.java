@@ -1,18 +1,24 @@
+// @@author yarnieee
 package seedu.snap.loan;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+// @@author
 import static org.junit.jupiter.api.Assertions.assertSame;
+// @@author yarnieee
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+// @@author
 import java.io.IOException;
+// @@author yarnieee
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+// @@author
 import java.util.List;
 
 import org.junit.jupiter.api.AfterEach;
@@ -92,6 +98,7 @@ class LoanIdPersistenceTest {
         Files.writeString(sequenceFile, "nextLoanId/L022\n");
 
         LoanHandler handler = new LoanHandler(equipment, loanFile, sequenceFile);
+        // @@author yarnieee
         handler.loadFromStorage();
         Loan next = handler.addLoan("loan-add e/E003 u/U004 issued/03-10-26 due/04-10-26");
 
@@ -106,10 +113,12 @@ class LoanIdPersistenceTest {
                 "loan loanId/L021 id/E001 b/U002 issued/01-10-26 due/02-10-26 returned/false\n");
         Files.writeString(sequenceFile, "nextLoanId/L022\n");
 
+        // @@author
         LoanHandler handler = new LoanHandler(equipment, loanFile, sequenceFile);
         handler.loadFromStorage();
         handler.deleteLoan("loan-delete l/L021");
         handler = new LoanHandler(equipment, loanFile, sequenceFile);
+        // @@author yarnieee
         handler.loadFromStorage();
         Loan next = handler.addLoan("loan-add e/E003 u/U004 issued/03-10-26 due/04-10-26");
 
@@ -122,6 +131,7 @@ class LoanIdPersistenceTest {
         Path loanFile = temporaryDirectory.resolve("loans.txt");
         Path sequenceFile = temporaryDirectory.resolve("loan-sequence.txt");
         Files.writeString(sequenceFile, "nextLoanId/L999\n");
+        // @@author
         LoanHandler handler = new LoanHandler(equipment, loanFile, sequenceFile);
         handler.loadFromStorage();
 
@@ -151,30 +161,42 @@ class LoanIdPersistenceTest {
 
     @Test
     void equipmentLoanId_isRestoredFromActiveLoansWithoutChangingEquipmentStorage() throws Exception {
+        // @@author yarnieee
         Path equipmentFile = temporaryDirectory.resolve("equipment.txt");
         Path loanFile = temporaryDirectory.resolve("loans.txt");
         EquipmentHandler firstEquipment = new EquipmentHandler(equipmentFile);
+        // @@author
         Equipment firstCamera = firstEquipment.addEquipment(
+                // @@author yarnieee
                 "eqm-add name/Camera e/E001 type/camera cond/1 sensor/APS-C remarks/Loan ID label");
+        // @@author
         String savedEquipment = Files.readString(equipmentFile);
+        // @@author yarnieee
         LoanHandler firstLoans = new LoanHandler(firstEquipment, loanFile);
         firstLoans.addLoan(FIRST_LOAN);
 
         assertEquals("L001", firstCamera.getLoanId());
+        // @@author
         assertEquals(savedEquipment, Files.readString(equipmentFile));
+        // @@author yarnieee
 
         EquipmentHandler reloadedEquipment = new EquipmentHandler(equipmentFile);
         reloadedEquipment.loadFromStorage();
+        // @@author
         assertNull(reloadedEquipment.getEquipmentList().getFirst().getLoanId());
+        // @@author yarnieee
         LoanHandler reloadedLoans = new LoanHandler(reloadedEquipment, loanFile);
         reloadedLoans.loadFromStorage();
 
         assertEquals("L001", reloadedEquipment.getEquipmentList().getFirst().getLoanId());
         assertTrue(reloadedEquipment.getEquipmentList().getFirst().isLoaned());
+        // @@author
         assertEquals(savedEquipment, Files.readString(equipmentFile));
+        // @@author yarnieee
     }
 
     @Test
+    // @@author
     void borrowerZero_isAcceptedInNewAndMigratedSavedRecords() throws Exception {
         Path loanFile = temporaryDirectory.resolve("loans.txt");
         LoanHandler handler = new LoanHandler(equipment, loanFile);
@@ -193,7 +215,9 @@ class LoanIdPersistenceTest {
 
     @Test
     void staleRuntimeLoanId_withoutActiveLoan_isClearedAfterLoad() throws Exception {
+        // @@author yarnieee
         camera.setLoanId("L021");
+        // @@author
         LoanHandler handler = new LoanHandler(equipment, temporaryDirectory.resolve("loans.txt"));
 
         handler.loadFromStorage();
@@ -201,6 +225,7 @@ class LoanIdPersistenceTest {
         assertNull(camera.getLoanId());
         assertFalse(camera.isLoaned());
         assertTrue(handler.getLoanList().isEmpty());
+        // @@author yarnieee
     }
 
     @Test
@@ -215,7 +240,9 @@ class LoanIdPersistenceTest {
 
         assertEquals("L002", current.getLoanId());
         assertEquals("L002", camera.getLoanId());
+        // @@author
         assertThrows(IllegalStateException.class, () -> first.setReturned(false));
+        // @@author yarnieee
         assertEquals("L002", camera.getLoanId());
     }
 
@@ -248,6 +275,7 @@ class LoanIdPersistenceTest {
     }
 
     @Test
+    // @@author
     void failedSequenceSave_rollsBackLoanFileStateAndCounter() throws Exception {
         Path loanFile = temporaryDirectory.resolve("loans.txt");
         Path sequenceFile = temporaryDirectory.resolve("loan-sequence.txt");
@@ -259,14 +287,19 @@ class LoanIdPersistenceTest {
         Files.writeString(sequenceFile.resolve("keep.txt"), "keep sequence data");
 
         assertThrows(LoanAdditionUnsuccessful.class,
+                // @@author yarnieee
                 () -> handler.addLoan(FIRST_LOAN.replace("e/E001", "e/E003")));
+        // @@author
 
         assertEquals(List.of(original), handler.getLoanList());
+        // @@author yarnieee
         assertEquals("L002", handler.getNextLoanId());
         assertEquals("L001", camera.getLoanId());
+        // @@author
         assertNull(equipment.getEquipmentList().get(1).getLoanId());
         assertEquals(savedLoans, Files.readString(loanFile));
         assertEquals("keep sequence data", Files.readString(sequenceFile.resolve("keep.txt")));
+        // @@author yarnieee
     }
 
     @Test
@@ -279,6 +312,7 @@ class LoanIdPersistenceTest {
         assertTrue(listing.contains("LOAN ID"));
         assertTrue(listing.contains("L001"));
     }
+    // @@author
 
     @Test
     void mixedLegacyRecords_existingSequenceDoesNotReuseDeletedIdentifiers() throws Exception {
@@ -294,12 +328,16 @@ class LoanIdPersistenceTest {
 
         assertEquals(List.of("L005", "L006", "L007"),
                 handler.getLoanList().stream().map(Loan::getLoanId).toList());
+        // @@author yarnieee
         assertEquals("L008", handler.getNextLoanId());
         assertEquals("L005", camera.getLoanId());
+        // @@author
         String migrated = Files.readString(loanFile);
         handler.loadFromStorage();
         assertEquals(migrated, Files.readString(loanFile));
+        // @@author yarnieee
         assertEquals("L008", handler.getNextLoanId());
+        // @@author
     }
 
     @Test
@@ -308,7 +346,9 @@ class LoanIdPersistenceTest {
         Path sequenceFile = temporaryDirectory.resolve("loan-sequence.txt");
         LoanHandler handler = new LoanHandler(equipment, loanFile, sequenceFile);
         Loan original = handler.addLoan(FIRST_LOAN);
+        // @@author yarnieee
         String legacy = LEGACY_LOAN.replace("id/E001", "id/E003") + "\n";
+        // @@author
         Files.writeString(loanFile, legacy);
         Files.delete(sequenceFile);
         Files.createDirectory(sequenceFile);
@@ -317,8 +357,10 @@ class LoanIdPersistenceTest {
         assertThrows(IOException.class, handler::loadFromStorage);
 
         assertEquals(List.of(original), handler.getLoanList());
+        // @@author yarnieee
         assertEquals("L002", handler.getNextLoanId());
         assertEquals("L001", camera.getLoanId());
+        // @@author
         assertNull(equipment.getEquipmentList().get(1).getLoanId());
         assertEquals(legacy, Files.readString(loanFile));
         original.setReturned(true);
@@ -330,12 +372,16 @@ class LoanIdPersistenceTest {
         Path loanFile = temporaryDirectory.resolve("loans.txt");
         LoanHandler handler = new LoanHandler(equipment, loanFile);
         assertThrows(LoanAdditionUnsuccessful.class,
+                // @@author yarnieee
                 () -> handler.addLoan(FIRST_LOAN.replace("e/E001", "e/E000")));
+        // @@author
         String[] invalidRecords = {
+            // @@author yarnieee
             FIRST_LOAN.replace("e/E001", "e/E000"),
             "loan loanId/L000 " + LEGACY_LOAN.substring("loan ".length()),
             "loan loanId/L001 " + LEGACY_LOAN.substring("loan ".length()).replace("id/E001", "id/E000"),
             "loan loanId/L1000 " + LEGACY_LOAN.substring("loan ".length())
+            // @@author
         };
         for (String record : invalidRecords) {
             Files.writeString(loanFile, record + "\n");
@@ -352,11 +398,17 @@ class LoanIdPersistenceTest {
         Loan first = handler.addLoan(FIRST_LOAN.replace("e/E001", "e/E003"));
         Loan second = handler.addLoan(FIRST_LOAN);
 
+        // @@author yarnieee
         assertSame(first, handler.deleteLoan("loan-delete l/L001"));
+        // @@author
 
         assertEquals(List.of(second), handler.getLoanList());
+        // @@author yarnieee
         assertEquals("L002", camera.getLoanId());
+        // @@author
         assertNull(equipment.getEquipmentList().get(1).getLoanId());
     }
 
+    // @@author yarnieee
 }
+// @@author

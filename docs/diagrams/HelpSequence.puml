@@ -15,7 +15,9 @@ PrintStream instance.
 end note
 ' @@author
 
+' @@author yarnieee
 User -> Manager: executeInput("help loan-list-overdue")
+' @@author
 activate Manager
 note right of Manager
 Trim surrounding whitespace and check startup status.

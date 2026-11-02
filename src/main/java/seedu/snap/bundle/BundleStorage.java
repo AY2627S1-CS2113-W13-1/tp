@@ -13,7 +13,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+// @@author yarnieee
 import seedu.snap.Identifier;
+// @@author
 import seedu.snap.equipment.Equipment;
 
 // @@author MatthewLeon888

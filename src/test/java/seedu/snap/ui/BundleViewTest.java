@@ -19,16 +19,24 @@ import seedu.snap.equipment.EquipmentHandler;
 class BundleViewTest {
     @Test
     void composition_missingTypesFollowModelAndTripodRemainsOptional() throws Exception {
+        // @@author yarnieee
         Bundle bundle = new Bundle("Kit", "B001");
+        // @@author
         EquipmentHandler equipment = new EquipmentHandler();
         assertEquals(List.of("camera", "lens", "battery"), bundle.getMissingEquipmentTypes());
         assertEquals("Incomplete (missing camera, lens, battery)", BundleView.composition(bundle));
         assertThrows(UnsupportedOperationException.class, () -> bundle.getMissingEquipmentTypes().clear());
+        // @@author yarnieee
         bundle.addEquipment(equipment.addEquipment("eqm-add name/Camera e/E001 type/camera cond/1"));
+        // @@author
         assertEquals("Incomplete (missing lens, battery)", BundleView.composition(bundle));
+        // @@author yarnieee
         bundle.addEquipment(equipment.addEquipment("eqm-add name/Lens e/E002 type/lens cond/2"));
+        // @@author
         assertEquals("Incomplete (missing battery)", BundleView.composition(bundle));
+        // @@author yarnieee
         bundle.addEquipment(equipment.addEquipment("eqm-add name/Battery e/E003 type/battery cond/3"));
+        // @@author
         assertEquals("Complete", BundleView.composition(bundle));
         assertTrue(bundle.getMissingEquipmentTypes().isEmpty());
         assertTrue(bundle.isComplete());
@@ -42,12 +50,18 @@ class BundleViewTest {
             System.setOut(captured);
             BundleView.print(List.of());
             assertTrue(output.toString(StandardCharsets.UTF_8).contains("0 bundles."));
+            // @@author yarnieee
             assertTrue(output.toString(StandardCharsets.UTF_8).contains("bundle-create name/Camera kit"));
+            // @@author
             output.reset();
+            // @@author yarnieee
             Bundle bundle = new Bundle("Kit\t\u001b[31m", "B001");
+            // @@author
             BundleView.print(List.of(bundle));
             String text = output.toString(StandardCharsets.UTF_8);
+            // @@author yarnieee
             assertTrue(text.contains("Bundle B001: Kit\\u0009\\u001b[31m"));
+            // @@author
             assertTrue(text.contains("0 equipment items:"));
             assertTrue(text.contains("1 bundle."));
             assertTrue(text.contains("saved bundles are restored at startup"));

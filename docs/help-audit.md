@@ -30,16 +30,19 @@ The help menu alone cannot establish that every executable command has documenta
 
 | Area | Commands and help topics checked |
 | --- | --- |
+<!-- @@author yarnieee -->
 | Equipment | `eqm-add`, `eqm-list`, `eqm-show`, `eqm-delete`, `eqm-filter`, `eqm-update`, `eqm-maintain`, `eqm-loan-history` |
 | Loans | `loan-add`, `loan-return`, `loan-delete`, `loan-update`, `loan-list`, `loan-view`, `loan-show`, `loan-list-borrower`, `loan-list-overdue` |
 | Bundles | `bundle-create`, `bundle-add-eqm`, `bundle-remove-eqm`, `bundle-list`, `bundle-history` |
 | General | `backup`, `restore`, `help`, `exit` |
 | Alternate forms | both bundle-history selectors, `help`, `help <COMMAND>`, `help all` and unknown topics |
+<!-- @@author -->
 
 For each command, compare field spelling and order, required and optional fields, defaults, accepted
 values, conditional restrictions and examples. Damage choices are still generated from the four
 equipment subtype enums. Examples require suitable existing records; they are not one continuous session.
 
+<!-- @@author yarnieee -->
 The command aliases are also audited as exact, lowercase alternatives for every command. They are intended for
 experienced or power users after the canonical command names become cumbersome; canonical names remain the
 discoverable form for new users.
@@ -51,11 +54,14 @@ discoverable form for new users.
 | Bundles | `bundle-create` -> `ab`, `bundle-add-eqm` -> `bae`, `bundle-remove-eqm` -> `bre`, `bundle-list` -> `lb`, `bundle-history` -> `bh` |
 | General | `backup` -> `bk`, `restore` -> `rs`, `help` -> `h`, `exit` -> `x` |
 
+<!-- @@author -->
 The automated checks cover:
 
+<!-- @@author yarnieee -->
 * Help content, menu completeness, rejection of the old borrower alias, wrapping and subtype-specific damage lists.
 * Execution of every displayed help example through `EqmManager` using both canonical commands and aliases,
   with isolated records and a fixed clock,
+<!-- @@author -->
   including the updated success messages, shared loan columns, dates, states and result counts from #140.
 * Repeated help requests against populated, empty and blocked storage, comparing equipment, loans,
   bundles, maintenance, identifiers, file contents and modification times.

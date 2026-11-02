@@ -58,14 +58,18 @@ class EndOfInputIntegrationTest {
 
     @Test
     void run_inputEndsAfterCommandWithoutNewline_savesBundleForRestart() {
+        // @@author yarnieee
         EqmManager manager = managerWithInput("bundle-create name/Retained kit");
+        // @@author
 
         manager.run();
 
         assertTrue(Files.isRegularFile(dataDirectory.resolve("bundles.txt")));
         assertEquals(1, countOutputLines("[OK] Goodbye."));
         output.reset();
+        // @@author yarnieee
         EqmManager restarted = managerWithInput("bundle-list\nexit\n");
+        // @@author
         restarted.run();
         assertTrue(printed().contains("Retained kit"));
         assertFalse(printed().contains("[ERROR]"));
@@ -90,7 +94,9 @@ class EndOfInputIntegrationTest {
 
     @Test
     void run_finalSaveFailsAfterInputEnds_reportsFailureOnceAndDoesNotClaimSuccess() throws Exception {
+        // @@author yarnieee
         EqmManager manager = managerWithInput("bundle-create name/Unsaved kit\n");
+        // @@author
         Path bundleDirectory = blockBundleStorage();
 
         manager.run();
@@ -104,14 +110,18 @@ class EndOfInputIntegrationTest {
 
     @Test
     void run_failedByeStillAcceptsCommands_thenStopsAtEndOfInput() throws Exception {
+        // @@author yarnieee
         EqmManager manager = managerWithInput("exit\nbundle-create name/After failed exit\n");
+        // @@author
         blockBundleStorage();
 
         manager.run();
 
         String text = printed();
         int failure = text.indexOf("[ERROR] Could not save data: bundles.txt:");
+        // @@author yarnieee
         int addition = text.indexOf("[OK] Bundle B001 \"After failed exit\" created.");
+        // @@author
         assertTrue(failure >= 0 && addition > failure);
         assertEquals(3, countOutputLines("snAp > "));
         assertFalse(text.contains("[OK] Goodbye."));
@@ -119,10 +129,14 @@ class EndOfInputIntegrationTest {
 
     @Test
     void run_afterFailedByeAndStorageRepair_allowsSuccessfulRetry() throws Exception {
+        // @@author yarnieee
         EqmManager manager = managerWithInput("exit\n");
         manager.executeInput("bundle-create name/Recovered kit");
+        // @@author
         Path bundleDirectory = blockBundleStorage();
+        // @@author yarnieee
         manager.executeInput("exit");
+        // @@author
         assertTrue(printed().contains("[ERROR] Could not save data: bundles.txt:"));
         Files.delete(bundleDirectory.resolve("keep.txt"));
         Files.delete(bundleDirectory);

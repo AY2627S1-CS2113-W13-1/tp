@@ -11,7 +11,9 @@ import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.Lens;
 import seedu.snap.equipment.Tripod;
 import seedu.snap.maintenance.MaintenanceRecord;
+// @@author yarnieee
 import seedu.snap.parser.CommandAliases;
+// @@author
 
 /** Provides command help without reading or changing application records. */
 public final class Help {
@@ -52,10 +54,14 @@ public final class Help {
         if (normalised.equals("all")) {
             return TEXT;
         }
+        // @@author yarnieee
         String canonicalTopic = CommandAliases.canonicalCommand(normalised);
+        // @@author
         for (CommandHelp command : COMMANDS) {
+            // @@author yarnieee
             if (command.command().equals(canonicalTopic)) {
                 return formatReference(command.text(), true, command.alias()) + LINE_SEPARATOR + OVERVIEW;
+                // @@author
             }
         }
         return ConsoleOutput.formatError("Unknown help topic. Choose a command from the menu.", colourErrors)
@@ -426,8 +432,10 @@ public final class Help {
     private static String createText() {
         String commandGap = LINE_SEPARATOR.repeat(2);
         return OVERVIEW + commandGap + COMMANDS.stream()
+                // @@author yarnieee
                 .map(command -> formatReference(command.text(), true, command.alias()))
                 .collect(Collectors.joining(commandGap));
+        // @@author
     }
 
     /** Groups command names from the reference so the menu cannot omit an existing entry. */
@@ -438,11 +446,15 @@ public final class Help {
         menu.append(border);
         for (String group : List.of("Equipment", "Loans", "Bundles", "General")) {
             List<String> groupCommands = COMMANDS.stream().filter(command -> command.group().equals(group))
+                    // @@author yarnieee
                     .map(CommandHelp::menuLabel).toList();
+            // @@author
             appendMenuGroup(menu, group, groupCommands);
         }
         appendMenuRow(menu, "");
+        // @@author yarnieee
         appendMenuRow(menu, "Type help <COMMAND OR ALIAS> for details (for example, help loan-add or help al).");
+        // @@author
         appendMenuRow(menu, "Type help all for the complete reference.");
         return menu.append(border).toString();
     }
@@ -472,11 +484,13 @@ public final class Help {
 
     /** Separates headings, command examples and note paragraphs while preserving their content. */
     private static String formatReference(String text, boolean showNotesHeading) {
+        // @@author yarnieee
         return formatReference(text, showNotesHeading, null);
     }
 
     /** Separates a command's alias from its title and command syntax. */
     private static String formatReference(String text, boolean showNotesHeading, String alias) {
+        // @@author
         List<String> lines = text.lines().toList();
         String title = lines.getFirst();
         StringBuilder formatted = new StringBuilder();
@@ -485,9 +499,11 @@ public final class Help {
         }
         formatted.append(title).append(LINE_SEPARATOR)
                 .append(showNotesHeading ? COMMAND_DIVIDER : "-".repeat(title.length()))
+                // @@author yarnieee
                 .append(LINE_SEPARATOR);
         if (alias != null) {
             formatted.append("Alias: ").append(alias).append(LINE_SEPARATOR);
+            // @@author
         }
         formatted.append(LINE_SEPARATOR);
         boolean needsNotesHeading = showNotesHeading;
@@ -566,6 +582,7 @@ public final class Help {
 
     /** Associates one exact command with its menu group and complete reference. */
     private record CommandHelp(String command, String group, String text) {
+        // @@author yarnieee
         private String alias() {
             return CommandAliases.aliasFor(command);
         }
@@ -573,5 +590,6 @@ public final class Help {
         private String menuLabel() {
             return command + " (" + alias() + ")";
         }
+        // @@author
     }
 }

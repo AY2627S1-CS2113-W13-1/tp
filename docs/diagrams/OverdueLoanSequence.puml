@@ -10,7 +10,9 @@ participant ":LoanHandler" as Handler
 participant "loan:Loan" as Loan
 participant "LoanView" as View
 
+' @@author yarnieee
 User -> Manager: executeInput("loan-list-overdue")
+' @@author
 activate Manager
 note right of Manager: Reads referenceDate from the configured clock.
 Manager -> Handler: viewOverdueLoans(referenceDate)
