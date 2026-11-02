@@ -27,7 +27,7 @@ when a command or storage operation fails.
   loans. Used a proposal-and-save workflow to keep invalid updates from changing live or saved records, and
   preserved issue-condition snapshots during borrower or date-only edits. ([Issue #107](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/107),
   [PR #116](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/116))
-- **Borrower-held equipment queries:** Implemented `list borrower/<BORROWER ID>` and its member alias, including
+- **Borrower-held equipment queries:** Implemented `loan-list-borrower u/<BORROWER ID>` and its `llb` alias, including
   strict input validation, active-loan filtering, empty-result handling, read-only behaviour and restart coverage.
   ([Issue #108](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/108),
   [PR #119](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/119))
@@ -78,3 +78,9 @@ when a command or storage operation fails.
   testing, documentation and merge readiness.
 - Reviewed later implementation and UML PRs including #137, #145, #166, #178, #179, #181 and #182, checking source-
   documentation consistency, diagram accuracy, conflicts and CI readiness.
+
+### Contributions beyond the project team
+
+- Reviewed a peer team's Developer Guide and [PR #27](https://github.com/NUS-CS2113-AY2627-S1/tp/pull/27) against
+  CS2113 documentation requirements, focusing on structure, UML diagrams, implementation explanations and consistency
+  with the product. ([Peer team's Developer Guide](https://ay2627s1-cs2113-t10-4.github.io/tp/DeveloperGuide.html))

@@ -362,9 +362,8 @@ Example: `loan-list-borrower u/U002`. The short alias `llb u/U002` is also accep
 Use exactly three typed digits from `U000` to `U999`. The result shows only equipment currently held by that borrower,
 with its loan details. Returned loans are excluded. An unknown borrower or one with no active loans produces
 a clear message. The query leaves records unchanged.
-Dates, states and columns match `list loans`. Results end with a loan count, including `0 loans.` for an empty result.
-<!-- @@author -->
 Dates, states and columns match `loan-list`. Results end with a loan count, including `0 loans.` for an empty result.
+<!-- @@author -->
 
 <a id="viewing-the-issue-time-equipment-condition-view-loan"></a>
 
