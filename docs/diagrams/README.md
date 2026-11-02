@@ -32,6 +32,13 @@ The overdue-loan design includes:
 | [OverdueLoanClasses.puml](OverdueLoanClasses.puml) | Relationships between command routing, selection and the loan-owned overdue rule. |
 | [OverdueLoanSequence.puml](OverdueLoanSequence.puml) | One-date evaluation and read-only display flow for `list overdue`. |
 
+The maintenance and backup designs include:
+
+| Source | Design illustrated |
+| --- | --- |
+| [MaintenanceRecordSequence.puml](MaintenanceRecordSequence.puml) | Command routing, validation, permanent identity resolution and save-before-append success and failure paths. |
+| [MaintenanceBackupClasses.puml](MaintenanceBackupClasses.puml) | Maintenance record ownership, shared handlers, storage dependencies and backup/restore boundaries. |
+
 The current images were rendered with [PlantUML](https://plantuml.com/download) 1.2026.9 and Java 25.
 From the repository root, replace `path/to/plantuml.jar` with your local JAR path and run, for example:
 

@@ -67,6 +67,12 @@ equipment details, availability, loans, returns, bundles and maintenance records
 - **User Guide:** Documented bundle history, loan editing, borrower-held equipment, backup and maintenance commands,
   including syntax, validation rules, persistence behaviour and examples.
 - **Command help:** Kept command syntax, restrictions and examples consistent with the implementation.
+- **Developer Guide UML diagrams:** Added the
+  [maintenance-record sequence diagram](../DeveloperGuide.md#command-and-identity-flow) and
+  [maintenance and backup class diagram](../DeveloperGuide.md#maintenance-and-backup-structure), with editable
+  PlantUML sources and generated SVGs. Documented the maintenance command's validation, permanent equipment
+  identity and save-before-append failure handling, plus shared handler relationships, backup file scope and
+  restore rollback boundaries. These diagrams explain my maintenance persistence and backup/restore contributions.
 
 ### Team contributions and reviews
 

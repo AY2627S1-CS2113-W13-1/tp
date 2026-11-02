@@ -570,7 +570,8 @@ changing equipment or loan records.
 
 For a command such as `maintain id/001 date/27-10-26 work/Repair outcome/Completed`,
 `EqmManager` delegates to `MaintenanceHandler`. The handler validates the exact command format, the three-digit
-visible Item ID, the strict date format and the maximum text lengths. Future dates are rejected because the records
+visible Item ID and the strict date format; the `MaintenanceRecord` constructor validates the text values and
+maximum lengths. Future dates are rejected by the handler because the records
 represent completed maintenance. The application clock is injected into the handler so this rule is deterministic
 in tests.
 
@@ -582,12 +583,29 @@ The permanent record identity is important when an Item ID is reused. Deleting i
 item with ID `001` creates a different permanent record identity. Maintenance entries therefore remain attached to
 the original physical item instead of appearing in the replacement item's history.
 
+[![Maintenance sequence: console input, validation, permanent identity resolution and saving before appending to live records](images/MaintenanceRecordSequence.svg)](images/MaintenanceRecordSequence.svg)
+
+*Figure 10. Recording maintenance saves the proposed list before publishing the new record.*
+
+[PlantUML source](diagrams/MaintenanceRecordSequence.puml)
+
+The sequence assumes startup succeeded and file storage is configured. `Parser.getInput()` reads the line;
+`EqmManager.executeInput()` routes it to `recordMaintenance()`. The validation-failure branch summarises rejection
+at the first failing check; the successful branch expands the actual calls, including the constructor's value
+validation. The nested alternatives distinguish a completed save from an `IOException`. Output calls are shown as
+local processing in `EqmManager`; the success details resolve the item by its permanent identity.
+
 #### Persistence, diagnostics and failure handling
 
 `MaintenanceStorage` stores each record as a tab-separated line containing the permanent equipment identity, date,
 work and outcome. It rejects malformed identities, dates, empty fields, line breaks and tabs. Saving writes the
 complete proposed list to a temporary file before replacing `data/maintenance.txt`, preserving the previous file if
 the write fails.
+
+This is a save-before-append workflow, not a file rollback transaction. `Files.move` uses `REPLACE_EXISTING`
+without `ATOMIC_MOVE`: failure before replacement preserves the previous file, while a move or subsequent cleanup
+failure does not guarantee recovery of the previous file bytes. An `IOException` leaves the live list unchanged.
+On restart, `loadFromStorage()` validates the loaded dates before replacing that list.
 
 Validation failures are logged at `FINE` and reported as input errors. Storage failures are logged at `WARNING` and
 reported separately. Assertions check that loading preserves the record count, successful additions append exactly
@@ -621,6 +639,27 @@ file replacement outside the command-routing logic.
 | `EquipmentHandler` | Loads restored equipment and reconstructs equipment state. |
 | `LoanHandler` | Loads restored loans and the next loan identifier, including active-loan associations. |
 | `BundleHandler` | Clears and persists bundle memberships after restore because bundles are excluded from the backup. |
+
+#### Maintenance and backup structure
+
+[![Maintenance and backup classes: handler references, maintenance record ownership, storage dependencies and restore scope](images/MaintenanceBackupClasses.svg)](images/MaintenanceBackupClasses.svg)
+
+*Figure 11. Maintenance owns a separate history while backup coordinates the shared equipment and loan handlers.*
+
+[PlantUML source](diagrams/MaintenanceBackupClasses.puml)
+
+Solid arrows show stored, navigable references; dashed arrows show utility dependencies. Collection ends show
+the records managed by each handler. `EqmManager` also retains the equipment, loan and bundle handlers as the
+fields shown, passing those same instances to its feature handlers. `BackupHandler` permits a null bundle handler
+for other callers, but `EqmManager` always supplies one. Selected members are shown; `+`, `-` and `~` mean public,
+private and package-private visibility, and underlined operations are static.
+
+`MaintenanceHandler.records` owns the maintenance list. Each record stores an equipment UUID string rather than
+an object reference, so no association from `MaintenanceRecord` to a live `Equipment` object is drawn.
+`MaintenanceStorage` reconstructs validated records on load and serialises them on save. The backup notes name
+the three copied data files and generated manifest; paths are relative to the configured data directory, which
+defaults to `data/`. The manifest belongs in the backup destination. Bundle data is excluded from the backup but
+captured for restore rollback; maintenance data is excluded from both replacement and rollback.
 
 #### Backup creation
 
@@ -777,7 +816,7 @@ Duplicate IDs are rejected because replacing an existing entry could detach loan
 
 [![Equipment addition: reject an existing Item ID or save before appending a new item](images/EquipmentAdditionSequence.svg)](images/EquipmentAdditionSequence.svg)
 
-*Figure 10. Equipment addition rejects duplicate Item IDs and saves new items before insertion.*
+*Figure 12. Equipment addition rejects duplicate Item IDs and saves new items before insertion.*
 
 [PlantUML source](diagrams/EquipmentAdditionSequence.puml)
 
@@ -830,7 +869,7 @@ save files or consume identifiers.
 
 [![Equipment filtering: parse criteria, inspect current loans and display original matching items without saving](images/EquipmentFilterSequence.svg)](images/EquipmentFilterSequence.svg)
 
-*Figure 11. Equipment filtering displays matching items without changing records or saved files.*
+*Figure 13. Equipment filtering displays matching items without changing records or saved files.*
 
 [PlantUML source](diagrams/EquipmentFilterSequence.puml)
 
@@ -875,7 +914,7 @@ For an existing camera `001`, `update id/001 i/Film Camera cond/5` follows this 
 
 [![Equipment update: validate and save the proposed inventory before changing the existing camera](images/equipment-update-sequence.svg)](images/equipment-update-sequence.svg)
 
-*Figure 12. Equipment updates validate and save proposed details before changing the original object.*
+*Figure 14. Equipment updates validate and save proposed details before changing the original object.*
 
 [PlantUML source](diagrams/equipment-updates/equipment-update-sequence.puml)
 
@@ -931,7 +970,7 @@ diagnostics out of normal command output.
 
 [![Logging lifecycle: configure shared output, run the application and close the session](images/LoggingLifecycle.svg)](images/LoggingLifecycle.svg)
 
-*Figure 13. Shared logging is configured at startup and closed when the application ends.*
+*Figure 15. Shared logging is configured at startup and closed when the application ends.*
 
 [PlantUML source](diagrams/LoggingLifecycle.puml)
 
@@ -995,11 +1034,11 @@ The reference date is supplied to the method instead of being obtained directly 
 
 [![Overdue-loan classes: the manager delegates to a loan handler, which manages loans that own the overdue rule](images/OverdueLoanClasses.svg)](images/OverdueLoanClasses.svg)
 
-*Figure 14. Classes responsible for identifying and displaying overdue loans.*
+*Figure 16. Classes responsible for identifying and displaying overdue loans.*
 
 [PlantUML source](diagrams/OverdueLoanClasses.puml)
 
-Figure 14 focuses on the three classes that own command routing, selection and the overdue rule. The navigable
+Figure 16 focuses on the three classes that own command routing, selection and the overdue rule. The navigable
 associations show that one `EqmManager` delegates to one `LoanHandler`, which manages zero or more `Loan` objects.
 The temporary result collection and display utility are omitted because they do not change
 these responsibilities.
@@ -1010,11 +1049,11 @@ When the user enters `list overdue`, `EqmManager` obtains the current local date
 
 [![Overdue-loan sequence: read one reference date, evaluate each managed loan and display the selected records](images/OverdueLoanSequence.svg)](images/OverdueLoanSequence.svg)
 
-*Figure 15. The `list overdue` command reuses one reference date and does not change managed records.*
+*Figure 17. The `list overdue` command reuses one reference date and does not change managed records.*
 
 [PlantUML source](diagrams/OverdueLoanSequence.puml)
 
-Figure 15 reuses the single reference date while the handler evaluates each managed loan. The `loop` represents
+Figure 17 reuses the single reference date while the handler evaluates each managed loan. The `loop` represents
 the managed collection, and the guarded `opt` fragment adds only matching loans. Display formatting is delegated
 to `LoanView`; diagnostic logging and individual print calls are omitted. The query performs no storage calls or
 model mutations.
