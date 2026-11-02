@@ -22,6 +22,7 @@ The equipment-management designs also include:
 | [EquipmentAdditionSequence.puml](EquipmentAdditionSequence.puml) | Duplicate rejection and saving before insertion. |
 | [EquipmentAvailability.puml](EquipmentAvailability.puml) | Availability and loan ownership supporting borrowing and filters. |
 | [EquipmentFilterSequence.puml](EquipmentFilterSequence.puml) | Current-loan checks and read-only filter results. |
+| [BundleCompatibilitySequence.puml](BundleCompatibilitySequence.puml) | Per-item compatibility checks and partial-success bundle additions. |
 | [equipment-update-sequence.puml](equipment-updates/equipment-update-sequence.puml) | Saving a proposal before changing the original equipment object. |
 | [LoggingLifecycle.puml](LoggingLifecycle.puml) | Logging setup, I/O fallback and session cleanup. |
 | [LoanAdditionSequence.puml](LoanAdditionSequence.puml) | Saving a valid new loan before reserving its equipment. |
