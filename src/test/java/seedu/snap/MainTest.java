@@ -74,6 +74,17 @@ class MainTest {
     }
 
     @Test
+    void main_endOfInput_exitsCleanlyWithoutStackTrace() throws Exception {
+        String output = runApplication("", true);
+
+        assertTrue(output.contains("Goodbye."));
+        assertFalse(output.contains("NoSuchElementException"));
+        assertFalse(output.contains("Exception in thread"));
+        assertTrue(Files.isRegularFile(temporaryDirectory.resolve("data/equipment.txt")));
+        assertTrue(Files.isRegularFile(temporaryDirectory.resolve("data/loans.txt")));
+    }
+
+    @Test
     void main_equipmentAndLoanCommands_shareLogsWithoutConsoleDiagnostics() throws Exception {
         String output = runApplication("add i/Camera id/001 type/camera cond/1\n"
                 + "loan id/001 b/001 issued/15-10-26 due/16-10-26\n"
