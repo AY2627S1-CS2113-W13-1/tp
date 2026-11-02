@@ -870,11 +870,18 @@ active loan, verifies its current equipment ownership and rejects a missing, loa
 This extends the [availability and loan ownership](#availability-and-loan-ownership) rules and the
 [issue-condition snapshots](#preserving-equipment-condition-when-a-loan-is-issued).
 
+An unknown or non-unique Loan ID is rejected by `findLoanForUpdate(...)`. A returned loan is rejected before
+equipment lookup, so its history cannot be edited. For an active loan, `findEquipment(...)` rejects a missing or
+ambiguous current Item ID. `Loan.ownsEquipment(...)` then requires the same equipment object, its loaned flag,
+the active Loan ID and the permanent equipment record ID to agree. A stale reference, cleared reservation or
+identity mismatch produces `LoanUpdateUnsuccessful` without saving or changing any live records.
+
 The handler fills omitted values from the current loan and creates a detached proposal with
 `Loan.updatedCopy(...)`. A same-item update keeps the existing issue-condition snapshot and serviceability. A
 reassignment captures the replacement's condition, damage and remarks in a new `EquipmentConditionSnapshot`,
-with issue serviceability stored separately on `Loan`. The proposal keeps the original Loan ID and replaces the matching entry in a copied
-loan list.
+with issue serviceability stored separately in `Loan.issueServiceability`. `EquipmentConditionSnapshot` contains
+type, numeric condition, damage and remarks only; it has no serviceability field. The proposal keeps the original
+Loan ID and replaces the matching entry in a copied loan list.
 
 [![Loan update sequence: validate a proposal, save it, then release the old equipment and bind a replacement.](images/LoanUpdateSequence.svg)](images/LoanUpdateSequence.svg)
 
@@ -889,6 +896,7 @@ A save failure therefore leaves the original borrower, dates, snapshot and equip
 update preserves the Loan ID and loan count, while later views use the replacement's captured issue assessment.
 
 `LoanUpdateTest` covers optional fields, duplicate fields, date ordering and identifier boundaries.
+`LoanUpdateHandlerTest` covers returned-loan rejection and unchanged records after rejected updates.
 `LoanUpdateIntegrationTest` covers metadata-only updates, reassignment, replacement serviceability, snapshot
 capture, permanent Loan ID preservation, failed saves and retry after failure.
 

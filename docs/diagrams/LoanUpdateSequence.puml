@@ -2,7 +2,7 @@
 !include style.puml
 hide footbox
 skinparam sequenceMessageAlign center
-skinparam maxMessageSize 170
+skinparam maxMessageSize 200
 
 participant ":EqmManager" as Manager
 participant ":LoanHandler" as Handler
@@ -14,69 +14,84 @@ participant "current:Equipment" as Current
 participant "replacement:Equipment" as Replacement
 
 Manager -> Handler: updateLoan(input)
-activate Handler
 Handler -> Update: parse(input)
-alt malformed or unsupported update
-    Update --> Handler: LoanUpdateUnsuccessful
+Update --> Handler: validated update, or LoanUpdateUnsuccessful
+break malformed or unsupported command
     Handler --> Manager: LoanUpdateUnsuccessful
-    deactivate Handler
     Manager -> Manager: display update error
-    break invalid command
-else validated optional changes
-    Update --> Handler: validated update
-    Handler -> Handler: findLoanForUpdate(update.loanId())
-    Handler -> Handler: findEquipment(loan.getItemId())
-    Handler -> Loan: ownsEquipment(current)
-    Loan --> Handler: ownership confirmed
 end
 
-alt replacement item supplied
+Handler -> Handler: findLoanForUpdate(update.loanId())
+break missing or non-unique Loan ID
+    Handler --> Manager: LoanUpdateUnsuccessful
+    Manager -> Manager: display update error
+end
+Handler -> Loan: isReturned()
+Loan --> Handler: returned status
+break loan has already been returned
+    Handler --> Manager: LoanUpdateUnsuccessful
+    Manager -> Manager: display update error
+end
+
+Handler -> Handler: findEquipment(loan.getItemId())
+break current Item ID is missing or ambiguous
+    Handler --> Manager: LoanUpdateUnsuccessful
+    Manager -> Manager: display update error
+end
+Handler -> Loan: ownsEquipment(current)
+Loan --> Handler: ownership result
+break ownership validation fails
+    Handler --> Manager: LoanUpdateUnsuccessful
+    Manager -> Manager: display update error
+end
+note over Handler, Loan
+Ownership requires the same equipment object, loaned flag,
+active Loan ID and permanent equipment record ID.
+All rejection paths stop before saving or changing live records.
+end note
+
+alt item field supplied
     Handler -> Handler: findEquipment(update.itemId())
-    Handler -> Handler: validate no active loan and serviceable
-    alt replacement is missing, loaned or unserviceable
+    note right of Handler
+    If this is a different object, require no
+    active loan and serviceable equipment.
+    end note
+    break missing, ambiguous, loaned or unserviceable replacement
         Handler --> Manager: LoanUpdateUnsuccessful
-        deactivate Handler
         Manager -> Manager: display update error
-        break invalid replacement
-    else replacement is valid
-        Handler -> Handler: retain replacement
     end
-else no replacement item supplied
-    Handler -> Handler: retain current equipment
+else item field omitted
+    Handler -> Handler: use current as replacement
 end
 
 Handler -> Handler: fill omitted borrower and dates
-alt issuedDate is after dueDate
+break issuedDate is after dueDate
     Handler --> Manager: LoanUpdateUnsuccessful
-    deactivate Handler
     Manager -> Manager: display update error
-    break invalid date order
-else date order is valid
-    Handler -> Handler: continue validation
 end
 Handler -> Loan: updatedCopy(..., replacement)
 alt same equipment object
     note right of Loan
-    Preserve the existing issue snapshot
-    and issue serviceability.
+    Preserve issueConditionSnapshot and the
+    separate Loan.issueServiceability field.
     end note
 else replacement equipment object
     Loan -> Snapshot: fromEquipment(replacement)
-    Snapshot --> Loan: replacement issue snapshot
+    Snapshot --> Loan: type, condition, damage and remarks
+    Loan -> Replacement: isServiceable()
+    Replacement --> Loan: serviceability
     note right of Loan
-    Capture replacement condition, damage,
-    remarks and serviceability for this loan.
+    Store serviceability separately in
+    the proposal's issueServiceability field.
+    EquipmentConditionSnapshot has no serviceability field.
     end note
 end
 Loan --> Handler: detached loan proposal
 Handler -> Handler: copy loans and replace the matching record
-Handler -> Store: save(proposedLoans, nextLoanNumber)
-activate Store
+Handler -> Store: save(... proposedLoans, ... nextLoanNumber)
 alt save fails
     Store --> Handler: IOException
-    deactivate Store
     Handler --> Manager: LoanUpdateUnsuccessful
-    deactivate Handler
     Manager -> Manager: display update error
     note over Handler, Loan
     No live loan fields or equipment loan flags
@@ -84,7 +99,6 @@ alt save fails
     end note
 else save succeeds
     Store --> Handler: saved
-    deactivate Store
     Handler -> Loan: applyUpdate(proposal, replacement)
     alt replacement differs from current
         Loan -> Current: setLoanId(null)
@@ -93,12 +107,11 @@ else save succeeds
         Loan -> Current: setLoanId(loanId)
     end
     Handler --> Manager: updated loan
-    deactivate Handler
     Manager -> Manager: display update success
     note over Loan, Replacement
-    The Loan ID and loan count stay unchanged.
-    The original equipment is released only after save;
-    the replacement becomes the active object reference.
+    The original Loan object, Loan ID and loan count are retained.
+    Only after saving does applyUpdate copy the proposal's fields
+    and bind the replacement, releasing the old item if necessary.
     end note
 end
 @enduml
