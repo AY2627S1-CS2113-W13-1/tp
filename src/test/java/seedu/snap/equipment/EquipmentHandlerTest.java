@@ -508,7 +508,7 @@ class EquipmentHandlerTest {
         EquipmentHandler handler = new EquipmentHandler();
         Equipment equipment = handler.addEquipment("add i/Camera id/E001 type/camera cond/1");
 
-        assertSame(equipment, handler.deleteEquipment("  delete   item/001  "));
+        assertSame(equipment, handler.deleteEquipment("  delete   item/E001  "));
         assertEquals(List.of(), handler.getEquipmentList());
     }
 

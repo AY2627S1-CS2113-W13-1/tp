@@ -360,20 +360,29 @@ with its loan details. Returned loans are excluded. An unknown borrower or one w
 a clear message. The query leaves records unchanged.
 Dates, states and columns match `list loans`. Results end with a loan count, including `0 loans.` for an empty result.
 
-## Viewing the issue-time equipment condition: `view loan`
+<a id="viewing-the-issue-time-equipment-condition-view-loan"></a>
+
+## Comparing a loan's condition assessments: `view loan`
 
 Format: `view loan/<LOAN ID>`
 
 Example: `view loan/L001`
 
-Use an existing loan ID from `L001` to `L999`. This displays the equipment type, numeric condition, damage and remarks captured when that loan was issued. The snapshot describes the equipment at issue time, not its current condition.
+Use the Loan ID shown by `list loans`. The command compares the equipment type, numeric condition and damage
+recorded when that loan was issued and returned, including saved serviceability. The two remarks are printed
+below the columns so long notes remain readable.
 
-Later equipment updates and return assessments do not change the saved snapshot. Reassigning an active loan to
-another item with `update loan` replaces the snapshot with that item's current assessment. Changing only the borrower
-or dates keeps the snapshot. Returned loans retain their snapshots. Older loan records created before this feature
-report that the issue condition was not recorded.
+* An active loan shows `Not returned` in the return column.
+* A returned loan shows its saved return assessment. Older loans without an assessment show `Not recorded`.
+* New loans record issue-time serviceability. Older records without that field show `Not recorded`, even if
+  their other issue-condition fields are present; the application does not infer historical values from current equipment.
 
-This is a read-only command. It does not change equipment, loans, availability or saved records. An invalid command or unknown loan ID produces an error without modifying any data.
+Reassigning an active loan to another item with `update loan` replaces its issue assessment with that item's current
+assessment. Changing only the borrower or dates keeps the existing assessment.
+
+Later equipment updates, returns and Item ID reuse do not change these saved assessments. Deleting the loan
+removes its history. This read-only command does not change records or saved files. Invalid commands and unknown
+Loan IDs produce an error.
 
 ## Viewing an item's loan history: `history`
 
@@ -415,13 +424,13 @@ This is a read-only command. It does not modify loan records, equipment availabi
 
 ## Returning equipment: `return`
 
-Format: `return loan/<LOAN ID> serviceable/<yes|no> damage/<DAMAGE> [remarks/<REMARKS>]`
+Format: `return loan/<LOAN ID> serviceable/<yes|no> damage/<DAMAGE> [cond/<CONDITION>] [remarks/<REMARKS>]`
 
 Examples:
 
 ```text
 return loan/L001 serviceable/yes damage/none remarks/Checked on return
-return loan/L002 serviceable/no damage/SENSOR_DAMAGE remarks/Sensor needs repair
+return loan/L002 serviceable/no damage/SENSOR_DAMAGE cond/8 remarks/Sensor needs repair
 return loan/L003 serviceable/yes damage/none
 return loan/L004 serviceable/no damage/OTHER remarks/Mounting plate damaged
 ```
@@ -433,11 +442,14 @@ return loan/L004 serviceable/no damage/OTHER remarks/Mounting plate damaged
   The assessment determines whether the equipment may be borrowed again; damage alone does not decide this.
 * `damage/` must use a value from the equipment type's damage table under **Adding equipment**.
   Values are case-insensitive. Use `none` when no damage is found.
+* Optional `cond/` follows `damage/` and accepts a whole number from `1` to `10`, once only.
+  If omitted, the item's current numeric rating is copied into the return assessment.
 * `remarks/` must be last. For `damage/OTHER`, provide non-empty text after trimming.
   For other damage values, omit it or supply empty text to clear previous remarks. Remarks may contain up to 200
   characters after trimming. All text after `remarks/`, including prefix-like text, is treated as remarks.
-* The assessment replaces the item's previous damage and remarks. Its name, numeric condition, type-specific
-  attributes and existing bundle memberships are retained. The numeric condition can be changed separately with `update`.
+* The assessment updates the item's damage, remarks and serviceability, and its numeric condition if `cond/` is given.
+  Its name, type-specific attributes and bundle memberships are retained. A separate immutable copy is stored with
+  that Loan ID, alongside the issue assessment; use `view loan/<LOAN ID>` to compare them after later changes or restarts.
 
 A successful return keeps the loan record and its ID, displays its state as `Returned`, and clears its active
 equipment link. The success message shows the Loan ID, item ID and name, and the item's resulting `Available`
@@ -667,6 +679,9 @@ Successful loan additions, updates, returns and deletions are saved in
 `data/loans.txt`, the next unused loan ID is saved in `data/loan-sequence.txt`, and bundle memberships are saved
 in `data/bundles.txt`. Records are loaded when the application starts again. A final save is also attempted when
 `bye` is entered; if it fails, the application reports the affected file and lets you retry.
+If console input ends, the application attempts the same final save once and exits. If that save fails,
+it reports the affected files and warns about unsaved changes before stopping; it cannot accept a retry
+without input. Resolve the storage problem and check the saved records before restarting.
 The data directory and the equipment, loan, sequence and maintenance files are created when they are first saved,
 including during the final save performed by `bye`. `bundles.txt` is created when bundle data is first saved and may
 be absent if no bundles have been created.
@@ -742,9 +757,23 @@ tampered with, malformed, incomplete, duplicated or inconsistent, the restore is
 and in-memory state remain unchanged. Successful restores clear all current bundles and saved bundle memberships
 because bundles are not included in the backup. Maintenance records are left unchanged.
 
-`restore` is also available after a startup loading error. A valid equipment-and-loan backup can repair those records.
-It does not repair or reload maintenance. If startup reports damaged maintenance data, exit with `bye`, preserve a
-copy of the damaged file, and repair or recover `data/maintenance.txt` separately before restarting.
+`restore` can recover equipment, loan or bundle loading errors when maintenance loaded successfully.
+If maintenance failed to load, `restore` is rejected before any live files change because the backup does not
+contain maintenance records. Other commands remain blocked, and `bye` exits without saving. Preserve a copy of
+the damaged file, then repair or recover `data/maintenance.txt` separately before restarting.
+
+## Current limitations
+
+These limitations can affect recovery or interpretation of records in the current version:
+
+* Maintenance records are retained in `data/maintenance.txt` but cannot be viewed with an in-app command.
+* Recording maintenance does not restore an unserviceable item; there is no repair/reactivation command yet.
+* Backup excludes bundles and maintenance. A successful restore clears current bundle memberships and leaves
+  maintenance unchanged.
+* Equipment filtering accepts only `status/available` and `status/loaned`; it cannot directly select
+  unserviceable items.
+* Bundle history follows the bundle's current membership. Removing an item also removes its loans from that
+  bundle-history view, although the loans remain in the full and item-specific histories.
 
 ## Diagnostic logs
 
@@ -764,7 +793,7 @@ Successful changes start with `[OK]`; rejected commands and save failures start 
 * Saves are written to temporary files before replacing the saved records, preserving previous records if writing fails.
 * Command validation errors show an `[ERROR]` message and let you enter another command at the command prompt.
 * If saved records cannot be loaded, only `restore` and `bye` are available. `bye` exits without saving in this state.
-  The application stops if console input is no longer available.
+  If console input ends in this state, the application also exits without saving.
 
 ## Command Summary
 
@@ -776,14 +805,14 @@ Successful changes start with `[OK]`; rejected commands and save failures start 
 | Add equipment | `add i/<NAME> id/<ITEM ID> type/<TYPE> cond/<CONDITION>` with optional details, damage and remarks |
 | Delete equipment | `delete item/<ITEM ID>` |
 | Add loan | `loan id/<ITEM ID> b/<BORROWER ID> [issued/<DD-MM-YY>] due/<DD-MM-YY>` |
-| Return equipment | `return loan/<LOAN ID> serviceable/<VALUE> damage/<DAMAGE> [remarks/<REMARKS>]` |
+| Return equipment | `return loan/<LOAN ID> serviceable/<yes\|no> damage/<DAMAGE> [cond/<CONDITION>] [remarks/<REMARKS>]` |
 | Delete loan | `delete loan/<LOAN ID>` |
 | Update loan | `update loan/<LOAN ID> [id/<ITEM ID>] [b/<BORROWER ID>] [issued/<DD-MM-YY>] [due/<DD-MM-YY>]` |
 | List equipment | `list` |
 | Show full equipment details | `show id/<ITEM ID>` |
 | List loans | `list loans` |
 | View a borrower's current equipment | `list borrower/<BORROWER ID>` (alias `list member/<BORROWER ID>`) |
-| View issue-time equipment condition | `view loan/<LOAN ID>` |
+| Compare loan condition assessments | `view loan/<LOAN ID>` |
 | Back up equipment and loan records | `backup path/<DIRECTORY>` |
 | Restore equipment and loan records | `restore path/<DIRECTORY>` |
 | View item loan history | `history id/<ITEM ID>` |

@@ -30,6 +30,12 @@ class MaintenanceHandlerTest {
     private Path temporaryDirectory;
 
     @Test
+    void storageFile_inMemoryHandler_reportsNoPersistence() {
+        MaintenanceHandler handler = new MaintenanceHandler(new EquipmentHandler());
+        assertEquals(null, handler.getStorageFile());
+    }
+
+    @Test
     void addMaintenanceRecord_validCommand_bindsToPhysicalEquipment() throws Exception {
         EquipmentHandler equipment = new EquipmentHandler();
         Equipment item = equipment.addEquipment(ADD_CAMERA);

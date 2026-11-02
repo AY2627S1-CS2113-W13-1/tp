@@ -33,6 +33,17 @@ class LoanStorageTest {
     private Path temporaryDirectory;
 
     @Test
+    void load_invalidSequence_rejectsMalformedAndOutOfRangeValues() throws IOException {
+        Path loans = temporaryDirectory.resolve("missing-loans.txt");
+        Path sequence = temporaryDirectory.resolve("sequence.txt");
+        for (String value : new String[]{"", "wrong/L001", "nextLoanId/L000", "nextLoanId/L1001",
+            "nextLoanId/no", "nextLoanId/L001\nnextLoanId/L002"}) {
+            Files.writeString(sequence, value);
+            assertThrows(IOException.class, () -> LoanStorage.load(loans, sequence), value);
+        }
+    }
+
+    @Test
     void load_malformedRecord_reportsTheLineNumber() throws IOException {
         Path file = temporaryDirectory.resolve("loans.txt");
         Files.writeString(file, "loan id/E001 b/U002 issued/01-10-26 due/02-10-26\nnot a loan record\n");

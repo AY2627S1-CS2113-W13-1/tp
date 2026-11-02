@@ -10,6 +10,12 @@ import org.junit.jupiter.api.Test;
 /** Tests the shared format and migration rules for every visible identifier type. */
 class IdentifierTest {
     @Test
+    void nullType_normalizationAndNumber_rejectExplicitly() {
+        assertThrows(IllegalArgumentException.class, () -> Identifier.normalize("E001", null));
+        assertThrows(IllegalArgumentException.class, () -> Identifier.number("E001", null));
+    }
+
+    @Test
     void isValid_acceptsCanonicalIdentifiersAndBorrowerZero() {
         assertTrue(Identifier.isValid("E001", Identifier.Type.EQUIPMENT));
         assertTrue(Identifier.isValid("L999", Identifier.Type.LOAN));

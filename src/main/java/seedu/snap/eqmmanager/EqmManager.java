@@ -53,6 +53,8 @@ public class EqmManager {
     private final Path dataDirectory;
     private final Clock clock;
     private String startupError;
+    /** Equipment-and-loan backups cannot recover maintenance that failed to load at startup. */
+    private boolean maintenanceLoadFailed;
     private boolean isRunning;
 
     /** Creates an equipment manager ready to accept commands. */
@@ -106,6 +108,7 @@ public class EqmManager {
         try {
             maintenance.loadFromStorage();
         } catch (IOException e) {
+            maintenanceLoadFailed = true;
             loadErrors.add("maintenance.txt: " + e.getMessage());
             logger.log(Level.SEVERE, "Could not load saved maintenance data", e);
         }
@@ -153,7 +156,7 @@ public class EqmManager {
         } else if (normalizedInput.matches("(?sU)history(?:\\s.*)?")) {
             viewLoanHistory(normalizedInput);
         } else if (normalizedInput.matches("(?U)view(?:\\s.*)?")) {
-            viewLoanIssueCondition(normalizedInput);
+            viewLoanAssessments(normalizedInput);
         } else if (normalizedInput.matches("(?U)update\\s+loan(?:\\s.*|/.*)?")) {
             updateLoan(normalizedInput);
         } else if (normalizedInput.matches("(?sU)list\\s+(?:borrower|member)(?:/.*|\\s.*)?")) {
@@ -196,7 +199,7 @@ public class EqmManager {
         }
     }
 
-    /** Runs the main input and execution loop until the user exits. */
+    /** Runs commands until bye or the end of input, preserving final saves and startup error protection. */
     public void run() {
         if (startupError != null) {
             ConsoleOutput.error("Could not load saved data: " + startupError);
@@ -212,7 +215,16 @@ public class EqmManager {
         String input;
         while (isRunning) {
             input = parser.getInput();
-            executeInput(input);
+            if (input == null) {
+                isRunning = false;
+                if (startupError == null && !saveBeforeExit()) {
+                    ConsoleOutput.error("Input has ended. Exiting with unsaved changes. "
+                            + "Check the saved files and resolve the reported storage problem before restarting.");
+                    return;
+                }
+            } else {
+                executeInput(input);
+            }
         }
 
         ConsoleOutput.success("Goodbye.");
@@ -260,10 +272,10 @@ public class EqmManager {
 
     // @@author Rohita-29
 
-    /** Displays a loan's issue-time equipment condition. */
-    private void viewLoanIssueCondition(String input) {
+    /** Displays a loan's saved issue and return assessments. */
+    private void viewLoanAssessments(String input) {
         try {
-            loans.viewLoanIssueCondition(input);
+            loans.viewLoanAssessments(input);
         } catch (LoanViewingUnsuccessful exception) {
             ConsoleOutput.error(exception.getMessage());
         }
@@ -284,6 +296,11 @@ public class EqmManager {
 
     /** Restores a validated backup and reports either the restored source or the safe failure message. */
     private void restoreBackup(String input) {
+        if (maintenanceLoadFailed) {
+            ConsoleOutput.error("Cannot restore because maintenance data could not be loaded. "
+                    + "Exit with bye, preserve and repair or recover data/maintenance.txt, then restart.");
+            return;
+        }
         try {
             Path source = backups.restoreBackup(input);
             startupError = null;

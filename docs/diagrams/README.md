@@ -24,6 +24,25 @@ The equipment-management designs also include:
 | [EquipmentFilterSequence.puml](EquipmentFilterSequence.puml) | Current-loan checks and read-only filter results. |
 | [equipment-update-sequence.puml](equipment-updates/equipment-update-sequence.puml) | Saving a proposal before changing the original equipment object. |
 | [LoggingLifecycle.puml](LoggingLifecycle.puml) | Logging setup, I/O fallback and session cleanup. |
+| [LoanAdditionSequence.puml](LoanAdditionSequence.puml) | Saving a valid new loan before reserving its equipment. |
+| [ReturnSequence.puml](ReturnSequence.puml) | Applying a saved return assessment to the original objects. |
+| [ReturnSaveFailure.puml](ReturnSaveFailure.puml) | Restoring captured files after a return save fails. |
+| [BackupRestoreSequence.puml](BackupRestoreSequence.puml) | Staged restore validation and rollback of live files. |
+| [LoanAssessmentObject.puml](LoanAssessmentObject.puml) | One returned loan's immutable issue and return snapshots. |
+
+The overdue-loan design includes:
+
+| Source | Design illustrated |
+| --- | --- |
+| [OverdueLoanClasses.puml](OverdueLoanClasses.puml) | Relationships between command routing, selection and the loan-owned overdue rule. |
+| [OverdueLoanSequence.puml](OverdueLoanSequence.puml) | One-date evaluation and read-only display flow for `list overdue`. |
+
+The maintenance and backup designs include:
+
+| Source | Design illustrated |
+| --- | --- |
+| [MaintenanceRecordSequence.puml](MaintenanceRecordSequence.puml) | Command routing, validation, permanent identity resolution and save-before-append success and failure paths. |
+| [MaintenanceBackupClasses.puml](MaintenanceBackupClasses.puml) | Maintenance record ownership, shared handlers, storage dependencies and backup/restore boundaries. |
 
 The current images were rendered with [PlantUML](https://plantuml.com/download) 1.2026.9 and Java 25.
 From the repository root, replace `path/to/plantuml.jar` with your local JAR path and run, for example:

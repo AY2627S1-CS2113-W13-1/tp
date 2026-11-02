@@ -79,7 +79,7 @@ class BackupIntegrationTest {
 
         assertTrue(printed().contains("Invalid format"));
         output.reset();
-        manager.executeInput("list loans b/U111");
+        manager.executeInput("list borrower/U111");
         assertTrue(printed().contains("L001"));
     }
 

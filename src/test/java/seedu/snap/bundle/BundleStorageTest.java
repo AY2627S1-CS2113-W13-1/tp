@@ -23,6 +23,43 @@ class BundleStorageTest {
     private Path temporaryDirectory;
 
     @Test
+    void load_invalidTypedRecords_rejectsEachWithoutPublishing() throws Exception {
+        Path file = Files.createTempFile("invalid-bundles-", ".txt");
+        String uuid = UUID.randomUUID().toString();
+        String secondUuid = UUID.randomUUID().toString();
+        String[] records = {
+            "bundle wrong/B001 name64/S2l0 items/",
+            "bundle id/E001 name64/S2l0 items/",
+            "bundle id/B001 wrong/S2l0 items/",
+            "bundle id/B001 name64/! items/",
+            "bundle id/B001 name64/ items/",
+            "bundle id/B001 name64/S2l0 wrong/",
+            "bundle id/B001 name64/S2l0 items/E001~invalid",
+            "bundle id/B001 name64/S2l0 items/L001~" + uuid,
+            "bundle id/B001 name64/S2l0 items/E001~" + uuid + ",E001~" + secondUuid,
+            "bundle id/B001 name64/S2l0 items/E001~" + uuid + ",E002~" + uuid
+        };
+        try {
+            for (String record : records) {
+                Files.writeString(file, record);
+                assertThrows(IOException.class, () -> BundleStorage.load(file), record);
+            }
+            Files.writeString(file, "\n");
+            assertTrue(BundleStorage.load(file).bundles().isEmpty());
+        } finally {
+            Files.deleteIfExists(file);
+        }
+    }
+
+    @Test
+    void defaultHandler_startsWithEmptyInventory() {
+        BundleHandler handler = new BundleHandler();
+        assertTrue(handler.getBundleList().isEmpty());
+        assertThrows(BundleAdditionUnsuccessful.class, () -> handler.addBundle(null));
+        assertTrue(handler.getBundleList().isEmpty());
+    }
+
+    @Test
     void load_malformedRecord_reportsLineNumber() throws Exception {
         Path file = temporaryDirectory.resolve("bundles.txt");
         Files.writeString(file, "not a bundle record" + System.lineSeparator());
