@@ -783,11 +783,8 @@ Successful changes start with `[OK]`; rejected commands and save failures start 
 * File errors show the reason and ask you to check the file or directory permissions.
 * Saves are written to temporary files before replacing the saved records, preserving previous records if writing fails.
 * Command validation errors show an `[ERROR]` message and let you enter another command at the command prompt.
-<!-- @@author holsoma -->
 * If saved records cannot be loaded, only `restore` and `bye` are available. `bye` exits without saving in this state.
-  If console input is no longer available, the application attempts the normal final save, reports any failure and
-  then stops without a stack trace.
-<!-- @@author -->
+  The application stops if console input is no longer available.
 
 ## Command Summary
 

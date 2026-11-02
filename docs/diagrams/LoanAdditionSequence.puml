@@ -15,15 +15,19 @@ Manager -> Handler: addLoan(input)
 activate Handler
 Handler -> Handler: parseLoanCommand(input)
 Handler -> Handler: hasActiveLoanForItem(itemId)
-Handler -> Inventory: findAvailableEquipment(itemId)
+Handler -> Handler: findAvailableEquipment(itemId)
+activate Handler
+Handler -> Inventory: getEquipmentList()
 activate Inventory
+Inventory --> Handler: current inventory
+deactivate Inventory
 alt item missing, loaned or unserviceable
-    Inventory --> Handler: LoanAdditionUnsuccessful
-    deactivate Inventory
+    Handler --> Handler: throws LoanAdditionUnsuccessful
+    deactivate Handler
     Handler --> Manager: LoanAdditionUnsuccessful
 else item is available
-    Inventory --> Handler: item
-    deactivate Inventory
+    Handler --> Handler: item
+    deactivate Handler
     create Loan
     Handler -> Loan: new(loanId, item, borrower, dates)
     activate Loan
