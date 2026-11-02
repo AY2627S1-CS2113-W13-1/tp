@@ -8,14 +8,18 @@ import java.time.format.ResolverStyle;
 import java.util.HashSet;
 import java.util.Set;
 
+// @@author yarnieee
+import seedu.snap.Identifier;
+// @@author
 import seedu.snap.exceptions.LoanUpdateUnsuccessful;
+
+// @@author MatthewLeon888
 
 /** Holds validated optional changes from an update-loan command before any records change. */
 record LoanUpdate(String loanId, String itemId, String borrowerId,
         LocalDateTime issuedDate, LocalDateTime dueDate) {
-    private static final String ID_FORMAT = "[0-9]{3}";
-    private static final String FORMAT = "Invalid format. Use: update loan/[LOAN ID] "
-            + "[id/[ITEM ID]] [b/[BORROWER ID]] [issued/DD-MM-YY] [due/DD-MM-YY].";
+    private static final String FORMAT = "Invalid format. Use: loan-update l/[LOAN ID] "
+            + "[e/[ITEM ID]] [u/[BORROWER ID]] [issued/DD-MM-YY] [due/DD-MM-YY].";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-MM-uu")
             .withResolverStyle(ResolverStyle.STRICT);
 
@@ -26,12 +30,13 @@ record LoanUpdate(String loanId, String itemId, String borrowerId,
         }
         String trimmed = input.trim();
         String[] arguments = trimmed.isEmpty() ? new String[0] : trimmed.split("(?U)\\s+");
-        if (arguments.length < 3 || !arguments[0].equals("update")
-                || !arguments[1].startsWith("loan/")) {
+        if (arguments.length < 3 || !arguments[0].equals("loan-update")
+                || !arguments[1].startsWith("l/")) {
             throw new LoanUpdateUnsuccessful(FORMAT);
         }
 
-        String loanId = parseIdentifier(arguments[1].substring("loan/".length()), "loan ID");
+        String loanId = parseIdentifier(arguments[1].substring("l/".length()), "loan ID",
+                Identifier.Type.LOAN);
         String itemId = null;
         String borrowerId = null;
         LocalDateTime issuedDate = null;
@@ -41,14 +46,14 @@ record LoanUpdate(String loanId, String itemId, String borrowerId,
             String argument = arguments[i];
             String field;
             String value;
-            if (argument.startsWith("id/")) {
+            if (argument.startsWith("e/")) {
                 field = "id";
-                value = argument.substring("id/".length());
-                itemId = parseIdentifier(value, "item ID");
-            } else if (argument.startsWith("b/")) {
+                value = argument.substring("e/".length());
+                itemId = parseIdentifier(value, "item ID", Identifier.Type.EQUIPMENT);
+            } else if (argument.startsWith("u/")) {
                 field = "b";
-                value = argument.substring("b/".length());
-                borrowerId = parseBorrowerId(value);
+                value = argument.substring("u/".length());
+                borrowerId = parseIdentifier(value, "borrower ID", Identifier.Type.BORROWER);
             } else if (argument.startsWith("issued/")) {
                 field = "issued";
                 value = argument.substring("issued/".length());
@@ -91,20 +96,16 @@ record LoanUpdate(String loanId, String itemId, String borrowerId,
         return dueDate != null;
     }
 
-    /** Parses a three-digit identifier while excluding the reserved all-zero value. */
-    private static String parseIdentifier(String value, String name) throws LoanUpdateUnsuccessful {
-        if (!value.matches(ID_FORMAT) || value.equals("000")) {
-            throw new LoanUpdateUnsuccessful(name + " must be exactly three digits from 001 to 999.");
+    /** Parses a typed identifier while excluding the reserved all-zero value where applicable. */
+    private static String parseIdentifier(String value, String name, Identifier.Type type)
+            throws LoanUpdateUnsuccessful {
+        try {
+            return Identifier.normalize(value, type);
+        } catch (IllegalArgumentException exception) {
+            String lowerBound = type == Identifier.Type.BORROWER ? type.prefix() + "000" : type.prefix() + "001";
+            throw new LoanUpdateUnsuccessful(name + " must be from " + lowerBound + " to "
+                    + type.prefix() + "999.");
         }
-        return value;
-    }
-
-    /** Parses the borrower identifier range, which includes the valid boundary value 000. */
-    private static String parseBorrowerId(String value) throws LoanUpdateUnsuccessful {
-        if (!value.matches(ID_FORMAT)) {
-            throw new LoanUpdateUnsuccessful("Borrower ID must be exactly three digits from 000 to 999.");
-        }
-        return value;
     }
 
     /** Parses a strict date in the format documented for loan commands. */
@@ -116,3 +117,5 @@ record LoanUpdate(String loanId, String itemId, String borrowerId,
         }
     }
 }
+
+// @@author

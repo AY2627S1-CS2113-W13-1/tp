@@ -1,6 +1,7 @@
 @startuml
 !include style.puml
 !pragma layout smetana
+title Equipment identity and loan history
 skinparam linetype ortho
 skinparam nodesep 35
 skinparam ranksep 40

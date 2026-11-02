@@ -23,6 +23,8 @@ import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.BackupUnsuccessful;
 import seedu.snap.loan.LoanHandler;
 
+// @@author MatthewLeon888
+
 /** Creates consistent, non-destructive backups of the application's three persisted data files. */
 final class BackupHandler {
     static final String EQUIPMENT_FILE_NAME = "equipment.txt";
@@ -454,3 +456,5 @@ final class BackupHandler {
         void afterLiveFilesReplaced() throws IOException;
     }
 }
+
+// @@author

@@ -1,7 +1,7 @@
 // @@author yarnieee
 package seedu.snap.exceptions;
-// @@author
 
+// @@author
 /** Signals invalid delete syntax, an unknown ID, or an ID shared by multiple equipment records. */
 // @@author yarnieee
 public class EquipmentDeletionUnsuccessful extends Exception {

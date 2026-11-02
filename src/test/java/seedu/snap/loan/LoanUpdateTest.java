@@ -19,11 +19,13 @@ class LoanUpdateTest {
     @Test
     void parse_allFieldsInAnyOrder_returnsValidatedValues() throws LoanUpdateUnsuccessful {
         LoanUpdate update = LoanUpdate.parse(
-                "update loan/007 due/15-10-26 id/003 b/004 issued/10-10-26");
+                // @@author yarnieee
+                "loan-update l/L007 due/15-10-26 e/E003 u/U004 issued/10-10-26");
 
-        assertEquals("007", update.loanId());
-        assertEquals("003", update.itemId());
-        assertEquals("004", update.borrowerId());
+        assertEquals("L007", update.loanId());
+        assertEquals("E003", update.itemId());
+        assertEquals("U004", update.borrowerId());
+        // @@author
         assertEquals(LocalDateTime.of(2026, 10, 10, 0, 0), update.issuedDate());
         assertEquals(LocalDateTime.of(2026, 10, 15, 0, 0), update.dueDate());
         assertTrue(update.changesItem());
@@ -32,24 +34,44 @@ class LoanUpdateTest {
         assertTrue(update.changesDueDate());
     }
 
+    // @@author yarnieee
+    @Test
+    void parse_lowercaseIds_normalisesValues() throws LoanUpdateUnsuccessful {
+        // @@author
+        LoanUpdate update = LoanUpdate.parse(
+                // @@author yarnieee
+                "loan-update l/l007 due/15-10-26 e/e003 u/u004 issued/10-10-26");
+
+        assertEquals("L007", update.loanId());
+        assertEquals("E003", update.itemId());
+        assertEquals("U004", update.borrowerId());
+    }
+
+    // @@author
     @Test
     void parse_partialFields_leavesOmittedValuesUnset() throws LoanUpdateUnsuccessful {
-        LoanUpdate update = LoanUpdate.parse("update loan/007 b/004");
+        // @@author yarnieee
+        LoanUpdate update = LoanUpdate.parse("loan-update l/L007 u/U004");
 
-        assertEquals("007", update.loanId());
+        assertEquals("L007", update.loanId());
+        // @@author
         assertNull(update.itemId());
-        assertEquals("004", update.borrowerId());
+        // @@author yarnieee
+        assertEquals("U004", update.borrowerId());
+        // @@author
         assertNull(update.issuedDate());
         assertNull(update.dueDate());
     }
 
     @Test
     void parse_borrowerBoundaryValues_acceptsDocumentedRange() throws LoanUpdateUnsuccessful {
-        LoanUpdate zero = LoanUpdate.parse("update loan/001 b/000");
-        LoanUpdate maximum = LoanUpdate.parse("update loan/001 b/999");
+        // @@author yarnieee
+        LoanUpdate zero = LoanUpdate.parse("loan-update l/L001 u/U000");
+        LoanUpdate maximum = LoanUpdate.parse("loan-update l/L001 u/U999");
 
-        assertEquals("000", zero.borrowerId());
-        assertEquals("999", maximum.borrowerId());
+        assertEquals("U000", zero.borrowerId());
+        assertEquals("U999", maximum.borrowerId());
+        // @@author
     }
 
     @ParameterizedTest
@@ -59,10 +81,13 @@ class LoanUpdateTest {
     }
 
     private static Stream<String> invalidCommands() {
-        return Stream.of(null, "", "update", "update loan/001", "update item/001 b/002",
-                "update loan/000 b/002", "update loan/01 b/002", "update loan/001 id/000",
-                "update loan/001 b/00", "update loan/001 id/002 id/003", "update loan/001 unknown/002",
-                "update loan/001 due/31-02-26", "update loan/001 issued/20-10-26 due/19-10-26",
-                "update loan/001 b/002\n due/20-10-26");
+        // @@author yarnieee
+        return Stream.of(null, "", "eqm-update", "loan-update l/L001", "update item/E001 u/U002",
+                "loan-update l/L000 u/U002", "loan-update l/01 u/U002", "loan-update l/L001 e/E000",
+                "loan-update l/L001 u/00", "loan-update l/L001 u/L002", "loan-update l/L001 e/L002",
+                "loan-update l/L001 e/E002 e/E003", "loan-update l/L001 unknown/002",
+                "loan-update l/L001 due/31-02-26", "loan-update l/L001 issued/20-10-26 due/19-10-26",
+                "loan-update l/L001 u/U002\n due/20-10-26");
+        // @@author
     }
 }

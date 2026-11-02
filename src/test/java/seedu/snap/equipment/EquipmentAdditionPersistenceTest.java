@@ -25,12 +25,16 @@ class EquipmentAdditionPersistenceTest {
         Files.writeString(sentinel, "keep");
         EquipmentHandler handler = new EquipmentHandler(file);
         assertThrows(EquipmentAdditionUnsuccessful.class,
-                () -> handler.addEquipment("add i/Camera id/001 type/camera cond/1"));
+                // @@author yarnieee
+                () -> handler.addEquipment("eqm-add name/Camera e/E001 type/camera cond/1"));
+        // @@author
         assertEquals(List.of(), handler.getEquipmentList());
         assertEquals("keep", Files.readString(sentinel));
         Files.delete(sentinel);
         Files.delete(file);
-        Equipment created = handler.addEquipment("add i/Camera id/001 type/camera cond/1");
+        // @@author yarnieee
+        Equipment created = handler.addEquipment("eqm-add name/Camera e/E001 type/camera cond/1");
+        // @@author
         assertEquals(List.of(created), handler.getEquipmentList());
         EquipmentHandler restored = new EquipmentHandler(file);
         restored.loadFromStorage();
@@ -41,13 +45,19 @@ class EquipmentAdditionPersistenceTest {
     void addEquipment_nonbreakingWhitespaceOnlyFields_doesNotOverwriteSavedRecords() throws Exception {
         Path file = temporaryDirectory.resolve("equipment.txt");
         EquipmentHandler handler = new EquipmentHandler(file);
-        Equipment original = handler.addEquipment("add i/Camera id/001 type/camera cond/1");
+        // @@author yarnieee
+        Equipment original = handler.addEquipment("eqm-add name/Camera e/E001 type/camera cond/1");
+        // @@author
         String saved = Files.readString(file);
         for (String space : new String[]{"\u00a0", "\u2007", "\u202f"}) {
             assertThrows(EquipmentAdditionUnsuccessful.class,
-                    () -> handler.addEquipment("add i/" + space + " id/002 type/camera cond/1"));
+                    // @@author yarnieee
+                    () -> handler.addEquipment("eqm-add name/" + space + " e/E002 type/camera cond/1"));
+            // @@author
             assertThrows(EquipmentAdditionUnsuccessful.class,
-                    () -> handler.addEquipment("add i/Tripod id/002 type/" + space + " cond/1"));
+                    // @@author yarnieee
+                    () -> handler.addEquipment("eqm-add name/Tripod e/E002 type/" + space + " cond/1"));
+            // @@author
             assertEquals(saved, Files.readString(file));
             assertEquals(List.of(original), handler.getEquipmentList());
         }

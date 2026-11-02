@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import seedu.snap.Identifier;
 import seedu.snap.equipment.Equipment;
 
 /** Represents a named group of equipment with a required composition. */
@@ -19,7 +20,7 @@ public class Bundle {
 
     private final String bundleName;
     private final String bundleId;
-// @@author
+    // @@author
     /** References to inventory items so updates to their names and conditions remain visible in the bundle. */
     // @@author yarnieee
     private final ArrayList<Equipment> equipment = new ArrayList<>();
@@ -29,7 +30,7 @@ public class Bundle {
      * Creates an initially incomplete bundle.
      *
      * @param name bundle name
-     * @param id three-digit bundle ID
+     * @param id typed bundle ID from B001 to B999
      */
     public Bundle(String name, String id) {
         this.bundleName = name;
@@ -55,8 +56,8 @@ public class Bundle {
     public boolean isComplete() {
         return isComplete;
     }
-    // @@author
 
+    // @@author
     /** Names missing required types using the same type counts as the composition check. A tripod is optional. */
     public List<String> getMissingEquipmentTypes() {
         List<String> missing = new ArrayList<>();
@@ -125,8 +126,8 @@ public class Bundle {
         LOGGER.log(Level.INFO, "Added equipment {0} to bundle {1}.",
                 new Object[] {item.getItemId(), bundleId});
     }
-    // @@author
 
+    // @@author
     /**
      * Removes one equipment item from this bundle and refreshes its completion state.
      *
@@ -140,16 +141,20 @@ public class Bundle {
         for (int index = 0; index < equipment.size(); index++) {
             if (equipment.get(index).getItemId().equals(itemId)) {
                 equipment.remove(index);
+                // @@author yarnieee
                 updateCompletionState();
+                // @@author
                 assert !containsEquipmentId(itemId) : "Removed equipment must not remain in the bundle.";
                 LOGGER.log(Level.INFO, "Removed equipment {0} from bundle {1}.",
                         new Object[] {itemId, bundleId});
+                // @@author yarnieee
                 return true;
             }
         }
         return false;
     }
 
+    // @@author
     /** Restores a previous equipment snapshot after a failed persistence operation. */
     void restoreEquipment(List<Equipment> previousEquipment) {
         if (previousEquipment == null) {
@@ -157,7 +162,9 @@ public class Bundle {
         }
         equipment.clear();
         equipment.addAll(previousEquipment);
+        // @@author yarnieee
         updateCompletionState();
+        // @@author
         assert equipment.equals(previousEquipment) : "Bundle rollback must restore all equipment";
     }
 
@@ -174,7 +181,7 @@ public class Bundle {
     /** @return whether the bundle identity is valid */
     private boolean hasValidIdentity() {
         return bundleName != null && !bundleName.isBlank() && bundleName.length() <= 100
-                && bundleId != null && bundleId.matches("[0-9]{3}") && !bundleId.equals("000");
+                && Identifier.isValid(bundleId, Identifier.Type.BUNDLE);
     }
 }
     // @@author

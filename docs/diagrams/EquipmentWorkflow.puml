@@ -5,8 +5,10 @@ skinparam activityBackgroundColor #FFE552
 skinparam activityBorderColor #454645
 
 start
-:**1. Add a camera**\nItem ID: 010\nCondition: 1 | Status: Available;
-:**2. Filter available cameras with condition 1-3**\nResult: item 010;
-:**3. Update condition to 5 and repeat the filter**\nResult: no matches\nItem 010 is still Available;
+' @@author yarnieee
+:**1. Add a camera**\nItem ID: E010\nCondition: 1 | Status: Available;
+:**2. Filter available cameras with condition 1-3**\nResult: item E010;
+:**3. Update condition to 5 and repeat the filter**\nResult: no matches\nItem E010 is still Available;
+' @@author
 stop
 @enduml

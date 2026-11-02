@@ -26,10 +26,7 @@ class LoanIssueConditionSnapshotTest {
         Camera camera = createCamera();
 
         Loan loan =
-                new Loan(
-                        "001",
-                        camera,
-                        "101",
+                new Loan("L001", camera, "U101",
                         ISSUE_DATE,
                         DUE_DATE);
 
@@ -50,7 +47,7 @@ class LoanIssueConditionSnapshotTest {
         Loan loan =
                 new Loan(
                         camera,
-                        "101",
+                        "U101",
                         ISSUE_DATE,
                         DUE_DATE);
 
@@ -66,10 +63,7 @@ class LoanIssueConditionSnapshotTest {
     void equipmentUpdatedAfterIssue_snapshotRemainsUnchanged() {
         Camera camera = createCamera();
         Loan loan =
-                new Loan(
-                        "001",
-                        camera,
-                        "101",
+                new Loan("L001", camera, "U101",
                         ISSUE_DATE,
                         DUE_DATE);
 
@@ -87,10 +81,8 @@ class LoanIssueConditionSnapshotTest {
     @Test
     void returnedCopy_preservesIssueConditionSnapshot() {
         Loan loan =
-                new Loan(
-                        "001",
-                        createCamera(),
-                        "101",
+                new Loan("L001", createCamera(),
+                        "U101",
                         ISSUE_DATE,
                         DUE_DATE);
 
@@ -105,10 +97,7 @@ class LoanIssueConditionSnapshotTest {
     @Test
     void constructor_detachedRecord_hasNoConditionSnapshot() {
         Loan loan =
-                new Loan(
-                        "001",
-                        "002",
-                        "101",
+                new Loan("L001", "E002", "U101",
                         ISSUE_DATE,
                         DUE_DATE);
 
@@ -119,7 +108,7 @@ class LoanIssueConditionSnapshotTest {
     private Camera createCamera() {
         return new Camera(
                 "Test Camera",
-                "002",
+                "E002",
                 6,
                 "Full frame",
                 CameraDamage.SENSOR_DAMAGE,

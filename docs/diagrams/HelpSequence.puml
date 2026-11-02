@@ -7,9 +7,17 @@ skinparam maxMessageSize 210
 actor User
 participant ":EqmManager" as Manager
 participant "Help" as Help <<utility>>
-participant "System.out" as Output
+' @@author holsoma
+participant "out:PrintStream" as Output
+note over Output
+System.out refers to this
+PrintStream instance.
+end note
+' @@author
 
-User -> Manager: executeInput("help list overdue")
+' @@author yarnieee
+User -> Manager: executeInput("help loan-list-overdue")
+' @@author
 activate Manager
 note right of Manager
 Trim surrounding whitespace and check startup status.
@@ -30,9 +38,15 @@ Help -> Output: print(command description)
 else unknown topic
 Help -> Output: print(error and compact menu)
 end
-Output --> User: requested help or topic error
+' @@author holsoma
+note over Output
+The printed help or topic error
+appears in the console.
+end note
+Help --> Manager: printing complete
 deactivate Help
 Manager --> User: ready for the next command
+' @@author
 deactivate Manager
 note over Manager, Help
 No equipment, loan, bundle or storage handler is called.

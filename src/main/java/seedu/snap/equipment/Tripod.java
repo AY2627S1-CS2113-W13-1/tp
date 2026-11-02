@@ -8,8 +8,8 @@ import java.util.logging.Logger;
 public class Tripod extends Equipment {
     private static final String TYPE = "tripod";
     private static final Logger LOGGER = Logger.getLogger(Tripod.class.getName());
-// @@author
 
+    // @@author
     /** Damage states that can be recorded for a tripod. */
     public enum TripodDamage {
         NONE,
@@ -28,16 +28,16 @@ public class Tripod extends Equipment {
     private final String thread;
     private TripodDamage damage;
 
-    // @@author yarnieee
     /**
-    // @@author
      * Creates a tripod with unspecified thread and no recorded damage.
      *
      * @param name Name of the tripod.
      * @param id Three-digit equipment ID.
      * @param condition Condition of the tripod from 1 to 10.
      */
+    // @@author yarnieee
     public Tripod(String name, String id, int condition) {
+        // @@author
         this(name, id, condition, "unspecified", TripodDamage.NONE);
     }
 
@@ -73,7 +73,7 @@ public class Tripod extends Equipment {
     public String getType() {
         return TYPE;
     }
-        // @@author
+    // @@author
 
     public String getThread() {
         return thread;
@@ -96,6 +96,6 @@ public class Tripod extends Equipment {
     public String getDetails() {
         return "thread/" + thread + " damage/" + damage.name();
     }
-// @@author yarnieee
+    // @@author yarnieee
 }
 // @@author

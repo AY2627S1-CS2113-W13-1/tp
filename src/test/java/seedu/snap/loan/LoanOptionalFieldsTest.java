@@ -51,20 +51,28 @@ class LoanOptionalFieldsTest {
         loanFile = temporaryDirectory.resolve("loans.txt");
         sequenceFile = temporaryDirectory.resolve("loan-sequence.txt");
         equipment = new EquipmentHandler(equipmentFile);
-        camera = (Camera) equipment.addEquipment("add i/Camera id/001 type/camera cond/4"
+        // @@author yarnieee
+        camera = (Camera) equipment.addEquipment("eqm-add name/Camera e/E001 type/camera cond/4"
+                // @@author
                 + " sensor/APS-C damage/SENSOR_DAMAGE remarks/Original assessment");
-        equipment.addEquipment("add i/Lens id/002 type/lens cond/5 zoom/24-70mm");
+        // @@author yarnieee
+        equipment.addEquipment("eqm-add name/Lens e/E002 type/lens cond/5 zoom/24-70mm");
+        // @@author
         loans = new LoanHandler(equipment, loanFile, sequenceFile, FIXED_CLOCK);
     }
 
     @Test
     void addLoan_missingIssuedDate_savesLocalTodayAtMidnightAndReloadsWithoutRecalculating() throws Exception {
-        Loan added = loans.addLoan("loan id/001 b/111 due/25-10-26");
+        // @@author yarnieee
+        Loan added = loans.addLoan("loan-add e/E001 u/U111 due/25-10-26");
+        // @@author
 
         assertEquals(LocalDate.of(2026, 10, 24).atStartOfDay(), added.getIssuedDate());
         assertEquals(LocalDate.of(2026, 10, 25).atStartOfDay(), added.getDueDate());
-        assertEquals("001", added.getLoanId());
-        assertEquals("001", camera.getLoanId());
+        // @@author yarnieee
+        assertEquals("L001", added.getLoanId());
+        assertEquals("L001", camera.getLoanId());
+        // @@author
         assertTrue(Files.readString(loanFile).contains("issued/24-10-26 due/25-10-26"));
         Clock laterClock = Clock.fixed(Instant.parse("2030-01-01T12:00:00Z"), ZoneOffset.UTC);
         EquipmentHandler restartedEquipment = new EquipmentHandler(equipmentFile);
@@ -75,8 +83,10 @@ class LoanOptionalFieldsTest {
 
         assertEquals(added.getIssuedDate(), restartedLoans.getLoanList().getFirst().getIssuedDate());
         assertEquals(added.getDueDate(), restartedLoans.getLoanList().getFirst().getDueDate());
-        assertEquals("001", restartedEquipment.getEquipmentById("001").getLoanId());
-        assertEquals("002", restartedLoans.getNextLoanId());
+        // @@author yarnieee
+        assertEquals("L001", restartedEquipment.getEquipmentById("E001").getLoanId());
+        assertEquals("L002", restartedLoans.getNextLoanId());
+        // @@author
     }
 
     /** Supplies instants on both sides of local midnight, including a zone behind UTC. */
@@ -95,7 +105,9 @@ class LoanOptionalFieldsTest {
         Clock clock = Clock.fixed(Instant.parse(instant), ZoneId.of(zone));
         LoanHandler handler = new LoanHandler(equipment, loanFile, sequenceFile, clock);
 
-        Loan added = handler.addLoan("loan id/001 b/111 due/26-10-26");
+        // @@author yarnieee
+        Loan added = handler.addLoan("loan-add e/E001 u/U111 due/26-10-26");
+        // @@author
 
         assertEquals(LocalDate.parse(expected).atStartOfDay(), added.getIssuedDate());
         assertTrue(camera.isLoaned());
@@ -106,7 +118,9 @@ class LoanOptionalFieldsTest {
         CountingClock clock = new CountingClock();
         LoanHandler handler = new LoanHandler(equipment, loanFile, sequenceFile, clock);
 
-        Loan added = handler.addLoan("loan id/001 b/111 due/25-10-26");
+        // @@author yarnieee
+        Loan added = handler.addLoan("loan-add e/E001 u/U111 due/25-10-26");
+        // @@author
 
         assertEquals(1, clock.reads);
         assertEquals(LocalDate.of(2026, 10, 24).atStartOfDay(), added.getIssuedDate());
@@ -117,7 +131,9 @@ class LoanOptionalFieldsTest {
         CountingClock clock = new CountingClock();
         LoanHandler handler = new LoanHandler(equipment, loanFile, sequenceFile, clock);
 
-        Loan added = handler.addLoan("loan id/001 b/111 issued/01-10-26 due/02-10-26");
+        // @@author yarnieee
+        Loan added = handler.addLoan("loan-add e/E001 u/U111 issued/01-10-26 due/02-10-26");
+        // @@author
 
         assertEquals(0, clock.reads);
         assertEquals(LocalDate.of(2026, 10, 1).atStartOfDay(), added.getIssuedDate());
@@ -126,33 +142,41 @@ class LoanOptionalFieldsTest {
 
     @Test
     void addLoan_dueDateEqualsDefaultIssuedDate_isAccepted() throws Exception {
-        Loan added = loans.addLoan("loan id/001 b/111 due/24-10-26");
+        // @@author yarnieee
+        Loan added = loans.addLoan("loan-add e/E001 u/U111 due/24-10-26");
+        // @@author
 
         assertEquals(added.getIssuedDate(), added.getDueDate());
         assertTrue(camera.isLoaned());
-        assertEquals("002", loans.getNextLoanId());
+        // @@author yarnieee
+        assertEquals("L002", loans.getNextLoanId());
+        // @@author
     }
 
     /** Covers present invalid dates, omitted required fields and unsupported duplicate or reordered fields. */
     private static Stream<String> invalidLoanCommands() {
-        return Stream.of("loan id/002 b/222 due/23-10-26", "loan id/002 b/222 issued/ due/25-10-26",
-                "loan id/002 b/222 issued/invalid due/25-10-26",
-                "loan id/002 b/222 issued/31-02-26 due/25-10-26",
-                "loan id/002 b/222 issued/25-10-26 due/24-10-26",
-                "loan id/002 b/222 issued/2026-10-24 due/25-10-26",
-                "loan id/002 b/222 issued/24-10-26", "loan id/002 b/222", "loan id/002 due/25-10-26",
-                "loan b/222 due/25-10-26", "loan id/002 b/222 due/", "loan id/002 b/222 due/invalid",
-                "loan id/002 b/222 due/31-02-26", "loan id/002 b/222 due/25-10-26 issued/24-10-26",
-                "loan id/002 issued/24-10-26 b/222 due/25-10-26",
-                "loan id/002 b/222 issued/24-10-26 issued/24-10-26 due/25-10-26",
-                "loan id/002 b/222 due/25-10-26 due/26-10-26",
-                "loan id/002 b/222 id/002 due/25-10-26", "loan id/002 b/222 due/25-10-26 extra");
+        // @@author yarnieee
+        return Stream.of("loan-add e/E002 u/U222 due/23-10-26", "loan-add e/E002 u/U222 issued/ due/25-10-26",
+                "loan-add e/E002 u/U222 issued/invalid due/25-10-26",
+                "loan-add e/E002 u/U222 issued/31-02-26 due/25-10-26",
+                "loan-add e/E002 u/U222 issued/25-10-26 due/24-10-26",
+                "loan-add e/E002 u/U222 issued/2026-10-24 due/25-10-26",
+                "loan-add e/E002 u/U222 issued/24-10-26", "loan-add e/E002 u/U222", "loan-add e/E002 due/25-10-26",
+                "loan u/U222 due/25-10-26", "loan-add e/E002 u/U222 due/", "loan-add e/E002 u/U222 due/invalid",
+                "loan-add e/E002 u/U222 due/31-02-26", "loan-add e/E002 u/U222 due/25-10-26 issued/24-10-26",
+                "loan-add e/E002 issued/24-10-26 u/U222 due/25-10-26",
+                "loan-add e/E002 u/U222 issued/24-10-26 issued/24-10-26 due/25-10-26",
+                "loan-add e/E002 u/U222 due/25-10-26 due/26-10-26",
+                "loan-add e/E002 u/U222 e/E002 due/25-10-26", "loan-add e/E002 u/U222 due/25-10-26 extra");
+        // @@author
     }
 
     @ParameterizedTest
     @MethodSource("invalidLoanCommands")
     void addLoan_invalidOptionalOrRequiredField_preservesRecordsAndAllowsRetry(String command) throws Exception {
-        Loan original = loans.addLoan("loan id/001 b/111 issued/01-10-26 due/02-10-26");
+        // @@author yarnieee
+        Loan original = loans.addLoan("loan-add e/E001 u/U111 issued/01-10-26 due/02-10-26");
+        // @@author
         String savedEquipment = Files.readString(equipmentFile);
         String savedLoans = Files.readString(loanFile);
         String savedSequence = Files.readString(sequenceFile);
@@ -161,22 +185,30 @@ class LoanOptionalFieldsTest {
 
         assertEquals(List.of(original), loans.getLoanList());
         assertSame(original, loans.getLoanList().getFirst());
-        assertEquals("002", loans.getNextLoanId());
+        // @@author yarnieee
+        assertEquals("L002", loans.getNextLoanId());
+        // @@author
         assertEquals(original.getLoanId(), camera.getLoanId());
-        assertFalse(equipment.getEquipmentById("002").isLoaned());
-        assertNull(equipment.getEquipmentById("002").getLoanId());
+        // @@author yarnieee
+        assertFalse(equipment.getEquipmentById("E002").isLoaned());
+        assertNull(equipment.getEquipmentById("E002").getLoanId());
+        // @@author
         assertEquals(savedEquipment, Files.readString(equipmentFile));
         assertEquals(savedLoans, Files.readString(loanFile));
         assertEquals(savedSequence, Files.readString(sequenceFile));
-        Loan next = loans.addLoan("loan id/002 b/222 due/25-10-26");
-        assertEquals("002", next.getLoanId());
+        // @@author yarnieee
+        Loan next = loans.addLoan("loan-add e/E002 u/U222 due/25-10-26");
+        assertEquals("L002", next.getLoanId());
+        // @@author
         assertEquals(LocalDate.of(2026, 10, 24).atStartOfDay(), next.getIssuedDate());
     }
 
     @ParameterizedTest
     @ValueSource(strings = {"loans.txt", "loan-sequence.txt"})
     void addLoan_failedDefaultedSave_preservesCounterAndRetryUsesTheDefault(String blockedName) throws Exception {
-        Loan original = loans.addLoan("loan id/001 b/111 issued/01-10-26 due/02-10-26");
+        // @@author yarnieee
+        Loan original = loans.addLoan("loan-add e/E001 u/U111 issued/01-10-26 due/02-10-26");
+        // @@author
         String savedLoans = Files.readString(loanFile);
         String savedSequence = Files.readString(sequenceFile);
         Path blocked = temporaryDirectory.resolve(blockedName);
@@ -186,12 +218,16 @@ class LoanOptionalFieldsTest {
         Path sentinel = blocked.resolve("keep.txt");
         Files.writeString(sentinel, "keep");
 
-        assertThrows(LoanAdditionUnsuccessful.class, () -> loans.addLoan("loan id/002 b/222 due/25-10-26"));
+        // @@author yarnieee
+        assertThrows(LoanAdditionUnsuccessful.class, () -> loans.addLoan("loan-add e/E002 u/U222 due/25-10-26"));
+        // @@author
 
         assertEquals(List.of(original), loans.getLoanList());
-        assertEquals("002", loans.getNextLoanId());
-        assertEquals("001", camera.getLoanId());
-        assertFalse(equipment.getEquipmentById("002").isLoaned());
+        // @@author yarnieee
+        assertEquals("L002", loans.getNextLoanId());
+        assertEquals("L001", camera.getLoanId());
+        assertFalse(equipment.getEquipmentById("E002").isLoaned());
+        // @@author
         assertEquals("keep", Files.readString(sentinel));
         if (!blocked.equals(loanFile)) {
             assertEquals(savedLoans, Files.readString(loanFile));
@@ -203,23 +239,31 @@ class LoanOptionalFieldsTest {
         Files.delete(blocked);
         Files.writeString(blocked, blockedContents);
 
-        Loan retried = loans.addLoan("loan id/002 b/222 due/25-10-26");
+        // @@author yarnieee
+        Loan retried = loans.addLoan("loan-add e/E002 u/U222 due/25-10-26");
 
-        assertEquals("002", retried.getLoanId());
+        assertEquals("L002", retried.getLoanId());
+        // @@author
         assertEquals(LocalDate.of(2026, 10, 24).atStartOfDay(), retried.getIssuedDate());
-        assertEquals("003", loans.getNextLoanId());
+        // @@author yarnieee
+        assertEquals("L003", loans.getNextLoanId());
+        // @@author
         assertTrue(Files.readString(loanFile).contains("issued/24-10-26 due/25-10-26"));
     }
 
     @Test
     void load_savedLoanWithoutIssuedDate_isRejectedInsteadOfUsingCurrentDate() throws Exception {
-        String invalid = "loan loanId/001 id/001 b/111 due/25-10-26 returned/false\n";
+        // @@author yarnieee
+        String invalid = "loan loanId/L001 id/E001 b/U111 due/25-10-26 returned/false\n";
+        // @@author
         Files.writeString(loanFile, invalid);
 
         assertThrows(IOException.class, loans::loadFromStorage);
 
         assertTrue(loans.getLoanList().isEmpty());
-        assertEquals("001", loans.getNextLoanId());
+        // @@author yarnieee
+        assertEquals("L001", loans.getNextLoanId());
+        // @@author
         assertFalse(camera.isLoaned());
         assertEquals(invalid, Files.readString(loanFile));
         assertFalse(Files.exists(sequenceFile));
@@ -228,9 +272,11 @@ class LoanOptionalFieldsTest {
     @ParameterizedTest
     @ValueSource(strings = {"", " remarks/"})
     void returnLoan_missingOrEmptyRemarks_clearsPreviousRemarksAndPersists(String optionalRemarks) throws Exception {
-        Loan original = loans.addLoan("loan id/001 b/111 due/25-10-26");
+        // @@author yarnieee
+        Loan original = loans.addLoan("loan-add e/E001 u/U111 due/25-10-26");
 
-        assertSame(original, loans.returnLoan("return loan/001 serviceable/yes damage/NONE" + optionalRemarks));
+        assertSame(original, loans.returnLoan("loan-return l/L001 serviceable/yes damage/NONE" + optionalRemarks));
+        // @@author
 
         assertTrue(original.isReturned());
         assertTrue(camera.isServiceable());
@@ -241,44 +287,58 @@ class LoanOptionalFieldsTest {
         assertEquals("APS-C", camera.getSensorFormat());
         EquipmentHandler restarted = new EquipmentHandler(equipmentFile);
         restarted.loadFromStorage();
-        assertEquals("", restarted.getEquipmentById("001").getRemarks());
+        // @@author yarnieee
+        assertEquals("", restarted.getEquipmentById("E001").getRemarks());
+        // @@author
         LoanHandler restartedLoans = new LoanHandler(restarted, loanFile, sequenceFile, FIXED_CLOCK);
         restartedLoans.loadFromStorage();
         assertTrue(restartedLoans.getLoanList().getFirst().isReturned());
-        assertEquals("002", restartedLoans.getNextLoanId());
+        // @@author yarnieee
+        assertEquals("L002", restartedLoans.getNextLoanId());
+        // @@author
     }
 
     @Test
     void returnLoan_optionalRemarks_preservesExplicitAssessmentAndLiteralFinalText() throws Exception {
-        loans.addLoan("loan id/001 b/111 due/25-10-26");
+        // @@author yarnieee
+        loans.addLoan("loan-add e/E001 u/U111 due/25-10-26");
+        // @@author
         String remarks = "Keep damage/NONE serviceable/yes label for repair";
 
-        loans.returnLoan("return loan/001 serviceable/no damage/SHUTTER_FAULT remarks/" + remarks);
+        // @@author yarnieee
+        loans.returnLoan("loan-return l/L001 serviceable/no damage/SHUTTER_FAULT remarks/" + remarks);
+        // @@author
 
         assertFalse(camera.isServiceable());
         assertFalse(camera.isLoaned());
         assertEquals(CameraDamage.SHUTTER_FAULT, camera.getDamage());
         assertEquals(remarks, camera.getRemarks());
-        assertThrows(LoanAdditionUnsuccessful.class, () -> loans.addLoan("loan id/001 b/222 due/25-10-26"));
-        assertEquals("002", loans.getNextLoanId());
+        // @@author yarnieee
+        assertThrows(LoanAdditionUnsuccessful.class, () -> loans.addLoan("loan-add e/E001 u/U222 due/25-10-26"));
+        assertEquals("L002", loans.getNextLoanId());
+        // @@author
     }
 
     /** The return assessment remains mandatory even though its final remarks field is optional. */
     private static Stream<String> invalidReturnCommands() {
-        return Stream.of("return loan/001", "return loan/001 damage/NONE", "return loan/001 serviceable/yes",
-                "return serviceable/yes damage/NONE", "return loan/001 serviceable/ damage/NONE",
-                "return loan/001 serviceable/maybe damage/NONE", "return loan/001 serviceable/yes damage/",
-                "return loan/001 serviceable/yes damage/UNKNOWN", "return loan/001 damage/NONE serviceable/yes",
-                "return loan/001 serviceable/yes damage/NONE cond/4",
-                "return loan/001 serviceable/yes serviceable/no damage/NONE",
-                "return loan/001 serviceable/yes damage/NONE damage/NONE",
-                "return loan/001 serviceable/yes remarks/Before damage/NONE");
+        // @@author yarnieee
+        return Stream.of("loan-return l/L001", "loan-return l/L001 damage/NONE", "loan-return l/L001 serviceable/yes",
+                "return serviceable/yes damage/NONE", "loan-return l/L001 serviceable/ damage/NONE",
+                "loan-return l/L001 serviceable/maybe damage/NONE", "loan-return l/L001 serviceable/yes damage/",
+                "loan-return l/L001 serviceable/yes damage/UNKNOWN", "loan-return l/L001 damage/NONE serviceable/yes",
+                "loan-return l/L001 serviceable/yes damage/NONE cond/11",
+                "loan-return l/L001 serviceable/yes serviceable/no damage/NONE",
+                "loan-return l/L001 serviceable/yes damage/NONE damage/NONE",
+                "loan-return l/L001 serviceable/yes remarks/Before damage/NONE");
+        // @@author
     }
 
     @ParameterizedTest
     @MethodSource("invalidReturnCommands")
     void returnLoan_missingOrInvalidAssessment_preservesAllRecordsAndAllowsRetry(String command) throws Exception {
-        Loan original = loans.addLoan("loan id/001 b/111 due/25-10-26");
+        // @@author yarnieee
+        Loan original = loans.addLoan("loan-add e/E001 u/U111 due/25-10-26");
+        // @@author
         String savedEquipment = Files.readString(equipmentFile);
         String savedLoans = Files.readString(loanFile);
         String savedSequence = Files.readString(sequenceFile);
@@ -289,14 +349,20 @@ class LoanOptionalFieldsTest {
         assertFalse(original.isReturned());
         assertTrue(camera.isLoaned());
         assertTrue(camera.isServiceable());
-        assertEquals("001", camera.getLoanId());
+        // @@author yarnieee
+        assertEquals("L001", camera.getLoanId());
+        // @@author
         assertEquals(CameraDamage.SENSOR_DAMAGE, camera.getDamage());
         assertEquals("Original assessment", camera.getRemarks());
-        assertEquals("002", loans.getNextLoanId());
+        // @@author yarnieee
+        assertEquals("L002", loans.getNextLoanId());
+        // @@author
         assertEquals(savedEquipment, Files.readString(equipmentFile));
         assertEquals(savedLoans, Files.readString(loanFile));
         assertEquals(savedSequence, Files.readString(sequenceFile));
-        loans.returnLoan("return loan/001 serviceable/no damage/SHUTTER_FAULT");
+        // @@author yarnieee
+        loans.returnLoan("loan-return l/L001 serviceable/no damage/SHUTTER_FAULT");
+        // @@author
         assertTrue(original.isReturned());
         assertFalse(camera.isServiceable());
         assertEquals("", camera.getRemarks());
@@ -305,7 +371,9 @@ class LoanOptionalFieldsTest {
     @ParameterizedTest
     @ValueSource(strings = {"equipment.txt", "loans.txt", "loan-sequence.txt"})
     void returnLoan_failedSaveWithOmittedRemarks_preservesOldRemarksUntilRetry(String blockedName) throws Exception {
-        Loan original = loans.addLoan("loan id/001 b/111 due/25-10-26");
+        // @@author yarnieee
+        Loan original = loans.addLoan("loan-add e/E001 u/U111 due/25-10-26");
+        // @@author
         String savedEquipment = Files.readString(equipmentFile);
         String savedLoans = Files.readString(loanFile);
         String savedSequence = Files.readString(sequenceFile);
@@ -317,14 +385,18 @@ class LoanOptionalFieldsTest {
         Files.writeString(sentinel, "keep");
 
         assertThrows(LoanReturnUnsuccessful.class,
-                () -> loans.returnLoan("return loan/001 serviceable/no damage/SHUTTER_FAULT"));
+                // @@author yarnieee
+                () -> loans.returnLoan("loan-return l/L001 serviceable/no damage/SHUTTER_FAULT"));
+        // @@author
 
         assertFalse(original.isReturned());
         assertTrue(camera.isLoaned());
         assertTrue(camera.isServiceable());
         assertEquals(CameraDamage.SENSOR_DAMAGE, camera.getDamage());
         assertEquals("Original assessment", camera.getRemarks());
-        assertEquals("002", loans.getNextLoanId());
+        // @@author yarnieee
+        assertEquals("L002", loans.getNextLoanId());
+        // @@author
         assertEquals("keep", Files.readString(sentinel));
         if (!blocked.equals(equipmentFile)) {
             assertEquals(savedEquipment, Files.readString(equipmentFile));
@@ -339,7 +411,9 @@ class LoanOptionalFieldsTest {
         Files.delete(blocked);
         Files.writeString(blocked, blockedContents);
 
-        assertSame(original, loans.returnLoan("return loan/001 serviceable/no damage/SHUTTER_FAULT"));
+        // @@author yarnieee
+        assertSame(original, loans.returnLoan("loan-return l/L001 serviceable/no damage/SHUTTER_FAULT"));
+        // @@author
 
         assertTrue(original.isReturned());
         assertFalse(camera.isLoaned());

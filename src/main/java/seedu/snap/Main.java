@@ -1,7 +1,7 @@
 // @@author yarnieee
 package seedu.snap;
-// @@author
 
+// @@author
 import java.io.Console;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
@@ -10,20 +10,20 @@ import java.nio.charset.StandardCharsets;
 import seedu.snap.eqmmanager.EqmManager;
 // @@author
 import seedu.snap.logging.AppLogging;
-
 // @@author yarnieee
+
 /** Starts the SNAP application. */
 public class Main {
     /** Starts the application and hands control to the equipment manager. */
     public static void main(String[] args) {
-// @@author
+        // @@author
         configureStandardOutput();
         AppLogging logging = AppLogging.start();
         try (logging) {
+            // @@author yarnieee
             EqmManager eqmManager = new EqmManager();
             eqmManager.run();
         }
-    // @@author yarnieee
     }
     // @@author
 
@@ -37,6 +37,6 @@ public class Main {
             System.setOut(new PrintStream(System.out, true, StandardCharsets.UTF_8));
         }
     }
-// @@author yarnieee
+    // @@author yarnieee
 }
 // @@author

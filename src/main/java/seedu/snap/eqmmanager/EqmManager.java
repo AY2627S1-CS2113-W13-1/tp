@@ -1,7 +1,7 @@
 // @@author yarnieee
 package seedu.snap.eqmmanager;
-// @@author
 
+// @@author
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Clock;
@@ -15,8 +15,8 @@ import java.util.logging.Logger;
 import seedu.snap.equipment.Equipment;
 import seedu.snap.bundle.Bundle;
 import seedu.snap.bundle.BundleHandler;
-// @@author
 import seedu.snap.exceptions.BundleAdditionUnsuccessful;
+// @@author
 import seedu.snap.exceptions.BundleHistoryUnsuccessful;
 import seedu.snap.exceptions.BackupUnsuccessful;
 import seedu.snap.equipment.EquipmentFilter;
@@ -45,6 +45,7 @@ import seedu.snap.exceptions.MaintenanceRecordUnsuccessful;
 import seedu.snap.maintenance.MaintenanceHandler;
 import seedu.snap.maintenance.MaintenanceRecord;
 // @@author yarnieee
+import seedu.snap.parser.CommandAliases;
 import seedu.snap.parser.Parser;
 // @@author
 import seedu.snap.ui.Help;
@@ -52,11 +53,11 @@ import seedu.snap.ui.Welcome;
 import seedu.snap.ui.BundleView;
 import seedu.snap.ui.ConsoleOutput;
 import seedu.snap.ui.LoanView;
-
 // @@author yarnieee
+
 /** Coordinates command input and execution for the SNAP application. */
 public class EqmManager {
-// @@author
+    // @@author
     private static final Logger logger = Logger.getLogger(EqmManager.class.getName());
     private final Parser parser;
     private final LoanHandler loans;
@@ -69,12 +70,14 @@ public class EqmManager {
     private final Path dataDirectory;
     private final Clock clock;
     private String startupError;
+    /** Equipment-and-loan backups cannot recover maintenance that failed to load at startup. */
+    private boolean maintenanceLoadFailed;
     // @@author yarnieee
     private boolean isRunning;
 
     /** Creates an equipment manager ready to accept commands. */
     public EqmManager() {
-    // @@author
+        // @@author
         this(Path.of("data"));
     }
 
@@ -126,6 +129,7 @@ public class EqmManager {
         try {
             maintenance.loadFromStorage();
         } catch (IOException e) {
+            maintenanceLoadFailed = true;
             loadErrors.add("maintenance.txt: " + e.getMessage());
             logger.log(Level.SEVERE, "Could not load saved maintenance data", e);
         }
@@ -142,85 +146,127 @@ public class EqmManager {
     public void executeInput(String input) {
         // @@author
         String normalizedInput = input == null ? "" : input.replaceAll("(?U)^\\s+|\\s+$", "");
+        // @@author yarnieee
+        normalizedInput = CommandAliases.normalizeInput(normalizedInput);
+        // @@author
         if (normalizedInput.equals("restore") || normalizedInput.startsWith("restore ")) {
             restoreBackup(normalizedInput);
         } else if (startupError != null) {
-            if (normalizedInput.equals("bye")) {
+            // @@author yarnieee
+            if (normalizedInput.equals("exit")) {
+                // @@author
                 isRunning = false;
             } else {
                 ConsoleOutput.error("Could not load saved data: " + startupError);
             }
         } else if (normalizedInput.matches("(?sU)help(?:\\s.*)?")) {
             Help.print(normalizedInput.substring("help".length()));
-        } else if (normalizedInput.equals("bye")) {
+        // @@author yarnieee
+        } else if (normalizedInput.equals("exit")) {
+            // @@author
             isRunning = !saveBeforeExit();
         } else if (normalizedInput.equals("backup") || normalizedInput.startsWith("backup ")) {
             createBackup(normalizedInput);
-        } else if (normalizedInput.equals("delete loan")
-                || normalizedInput.startsWith("delete loan/")
-                || normalizedInput.startsWith("delete loan ")) {
+        // @@author yarnieee
+        } else if (normalizedInput.equals("loan-delete")
+                || normalizedInput.startsWith("loan-delete ")) {
+            // @@author
             deleteLoan(normalizedInput);
-        } else if (normalizedInput.equals("delete") || normalizedInput.startsWith("delete ")) {
+        // @@author yarnieee
+        } else if (normalizedInput.matches("(?U)eqm-delete(?:\\s.*)?")) {
+            // @@author
             deleteEquipment(normalizedInput);
-        } else if (normalizedInput.matches("(?U)add(?:\\s.*)?")) {
+        // @@author yarnieee
+        } else if (normalizedInput.matches("(?U)eqm-add(?:\\s.*)?")) {
+            // @@author
             addEquipment(normalizedInput);
-        } else if (normalizedInput.matches("(?sU)loan(?:\\s.*)?")) {
+        // @@author yarnieee
+        } else if (normalizedInput.matches("(?sU)loan-add(?:\\s.*)?")) {
+            // @@author
             addLoan(normalizedInput);
-        } else if (normalizedInput.matches("(?sU)return(?:\\s.*)?")) {
+        // @@author yarnieee
+        } else if (normalizedInput.matches("(?sU)loan-return(?:\\s.*)?")) {
+            // @@author
             returnEquipment(normalizedInput);
-        } else if (normalizedInput.matches("(?sU)maintain(?:\\s.*)?")) {
+        // @@author yarnieee
+        } else if (normalizedInput.matches("(?sU)eqm-maintain(?:\\s.*)?")) {
+            // @@author
             recordMaintenance(normalizedInput);
-        } else if (normalizedInput.startsWith("history bundle/")) {
+        // @@author yarnieee
+        } else if (normalizedInput.startsWith("bundle-history")) {
+            // @@author
             viewBundleLoanHistory(normalizedInput);
-        } else if (normalizedInput.matches("(?sU)history(?:\\s.*)?")) {
+        // @@author yarnieee
+        } else if (normalizedInput.matches("(?sU)eqm-loan-history(?:\\s.*)?")) {
+            // @@author
             viewLoanHistory(normalizedInput);
-        } else if (normalizedInput.matches("(?U)view(?:\\s.*)?")) {
+        // @@author yarnieee
+        } else if (normalizedInput.matches("(?U)loan-view(?:\\s.*)?")) {
+            // @@author
+            viewLoanAssessments(normalizedInput);
+        // @@author yarnieee
+        } else if (normalizedInput.matches("(?U)loan-show(?:\\s.*)?")) {
             viewLoanIssueCondition(normalizedInput);
-        } else if (normalizedInput.matches("(?U)update\\s+loan(?:\\s.*|/.*)?")) {
+        } else if (normalizedInput.matches("(?U)loan-update(?:\\s.*|/.*)?")) {
+            // @@author
             updateLoan(normalizedInput);
-        } else if (normalizedInput.matches("(?sU)list\\s+(?:borrower|member)(?:/.*|\\s.*)?")) {
+        // @@author yarnieee
+        } else if (normalizedInput.matches("(?sU)loan-list-borrower(?:\\s.*|/.*)?")) {
+            // @@author
             viewActiveLoansForBorrower(normalizedInput);
-        } else if (normalizedInput.matches("(?U)filter(?:\\s.*)?")) {
+        // @@author yarnieee
+        } else if (normalizedInput.matches("(?U)eqm-filter(?:\\s.*)?")) {
+            // @@author
             filterEquipment(normalizedInput);
-        } else if (normalizedInput.matches("(?U)update(?:\\s.*)?")) {
+        // @@author yarnieee
+        } else if (normalizedInput.matches("(?U)eqm-update(?:\\s.*)?")) {
+            // @@author
             updateEquipment(normalizedInput);
-        } else if (normalizedInput.matches("(?sU)show(?:\\s.*)?")) {
+        // @@author yarnieee
+        } else if (normalizedInput.matches("(?sU)eqm-show(?:\\s.*)?")) {
+            // @@author
             showEquipment(normalizedInput);
-        } else if (normalizedInput.equals("list overdue")) {
+        // @@author yarnieee
+        } else if (normalizedInput.equals("loan-list-overdue")) {
+            // @@author
             viewOverdueLoans();
-        } else if (normalizedInput.equals("list loans")) {
-            // @@author yarnieee
+        // @@author yarnieee
+        } else if (normalizedInput.equals("loan-list")) {
             loans.viewAllLoans();
+        } else if (normalizedInput.equals("bundle-create") || normalizedInput.startsWith("bundle-create ")) {
             // @@author
-        } else if (normalizedInput.equals("add-bundle") || normalizedInput.startsWith("add-bundle ")) {
             addBundle(normalizedInput);
-        } else if (normalizedInput.equals("add-to-bundle") || normalizedInput.startsWith("add-to-bundle ")) {
-            addItemsToBundle(normalizedInput);
-        } else if (normalizedInput.matches("(?U)remove-from-bundle(?:\\s.*)?")) {
-            removeItemsFromBundle(normalizedInput);
-        } else if (normalizedInput.equals("list bundles")) {
-            // @@author yarnieee
-            try {
+        // @@author yarnieee
+        } else if (normalizedInput.equals("bundle-add-eqm") || normalizedInput.startsWith("bundle-add-eqm ")) {
             // @@author
+            addItemsToBundle(normalizedInput);
+        // @@author yarnieee
+        } else if (normalizedInput.matches("(?U)bundle-remove-eqm(?:\\s.*)?")) {
+            // @@author
+            removeItemsFromBundle(normalizedInput);
+        // @@author yarnieee
+        } else if (normalizedInput.equals("bundle-list")) {
+            try {
+                // @@author
                 bundles.viewAllBundles(normalizedInput);
             // @@author yarnieee
             } catch (BundleAdditionUnsuccessful e) {
-            // @@author
+                // @@author
                 ConsoleOutput.error(e.getMessage());
-            // @@author yarnieee
+                // @@author yarnieee
             }
+        } else if (normalizedInput.equals("eqm-list")) {
             // @@author
-        } else if (normalizedInput.equals("list") || normalizedInput.startsWith("list ")) {
             equipment.viewAllEquipment();
         // @@author yarnieee
         } else {
-        // @@author
+            // @@author
             ConsoleOutput.error("Command not recognised. Type help for available commands.");
-        // @@author yarnieee
+            // @@author yarnieee
         }
     }
-        // @@author
 
+    // @@author
     /** Displays complete equipment values without changing records or performing a save. */
     private void showEquipment(String input) {
         try {
@@ -233,7 +279,7 @@ public class EqmManager {
     // @@author yarnieee
     /** Runs the main input and execution loop until the user exits. */
     public void run() {
-    // @@author
+        // @@author
         if (startupError != null) {
             ConsoleOutput.error("Could not load saved data: " + startupError);
         } else {
@@ -243,18 +289,29 @@ public class EqmManager {
             System.out.println();
             Help.print();
         }
-
         // @@author yarnieee
+
         // main process
         String input;
         while (isRunning) {
             input = parser.getInput();
-            executeInput(input);
+            // @@author
+            if (input == null) {
+                isRunning = false;
+                if (startupError == null && !saveBeforeExit()) {
+                    ConsoleOutput.error("Input has ended. Exiting with unsaved changes. "
+                            + "Check the saved files and resolve the reported storage problem before restarting.");
+                    return;
+                }
+            } else {
+                // @@author yarnieee
+                executeInput(input);
+            }
         }
-        // @@author
 
+        // @@author
         ConsoleOutput.success("Goodbye.");
-    // @@author yarnieee
+        // @@author yarnieee
     }
     // @@author
 
@@ -309,8 +366,18 @@ public class EqmManager {
         }
     }
 
+    /** Displays a loan's saved issue and return assessments. */
+    private void viewLoanAssessments(String input) {
+        try {
+            loans.viewLoanAssessments(input);
+        } catch (LoanViewingUnsuccessful exception) {
+            ConsoleOutput.error(exception.getMessage());
+        }
+    }
+
     // @@author
 
+    // @@author MatthewLeon888
     /** Creates a backup and displays either its destination or the safe failure message. */
     private void createBackup(String input) {
         try {
@@ -324,6 +391,11 @@ public class EqmManager {
 
     /** Restores a validated backup and reports either the restored source or the safe failure message. */
     private void restoreBackup(String input) {
+        if (maintenanceLoadFailed) {
+            ConsoleOutput.error("Cannot restore because maintenance data could not be loaded. "
+                    + "Exit with exit, preserve and repair or recover data/maintenance.txt, then restart.");
+            return;
+        }
         try {
             Path source = backups.restoreBackup(input);
             startupError = null;
@@ -333,6 +405,7 @@ public class EqmManager {
             ConsoleOutput.error(exception.getMessage());
         }
     }
+    // @@author
 
     /** Displays the outcome of a loan deletion. */
     private void deleteLoan(String input) {
@@ -371,31 +444,45 @@ public class EqmManager {
 
     /** Creates a bundle and reports its assigned identifier. */
     private void addBundle(String input) {
+        // @@author yarnieee
         try {
             Bundle bundle = bundles.addBundle(input);
+            // @@author
             ConsoleOutput.success("Bundle " + bundle.getBundleId() + " \""
                     + ConsoleOutput.inline(bundle.getBundleName()) + "\" created.");
             System.out.println("  Composition: " + BundleView.composition(bundle));
             BundleView.persistenceNote();
+        // @@author yarnieee
         } catch (BundleAdditionUnsuccessful e) {
+            // @@author
             ConsoleOutput.error(e.getMessage());
+            // @@author yarnieee
         }
+        // @@author
     }
 
     /** Reports each equipment addition to a bundle independently. */
     private void addItemsToBundle(String input) {
+        // @@author yarnieee
         try {
+            // @@author
             reportBundleResults(bundles.addItemsToBundleWithResults(input), "added");
+        // @@author yarnieee
         } catch (BundleAdditionUnsuccessful e) {
+            // @@author
             ConsoleOutput.error(e.getMessage());
+            // @@author yarnieee
         }
+        // @@author
     }
 
     /** Reports the outcome of removing equipment from a persisted bundle. */
     private void removeItemsFromBundle(String input) {
         try {
             reportBundleResults(bundles.removeItemsFromBundleWithResults(input), "removed");
+        // @@author yarnieee
         } catch (BundleAdditionUnsuccessful e) {
+            // @@author
             ConsoleOutput.error(e.getMessage());
         }
     }
@@ -420,8 +507,10 @@ public class EqmManager {
             ConsoleOutput.error(e.getMessage());
         }
         // @@author
+        // @@author yarnieee
     }
 
+    // @@author
     /** Displays a persisted return result or its validation/save error. */
     private void returnEquipment(String input) {
         try {
@@ -433,6 +522,7 @@ public class EqmManager {
         }
     }
 
+    // @@author MatthewLeon888
     /** Displays the outcome of recording a maintenance activity. */
     private void recordMaintenance(String input) {
         try {
@@ -450,6 +540,7 @@ public class EqmManager {
             ConsoleOutput.error(exception.getMessage());
         }
     }
+    // @@author
 
     /** Displays the selected equipment's borrowing history or its validation error. */
     private void viewLoanHistory(String input) {
@@ -460,6 +551,7 @@ public class EqmManager {
         }
     }
 
+    // @@author MatthewLeon888
     /** Displays the selected bundle's active and returned loan history. */
     private void viewBundleLoanHistory(String input) {
         try {
@@ -468,7 +560,9 @@ public class EqmManager {
             ConsoleOutput.error(exception.getMessage());
         }
     }
+    // @@author
 
+    // @@author MatthewLeon888
     /** Displays the active equipment currently held by one borrower or its validation error. */
     private void viewActiveLoansForBorrower(String input) {
         try {
@@ -477,6 +571,7 @@ public class EqmManager {
             ConsoleOutput.error(exception.getMessage());
         }
     }
+    // @@author
 
     /** Displays matching equipment or the filter error. */
     private void filterEquipment(String input) {
@@ -486,9 +581,11 @@ public class EqmManager {
             equipment.viewEquipment(matches);
         } catch (EquipmentFilteringUnsuccessful e) {
             ConsoleOutput.error(e.getMessage());
+            // @@author yarnieee
         }
     }
 
+    // @@author
     /** Displays an update result while leaving validation and persistence to the handler. */
     private void updateEquipment(String input) {
         try {
@@ -496,8 +593,8 @@ public class EqmManager {
             reportEquipment(updated, "updated");
         } catch (EquipmentUpdateUnsuccessful e) {
             ConsoleOutput.error(e.getMessage());
+            // @@author yarnieee
         }
-    // @@author yarnieee
     }
     // @@author
 
@@ -573,6 +670,6 @@ public class EqmManager {
     }
 
     // @@author
-// @@author yarnieee
+    // @@author yarnieee
 }
 // @@author

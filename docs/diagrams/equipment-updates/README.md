@@ -8,7 +8,9 @@ The shared [application architecture](../AppArchitecture.puml) and
 [equipment class diagram](../EquipmentClasses.puml) cover the common structure.
 Validation rejection and save failures are explained in the DG text.
 
-The sequence assumes configured storage and item `001` already loaded. It includes `../style.puml`
+<!-- @@author yarnieee -->
+The sequence assumes configured storage and item `E001` already loaded. It includes `../style.puml`
+<!-- @@author -->
 for the shared vibrant theme. Utility lifelines receive static calls; brief notes summarise validation
 and proposal construction. The display self-message summarises console output.
 

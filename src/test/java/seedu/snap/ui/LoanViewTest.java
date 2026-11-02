@@ -46,15 +46,25 @@ class LoanViewTest {
 
         LoanView.print(records, TODAY, "Loans", "No loans recorded.");
 
-        List<String> rows = printed().lines().filter(line -> line.matches("\\| 00[1-4] .*\\|")).toList();
+        // @@author yarnieee
+        List<String> rows = printed().lines().filter(line -> line.matches("\\| L00[1-4] .*\\|")).toList();
+        // @@author
         assertEquals(4, rows.size());
-        assertTrue(rows.get(0).contains("003") && rows.get(0).contains("28-10-26")
+        // @@author yarnieee
+        assertTrue(rows.get(0).contains("L003") && rows.get(0).contains("28-10-26")
+                // @@author
                 && rows.get(0).contains("Active"));
-        assertTrue(rows.get(1).contains("004") && rows.get(1).contains("25-10-26")
+        // @@author yarnieee
+        assertTrue(rows.get(1).contains("L004") && rows.get(1).contains("25-10-26")
+                // @@author
                 && rows.get(1).contains("Returned"));
-        assertTrue(rows.get(2).contains("002") && rows.get(2).contains("27-10-26")
+        // @@author yarnieee
+        assertTrue(rows.get(2).contains("L002") && rows.get(2).contains("27-10-26")
+                // @@author
                 && rows.get(2).contains("Active"));
-        assertTrue(rows.get(3).contains("001") && rows.get(3).contains("26-10-26")
+        // @@author yarnieee
+        assertTrue(rows.get(3).contains("L001") && rows.get(3).contains("26-10-26")
+                // @@author
                 && rows.get(3).contains("Overdue"));
         assertTrue(printed().contains("4 loans."));
         assertFalse(printed().contains("T00:00"));
@@ -109,7 +119,9 @@ class LoanViewTest {
 
     /** Creates a valid retained record without introducing an equipment association. */
     private static Loan loan(String id, LocalDate due) {
-        return new Loan(id, id, "222", TODAY.minusDays(4).atStartOfDay(), due.atStartOfDay());
+        // @@author yarnieee
+        return new Loan("L" + id, "E" + id, "U222", TODAY.minusDays(4).atStartOfDay(), due.atStartOfDay());
+        // @@author
     }
 
     private String printed() {

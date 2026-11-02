@@ -1,5 +1,6 @@
 package seedu.snap.exceptions;
 
+// @@author MatthewLeon888
 /** Reports a backup or restore operation that could not be completed safely. */
 public class BackupUnsuccessful extends Exception {
     /** Creates an operation error suitable for displaying to the user. */
@@ -12,3 +13,4 @@ public class BackupUnsuccessful extends Exception {
         super(message, cause);
     }
 }
+// @@author

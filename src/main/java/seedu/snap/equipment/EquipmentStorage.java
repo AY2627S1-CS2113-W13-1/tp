@@ -9,8 +9,15 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+// @@author yarnieee
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import seedu.snap.Identifier;
+// @@author
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
+
+// @@author MatthewLeon888
 
 /** Loads and saves equipment records in a readable UTF-8 text file. */
 final class EquipmentStorage {
@@ -18,6 +25,13 @@ final class EquipmentStorage {
     private static final String RECORD_ID_PREFIX = "recordId/";
     /** Storage-only metadata appears before the add record so free-form fields remain unambiguous. */
     private static final String SERVICEABILITY_PREFIX = "serviceable/";
+    private static final Pattern NON_CANONICAL_ITEM_ID = Pattern.compile(
+            "(?U)(\\bid/)([Ee]?)([0-9]{3})(?=\\s+type/)");
+
+    // @@author Rohita-29
+    private static final Pattern CONDITION_FIELD_MARKER = Pattern.compile("(?U)\\s+cond/");
+
+    // @@author MatthewLeon888
 
     private EquipmentStorage() {
         // Utility class; do not instantiate.
@@ -48,7 +62,8 @@ final class EquipmentStorage {
                 continue;
             }
             try {
-                Equipment equipment = parseStorageLine(line);
+                String normalizedLine = normalizeLegacyItemId(line);
+                Equipment equipment = parseStorageLine(normalizedLine);
                 if (!ids.add(equipment.getItemId())) {
                     throw new IllegalArgumentException("Duplicate equipment ID " + equipment.getItemId() + ".");
                 }
@@ -57,7 +72,7 @@ final class EquipmentStorage {
                             + equipment.getRecordId() + ".");
                 }
                 loaded.add(equipment);
-                requiresMigration |= !line.startsWith(RECORD_ID_PREFIX);
+                requiresMigration |= !line.startsWith(RECORD_ID_PREFIX) || !normalizedLine.equals(line);
             } catch (EquipmentAdditionUnsuccessful | IllegalArgumentException exception) {
                 throw new IOException("Invalid equipment record on line " + lineNumber + ": "
                         + exception.getMessage(), exception);
@@ -73,6 +88,35 @@ final class EquipmentStorage {
             }
         }
         return loaded;
+    }
+
+    /** Rewrites only the actual add-record item ID, leaving free-form name text untouched. */
+    private static String normalizeLegacyItemId(String line) {
+        Matcher matcher = NON_CANONICAL_ITEM_ID.matcher(line);
+
+        // @@author Rohita-29
+
+        Matcher conditionMatcher = CONDITION_FIELD_MARKER.matcher(line);
+        if (!conditionMatcher.find()) {
+            return line;
+        }
+        matcher.region(0, conditionMatcher.start());
+
+        // @@author MatthewLeon888
+
+        int idStart = -1;
+        int numberStart = -1;
+        int idEnd = -1;
+        while (matcher.find()) {
+            idStart = matcher.start(2);
+            numberStart = matcher.start(3);
+            idEnd = matcher.end(3);
+        }
+        if (idStart < 0) {
+            return line;
+        }
+        return line.substring(0, idStart) + "E" + line.substring(numberStart, idEnd)
+                + line.substring(idEnd);
     }
 
     /** Reads permanent identity metadata before parsing older serviceability or add record formats. */
@@ -97,7 +141,7 @@ final class EquipmentStorage {
     /** Loads legacy add records as serviceable and reads assessment metadata without parsing free-form field text. */
     private static Equipment parseServiceabilityLine(String line) throws EquipmentAdditionUnsuccessful {
         if (!line.startsWith(SERVICEABILITY_PREFIX)) {
-            return EquipmentHandler.parseEquipment(line);
+            return EquipmentHandler.parseStoredEquipment(line);
         }
         int delimiter = line.indexOf('\t');
         if (delimiter < 0) {
@@ -107,7 +151,7 @@ final class EquipmentStorage {
         if (!serviceability.equals("yes") && !serviceability.equals("no")) {
             throw new IllegalArgumentException("Saved serviceability must be yes or no.");
         }
-        Equipment equipment = EquipmentHandler.parseEquipment(line.substring(delimiter + 1));
+        Equipment equipment = EquipmentHandler.parseStoredEquipment(line.substring(delimiter + 1));
         equipment.setServiceable(serviceability.equals("yes"));
         return equipment;
     }
@@ -139,10 +183,11 @@ final class EquipmentStorage {
 
     /** Adds permanent identity and serviceability metadata before the add record, preserving free-form field values. */
     private static String toStorageLine(Equipment equipment) {
+        String itemId = Identifier.normalize(equipment.getItemId(), Identifier.Type.EQUIPMENT);
         String record = RECORD_ID_PREFIX + equipment.getRecordId() + "\t"
                 + SERVICEABILITY_PREFIX + (equipment.isServiceable() ? "yes" : "no") + "\tadd i/"
                 + equipment.getItemName()
-                + " id/" + equipment.getItemId()
+                + " id/" + itemId
                 + " type/" + equipment.getType()
                 + " cond/" + equipment.getCondition()
                 + " " + equipment.getDetails();
@@ -152,3 +197,5 @@ final class EquipmentStorage {
         return record;
     }
 }
+
+// @@author

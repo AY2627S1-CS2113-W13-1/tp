@@ -16,11 +16,11 @@ title: Developer Guide
 - Image and icon sources, including the snAp logo and GitHub mark, are recorded in
   [asset sources](assets/SOURCES.txt) with the accompanying icon licence.
 
-**Version:** This guide describes the development implementation on `master`.
-The latest published release is [v1.0](https://github.com/AY2627S1-CS2113-W13-1/tp/releases/tag/v1.0),
-whose [versioned source](https://github.com/AY2627S1-CS2113-W13-1/tp/tree/v1.0) contains the original equipment
-and loan commands. The architecture and enhancement sections below describe work for the next release;
-they are not a description of the v1.0 JAR.
+**Version:** This guide describes the implementation prepared for snAp v2.1. Use source and an executable
+from the same version when following the design and manual tests. Published JARs and their source archives
+are listed under [releases](https://github.com/AY2627S1-CS2113-W13-1/tp/releases); `v2.1` becomes available
+there when the release is published. The [README setup instructions](https://github.com/AY2627S1-CS2113-W13-1/tp/blob/master/README.md#setup)
+cover building and testing the source with JDK 25.
 
 <a id="design--implementation"></a>
 
@@ -30,7 +30,9 @@ The following sections explain the architecture and implementation of equipment 
 returns, history, maintenance, optional fields, help, backup and restore, and shared logging.
 
 Diagrams omit minor helpers and repetitive calls; `...` omits parameters. Named and unnamed object lifelines
-use `item:Equipment` and `:Equipment` notation. Class and utility lifelines receive static calls.
+use `item:Equipment` and `:Equipment` notation. Class and utility lifelines receive static calls. Class diagrams
+show the relationships relevant to their section rather than every subtype, field or method; their captions and
+notes identify representative or intentionally omitted details.
 Action labels such as `display success` summarise local processing rather than additional Java methods.
 Select an SVG to view it at full size; editable PlantUML sources are linked below each figure.
 
@@ -114,6 +116,8 @@ With no active loan, serviceability decides between `Available` and `Unserviceab
 [return assessment](#returning-equipment-with-an-assessment) sets serviceability separately from numeric
 condition and damage. Loan reassignment saves proposed records before releasing the old item and reserving the
 replacement. Returns and deletions likewise save before detaching; loading rebuilds active associations from loans.
+`Unserviceable` is intentionally an absorbing state in the current implementation: recording maintenance does not
+change serviceability, and no repair command restores an item to `Available`.
 
 ### Equipment compatibility attributes
 
@@ -143,7 +147,9 @@ The equipment detail view displays the individual subtype values with readable l
 
 #### Compatibility comparison
 
-`EquipmentCompatibility.compare(first, second)` checks candidates added through `add-to-bundle` against the
+<!-- @@author yarnieee -->
+`EquipmentCompatibility.compare(first, second)` checks candidates added through `bundle-add-eqm` against the
+<!-- @@author -->
 existing bundle members. There is no separate command that prints compatibility results.
 Comparison works in either argument order and follows these relationships:
 
@@ -156,6 +162,13 @@ Known matching values produce `COMPATIBLE`. A known mismatch produces `INCOMPATI
 If a required value is `unspecified`, the result is `UNKNOWN`. For camera-and-lens comparison, a known mismatch
 takes precedence over an unknown value; the pair cannot be compatible when one known attribute conflicts.
 Comparisons ignore letter case because compatibility identifiers may be entered with different capitalisation.
+
+| Result | When it occurs | Blocks bundle addition? |
+| --- | --- | --- |
+| `COMPATIBLE` | All applicable, specified attributes match. | No |
+| `INCOMPATIBLE` | At least one known applicable attribute conflicts. | Yes |
+| `UNKNOWN` | A required comparison value is `unspecified` and no known mismatch exists. | No |
+| `NOT_APPLICABLE` | The pair has no defined compatibility relationship. | No |
 
 #### Bundle compatibility validation
 
@@ -205,13 +218,53 @@ application, saving and restart.
 both camera-lens fields, reversed insertion order, candidates supplied together, missing compatibility data and
 equipment pairs without a compatibility relationship. Existing bundle tests verify all previous validation rules.
 
+<!-- @@author yarnieee -->
+[![Bundle compatibility sequence: validate each candidate, compare it with current members and retain partial success.](images/BundleCompatibilitySequence.svg)](images/BundleCompatibilitySequence.svg)
+
+*Figure 4. Bundle additions validate each requested item independently and check successful earlier additions.*
+
+[PlantUML source](diagrams/BundleCompatibilitySequence.puml)
+
+The sequence shows the order used by `BundleHandler.addItemsToBundleWithResults(...)`. Basic inventory and bundle
+rules run before compatibility comparison. Only `INCOMPATIBLE` blocks an otherwise valid candidate; `UNKNOWN` and
+`NOT_APPLICABLE` allow processing to continue. Successful additions are immediately visible to later candidates.
+`Bundle.addEquipment(...)` returns `void`: it updates membership and completion state, while the handler constructs
+the success `ItemResult`. `reportBundleResults(...)` emits one result for every requested ID. The membership is
+persisted by the normal bundle save on exit rather than by the validation loop itself.
+
+<!-- @@author -->
+### Issuing a loan safely
+
+<!-- @@author yarnieee -->
+`EqmManager` routes `loan-add` to `LoanHandler.addLoan(...)`. The handler parses and validates the complete command,
+<!-- @@author -->
+rejects a second active loan for the same Item ID, and asks `EquipmentHandler` for an available item. Availability
+requires the item to exist, be serviceable and have no active loan. A new `Loan` copies the equipment's issue-time
+condition and permanent identity, but does not reserve the live item yet.
+
+[![Loan addition sequence: validate availability, save the proposed loan and next identifier, then reserve the equipment.](images/LoanAdditionSequence.svg)](images/LoanAdditionSequence.svg)
+
+<!-- @@author yarnieee -->
+*Figure 5. Loan addition publishes the new record only after the proposed loan list and next identifier are saved.*
+<!-- @@author -->
+
+[PlantUML source](diagrams/LoanAdditionSequence.puml)
+
+`LoanStorage.save(...)` receives a copied list containing the new loan and the incremented next-loan number.
+Only after that save succeeds does the handler add the loan to its managed list, advance the counter and call
+`Loan.attachEquipment(...)`. A validation or save failure therefore leaves the item available, the list unchanged
+and the identifier unconsumed. The sequence shows the most important unavailable-equipment failure; malformed
+fields, exhausted Loan IDs and write failures are rejected through the same no-publication rule.
+
 ### Returning equipment with an assessment
 
 #### Purpose and responsibilities
 
 A return must end the active loan while retaining the original borrowing record.
 It must also record whether the item can be used again. For example,
-`return loan/001 serviceable/no damage/SENSOR_DAMAGE remarks/Needs repair` retains loan `001` as returned
+<!-- @@author yarnieee -->
+`loan-return l/L001 serviceable/no damage/SENSOR_DAMAGE remarks/Needs repair` retains loan `L001` as returned
+<!-- @@author -->
 and records an unserviceable camera. Deleting that loan instead would lose its borrowing history.
 
 | Class | Responsibility in a return |
@@ -225,18 +278,25 @@ and records an unserviceable camera. Deleting that loan instead would lose its b
 
 #### Successful return
 
-The sequence below assumes an active loan `001` and an assessment valid for its equipment subtype.
+<!-- @@author yarnieee -->
+The sequence below assumes an active loan `L001` and an assessment valid for its equipment subtype.
+<!-- @@author -->
 Parsing and repeated inventory checks are summarised in the first note to keep attention on the order of saving
 and changing records.
 
 [![Return sequence: prepare detached proposals, save them, then change the original equipment and loan.](images/ReturnSequence.svg)](images/ReturnSequence.svg)
 
-*Figure 4. A successful return changes the original records only after saving succeeds.*
+<!-- @@author yarnieee -->
+*Figure 6. A successful return changes the original records only after saving succeeds.*
+<!-- @@author -->
 
 [PlantUML source](diagrams/ReturnSequence.puml)
 
-1. `LoanReturn.parse(...)` requires a Loan ID from `001` to `999`, an explicit serviceability decision and
-   a damage value. Final `remarks/` is optional unless damage is `OTHER`, which requires non-empty text.
+<!-- @@author yarnieee -->
+1. `LoanReturn.parse(...)` requires a Loan ID from `L001` to `L999`, an explicit serviceability decision and
+<!-- @@author -->
+   a damage value. Optional `cond/` follows damage and accepts integers from 1 to 10; omission retains the
+   current rating. Final `remarks/` is optional unless damage is `OTHER`, which requires non-empty text.
    Supplied remarks must be one line of at most 200 characters after trimming; final text remains literal.
 2. `LoanHandler.findLoanForReturn(...)` requires exactly one active loan. The handler finds the current equipment
    and calls `Loan.ownsEquipment(...)`, checking the object reference, active loan ID and permanent equipment
@@ -244,13 +304,14 @@ and changing records.
    from assessing or releasing replacement equipment.
 3. `EquipmentHandler.prepareReturnAssessment(...)` validates damage against the equipment subtype and rejects
    `OTHER` when the trimmed remarks are empty. It creates a detached proposal preserving the name, Item ID,
-   permanent record ID, numeric condition and subtype attributes.
-   `Loan.returnedCopy()` creates a detached returned loan with the same loan ID, equipment identity, borrower
-   and dates. The proposals do not change either live object.
+   permanent record ID and subtype attributes. The handler applies any explicit numeric rating to this proposal.
+   `LoanReturnAssessment.fromEquipment(...)` copies the proposed type, condition, damage, remarks and serviceability
+   into an immutable per-loan assessment. `Loan.returnedCopy(assessment)` retains this assessment and the issue
+   snapshot with the same loan ID, equipment identity, borrower and dates. Neither live object changes yet.
 4. `LoanReturnStorage.save(...)` saves a proposed inventory containing the assessment and a proposed loan list
    containing the returned copy. The next loan number is saved without being incremented.
 5. After saving succeeds, `Equipment.applyReturnAssessment(...)` changes the original item and
-   `Loan.setReturned(true)` changes the original loan. The latter detaches its active equipment reference and
+   `Loan.completeReturn(assessment)` records the assessment once on the original loan. It detaches the active equipment reference and
    clears the item's loan ID and loaned flag. The loan remains in the list; its count and next ID are unchanged.
 
 The original equipment object is retained because bundles and active loan associations use object references.
@@ -259,20 +320,25 @@ it cannot be returned twice or reactivated. Later borrowing creates a new loan w
 
 Serviceability is separate from the loaned flag. An unserviceable returned item has no active loan, but new loans,
 new bundle additions and `status/available` filtering reject it. Listing displays `Unserviceable`.
-Normal name and numeric-condition updates retain the assessment. There is no repair command in this feature.
+Normal name and numeric-condition updates retain serviceability and cannot rewrite per-loan snapshots.
+There is no repair command in this feature.
 Storage prefixes each add record with `recordId/UUID`, then `serviceable/yes|no`, separated by tabs.
 This keeps metadata separate from free-form names, subtype attributes and remarks. Legacy equipment without an
 assessment defaults to serviceable.
 
 #### Save failures and recovery
 
-The next diagram expands the storage step in Figure 4. It shows a loan or sequence save failing after the
+<!-- @@author yarnieee -->
+The next diagram expands the storage step in Figure 6. It shows a loan or sequence save failing after the
+<!-- @@author -->
 equipment proposal was written. An equipment-save failure enters the same restoration loop. Only configured
 files are captured. A snapshot records regular-file bytes, absence or a pre-existing non-regular path.
 
 [![Failed return save: capture configured files, attempt writes, restore every snapshot, then report the failure.](images/ReturnSaveFailure.svg)](images/ReturnSaveFailure.svg)
 
-*Figure 5. A reported write failure triggers restoration before the return is rejected.*
+<!-- @@author yarnieee -->
+*Figure 7. A reported write failure triggers restoration before the return is rejected.*
+<!-- @@author -->
 
 [PlantUML source](diagrams/ReturnSaveFailure.puml)
 
@@ -307,8 +373,10 @@ and previous files remain unchanged where restoration is possible before retryin
 
 #### Permanent identity
 
-`history id/001` displays active and returned loans for the physical item currently registered as `001`.
-The three-digit Item ID can be reused after deletion. Matching only that value would mix the old and replacement
+<!-- @@author yarnieee -->
+`eqm-loan-history e/E001` displays active and returned loans for the physical item currently registered as `E001`.
+The typed Item ID can be reused after deletion. Matching only that value would mix the old and replacement
+<!-- @@author -->
 items' histories, even if the replacement has the same name and type.
 
 Each new `Equipment` receives a UUID stored as the `recordId` string. A loan created from that equipment copies
@@ -316,9 +384,11 @@ it into `equipmentRecordId`. These stored values survive restarts. The class dia
 between that permanent identity and an active object reference; unrelated fields, subclasses and storage classes
 are omitted.
 
-[![History class diagram: handlers manage records; loans store the permanent equipment identity and an optional active reference.](images/EquipmentIdentity.svg)](images/EquipmentIdentity.svg)
+[![Equipment identity class diagram: handlers manage records; loans store the permanent equipment identity and an optional active reference.](images/EquipmentIdentity.svg)](images/EquipmentIdentity.svg)
 
-*Figure 6. History uses stored identity values, while an active loan also refers to an equipment object.*
+<!-- @@author yarnieee -->
+*Figure 8. Equipment identity separates stored history keys from an active equipment-object reference.*
+<!-- @@author -->
 
 [PlantUML source](diagrams/EquipmentIdentity.puml)
 
@@ -334,21 +404,41 @@ item is rejected.
 
 #### Query sequence
 
-The following sequence assumes Item ID `001` exists uniquely. Invalid syntax, a missing item or an ambiguous
+<!-- @@author yarnieee -->
+The following sequence assumes Item ID `E001` exists uniquely. Invalid syntax, a missing item or an ambiguous
+<!-- @@author -->
 Item ID produces `LoanHistoryUnsuccessful` before selection.
 
 [![History query sequence: find the current item, match both identifiers, sort a separate list and display it without saving.](images/HistorySequence.svg)](images/HistorySequence.svg)
 
-*Figure 7. A history query sorts a selected copy and leaves the managed records unchanged.*
+<!-- @@author yarnieee -->
+*Figure 9. A history query sorts a selected copy and leaves the managed records unchanged.*
+<!-- @@author -->
 
 [PlantUML source](diagrams/HistorySequence.puml)
 
 `getLoanHistory(...)` sorts the selected copy by issue date and then numeric loan ID, returning `List.copyOf(...)`.
 `viewLoanHistory(...)` uses the shared loan table or prints a clear empty-history message. Sorting the main loan
-list instead would change the order used by later `list loans` requests. The query performs no storage operations.
+<!-- @@author yarnieee -->
+list instead would change the order used by later `loan-list` requests. The query performs no storage operations.
+<!-- @@author -->
 
 #### Loading older records
 
+<!-- @@author yarnieee -->
+Visible identifiers are stored in their typed form: equipment records use `id/E001`, loan records use
+`loanId/L001 id/E001 b/U002`, bundles use `id/B001 items/E001~<record-uuid>`, and the loan sequence uses
+`nextLoanId/L002`. Borrower IDs use the `U000` to `U999` range; permanent equipment record UUIDs remain
+unprefixed. Command input accepts either casing for the typed prefix and normalises it to the canonical uppercase
+form.
+
+The loaders still accept legacy bare numeric values because existing data must remain usable. They infer the
+identifier type from its storage field, normalize the value in memory and write the canonical prefix on the next
+normal save. This migration covers equipment IDs, loan IDs, borrower IDs, bundle IDs, bundle memberships and the
+loan sequence. A legacy value that collides with a canonical value after normalization is rejected as damaged data;
+records are never silently merged.
+
+<!-- @@author -->
 Older equipment files lack permanent IDs. The parser assigns UUIDs to proposed records, then validates the
 complete file. The migration must be saved successfully before the loaded inventory replaces the current objects.
 Later loads do not rewrite files that already contain identities. If equipment migration succeeds but loan
@@ -359,7 +449,9 @@ an active loan. The loader binds its proposed record to the current UUID and sav
 the live loan list, counters, equipment flags or associations.
 
 Returned legacy loans cannot be associated safely because their Item IDs may already have been reused.
-They retain a null identity across saves and loads and remain visible in `list loans`. Item-specific history
+<!-- @@author yarnieee -->
+They retain a null identity across saves and loads and remain visible in `loan-list`. Item-specific history
+<!-- @@author -->
 excludes them and prints an omission note when relevant. This preserves the evidence available in the old data
 without guessing which physical item was borrowed.
 
@@ -381,6 +473,27 @@ check that failed migrations do not publish partial in-memory state. A retry mus
 saved by a successful equipment migration.
 
 ### Optional command fields and explicit defaults
+
+#### Prefix and identifier reference
+
+<!-- @@author yarnieee -->
+Each identifier contains a type letter and three digits, so its type remains explicit even when the numeric
+parts match. Command field prefixes determine where each identifier is used:
+<!-- @@author -->
+
+| Prefix | Value identified | Main uses |
+| --- | --- | --- |
+<!-- @@author yarnieee -->
+| `e/` | Equipment ID | `eqm-show`, `eqm-delete`, `eqm-filter`, `eqm-update`, `eqm-maintain` |
+| `l/` | Loan ID | `loan-return`, `loan-delete`, `loan-update`, `loan-view` |
+| `u/` | Borrower ID | `loan-add`, `loan-update`, `loan-list-borrower` |
+| `b/` | Bundle ID | `bundle-add-eqm`, `bundle-remove-eqm`, `bundle-history` |
+| `name/` | Equipment or bundle name | `eqm-add`, `eqm-update`, `bundle-create`, `bundle-history` |
+
+Item IDs range from `E001` to `E999`, Loan IDs from `L001` to `L999`, Borrower IDs from `U000` to `U999`,
+and Bundle IDs from `B001` to `B999`. Commands accept lowercase type letters and normalize them to uppercase.
+The command-specific help remains authoritative for field order and optionality.
+<!-- @@author -->
 
 #### Rules and responsibilities
 
@@ -406,12 +519,16 @@ remain mandatory, so the application cannot assume that a return assessment was 
 #### Default issue-date sequence
 
 For this example, assume the application's local date is 24 October 2026 and the equipment is available.
-`loan id/001 b/002 due/31-10-26` stores 24 October 2026 at midnight as its issue date.
+<!-- @@author yarnieee -->
+`loan-add e/E001 u/U002 due/31-10-26` stores 24 October 2026 at midnight as its issue date.
+<!-- @@author -->
 The diagram omits model construction and ordinary availability checks to focus on when the default is chosen.
 
 [![Optional issue-date sequence: validate required input, read the local date once, save explicit dates and then publish the loan.](images/LoanDateDefault.svg)](images/LoanDateDefault.svg)
 
-*Figure 8. The optional date is resolved during command parsing and stored as an ordinary explicit date.*
+<!-- @@author yarnieee -->
+*Figure 10. The optional date is resolved during command parsing and stored as an ordinary explicit date.*
+<!-- @@author -->
 
 [PlantUML source](diagrams/LoanDateDefault.puml)
 
@@ -452,10 +569,28 @@ return remarks, required assessments, and failed saves followed by successful re
 The renderer receives one reference date from the handler's clock. It checks returned status first, then calls
 `Loan.isOverdue(LocalDate)` to distinguish `Overdue` from `Active`. It does not store or change a loan's state.
 
+For example, the compact views expose the identifiers and current states used by later commands:
+
+```text
+Equipment
+| ID  | NAME       | TYPE   | CONDITION | STATUS    |
+| 001 | Camera     | camera | 1         | Available |
+1 equipment item.
+
+Loans
+| LOAN ID | ITEM ID | BORROWER ID | ISSUED   | DUE      | STATE  |
+| 001     | 001     | 002         | 24-10-26 | 31-10-26 | Active |
+1 loan.
+```
+
+The real tables include fixed-width borders and padding; the example omits that decoration to emphasise the fields.
+
 `BundleView` displays each bundle and its members without a wide table. `Bundle.getMissingEquipmentTypes()`
 uses the existing type-count rules to explain incomplete composition. This does not add compatibility or
 availability validation. Persistence guidance describes the current save behaviour: new bundles and additions
-are saved with `bye`, and successful removals are saved immediately.
+<!-- @@author yarnieee -->
+are saved with `exit`, and successful removals are saved immediately.
+<!-- @@author -->
 
 `ConsoleOutput` prints headings and `[OK]` or `[ERROR]` labels using the welcome logo's existing colour policy.
 Only headings and labels receive ANSI colour, which is reset immediately. Plain output retains the same words.
@@ -469,7 +604,9 @@ values, which distinguish successes from failures without interpreting message t
 methods remain available. Removal results are returned only after saving succeeds, preserving rollback behaviour.
 Backup, restore and maintenance commands use the same outcome labels. Maintenance success includes the physical
 item's visible ID and name, date, work and outcome. Startup load errors continue to block ordinary commands while
-allowing `restore` and `bye`; the output changes do not remove backup recovery through the interactive prompt.
+<!-- @@author yarnieee -->
+allowing `restore` and `exit`; the output changes do not remove backup recovery through the interactive prompt.
+<!-- @@author -->
 
 `LoanViewTest`, `BundleViewTest`, `ConsoleOutputTest` and `CommandFeedbackIntegrationTest` cover date boundaries,
 states, counts, control characters, plain and coloured labels, mixed batch outcomes and failed saves.
@@ -483,19 +620,42 @@ checking records, object identities, counters, saved bytes and modification time
 `help` displays a compact menu grouped into Equipment, Loans, Bundles and General. `help <command>` displays
 one command's format, example, fields, defaults and restrictions; `help all` displays the complete reference
 for all supported commands. Topics use exact lowercase command names, including multiword names such as
-`delete loan`, `view loan` and `history bundle`. Group names are menu labels, not topics. Unknown topics print
-an error and the menu. `list member` is an alias for the `list borrower` topic; the menu lists the canonical name.
+<!-- @@author yarnieee -->
+`loan-delete`, `loan-view` and `bundle-history`. Group names are menu labels, not topics. Unknown topics print
+an error and the menu. Every command also has a mnemonic alias. Aliases are intended for experienced or power users
+after the full command names become cumbersome; full names remain recommended for new users and discoverability.
+<!-- @@author -->
 
 `EqmManager.executeInput(...)` recognises `help` followed by whitespace or the end of the input and passes the
 optional topic to `Help`. `Help` trims surrounding Unicode whitespace and normalises whitespace between topic
 words before lookup. This does not make other command names or fields case-insensitive. If saved data fails to load,
-`EqmManager` accepts only `restore` and `bye`; help requests report the loading error until restoration succeeds.
+<!-- @@author yarnieee -->
+`EqmManager` accepts only `restore` and `exit`; help requests report the loading error until restoration succeeds.
+
+The alias map is maintained centrally in `CommandAliases` so routing, topic lookup and displayed help stay aligned.
+Aliases are mnemonic shortcuts for experienced or power users after the full names become cumbersome; the full
+names remain the canonical, discoverable syntax.
+
+| Canonical commands | Aliases |
+| --- | --- |
+| `eqm-add`, `eqm-list`, `eqm-show`, `eqm-delete`, `eqm-filter`, `eqm-update`, `eqm-maintain`, `eqm-loan-history` | `ae`, `le`, `es`, `ed`, `fe`, `eu`, `em`, `elh` |
+| `loan-add`, `loan-return`, `loan-delete`, `loan-update`, `loan-list`, `loan-view`, `loan-show`, `loan-list-borrower`, `loan-list-overdue` | `al`, `lr`, `ld`, `lu`, `ll`, `lv`, `ls`, `llb`, `llo` |
+| `bundle-create`, `bundle-add-eqm`, `bundle-remove-eqm`, `bundle-list`, `bundle-history` | `ab`, `bae`, `bre`, `lb`, `bh` |
+| `backup`, `restore`, `help`, `exit` | `bk`, `rs`, `h`, `x` |
+<!-- @@author -->
 
 [![Help sequence: EqmManager calls Help with a topic, which prints the menu, one command or the full reference without using record or storage handlers.](images/HelpSequence.svg)](images/HelpSequence.svg)
 
-*Figure 9. Help selects the requested text and returns control to the command loop.*
+<!-- @@author yarnieee -->
+*Figure 11. Help selects the requested text and returns control to the command loop.*
+<!-- @@author -->
 
 [PlantUML source](diagrams/HelpSequence.puml)
+
+<!-- @@author holsoma -->
+The `out:PrintStream` lifeline represents the instance referenced by `System.out`. The note records the visible
+console output; dashed return arrows show control returning from `Help.print(...)` and `EqmManager.executeInput(...)`.
+<!-- @@author -->
 
 `Help` is a utility class containing an immutable list of command descriptions. The compact menu, command-specific
 help and complete reference use this list, so changes to a command remain consistent in all three views. It uses immutable
@@ -506,7 +666,9 @@ request, including an invalid topic, does not consume identifiers, save files, a
 #### Design choices and alternatives
 
 An explicit topic for each command gives short help requests an unambiguous meaning, including commands such as
-`delete item` and `delete loan`. Abbreviated topics and group topics would need extra rules to distinguish them.
+<!-- @@author yarnieee -->
+`eqm-delete` and `loan-delete`. Abbreviated topics and group topics would need extra rules to distinguish them.
+<!-- @@author -->
 Generating descriptions by reflection would need metadata that the handlers do not currently provide. Fixed
 descriptions and exact topic lookup are sufficient for the supported commands. Reading constants and enum values
 reduces duplicated limits, but command syntax and explanatory prose still need to be updated when supported
@@ -525,7 +687,9 @@ modification times before and after repeated requests.
 It also checks missing and blocked storage paths, Unicode whitespace around and between topic words, invalid help
 topics, continued commands and the interactive help-then-exit loop. These checks cover the menu, individual topics,
 the complete reference and invalid-topic requests. A startup loading error keeps help unavailable while allowing
-`restore` or `bye` without saving damaged records on exit.
+<!-- @@author yarnieee -->
+`restore` or `exit` without saving damaged records on exit.
+<!-- @@author -->
 `HelpExamplesIntegrationTest` runs every example from the rendered reference through `EqmManager`, using isolated
 records and a fixed clock so required equipment, loans and dates are known. This checks that help examples reach
 their intended command handlers and succeed.
@@ -539,7 +703,9 @@ padding columns. Tabs and control characters are displayed as escapes so that th
 or shift columns. Table cells also escape `|` as `\u007c` before measuring and shortening values, so names cannot
 introduce extra column separators. The original model values are retained.
 
-`EqmManager` routes `show` to `EquipmentHandler.showEquipment(...)`, which validates exactly one `id/` field
+<!-- @@author yarnieee -->
+`EqmManager` routes `eqm-show` to `EquipmentHandler.showEquipment(...)`, which validates exactly one `e/` field
+<!-- @@author -->
 and selects the existing object. `EquipmentView.printDetails(...)` reads common and subtype-specific getters
 and wraps complete values at 100 columns. These paths call no save method, alter no identifiers and use the
 existing equipment loan and serviceability state. They do not create a second equipment-to-loan association.
@@ -548,11 +714,12 @@ existing equipment loan and serviceability state. They do not create a second eq
 messages. The read-only integration fixture also repeats list, filter and show requests against populated,
 empty, reloaded and blocked storage, comparing record references, values, counters, file bytes and timestamps.
 
+<!-- @@author MatthewLeon888 -->
 ### Recording maintenance records
 
 #### Purpose and responsibilities
 
-The `maintain` command records completed work for an existing equipment item. Maintenance is kept as a separate
+The `eqm-maintain` command records completed work for an existing equipment item. Maintenance is kept as a separate
 history rather than being stored as a mutable field on `Equipment`, so multiple activities can be retained without
 changing equipment or loan records.
 
@@ -561,13 +728,14 @@ changing equipment or loan records.
 | `MaintenanceHandler` | Parses commands, validates dates and Item IDs, resolves equipment and coordinates safe saves. |
 | `MaintenanceRecord` | Stores one immutable maintenance date, work description, outcome and permanent equipment identity. |
 | `MaintenanceStorage` | Loads and saves tab-separated UTF-8 records using temporary-file replacement. |
-| `EqmManager` | Loads maintenance history at startup, routes `maintain` and saves the history on exit. |
+| `EqmManager` | Loads maintenance history at startup, routes `eqm-maintain` and saves the history on exit. |
 
 #### Command and identity flow
 
-For a command such as `maintain id/001 date/27-10-26 work/Repair outcome/Completed`,
-`EqmManager` delegates to `MaintenanceHandler`. The handler validates the exact command format, the three-digit
-visible Item ID, the strict date format and the maximum text lengths. Future dates are rejected because the records
+For a command such as `eqm-maintain e/E001 date/27-10-26 work/Repair outcome/Completed`,
+`EqmManager` delegates to `MaintenanceHandler`. The handler validates the exact command format, the typed
+visible Item ID and the strict date format; the `MaintenanceRecord` constructor validates the text values and
+maximum lengths. Future dates are rejected by the handler because the records
 represent completed maintenance. The application clock is injected into the handler so this rule is deterministic
 in tests.
 
@@ -575,9 +743,21 @@ After resolving the current equipment object, the handler creates the record usi
 than storing only the visible Item ID. It saves a proposed list first and appends the new record to the live list
 only after the save succeeds. This prevents an in-memory record from existing without its corresponding file entry.
 
-The permanent record identity is important when an Item ID is reused. Deleting item `001` and later adding another
-item with ID `001` creates a different permanent record identity. Maintenance entries therefore remain attached to
+The permanent record identity is important when an Item ID is reused. Deleting item `E001` and later adding another
+item with ID `E001` creates a different permanent record identity. Maintenance entries therefore remain attached to
 the original physical item instead of appearing in the replacement item's history.
+
+[![Maintenance sequence: console input, validation, permanent identity resolution and saving before appending to live records](images/MaintenanceRecordSequence.svg)](images/MaintenanceRecordSequence.svg)
+
+*Figure 12. Recording maintenance saves the proposed list before publishing the new record.*
+
+[PlantUML source](diagrams/MaintenanceRecordSequence.puml)
+
+The sequence assumes startup succeeded and file storage is configured. `Parser.getInput()` reads the line;
+`EqmManager.executeInput()` routes it to `recordMaintenance()`. The validation-failure branch summarises rejection
+at the first failing check; the successful branch expands the actual calls, including the constructor's value
+validation. The nested alternatives distinguish a completed save from an `IOException`. Output calls are shown as
+local processing in `EqmManager`; the success details resolve the item by its permanent identity.
 
 #### Persistence, diagnostics and failure handling
 
@@ -585,6 +765,11 @@ the original physical item instead of appearing in the replacement item's histor
 work and outcome. It rejects malformed identities, dates, empty fields, line breaks and tabs. Saving writes the
 complete proposed list to a temporary file before replacing `data/maintenance.txt`, preserving the previous file if
 the write fails.
+
+This is a save-before-append workflow, not a file rollback transaction. `Files.move` uses `REPLACE_EXISTING`
+without `ATOMIC_MOVE`: failure before replacement preserves the previous file, while a move or subsequent cleanup
+failure does not guarantee recovery of the previous file bytes. An `IOException` leaves the live list unchanged.
+On restart, `loadFromStorage()` validates the loaded dates before replacing that list.
 
 Validation failures are logged at `FINE` and reported as input errors. Storage failures are logged at `WARNING` and
 reported separately. Assertions check that loading preserves the record count, successful additions append exactly
@@ -602,7 +787,9 @@ covers round-trip persistence, malformed records, missing files and failure-safe
 `MaintenanceHandlerTest` covers valid commands, invalid values, future dates, unknown equipment, save failures,
 restart loading and reused visible IDs. `MaintenanceIntegrationTest` covers command output, persistence, restart
 behaviour and startup handling for invalid saved data.
+<!-- @@author -->
 
+<!-- @@author MatthewLeon888 -->
 ### Backing up and restoring equipment and loan records
 
 #### Purpose and responsibilities
@@ -619,6 +806,27 @@ file replacement outside the command-routing logic.
 | `LoanHandler` | Loads restored loans and the next loan identifier, including active-loan associations. |
 | `BundleHandler` | Clears and persists bundle memberships after restore because bundles are excluded from the backup. |
 
+#### Maintenance and backup structure
+
+[![Maintenance and backup classes: handler references, maintenance record ownership, storage dependencies and restore scope](images/MaintenanceBackupClasses.svg)](images/MaintenanceBackupClasses.svg)
+
+*Figure 13. Maintenance owns a separate history while backup coordinates the shared equipment and loan handlers.*
+
+[PlantUML source](diagrams/MaintenanceBackupClasses.puml)
+
+Solid arrows show stored, navigable references; dashed arrows show utility dependencies. Collection ends show
+the records managed by each handler. `EqmManager` also retains the equipment, loan and bundle handlers as the
+fields shown, passing those same instances to its feature handlers. `BackupHandler` permits a null bundle handler
+for other callers, but `EqmManager` always supplies one. Selected members are shown; `+`, `-` and `~` mean public,
+private and package-private visibility, and underlined operations are static.
+
+`MaintenanceHandler.records` owns the maintenance list. Each record stores an equipment UUID string rather than
+an object reference, so no association from `MaintenanceRecord` to a live `Equipment` object is drawn.
+`MaintenanceStorage` reconstructs validated records on load and serialises them on save. The backup notes name
+the three copied data files and generated manifest; paths are relative to the configured data directory, which
+defaults to `data/`. The manifest belongs in the backup destination. Bundle data is excluded from the backup but
+captured for restore rollback; maintenance data is excluded from both replacement and rollback.
+
 #### Backup creation
 
 For `backup path/<DIRECTORY>`, `BackupHandler` rejects destinations inside or overlapping the live data directory,
@@ -632,6 +840,11 @@ directory is then moved into place, so a failed write does not leave a partial b
 
 #### Restore validation and rollback
 
+`EqmManager` retains a separate flag when maintenance fails to load at startup. In that state it rejects
+`restore` before calling `BackupHandler`, preserving the startup guard and every live file. Equipment-and-loan
+backups cannot recover maintenance, so the user must exit without saving, repair the maintenance file separately
+and restart. Loading errors in equipment, loans or bundles can still be recovered when maintenance loaded successfully.
+
 For `restore path/<DIRECTORY>`, the handler requires an external directory, reads every required file and verifies
 the manifest against the file bytes. It then loads the equipment and loans in an isolated temporary directory,
 which detects malformed records, duplicate IDs and inconsistent active-loan relationships before touching live data.
@@ -642,10 +855,22 @@ in-memory changes, and rollback failures are logged. A successful restore clears
 bundles refer to the equipment objects from the previous live state. Maintenance records are also excluded from this
 backup format and are not changed by the restore operation.
 
+[![Restore sequence: validate staged records, replace the live files, and restore every captured original after a failure.](images/BackupRestoreSequence.svg)](images/BackupRestoreSequence.svg)
+
+*Figure 14. Restore validates a complete snapshot before replacement and rolls back captured live files on failure.*
+
+[PlantUML source](diagrams/BackupRestoreSequence.puml)
+
+The diagram focuses on restoration because it contains the higher-risk state transition. Backup creation follows
+the same staging principle in the other direction: it captures the three supported live files, writes them and the
+manifest to a temporary directory, then moves the completed directory to a new destination.
+
 #### Design choices and verification
 
-A checksum manifest detects tampering and incomplete copies. Staged validation rejects invalid backups before
-replacement; rollback attempts to recover the previous saved records if replacement fails. The backup covers only
+A checksum manifest detects corruption or changes to the copied data files only while the manifest itself remains
+unchanged; it is an integrity check, not protection against an attacker replacing both the files and their hashes.
+Staged validation rejects invalid backups before replacement; rollback attempts to recover the previous saved records
+if replacement fails. The backup covers only
 equipment, loans and the loan sequence. Restore clears bundles and their saved memberships, while maintenance
 history remains unchanged in its separate persistence file.
 
@@ -653,18 +878,25 @@ history remains unchanged in its separate persistence file.
 inconsistent records, and rollback after a replacement failure. `BackupIntegrationTest` covers command routing and
 non-overwriting behaviour. `RestoreIntegrationTest` covers valid restoration, restart persistence, invalid sources,
 startup recovery, bundle clearing and preservation of live state after a failed restore.
+<!-- @@author -->
 
-### Preserving equipment condition when a loan is issued
+<a id="preserving-equipment-condition-when-a-loan-is-issued"></a>
+
+### Preserving condition assessments for each loan
 
 #### Purpose and responsibilities
 
-Each new loan preserves the condition of its equipment at the moment the loan is issued. This historical snapshot remains unchanged if the equipment is later updated, damaged, repaired or returned.
+Each loan preserves the equipment condition at issue and its assessment at return. Both snapshots belong to that
+Loan ID and remain unchanged after equipment updates or later borrowing.
 
 | Class | Responsibility |
 | --- | --- |
 | `EquipmentConditionSnapshot` | Stores an immutable copy of the equipment type, numeric condition, damage and remarks. |
-| `Loan` | Owns the optional issue-time snapshot and preserves it when a returned copy is created. |
-| `LoanHandler` | Creates loans from available equipment and displays a snapshot for `view loan/[LOAN ID]`. |
+| `LoanReturnAssessment` | Combines a return-condition snapshot with the assessed serviceability. |
+| `Loan` | Owns optional issue and return assessments and permits a return to be recorded only once. |
+<!-- @@author yarnieee -->
+| `LoanHandler` | Captures return proposals and compares saved assessments for `loan-view l/<LOAN ID>`. |
+<!-- @@author -->
 | `EqmManager` | Routes the view command and displays validation errors without changing records. |
 | `EquipmentConditionSnapshotCodec` | Converts snapshots between model values and their saved representation. |
 | `LoanStorage` | Saves and restores optional snapshots while continuing to accept legacy loan records. |
@@ -673,15 +905,49 @@ Each new loan preserves the condition of its equipment at the moment the loan is
 
 When a valid loan is created from an equipment object, `EquipmentConditionSnapshot.fromEquipment(...)` copies the relevant condition fields into a separate immutable value object. The loan stores this snapshot together with its identifiers, borrower and dates.
 
-The snapshot contains copied values rather than a reference to the equipment. Consequently, a later return assessment or equipment update cannot rewrite historical issue-time information. `Loan.returnedCopy()` carries the same snapshot into the returned record.
+The snapshot contains copied values rather than a reference to the equipment. Consequently, a later return
+assessment or equipment update cannot rewrite historical issue-time information.
+`Loan.returnedCopy(assessment)` carries both saved assessments into the returned record.
 
-For `view loan/001`, `EqmManager` delegates to `LoanHandler.viewLoanIssueCondition(...)`. The handler validates the exact three-digit loan ID, finds one matching loan and prints the recorded equipment type, condition, damage and remarks. The command performs no save and does not alter the managed loan or equipment collections.
+<!-- @@author yarnieee -->
+For `loan-view l/L001`, `EqmManager` delegates to `LoanHandler.viewLoanAssessments(...)`. The handler validates
+<!-- @@author -->
+one Loan ID and compares its saved issue and return assessments. It reads no current equipment values and performs
+no save. Active loans show `Not returned`; missing legacy assessments show `Not recorded`. Remarks are printed
+below the comparison columns to avoid a wide table. New loans copy issue-time serviceability into `Loan` alongside
+the condition snapshot. It remains unchanged on return and borrower/date edits; equipment reassignment captures
+the replacement's serviceability with its new issue snapshot.
+
+[![Loan assessment object diagram: one returned loan owns separate issue and return snapshots while the live item may continue to change.](images/LoanAssessmentObject.svg)](images/LoanAssessmentObject.svg)
+
+<!-- @@author yarnieee -->
+*Figure 15. A returned loan owns copied issue and return values rather than reading historical condition from the current item.*
+<!-- @@author -->
+
+[PlantUML source](diagrams/LoanAssessmentObject.puml)
+
+This object diagram is a structural snapshot after one return; it does not show command flow. The dotted identity
+relationship explains why the loan can still identify the physical equipment record, while composition links show
+that its historical condition values belong to the loan and remain independent of later equipment updates.
 
 #### Persistence and backward compatibility
 
 `LoanStorage` delegates snapshot encoding and decoding to `EquipmentConditionSnapshotCodec`. New loan records append the snapshot data after the existing loan and equipment-identity fields. Loading reconstructs an equivalent immutable snapshot before publishing the proposed loan list.
 
 Snapshot fields are optional for backward compatibility. A legacy record without them loads with no snapshot and remains available through the normal loan commands. Querying that record reports that its issue condition was not recorded. Incomplete or malformed snapshot metadata is rejected as damaged saved data instead of being silently replaced with current equipment information.
+
+The return workflow stores a `LoanReturnAssessment` alongside the issue snapshot. It combines the same immutable
+condition value object with the assessed serviceability. `LoanReturnAssessmentCodec` reuses the existing snapshot
+escaping with `returnType/`, `returnCondition/`, `returnDamage/` and `returnRemarks/`, then appends
+`returnServiceable/yes|no`. These optional fields follow any issue snapshot in the same loan record, so existing
+backup and restore operations include them automatically. New issue snapshots also save an optional
+`issueServiceable/yes|no` field before the return fields. Older records without it retain an unknown value
+rather than inheriting the equipment's current serviceability.
+
+Returned legacy loans remain without a return assessment; current equipment is never used to reconstruct one.
+An older active loan can receive a new return assessment even when its issue snapshot is absent. Partial or invalid
+return metadata, a return assessment on an active record, and conflicting issue/return equipment types cause loading
+to fail before the live loan list is replaced. Later borrowing creates another loan and cannot overwrite these values.
 
 #### Design choices and alternatives
 
@@ -693,17 +959,68 @@ Legacy snapshots are left absent rather than inferred from present equipment. In
 
 #### Verification
 
+Return-assessment tests cover repeated borrowing, all four subtypes, identifier boundaries, Unicode notes, Item ID
+reuse, legacy files, restarts, backup/restore, read-only viewing and failed saves followed by retry.
+
 `EquipmentConditionSnapshotTest` covers normalization, valid boundaries, invalid values, equality and subtype extraction. `LoanIssueConditionSnapshotTest` verifies capture, immutability and preservation through returned copies. `EquipmentConditionSnapshotCodecTest` covers valid round trips and malformed encoded values.
 
 `LoanConditionSnapshotStorageTest` verifies direct save/load round trips, legacy records and malformed snapshot data. `LoanIssueConditionViewTest` covers handler-level output for recorded and missing snapshots, invalid and unknown loan IDs, and formatting. `LoanIssueConditionCommandTest` covers CLI routing, persistence across application restart, and that viewing leaves `equipment.txt`, `loans.txt` and `loan-sequence.txt` unchanged.
 
+<!-- @@author yarnieee -->
+### Updating an active loan and reassigning equipment
+
+<!-- @@author -->
+`loan-update l/L001 u/U003 due/31-10-26` changes borrower or date fields while keeping the active equipment object.
+Supplying an item field, such as `loan-update l/L001 e/E002`, requests a reassignment to another physical equipment
+<!-- @@author yarnieee -->
+record. `LoanHandler.updateLoan(...)` parses the optional fields with `LoanUpdate.parse(...)`, finds exactly one
+active loan, verifies its current equipment ownership and rejects a missing, loaned or unserviceable replacement.
+This extends the [availability and loan ownership](#availability-and-loan-ownership) rules and the
+[issue-condition snapshots](#preserving-equipment-condition-when-a-loan-is-issued).
+
+An unknown or non-unique Loan ID is rejected by `findLoanForUpdate(...)`. A returned loan is rejected before
+equipment lookup, so its history cannot be edited. For an active loan, `findEquipment(...)` rejects a missing or
+ambiguous current Item ID. `Loan.ownsEquipment(...)` then requires the same equipment object, its loaned flag,
+the active Loan ID and the permanent equipment record ID to agree. A stale reference, cleared reservation or
+identity mismatch produces `LoanUpdateUnsuccessful` without saving or changing any live records.
+
+The handler fills omitted values from the current loan and creates a detached proposal with
+`Loan.updatedCopy(...)`. A same-item update keeps the existing issue-condition snapshot and serviceability. A
+reassignment captures the replacement's condition, damage and remarks in a new `EquipmentConditionSnapshot`,
+with issue serviceability stored separately in `Loan.issueServiceability`. `EquipmentConditionSnapshot` contains
+type, numeric condition, damage and remarks only; it has no serviceability field. The proposal keeps the original
+Loan ID and replaces the matching entry in a copied loan list.
+
+[![Loan update sequence: validate a proposal, save it, then release the old equipment and bind a replacement.](images/LoanUpdateSequence.svg)](images/LoanUpdateSequence.svg)
+
+<!-- @@author -->
+*Figure 16. Loan updates save a detached proposal before changing loan fields or equipment ownership.*
+<!-- @@author yarnieee -->
+
+[PlantUML source](diagrams/LoanUpdateSequence.puml)
+
+`LoanHandler.save(...)` writes the proposed loans and unchanged next-loan counter before
+`Loan.applyUpdate(...)` changes the live loan. When the replacement differs, `applyUpdate(...)` clears the old
+equipment's loan ID and assigns the Loan ID to the replacement; metadata-only updates leave the association intact.
+A save failure therefore leaves the original borrower, dates, snapshot and equipment flags unchanged. A successful
+update preserves the Loan ID and loan count, while later views use the replacement's captured issue assessment.
+
+`LoanUpdateTest` covers optional fields, duplicate fields, date ordering and identifier boundaries.
+`LoanUpdateHandlerTest` covers returned-loan rejection and unchanged records after rejected updates.
+`LoanUpdateIntegrationTest` covers metadata-only updates, reassignment, replacement serviceability, snapshot
+capture, permanent Loan ID preservation, failed saves and retry after failure.
+
+<!-- @@author -->
 ### Equipment management
 
-The shared model above supplies the inventory and availability rules for
-[addition](#adding-equipment-and-rejecting-duplicate-item-ids),
-[filtering](#filtering-equipment-without-changing-records) and
-[updates](#updating-equipment-details). Visible Item IDs range from `001` to `999` and may be reused after
-valid deletion. Loan IDs use the same range but are never reused within a data set.
+<!-- @@author yarnieee -->
+Equipment addition, filtering and updates use the same inventory. The shared model also tracks
+availability so borrowing and queries agree about which equipment can be used.
+<!-- @@author -->
+The [shared equipment model](#shared-equipment-model) and its availability state diagram explain inventory
+ownership and loan associations. The following sections focus on [addition](#adding-equipment-and-rejecting-duplicate-item-ids),
+[filtering](#filtering-equipment-without-changing-records) and [updates](#updating-equipment-details) without
+repeating those shared diagrams.
 
 #### Adding equipment and rejecting duplicate Item IDs
 
@@ -714,21 +1031,25 @@ and appends the item. `EqmManager` displays the outcome.
 
 Fields follow the order name, Item ID, type, condition, optional subtype details and final remarks.
 The parser recognises prefixes at field boundaries, including after Unicode whitespace, rather than
-splitting on every space. This preserves names such as `USB id/card reader` and `fluid/head tripod`.
-The last `id/` before `type/` identifies the Item ID; earlier fragments in the name cannot start with
-whitespace, a digit, `+` or `-`. Numeric ID-like fragments stay reserved to detect repeated fields.
+splitting on every space. This preserves names such as `USB e/card reader` and `fluid/head tripod`.
+The last `e/` before `type/` identifies the Item ID; earlier fragments in the name cannot start with
+<!-- @@author yarnieee -->
+whitespace, a digit, `+` or `-`. Typed ID-like fragments stay reserved to detect repeated fields.
+<!-- @@author -->
 
 Subtype fields are parsed after `cond/`. The first `remarks/` starts the final literal field, so text such
-as `Check id/001 adapter` is not mistaken for another ID. Subtype parsers handle their own attributes and
+as `Check e/E001 adapter` is not mistaken for another ID. Subtype parsers handle their own attributes and
 damage values, as described under compatibility attributes and optional fields.
 
 ##### Validation, uniqueness and publication
 
-Before construction, common validation checks a name of 1 to 100 characters, an Item ID from `001` to
-`999`, a nonblank type and an integer condition written as `1` to `10`. Blank checks include Unicode
+<!-- @@author yarnieee -->
+Before construction, common validation checks a name of 1 to 100 characters, an Item ID from `E001` to
+`E999`, a nonblank type and an integer condition written as `1` to `10`. Blank checks include Unicode
+<!-- @@author -->
 whitespace and nonbreaking spaces. Only supported subtypes are constructed. Updates reuse these checks.
 
-IDs are compared with existing items using exact equality. A second `id/001` is rejected even if its name
+IDs are compared with existing items using exact equality. A second `e/E001` is rejected even if its name
 or type differs; names may be shared when IDs differ. A deleted item's ID can be reused, but the replacement
 gets a new permanent record identity to keep physical-item histories separate.
 
@@ -742,7 +1063,9 @@ Duplicate IDs are rejected because replacing an existing entry could detach loan
 
 [![Equipment addition: reject an existing Item ID or save before appending a new item](images/EquipmentAdditionSequence.svg)](images/EquipmentAdditionSequence.svg)
 
-*Figure 10. Equipment addition rejects duplicate Item IDs and saves new items before insertion.*
+<!-- @@author holsoma -->
+*Figure 17. Equipment addition rejects duplicate Item IDs and saves new items before insertion.*
+<!-- @@author -->
 
 [PlantUML source](diagrams/EquipmentAdditionSequence.puml)
 
@@ -762,18 +1085,20 @@ after a blocked save. Rejection checks inspect existing items as well as the inv
 `EqmManager` parses and applies an `EquipmentFilter`, then asks the equipment handler to display the
 matches. An empty result produces a no-matches message.
 `EquipmentFields.parse(...)` accepts fields in any order while rejecting empty, repeated or unsupported
-reserved fields. At least one field is required. Name fragments containing permitted `id/card`-like text
+reserved fields. At least one field is required. Name fragments containing permitted `e/card`-like text
 use the same field-boundary rules as equipment updates.
 
 | Criterion | Matching rule |
 | --- | --- |
-| `id/` | Exact three-digit Item ID from `001` to `999` |
-| `i/` | Case-insensitive substring of the equipment name |
+| `e/` | Exact Item ID from `E001` to `E999` |
+| `name/` | Case-insensitive substring of the equipment name |
 | `type/` | Case-insensitive equality with the equipment's full type |
 | `cond/` | One value or an inclusive ascending range within `1` to `10` |
 | `status/` | `available` or `loaned`, ignoring case |
 
-`filter type/camera cond/1-3 status/available` requires all three criteria to match. Omitted criteria impose
+<!-- @@author yarnieee -->
+`eqm-filter type/camera cond/1-3 status/available` requires all three criteria to match. Omitted criteria impose
+<!-- @@author -->
 no restriction; this is AND matching, with no OR expression syntax. Name matching uses `Locale.ROOT`, so
 results do not depend on the computer's default locale. Type text is compared directly with each item's
 canonical type; an unmatched nonempty type produces no matches rather than a separate unsupported-type error.
@@ -795,7 +1120,9 @@ save files or consume identifiers.
 
 [![Equipment filtering: parse criteria, inspect current loans and display original matching items without saving](images/EquipmentFilterSequence.svg)](images/EquipmentFilterSequence.svg)
 
-*Figure 11. Equipment filtering displays matching items without changing records or saved files.*
+<!-- @@author holsoma -->
+*Figure 18. Equipment filtering displays matching items without changing records or saved files.*
+<!-- @@author -->
 
 [PlantUML source](diagrams/EquipmentFilterSequence.puml)
 
@@ -807,7 +1134,9 @@ printing matches are summarised as manager self-messages; their helper calls are
 
 AND matching makes combined queries predictable: adding a criterion can only keep or reduce the matches.
 A separate query object allows parsing and matching to be tested independently. Scanning loans for each
-item trades performance for simpler availability checks within the supported three-digit ID range.
+<!-- @@author yarnieee -->
+item trades performance for simpler availability checks within the supported typed-ID range.
+<!-- @@author -->
 An additional availability index would need updating on every loan, return and deletion.
 
 ##### Verification
@@ -827,8 +1156,10 @@ match the existing type, ignoring case. A matching type alone is accepted, even 
 ##### Parsing and validation
 
 `EquipmentHandler.updateEquipment(...)` uses the same field parser as filtering. Fields may appear in any
-order; empty, repeated or unsupported reserved fields are rejected. An ID from `001` to `999`, exactly one
-matching item and at least one of `i/`, `type/` or `cond/` are required.
+<!-- @@author yarnieee -->
+order; empty, repeated or unsupported reserved fields are rejected. An ID from `E001` to `E999`, exactly one
+<!-- @@author -->
+matching item and at least one of `name/`, `type/` or `cond/` are required.
 
 Omitted values come from the target. Common validation is shared with addition, including the name and
 condition limits. A different type is rejected because changing subclasses would require conversion rules
@@ -836,11 +1167,15 @@ for their attributes and damage. All values are checked before saving or assignm
 
 ##### Save before changing the original object
 
-For an existing camera `001`, `update id/001 i/Film Camera cond/5` follows this sequence:
+<!-- @@author yarnieee -->
+For an existing camera `E001`, `eqm-update e/E001 name/Film Camera cond/5` follows this sequence:
+<!-- @@author -->
 
 [![Equipment update: validate and save the proposed inventory before changing the existing camera](images/equipment-update-sequence.svg)](images/equipment-update-sequence.svg)
 
-*Figure 12. Equipment updates validate and save proposed details before changing the original object.*
+<!-- @@author holsoma -->
+*Figure 19. Equipment updates validate and save proposed details before changing the original object.*
+<!-- @@author -->
 
 [PlantUML source](diagrams/equipment-updates/equipment-update-sequence.puml)
 
@@ -855,7 +1190,9 @@ its original position, so loans and bundles keep valid references and see the co
 
 ##### Rejection and design choices
 
-For `update id/001 i/Film Camera cond/11`, invalid condition prevents both requested changes.
+<!-- @@author yarnieee -->
+For `eqm-update e/E001 name/Film Camera cond/11`, invalid condition prevents both requested changes.
+<!-- @@author -->
 A missing or ambiguous ID, invalid field or changed type is also rejected before saving.
 The handler reports `EquipmentUpdateUnsuccessful`; common validation errors from
 `EquipmentAdditionUnsuccessful` are wrapped with their original messages.
@@ -882,6 +1219,14 @@ after `run()` finishes or throws. Feature classes obtain loggers by full class n
 `Logger.getLogger(EquipmentHandler.class.getName())`; their names inherit the shared `seedu.snap`
 configuration.
 
+`Parser.getInput()` returns `null` when the console input stream ends. `EqmManager.run()` stops the loop
+and attempts the normal final save once, unless a startup loading error requires the saved files to remain
+untouched. A failed end-of-input save reports unsaved changes and returns without a successful goodbye;
+<!-- @@author yarnieee -->
+the manager cannot retry when there is no input. An explicit `exit` still keeps the loop running after a
+<!-- @@author -->
+save failure so the user can resolve the problem and retry.
+
 The package logger and its `FileHandler` accept `FINER` and higher levels. `SimpleFormatter` writes
 under the working directory's `logs/` folder, with two rotating files, normally `snap.log.0` and
 `snap.log.1`, at approximately 1,000,000 bytes each. Append mode retains existing records across runs;
@@ -890,7 +1235,9 @@ diagnostics out of normal command output.
 
 [![Logging lifecycle: configure shared output, run the application and close the session](images/LoggingLifecycle.svg)](images/LoggingLifecycle.svg)
 
-*Figure 13. Shared logging is configured at startup and closed when the application ends.*
+<!-- @@author holsoma -->
+*Figure 20. Shared logging is configured at startup and closed when the application ends.*
+<!-- @@author -->
 
 [PlantUML source](diagrams/LoggingLifecycle.puml)
 
@@ -927,7 +1274,9 @@ to an existing log after restart; these are configured `FileHandler` behaviours.
 
 #### Purpose and responsibilities
 
-The overdue-loan feature allows equipment managers to identify active loans whose due dates have passed. Users access the feature with the `list overdue` command. The command uses the same Loan ID, Item ID, Borrower ID, issue date, due date and state columns as `list loans`. If there are no overdue loans, the application displays a clear message instead of an empty table.
+<!-- @@author yarnieee -->
+The overdue-loan feature allows equipment managers to identify active loans whose due dates have passed. Users access the feature with the `loan-list-overdue` command. The command uses the same Loan ID, Item ID, Borrower ID, issue date, due date and state columns as `loan-list`. If there are no overdue loans, the application displays a clear message instead of an empty table.
+<!-- @@author -->
 
 A loan is overdue only when both conditions are satisfied:
 
@@ -940,7 +1289,9 @@ Listing overdue loans is read-only. It does not add, remove, return, or otherwis
 
 #### Component responsibilities
 
-`EqmManager` recognises the exact `list overdue` command. It obtains the current date once from its configured `Clock` and delegates the request to `LoanHandler`. Reading the date once ensures that every loan in the same command is evaluated consistently and allows tests to use a fixed date.
+<!-- @@author yarnieee -->
+`EqmManager` recognises the exact `loan-list-overdue` command. It obtains the current date once from its configured `Clock` and delegates the request to `LoanHandler`. Reading the date once ensures that every loan in the same command is evaluated consistently and allows tests to use a fixed date.
+<!-- @@author -->
 
 `LoanHandler.getOverdueLoans(referenceDate)` examines the stored loans in their existing order. It selects loans for which `Loan.isOverdue(referenceDate)` returns `true` and returns an unmodifiable result list. `LoanHandler.viewOverdueLoans(referenceDate)` formats the matching loans and displays a clear message when none are found.
 
@@ -952,9 +1303,33 @@ not returned AND due date is before reference date
 
 The reference date is supplied to the method instead of being obtained directly from the system clock. This keeps the model behaviour deterministic and independently testable.
 
+[![Overdue-loan classes: the manager delegates to a loan handler, which manages loans that own the overdue rule](images/OverdueLoanClasses.svg)](images/OverdueLoanClasses.svg)
+
+*Figure 21. Classes responsible for identifying and displaying overdue loans.*
+
+[PlantUML source](diagrams/OverdueLoanClasses.puml)
+
+Figure 21 focuses on the three classes that own command routing, selection and the overdue rule. The navigable
+associations show that one `EqmManager` delegates to one `LoanHandler`, which manages zero or more `Loan` objects.
+The temporary result collection and display utility are omitted because they do not change
+these responsibilities.
+
 #### Command execution
 
-When the user enters `list overdue`, `EqmManager` obtains the current local date using its configured `Clock` and passes that date to `LoanHandler`.
+<!-- @@author yarnieee -->
+When the user enters `loan-list-overdue`, `EqmManager` obtains the current local date using its configured `Clock` and passes that date to `LoanHandler`.
+<!-- @@author -->
+
+[![Overdue-loan sequence: read one reference date, evaluate each managed loan and display the selected records](images/OverdueLoanSequence.svg)](images/OverdueLoanSequence.svg)
+
+*Figure 22. The `loan-list-overdue` command reuses one reference date and does not change managed records.*
+
+[PlantUML source](diagrams/OverdueLoanSequence.puml)
+
+Figure 22 reuses the single reference date while the handler evaluates each managed loan. The `loop` represents
+the managed collection, and the guarded `opt` fragment adds only matching loans. Display formatting is delegated
+to `LoanView`; diagnostic logging and individual print calls are omitted. The query performs no storage calls or
+model mutations.
 
 `LoanHandler` evaluates every stored loan using `Loan.isOverdue(referenceDate)`. Returned loans are excluded even when their due dates are in the past. Active loans due today or in the future are also excluded. Matching loans retain their existing order and are displayed by `LoanView` using the same columns as other loan lists:
 
@@ -993,6 +1368,15 @@ A third alternative was to compare complete `LocalDateTime` values. This was rej
 `LoanTest` covers date boundaries and returned loans. `LoanHandlerTest` covers ordering, formatting and unchanged
 records, while `EqmManagerTest` verifies routing with a fixed `Clock` and no persistence changes.
 
+### Future enhancements
+
+The following are deliberately future scope, not behaviour claimed by this version:
+
+- Add an in-app query for maintenance history; records are currently retained only in `maintenance.txt`.
+- Add an explicit repair/reactivation command; recording maintenance intentionally does not change serviceability.
+- Extend backup and restore to include bundle memberships and maintenance records in one consistent snapshot.
+- Add `status/unserviceable` to equipment filtering; the current status filter accepts only `available` and `loaned`.
+
 <a id="product-scope"></a>
 
 ## Appendix A: Product Scope
@@ -1013,23 +1397,48 @@ maintaining separate equipment and loan lists by hand.
 
 ## Appendix B: User Stories
 
-| ID | As a ... | I want to ... | So that I can ... |
-| --- | --- | --- | --- |
-| US-01 | equipment officer | register equipment with unique Item IDs | distinguish individual pieces of gear |
-| US-02 | equipment officer | view equipment details and availability | choose items that can be borrowed |
-| US-03 | equipment officer | combine equipment filters | find suitable gear without scanning the whole inventory |
-| US-04 | equipment officer | correct equipment names and conditions | keep details accurate without breaking existing references |
-| US-05 | equipment officer | record borrowers and loan dates | track who holds each item and when it is due |
-| US-06 | equipment officer | assess an item when recording its return | prevent unserviceable items from being borrowed again |
-| US-07 | equipment officer | view a physical item's borrowing history | trace its loans without mixing in replacement equipment |
-| US-08 | equipment officer | identify overdue active loans | follow up on late returns |
-| US-09 | equipment officer | save equipment bundles | prepare reusable kits |
-| US-10 | equipment officer | view a bundle's loan history | review borrowing involving its current equipment |
-| US-11 | equipment officer | correct an active loan's details | fix mistakes while preserving the Loan ID |
-| US-12 | equipment officer | find equipment currently held by a borrower | follow up with the correct member |
-| US-13 | equipment officer | back up and restore equipment and loan records | recover a consistent earlier set of those records |
-| US-14 | equipment officer | remove retired equipment or erroneous loan records | keep the inventory and loan list accurate |
-| US-15 | new user | find formats and examples through help | use commands without reading the source code |
+Priorities use `Must` for the core inventory and borrowing workflow and `Should` for useful supporting workflows.
+
+| ID | Priority | As a ... | I want to ... | So that I can ... |
+| --- | --- | --- | --- | --- |
+| US-01 | Must | equipment officer | register equipment with unique Item IDs | distinguish individual pieces of gear |
+| US-02 | Must | equipment officer | view equipment details and availability | choose items that can be borrowed |
+| US-03 | Should | equipment officer | combine equipment filters | find suitable gear without scanning the whole inventory |
+| US-04 | Must | equipment officer | correct equipment names and conditions | keep details accurate without breaking existing references |
+| US-05 | Must | equipment officer | record borrowers and loan dates | track who holds each item and when it is due |
+| US-06 | Must | equipment officer | assess an item when recording its return | prevent unserviceable items from being borrowed again |
+| US-07 | Should | equipment officer | view a physical item's borrowing history | trace its loans without mixing in replacement equipment |
+| US-08 | Should | equipment officer | identify overdue active loans | follow up on late returns |
+| US-09 | Should | equipment officer | save equipment bundles | prepare reusable kits |
+| US-10 | Should | equipment officer | view a bundle's loan history | review borrowing involving its current equipment |
+| US-11 | Should | equipment officer | correct an active loan's details | fix mistakes while preserving the Loan ID |
+| US-12 | Should | equipment officer | find equipment currently held by a borrower | follow up with the correct member |
+| US-13 | Should | equipment officer | back up and restore equipment and loan records | recover a consistent earlier set of those records |
+| US-14 | Must | equipment officer | remove retired equipment or erroneous loan records | keep the inventory and loan list accurate |
+| US-15 | Should | new user | find formats and examples through help | use commands without reading the source code |
+| US-16 | Should | equipment officer | record completed maintenance against a physical item | retain its service history even if its Item ID is reused |
+
+### Use case: Issue a loan
+
+<!-- @@author yarnieee -->
+**Main success scenario:** The officer enters a valid `loan-add` command for available equipment. snAp validates the
+<!-- @@author -->
+IDs and dates, saves the proposed loan and next Loan ID, reserves the equipment, and displays the issued loan.
+
+**Extension:** If the item is missing, already loaned or unserviceable, snAp reports the reason and leaves the
+equipment, loan list, saved files and next Loan ID unchanged.
+
+### Use case: Return equipment with an assessment
+
+<!-- @@author yarnieee -->
+**Main success scenario:** The officer enters a valid `loan-return` command for an active Loan ID. snAp prepares
+<!-- @@author -->
+detached equipment and loan proposals, saves them, then applies the assessment and retains the loan as returned.
+
+**Extensions:**
+- If validation fails, snAp reports the reason and leaves the equipment, loan list and saved files unchanged.
+- If saving fails, snAp reports the failure, keeps the live loan active and attempts to
+  restore every file captured before the write. A restoration failure is included in the warning to inspect saved data.
 
 <a id="non-functional-requirements"></a>
 
@@ -1053,10 +1462,14 @@ These requirements apply to a single user running one local instance of snAp.
 
 | Term | Meaning in snAp |
 | --- | --- |
-| Item ID | The visible equipment identifier from `001` to `999`; it may be reused after equipment deletion. |
+<!-- @@author yarnieee -->
+| Item ID | The visible equipment identifier from `E001` to `E999`; it may be reused after equipment deletion. |
+<!-- @@author -->
 | Permanent record identity | A UUID identifying one physical equipment record, even when its visible Item ID is later reused. |
-| Loan ID | The identifier of one borrowing record, from `001` to `999`; it is not reused within that data set. |
-| Borrower ID | A three-digit member identifier from `000` to `999`; snAp does not maintain member profiles. |
+<!-- @@author yarnieee -->
+| Loan ID | The identifier of one borrowing record, from `L001` to `L999`; it is not reused within that data set. |
+| Borrower ID | A user identifier from `U000` to `U999`; snAp does not maintain member profiles. |
+<!-- @@author -->
 | Active loan | A loan that has not been returned and currently reserves equipment. |
 | Condition | The descriptive numeric rating from `1` to `10`; it does not itself determine availability. |
 | Serviceability | The return assessment deciding whether an item may be borrowed when it has no active loan. |
@@ -1070,9 +1483,11 @@ These requirements apply to a single user running one local instance of snAp.
 
 ### Setup
 
-Use Java 25 and a build matching this development guide. Copy the JAR to a separate test folder with no
+Use Java 25 and the v2.1 release JAR, or a v2.1 candidate built from source. Copy it to a separate test folder with no
 `data/` directory, then start it there with `java -jar snAp.jar`. Each command below is one line.
-The examples form one test path; IDs assume this fresh data set. Keep real club records in a different folder.
+The examples from **Help and sample equipment** through **Backup and restore** form one test path;
+IDs assume this fresh data set. The full-detail and compatibility checks each use their own separate folder.
+Keep real club records in a different folder.
 
 The [User Guide](UserGuide.md) supplies field rules and further input examples. This path focuses on state
 changes, interactions and restart behaviour rather than repeating the command reference.
@@ -1081,41 +1496,47 @@ changes, interactions and restart behaviour rather than repeating the command re
 
 ```text
 help
-help add
+help eqm-add
 help all
-add i/Test camera id/001 type/camera cond/1
-add i/Test lens id/002 type/lens cond/2
-add i/Test battery id/003 type/battery cond/3
-add i/Backup camera id/004 type/camera cond/4
+eqm-add name/Test camera e/E001 type/camera cond/1
+eqm-add name/Test lens e/E002 type/lens cond/2
+eqm-add name/Test battery e/E003 type/battery cond/3
+eqm-add name/Backup camera e/E004 type/camera cond/4
 ```
 
 Expect the compact menu, command-specific help and full reference respectively. The four additions succeed.
-`list` must show four available items. Help requests must not change those records.
+<!-- @@author yarnieee -->
+`eqm-list` must show four available items. Help requests must not change those records.
+<!-- @@author -->
 
 ### Addition, filters and updates
 
 ```text
-add i/Duplicate id/001 type/lens cond/1
-update id/001 cond/11
-filter type/camera cond/1-3 status/available
-update id/001 i/Studio camera cond/5
-filter type/camera cond/1-3 status/available
-update id/001 cond/2
+eqm-add name/Duplicate e/E001 type/lens cond/1
+eqm-update e/E001 cond/11
+eqm-filter type/camera cond/1-3 status/available
+eqm-update e/E001 name/Studio camera cond/5
+eqm-filter type/camera cond/1-3 status/available
+eqm-update e/E001 cond/2
 ```
 
-The first two commands fail without changing the four items. The first filter shows only `001`;
-after its condition becomes `5`, the same filter has no matches. The final update leaves `001` named
-`Studio camera` with condition `2`. Inspect `list` to check that other details and rows remain unchanged.
+<!-- @@author yarnieee -->
+The first two commands fail without changing the four items. The first filter shows only `E001`;
+after its condition becomes `5`, the same filter has no matches. The final update leaves `E001` named
+`Studio camera` with condition `2`. Inspect `eqm-list` to check that other details and rows remain unchanged.
+<!-- @@author -->
 
 ### Maintenance records
 
 ```text
-maintain id/001 date/27-10-26 work/Replaced battery outcome/Completed
-bye
+eqm-maintain e/E001 date/27-10-26 work/Replaced battery outcome/Completed
+exit
 ```
 
 Restart in the same data folder and confirm that `data/maintenance.txt` still contains the maintenance entry.
-Item `001` must still be named `Studio camera` with condition `2`; recording maintenance does not change its
+<!-- @@author yarnieee -->
+Item `E001` must still be named `Studio camera` with condition `2`; recording maintenance does not change its
+<!-- @@author -->
 assessment. Continue the bundle test below in this folder.
 
 In a separate test folder, add equipment, record maintenance, delete the equipment, then add a replacement using
@@ -1126,43 +1547,50 @@ and a blocked storage path; each request should report an error without changing
 ### Bundles, borrowing and returns
 
 ```text
-add-bundle name/Test kit
-add-to-bundle id/001 001 002 003
-list bundles
-loan id/001 b/002 issued/01-01-20 due/02-01-20
-list loans
-list borrower/002
-list overdue
-view loan/001
-update loan/001 b/003 due/03-01-20
-update id/001 cond/6
-view loan/001
-delete item/001
-return loan/001 serviceable/yes damage/NONE remarks/Checked
-history id/001
-history bundle/id/001
+bundle-create name/Test kit
+bundle-add-eqm b/B001 E001 E002 E003
+bundle-list
+loan-add e/E001 u/U002 issued/01-01-20 due/02-01-20
+loan-list
+loan-list-borrower u/U002
+loan-list-overdue
+loan-view l/L001
+loan-show l/L001
+loan-update l/L001 u/U003 due/03-01-20
+eqm-update e/E001 cond/6
+loan-view l/L001
+eqm-delete e/E001
+loan-return l/L001 serviceable/yes damage/NONE remarks/Checked
+eqm-loan-history e/E001
+bundle-history b/B001
 ```
 
-The bundle is complete and contains the original three items. Loan `001` reserves equipment `001`.
+<!-- @@author yarnieee -->
+The bundle is complete and contains the original three items. Loan `L001` reserves equipment `E001`.
+<!-- @@author -->
 The borrower query shows it; on a test date after 3 January 2020 it is overdue. Both snapshot views show the
 issue-time condition `2`, even after the live item becomes condition `6`. Deletion while loaned is rejected.
-Returning keeps the loan record and makes the item available. Both history queries must include loan `001` marked returned.
+<!-- @@author yarnieee -->
+Returning keeps the loan record and makes the item available. Both history queries must include loan `L001` marked returned.
+<!-- @@author -->
 
 ```text
-loan id/004 b/003 issued/01-01-20 due/02-01-20
-return loan/002 serviceable/no damage/OTHER remarks/Loose control
-loan id/004 b/003 issued/01-01-20 due/02-01-20
-loan id/002 b/002 issued/01-01-20 due/02-01-20
-delete loan/003
-remove-from-bundle id/001 001
-delete item/001
-bye
+loan-add e/E004 u/U003 issued/01-01-20 due/02-01-20
+loan-return l/L002 serviceable/no damage/OTHER remarks/Loose control
+loan-add e/E004 u/U003 issued/01-01-20 due/02-01-20
+loan-add e/E002 u/U002 issued/01-01-20 due/02-01-20
+loan-delete l/L003
+bundle-remove-eqm b/B001 E001
+eqm-delete e/E001
+exit
 ```
 
-The second loan is returned as unserviceable, so borrowing `004` again fails. Loan `003` reserves `002`;
-deleting it releases that item. Removing `001` from the bundle then permits equipment deletion.
-After `bye`, restart in the same folder: expect three equipment items, returned loans `001` and `002`,
-and the bundle containing `002` and `003`. Item `004` must still be unserviceable.
+<!-- @@author yarnieee -->
+The second loan is returned as unserviceable, so borrowing `E004` again fails. Loan `L003` reserves `E002`;
+deleting it releases that item. Removing `E001` from the bundle then permits equipment deletion.
+After `exit`, restart in the same folder: expect three equipment items, returned loans `L001` and `L002`,
+and the bundle containing `E002` and `E003`. Item `E004` must still be unserviceable.
+<!-- @@author -->
 
 ### Backup and restore
 
@@ -1170,19 +1598,73 @@ Continue after restarting the previous test data:
 
 ```text
 backup path/backups/manual-1
-update id/003 cond/8
+eqm-update e/E003 cond/8
 restore path/backups/manual-1
 backup path/backups/manual-1
 restore path/backups/does-not-exist
-list
-list loans
-bye
+eqm-list
+loan-list
+exit
 ```
 
-The first backup succeeds. Restoration resets item `003` to condition `3` and retains both returned loans.
+<!-- @@author yarnieee -->
+The first backup succeeds. Restoration resets item `E003` to condition `3` and retains both returned loans.
+<!-- @@author -->
 It clears current bundles because they are outside this backup format. The repeated backup and missing
-restore path are rejected without changing the restored data. Restart once more and use `list bundles`
+<!-- @@author yarnieee -->
+restore path are rejected without changing the restored data. Restart once more and use `bundle-list`
+<!-- @@author -->
 to confirm that the cleared bundle state was saved.
+
+### Full equipment details in a separate folder
+
+Start the JAR in a new folder with no `data/` directory. This check does not use or change the records from
+the main test path above.
+
+```text
+eqm-add name/Photography club camera reserved for outdoor event assignments e/E001 type/camera cond/2 sensor/APS-C mount/Canon RF thread/1/4 inch battery/Li-ion remarks/Keep the lens cap and labelled shoulder strap with this camera when it is returned to the equipment cupboard.
+eqm-list
+eqm-show e/E001
+exit
+```
+
+<!-- @@author yarnieee -->
+The addition succeeds. `eqm-list` shows one available camera and shortens its name with `...`.
+`eqm-show e/E001` displays the complete name and remarks, wrapping long text without removing any characters.
+<!-- @@author -->
+It also shows condition `2`, status `Available`, serviceability `yes`, active Loan ID `(none)`, sensor format
+`APS-C`, lens mount `Canon RF`, tripod thread `1/4 inch`, battery type `Li-ion` and damage `NONE`.
+<!-- @@author yarnieee -->
+Neither query changes the item. Restart in this same folder and repeat `eqm-show e/E001`; all values must match.
+<!-- @@author -->
+
+### Bundle compatibility in a separate folder
+
+Start the JAR in another new folder with no `data/` directory. This check has four equipment items and one
+bundle of its own, so its IDs do not affect either earlier test folder.
+
+```text
+eqm-add name/RF camera e/E001 type/camera cond/1 sensor/APS-C mount/Canon RF battery/Li-ion
+eqm-add name/F mount lens e/E002 type/lens cond/2 mount/Nikon F sensor/APS-C
+eqm-add name/RF lens e/E003 type/lens cond/2 mount/Canon RF sensor/APS-C
+eqm-add name/Spare battery e/E004 type/battery cond/3 battery/Li-ion
+bundle-create name/Compatibility kit
+bundle-add-eqm b/B001 E001 E002 E003 E004
+bundle-list
+eqm-show e/E002
+exit
+```
+
+All four additions and bundle creation succeed. Adding the items produces three successful memberships
+<!-- @@author yarnieee -->
+and one failure: lens `E002` is rejected because its `Nikon F` mount conflicts with camera `E001`'s `Canon RF`
+<!-- @@author -->
+mount. The compatible lens and battery are still accepted after that rejection.
+<!-- @@author yarnieee -->
+`bundle-list` shows one complete bundle containing exactly `E001`, `E003` and `E004`. `eqm-show e/E002` confirms
+that the rejected lens remains in the inventory and is still `Available`. After `exit`, restart in this
+same folder and run `bundle-list` again; the same three memberships and complete composition must remain.
+<!-- @@author -->
 
 ### Logging and input recovery
 

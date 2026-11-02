@@ -10,7 +10,10 @@ import java.util.logging.Logger;
 // @@author
 import java.time.LocalDate;
 import java.util.Objects;
+// @@author yarnieee
 
+import seedu.snap.Identifier;
+// @@author
 import seedu.snap.equipment.Equipment;
 
 /** Represents an identified loan to a borrower, with an optional active equipment association. */
@@ -18,7 +21,7 @@ import seedu.snap.equipment.Equipment;
 public class Loan {
     private static final Logger logger = Logger.getLogger(Loan.class.getName());
     private final String loanId;
-// @@author
+    // @@author
     private String itemId;
     /** Permanent physical-item identity; null only for legacy records that have not been attributed. */
     private String equipmentRecordId;
@@ -29,6 +32,10 @@ public class Loan {
     private LocalDateTime dueDate;
     private boolean isReturned;
     // @@author
+    /** Null for active loans and older returned loans without a recorded assessment. */
+    private LoanReturnAssessment returnAssessment;
+    /** Serviceability captured at issue; null means older records did not save this information. */
+    private Boolean issueServiceability;
 
     // @@author Rohita-29
 
@@ -42,13 +49,13 @@ public class Loan {
         // @@author yarnieee
         this(null, itemId, borrowerId, issuedDate, dueDate);
     }
-        // @@author
 
+    // @@author
     /** Creates an identified detached record without changing equipment availability. */
     // @@author yarnieee
     public Loan(String loanId, String itemId, String borrowerId, LocalDateTime issuedDate,
             LocalDateTime dueDate) {
-    // @@author
+        // @@author
         this(
                 loanId,
                 itemId,
@@ -60,7 +67,9 @@ public class Loan {
     }
 
     /** Creates a stored record with an optional permanent equipment identity for legacy compatibility. */
+    // @@author yarnieee
     public Loan(String loanId, String itemId, String borrowerId, LocalDateTime issuedDate,
+            // @@author
             LocalDateTime dueDate, String equipmentRecordId) {
         this(
                 loanId,
@@ -92,21 +101,44 @@ public class Loan {
         if (equipmentRecordId != null && !isValidEquipmentRecordId(equipmentRecordId)) {
             throw new IllegalArgumentException("Equipment record identity must be a canonical UUID.");
         }
-        assert loanId == null || isValidIdentifier(loanId) : "Loan ID must be from 001 to 999";
-        assert itemId != null && isValidIdentifier(itemId) : "Item ID must be from 001 to 999";
-        assert borrowerId != null && borrowerId.matches("[0-9]{3}") : "Borrower ID must be three digits";
         // @@author yarnieee
+        assert loanId == null || Identifier.isValid(loanId, Identifier.Type.LOAN)
+                : "Loan ID must be from L001 to L999";
+        assert itemId != null && Identifier.isValid(itemId, Identifier.Type.EQUIPMENT)
+                : "Item ID must be from E001 to E999";
+        assert borrowerId != null && Identifier.isValid(borrowerId, Identifier.Type.BORROWER)
+                : "Borrower ID must be from U000 to U999";
         assert issuedDate != null && dueDate != null : "A loan must have issue and due dates";
         assert !issuedDate.isAfter(dueDate) : "A loan issue date must not be after its due date";
         this.loanId = loanId;
         this.itemId = itemId;
         // @@author
         this.borrowerId = borrowerId;
+        // @@author yarnieee
         this.issuedDate = issuedDate;
         this.dueDate = dueDate;
+        // @@author
         this.equipmentRecordId = equipmentRecordId;
         this.issueConditionSnapshot = issueConditionSnapshot;
-    // @@author yarnieee
+        // @@author yarnieee
+    }
+
+    // @@author
+    /** Restores a saved assessment as returned history without attaching current equipment. */
+    Loan(String loanId, String itemId, String borrowerId, LocalDateTime issuedDate,
+            LocalDateTime dueDate, String equipmentRecordId, EquipmentConditionSnapshot issueConditionSnapshot,
+            LoanReturnAssessment returnAssessment, Boolean issueServiceability) {
+        this(loanId, itemId, borrowerId, issuedDate, dueDate, equipmentRecordId, issueConditionSnapshot);
+        if (issueServiceability != null && issueConditionSnapshot == null) {
+            throw new IllegalArgumentException("Issue serviceability requires an issue-condition snapshot.");
+        }
+        this.issueServiceability = issueServiceability;
+        if (returnAssessment != null) {
+            validateReturnAssessment(returnAssessment);
+            this.returnAssessment = returnAssessment;
+            isReturned = true;
+        }
+        // @@author yarnieee
     }
     // @@author
 
@@ -115,11 +147,13 @@ public class Loan {
     public Loan(Equipment equipment, String borrowerId, LocalDateTime issuedDate, LocalDateTime dueDate) {
         this(null, equipment, borrowerId, issuedDate, dueDate);
     }
-    // @@author
 
+    // @@author
     /** Creates an identified candidate; the handler attaches its equipment only after saving. */
+    // @@author yarnieee
     public Loan(String loanId, Equipment equipment, String borrowerId, LocalDateTime issuedDate,
             LocalDateTime dueDate) {
+        // @@author
         this(
                 loanId,
                 getAvailableItemId(equipment),
@@ -128,21 +162,50 @@ public class Loan {
                 dueDate,
                 equipment.getRecordId(),
                 EquipmentConditionSnapshot.fromEquipment(equipment));
+        issueServiceability = equipment.isServiceable();
         logger.log(Level.FINE, "Created loan candidate {0} for item ID {1}.", new Object[]{loanId, itemId});
+    }
+
+    /** Returns saved issue-time serviceability, or null when it was not recorded. */
+    public Boolean getIssueServiceability() {
+        return issueServiceability;
+    }
+
+    /** Returns the immutable return assessment, or null when none was recorded. */
+    public LoanReturnAssessment getReturnAssessment() {
+        return returnAssessment;
+    }
+
+    /** Records a successful return once; legacy returned records cannot be reassessed. */
+    void completeReturn(LoanReturnAssessment assessment) {
+        if (isReturned || assessment == null) {
+            throw new IllegalStateException("Only an active loan can receive a return assessment.");
+        }
+        validateReturnAssessment(assessment);
+        setReturned(true);
+        returnAssessment = assessment;
+    }
+
+    /** Prevents an assessment for a different equipment subtype from being attached to this transaction. */
+    private void validateReturnAssessment(LoanReturnAssessment assessment) {
+        if (issueConditionSnapshot != null && !issueConditionSnapshot.getEquipmentType()
+                .equals(assessment.condition().getEquipmentType())) {
+            throw new IllegalArgumentException("Issue and return assessments must describe the same equipment type.");
+        }
     }
 
     // @@author yarnieee
     public String getLoanId() {
         return loanId;
     }
-    // @@author
 
+    // @@author
     public String getItemId() {
         return itemId;
-    // @@author yarnieee
+        // @@author yarnieee
     }
-    // @@author
 
+    // @@author
     /** Returns the permanent physical-item identity, or null for unattributed legacy history. */
     public String getEquipmentRecordId() {
         return equipmentRecordId;
@@ -159,14 +222,17 @@ public class Loan {
 
     public String getBorrowerId() {
         return borrowerId;
-    // @@author yarnieee
+        // @@author yarnieee
     }
-    // @@author
 
+    // @@author
     public void setBorrowerId(String borrowerId) {
-        assert borrowerId != null && borrowerId.matches("[0-9]{3}") : "Borrower ID must be three digits";
+        // @@author yarnieee
+        assert borrowerId != null && Identifier.isValid(borrowerId, Identifier.Type.BORROWER)
+                : "Borrower ID must be from U000 to U999";
+        // @@author
         this.borrowerId = borrowerId;
-    // @@author yarnieee
+        // @@author yarnieee
     }
 
     /** Returns the date and time when the item was issued. */
@@ -192,8 +258,8 @@ public class Loan {
         assert issuedDate == null || !issuedDate.isAfter(dueDate) : "Issue date must not be after due date";
         this.dueDate = dueDate;
     }
-    // @@author
 
+    // @@author
     // @@author Rohita-29
 
     /**
@@ -215,8 +281,8 @@ public class Loan {
     public boolean isReturned() {
         return isReturned;
     }
-    // @@author
 
+    // @@author
     // @@author Rohita-29
 
     /** Returns the equipment-condition snapshot captured when this loan was issued. */
@@ -246,9 +312,20 @@ public class Loan {
                         equipmentRecordId,
                         issueConditionSnapshot);
         returned.isReturned = true;
+        returned.issueServiceability = issueServiceability;
         return returned;
     }
 
+    /** Creates the saved return proposal while preserving the original issue assessment. */
+    Loan returnedCopy(LoanReturnAssessment assessment) {
+        if (isReturned || assessment == null) {
+            throw new IllegalStateException("Only an active loan can receive a return assessment.");
+        }
+        return new Loan(loanId, itemId, borrowerId, issuedDate, dueDate, equipmentRecordId,
+                issueConditionSnapshot, assessment, issueServiceability);
+    }
+
+    // @@author MatthewLeon888
     /**
      * Creates a detached active proposal for a validated loan update.
      * Reassigning equipment captures the replacement's condition instead of reusing the old item's snapshot.
@@ -259,8 +336,13 @@ public class Loan {
         assert replacement != null : "A loan update requires replacement equipment";
         EquipmentConditionSnapshot updatedSnapshot = replacement == equipment
                 ? issueConditionSnapshot : EquipmentConditionSnapshot.fromEquipment(replacement);
-        return new Loan(loanId, itemId, borrowerId, issuedDate, dueDate, equipmentRecordId,
+        Loan updated = new Loan(loanId, itemId, borrowerId, issuedDate, dueDate, equipmentRecordId,
                 updatedSnapshot);
+        updated.issueServiceability = issueServiceability;
+        if (replacement != equipment) {
+            updated.issueServiceability = replacement.isServiceable();
+        }
+        return updated;
     }
 
     /** Applies a saved update and keeps equipment ownership synchronized with the loan. */
@@ -285,12 +367,14 @@ public class Loan {
         issuedDate = updated.issuedDate;
         dueDate = updated.dueDate;
         issueConditionSnapshot = updated.issueConditionSnapshot;
+        issueServiceability = updated.issueServiceability;
         equipment = replacement;
         replacement.setLoanId(loanId);
         assert equipment == replacement : "Updated loan must retain its replacement equipment";
         assert replacement.isLoaned() && loanId.equals(replacement.getLoanId())
                 : "Updated loan must own loaned replacement equipment";
     }
+    // @@author
 
     /** Associates a saved or fully validated active record with its equipment. */
     void attachEquipment(Equipment equipment) {
@@ -301,15 +385,21 @@ public class Loan {
         assert !equipment.isLoaned() : "Attached equipment must be available";
         assert this.equipment == null || this.equipment == equipment : "A loan must not change equipment references";
         this.equipment = equipment;
+        // @@author yarnieee
         equipment.setLoanId(loanId);
+        // @@author
     }
 
     /** Releases only the equipment still owned by this loan, then discards its reference. */
     void detachEquipment() {
         if (equipment != null && loanId != null && loanId.equals(equipment.getLoanId())) {
+            // @@author yarnieee
             equipment.setLoanId(null);
+            // @@author
             logger.log(Level.INFO, "Released equipment with item ID {0} from loan {1}.",
+                    // @@author yarnieee
                     new Object[]{itemId, loanId});
+            // @@author
         }
         equipment = null;
         assert equipment == null : "Detached loans must not retain equipment references";
@@ -318,40 +408,35 @@ public class Loan {
     /** Releases returned equipment permanently; historical loans cannot be reactivated. */
     // @@author yarnieee
     public void setReturned(boolean isReturned) {
-    // @@author
+        // @@author
         if (this.isReturned == isReturned) {
             return;
         }
         if (!isReturned) {
             logger.log(Level.WARNING, "Rejected reactivation of returned loan {0}.", loanId);
             throw new IllegalStateException("A returned loan cannot be reactivated.");
+            // @@author yarnieee
         }
+        // @@author
         detachEquipment();
         this.isReturned = true;
         logger.log(Level.INFO, "Loan {0} for item ID {1} marked as returned.", new Object[]{loanId, itemId});
-    // @@author yarnieee
+        // @@author yarnieee
     }
-    // @@author
 
+    // @@author
     /** Validates candidate equipment without retaining a reference or changing its availability. */
     private static String getAvailableItemId(Equipment equipment) {
         if (equipment == null || equipment.isLoaned() || !equipment.isServiceable()) {
             // @@author yarnieee
             throw new IllegalArgumentException("A loan requires available equipment.");
         }
-            // @@author
-        return equipment.getItemId();
-    // @@author yarnieee
-    }
-    // @@author
-
-    /** Returns whether an item or loan identifier is in the supported range. */
-    private static boolean isValidIdentifier(String id) {
-        // @@author yarnieee
-        return id.matches("[0-9]{3}") && !id.equals("000");
-    }
         // @@author
+        return equipment.getItemId();
+        // @@author yarnieee
+    }
 
+    // @@author
     /** Rejects shortened, non-canonical and malformed UUIDs before constructing stored loan records. */
     static boolean isValidEquipmentRecordId(String value) {
         if (value == null) {
@@ -363,6 +448,6 @@ public class Loan {
             return false;
         }
     }
-// @@author yarnieee
+    // @@author yarnieee
 }
 // @@author

@@ -16,7 +16,7 @@ class TripodDetailsParserTest {
             throws EquipmentAdditionUnsuccessful {
         Tripod tripod = TripodDetailsParser.createTripod(
                 "Studio Tripod",
-                "301",
+                "E301",
                 8,
                 "thread/1/4\"-20 damage/NONE",
                 "Stable");
@@ -33,7 +33,7 @@ class TripodDetailsParserTest {
             throws EquipmentAdditionUnsuccessful {
         Tripod tripod = TripodDetailsParser.createTripod(
                 "Tripod",
-                "302",
+                "E302",
                 7,
                 "",
                 "");
@@ -51,7 +51,7 @@ class TripodDetailsParserTest {
             throws EquipmentAdditionUnsuccessful {
         Tripod tripod = TripodDetailsParser.createTripod(
                 "Tripod",
-                "303",
+                "E303",
                 6,
                 "thread/\u20031/4\"-20\u2003",
                 "");
@@ -65,7 +65,7 @@ class TripodDetailsParserTest {
                 EquipmentAdditionUnsuccessful.class,
                 () -> TripodDetailsParser.createTripod(
                         "Tripod",
-                        "304",
+                        "E304",
                         5,
                         "thread/1/4\"-20 thread/3/8\"-16",
                         ""));
@@ -77,7 +77,7 @@ class TripodDetailsParserTest {
                 EquipmentAdditionUnsuccessful.class,
                 () -> TripodDetailsParser.createTripod(
                         "Tripod",
-                        "305",
+                        "E305",
                         5,
                         "mount/Canon RF",
                         ""));
@@ -89,7 +89,7 @@ class TripodDetailsParserTest {
                 EquipmentAdditionUnsuccessful.class,
                 () -> TripodDetailsParser.createTripod(
                         "Tripod",
-                        "306",
+                        "E306",
                         5,
                         "damage/CRACKED",
                         ""));

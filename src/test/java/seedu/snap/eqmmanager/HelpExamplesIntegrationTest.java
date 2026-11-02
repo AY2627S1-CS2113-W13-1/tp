@@ -30,17 +30,24 @@ import seedu.snap.bundle.BundleHandler;
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.loan.LoanHandler;
 import seedu.snap.maintenance.MaintenanceHandler;
+// @@author yarnieee
+import seedu.snap.parser.CommandAliases;
+// @@author
 import seedu.snap.ui.Help;
 
 /** Executes the displayed help examples through the real router with each example's prerequisites. */
 class HelpExamplesIntegrationTest {
     private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-10-28T12:00:00Z"), ZoneOffset.UTC);
 
-    /** Audited against every command branch in EqmManager.executeInput, including the member alias. */
-    private static final Set<String> ROUTED_COMMANDS = Set.of("add", "list", "show", "delete item", "loan",
-            "return", "delete loan", "update loan", "list loans", "view loan", "list borrower", "list member",
-            "list overdue", "history", "filter", "update", "maintain", "add-bundle", "add-to-bundle",
-            "remove-from-bundle", "list bundles", "history bundle", "backup", "restore", "help", "bye");
+    // @@author yarnieee
+    /** Audited against every documented command branch in EqmManager.executeInput. */
+    private static final Set<String> ROUTED_COMMANDS = Set.of("eqm-add", "eqm-list", "eqm-show", "eqm-delete",
+            "loan-add",
+            "loan-return", "loan-delete", "loan-update", "loan-list", "loan-view", "loan-show", "loan-list-borrower",
+            "loan-list-overdue", "eqm-loan-history", "eqm-filter", "eqm-update", "eqm-maintain", "bundle-create",
+            "bundle-add-eqm", "bundle-remove-eqm", "bundle-list", "bundle-history", "backup", "restore", "help",
+            "exit");
+    // @@author
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
     private PrintStream originalOutput;
 
@@ -69,6 +76,21 @@ class HelpExamplesIntegrationTest {
     @ParameterizedTest(name = "{0}")
     @MethodSource("examples")
     void helpExample_withRequiredRecords_executesSuccessfully(String example) throws Exception {
+        // @@author yarnieee
+        executeExample(example);
+        // @@author
+    }
+
+    @ParameterizedTest(name = "{0}")
+    // @@author yarnieee
+    @MethodSource("aliasExamples")
+    void shortAlias_withRequiredRecords_executesSuccessfully(String example) throws Exception {
+        executeExample(example);
+    }
+
+    /** Executes a canonical or alias example through the real command router. */
+    private void executeExample(String example) throws Exception {
+        // @@author
         String command = commandName(example);
         EqmManager manager = prepareExample(command);
         Path backupDirectory = temporaryDirectory.resolve("backups").resolve("session-1");
@@ -80,7 +102,9 @@ class HelpExamplesIntegrationTest {
         if (command.equals("restore")) {
             manager.executeInput("backup path/" + backupDirectory);
             assertTrue(printed().contains("Backup created successfully"));
-            manager.executeInput("add i/Added after backup id/004 type/tripod cond/1");
+            // @@author yarnieee
+            manager.executeInput("eqm-add name/Added after backup e/E004 type/tripod cond/1");
+            // @@author
             field(manager, "equipment", EquipmentHandler.class).saveToStorage();
         }
         output.reset();
@@ -92,7 +116,9 @@ class HelpExamplesIntegrationTest {
         // Help prose describes the error label; only a line starting with it is a rejected command.
         assertFalse(printed().lines().anyMatch(line -> line.startsWith("[ERROR]")),
                 example + System.lineSeparator() + printed());
-        if (command.equals("bye")) {
+        // @@author yarnieee
+        if (command.equals("exit")) {
+            // @@author
             assertFalse(field(manager, "isRunning", Boolean.class));
             assertTrue(Files.isRegularFile(temporaryDirectory.resolve("data").resolve("equipment.txt")));
         } else {
@@ -101,6 +127,18 @@ class HelpExamplesIntegrationTest {
         assertResultingRecords(manager, command, backupDirectory);
     }
 
+    // @@author yarnieee
+    /** Replaces the command token in each displayed example with its exact short alias. */
+    private static Stream<String> aliasExamples() {
+        return examples().map(example -> {
+            // @@author
+            String command = commandName(example);
+            // @@author yarnieee
+            return CommandAliases.aliasFor(command) + example.substring(command.length());
+        });
+    }
+
+    // @@author
     /** Rejoins wrapped examples exactly as users are instructed to enter them, stopping at the blank line. */
     private static Stream<String> examples() {
         List<String> examples = new ArrayList<>();
@@ -123,32 +161,48 @@ class HelpExamplesIntegrationTest {
 
     /** Matches the longest audited command name so specialised routes are distinct from list and update. */
     private static String commandName(String input) {
+        // @@author yarnieee
+        String canonicalInput = CommandAliases.normalizeInput(input);
+        // @@author
         return ROUTED_COMMANDS.stream()
-                .filter(command -> input.equals(command) || input.startsWith(command + " ")
-                        || input.startsWith(command + "/"))
+                // @@author yarnieee
+                .filter(command -> canonicalInput.equals(command) || canonicalInput.startsWith(command + " ")
+                        || canonicalInput.startsWith(command + "/"))
+                // @@author
                 .max((left, right) -> Integer.compare(left.length(), right.length())).orElseThrow();
     }
 
     /** Supplies the existing IDs, active loan or bundle that an individual example requires. */
     private EqmManager prepareExample(String command) throws Exception {
         EqmManager manager = new EqmManager(temporaryDirectory.resolve("data"), FIXED_CLOCK);
-        if (command.equals("add")) {
+        // @@author yarnieee
+        if (command.equals("eqm-add")) {
+            // @@author
             return manager;
         }
-        manager.executeInput("add i/Camera id/001 type/camera cond/1 sensor/APS-C mount/Canon RF");
-        manager.executeInput("add i/Battery id/002 type/battery cond/2 capacity/2000mAh");
-        manager.executeInput("add i/Lens id/003 type/lens cond/3 zoom/24-70mm mount/Canon RF sensor/APS-C");
-        if (Set.of("add-to-bundle", "remove-from-bundle", "list bundles", "history bundle", "restore")
+        // @@author yarnieee
+        manager.executeInput("eqm-add name/Camera e/E001 type/camera cond/1 sensor/APS-C mount/Canon RF");
+        manager.executeInput("eqm-add name/Battery e/E002 type/battery cond/2 capacity/2000mAh");
+        manager.executeInput("eqm-add name/Lens e/E003 type/lens cond/3 zoom/24-70mm mount/Canon RF sensor/APS-C");
+        if (Set.of("bundle-add-eqm", "bundle-remove-eqm", "bundle-list", "bundle-history", "restore")
+                // @@author
                 .contains(command)) {
-            manager.executeInput("add-bundle name/Studio kit");
-            if (!command.equals("add-to-bundle")) {
-                manager.executeInput("add-to-bundle id/001 001 002 003");
+            // @@author yarnieee
+            manager.executeInput("bundle-create name/Studio kit");
+            if (!command.equals("bundle-add-eqm")) {
+                manager.executeInput("bundle-add-eqm b/B001 E001 E002 E003");
+                // @@author
             }
         }
-        if (Set.of("return", "delete loan", "update loan", "list loans", "view loan", "list borrower",
-                "list member", "list overdue", "history", "history bundle", "backup", "restore")
+        // @@author yarnieee
+        if (Set.of("loan-return", "loan-delete", "loan-update", "loan-list", "loan-view", "loan-show",
+                "loan-list-borrower",
+                "loan-list-overdue", "eqm-loan-history", "bundle-history", "backup", "restore")
+                // @@author
                 .contains(command)) {
-            manager.executeInput("loan id/001 b/002 issued/24-10-26 due/27-10-26");
+            // @@author yarnieee
+            manager.executeInput("loan-add e/E001 u/U002 issued/24-10-26 due/27-10-26");
+            // @@author
         }
         field(manager, "equipment", EquipmentHandler.class).saveToStorage();
         field(manager, "loans", LoanHandler.class).saveToStorage();
@@ -159,27 +213,30 @@ class HelpExamplesIntegrationTest {
     /** Checks successful results instead of merely accepting any response from the router. */
     private static String expectedResult(String command) {
         return switch (command) {
-        case "add" -> "[OK] Equipment 001 added.";
-        case "delete item" -> "[OK] Equipment 001 \"Camera\" deleted.";
-        case "loan" -> "[OK] Loan 001 issued.";
-        case "return" -> "[OK] Loan 001 returned.";
-        case "delete loan" -> "[OK] Loan 001 deleted.";
-        case "update loan" -> "[OK] Loan 001 updated.";
-        case "list" -> "3 equipment items.";
-        case "filter" -> "1 equipment item.";
-        case "show" -> "Equipment 001";
-        case "list loans" -> "LOAN ID";
-        case "view loan" -> "Loan 001 issue-time condition:";
-        case "list borrower", "list member" -> "Equipment currently held by borrower ID 002:";
-        case "list overdue" -> "Overdue";
-        case "history" -> "Loan history for item ID 001";
-        case "update" -> "[OK] Equipment 001 updated.";
-        case "maintain" -> "Maintenance recorded successfully.";
-        case "add-bundle" -> "[OK] Bundle 001 \"Studio kit\" created.";
-        case "add-to-bundle" -> "Equipment ID 003 added to bundle 001 successfully.";
-        case "remove-from-bundle" -> "Equipment ID 001 removed from bundle 001 successfully.";
-        case "list bundles" -> "Studio kit";
-        case "history bundle" -> "Loan history for bundle 001 (Studio kit)";
+        // @@author yarnieee
+        case "eqm-add" -> "[OK] Equipment E001 added.";
+        case "eqm-delete" -> "[OK] Equipment E001 \"Camera\" deleted.";
+        case "loan-add" -> "[OK] Loan L001 issued.";
+        case "loan-return" -> "[OK] Loan L001 returned.";
+        case "loan-delete" -> "[OK] Loan L001 deleted.";
+        case "loan-update" -> "[OK] Loan L001 updated.";
+        case "eqm-list" -> "3 equipment items.";
+        case "eqm-filter" -> "1 equipment item.";
+        case "eqm-show" -> "Equipment E001";
+        case "loan-list" -> "LOAN ID";
+        case "loan-view" -> "Loan L001 condition assessments";
+        case "loan-show" -> "Loan L001 issue-time condition:";
+        case "loan-list-borrower", "list member" -> "Equipment currently held by borrower ID U002:";
+        case "loan-list-overdue" -> "Overdue";
+        case "eqm-loan-history" -> "Loan history for item ID E001";
+        case "eqm-update" -> "[OK] Equipment E001 updated.";
+        case "eqm-maintain" -> "Maintenance recorded successfully.";
+        case "bundle-create" -> "[OK] Bundle B001 \"Studio kit\" created.";
+        case "bundle-add-eqm" -> "Equipment ID E003 added to bundle B001 successfully.";
+        case "bundle-remove-eqm" -> "Equipment ID E001 removed from bundle B001 successfully.";
+        case "bundle-list" -> "Studio kit";
+        case "bundle-history" -> "Loan history for bundle B001 (Studio kit)";
+        // @@author
         case "backup" -> "Backup created successfully";
         case "restore" -> "Backup restored successfully";
         case "help" -> "snAp command";
@@ -193,36 +250,50 @@ class HelpExamplesIntegrationTest {
         LoanHandler loans = field(manager, "loans", LoanHandler.class);
         BundleHandler bundles = field(manager, "bundles", BundleHandler.class);
         switch (command) {
-        case "add" -> assertEquals("Canon EOS R10", equipment.getEquipmentById("001").getItemName());
-        case "delete item" -> assertEquals(2, equipment.getEquipmentList().size());
-        case "list" -> {
+        // @@author yarnieee
+        case "eqm-add" -> assertEquals("Canon EOS R10", equipment.getEquipmentById("E001").getItemName());
+        case "eqm-delete" -> assertEquals(2, equipment.getEquipmentList().size());
+        case "eqm-list" -> {
+            // @@author
             assertTrue(printed().contains("Camera"));
             assertTrue(printed().contains("Battery"));
             assertTrue(printed().contains("Lens"));
         }
-        case "filter" -> {
+        // @@author yarnieee
+        case "eqm-filter" -> {
+            // @@author
             assertTrue(printed().contains("Camera"));
             assertFalse(printed().contains("Battery"));
             assertFalse(printed().contains("Lens"));
         }
-        case "list loans", "list borrower", "list member", "list overdue", "history", "history bundle" -> {
+        // @@author yarnieee
+        case "loan-list", "loan-list-borrower", "loan-list-overdue", "eqm-loan-history", "bundle-history" -> {
+            // @@author
             assertTrue(printed().contains("| LOAN ID | ITEM ID | BORROWER ID | ISSUED   | DUE      | STATE"));
-            assertTrue(printed().contains("| 001     | 001     | 002         | 24-10-26 | 27-10-26 | Overdue"));
+            // @@author yarnieee
+            assertTrue(printed().contains("| L001    | E001    | U002        | 24-10-26 | 27-10-26 | Overdue"));
+            // @@author
             assertTrue(printed().contains("1 loan."));
         }
-        case "loan" -> assertTrue(equipment.getEquipmentById("001").isLoaned());
-        case "return" -> assertTrue(loans.getLoanList().getFirst().isReturned());
-        case "delete loan" -> assertTrue(loans.getLoanList().isEmpty());
-        case "update loan" -> {
-            assertEquals("002", loans.getLoanList().getFirst().getItemId());
-            assertEquals("007", loans.getLoanList().getFirst().getBorrowerId());
+        // @@author yarnieee
+        case "loan-add" -> assertTrue(equipment.getEquipmentById("E001").isLoaned());
+        case "loan-return" -> assertTrue(loans.getLoanList().getFirst().isReturned());
+        case "loan-delete" -> assertTrue(loans.getLoanList().isEmpty());
+        case "loan-update" -> {
+            assertEquals("E002", loans.getLoanList().getFirst().getItemId());
+            assertEquals("U007", loans.getLoanList().getFirst().getBorrowerId());
+            // @@author
         }
-        case "update" -> assertEquals("Studio camera", equipment.getEquipmentById("001").getItemName());
-        case "maintain" -> assertEquals(1,
+        // @@author yarnieee
+        case "eqm-update" -> assertEquals("Studio camera", equipment.getEquipmentById("E001").getItemName());
+        case "eqm-maintain" -> assertEquals(1,
+                // @@author
                 field(manager, "maintenance", MaintenanceHandler.class).getMaintenanceRecords().size());
-        case "add-bundle" -> assertEquals("Studio kit", bundles.getBundleList().getFirst().getBundleName());
-        case "add-to-bundle" -> assertTrue(bundles.getBundleList().getFirst().isComplete());
-        case "remove-from-bundle" -> assertFalse(bundles.containsEquipmentId("001"));
+        // @@author yarnieee
+        case "bundle-create" -> assertEquals("Studio kit", bundles.getBundleList().getFirst().getBundleName());
+        case "bundle-add-eqm" -> assertTrue(bundles.getBundleList().getFirst().isComplete());
+        case "bundle-remove-eqm" -> assertFalse(bundles.containsEquipmentId("E001"));
+        // @@author
         case "backup" -> assertTrue(Files.isRegularFile(backupDirectory.resolve("backup-manifest.txt")));
         case "restore" -> {
             assertEquals(3, equipment.getEquipmentList().size());

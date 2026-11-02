@@ -8,8 +8,8 @@ import java.util.logging.Logger;
 public class Camera extends Equipment {
     private static final String TYPE = "camera";
     private static final Logger LOGGER = Logger.getLogger(Camera.class.getName());
-// @@author
 
+    // @@author
     /** Damage states that can be recorded for a camera. */
     public enum CameraDamage {
         NONE,
@@ -37,16 +37,16 @@ public class Camera extends Equipment {
 
     // @@author
 
-    // @@author yarnieee
     /**
-    // @@author
      * Creates a camera with unspecified sensor format and no recorded damage.
      *
      * @param name Name of the camera.
      * @param id Three-digit equipment ID.
      * @param condition Condition of the camera from 1 to 10.
      */
+    // @@author yarnieee
     public Camera(String name, String id, int condition) {
+        // @@author
         this(name, id, condition, "unspecified", CameraDamage.NONE);
     }
 
@@ -178,6 +178,6 @@ public class Camera extends Equipment {
                 .toString();
     }
     // @@author
-// @@author yarnieee
+    // @@author yarnieee
 }
 // @@author

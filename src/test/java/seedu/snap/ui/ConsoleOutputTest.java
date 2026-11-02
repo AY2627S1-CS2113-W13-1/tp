@@ -8,14 +8,18 @@ import org.junit.jupiter.api.Test;
 class ConsoleOutputTest {
     @Test
     void formatOutcome_plain_retainsSuccessAndErrorLabels() {
-        assertEquals("[OK] Loan 001 issued.", ConsoleOutput.formatOutcome("[OK]", "Loan 001 issued.", false, false));
+        // @@author yarnieee
+        assertEquals("[OK] Loan L001 issued.", ConsoleOutput.formatOutcome("[OK]", "Loan L001 issued.", false, false));
+        // @@author
         assertEquals("[ERROR] Invalid ID.", ConsoleOutput.formatOutcome("[ERROR]", "Invalid ID.", true, false));
     }
 
     @Test
     void formatOutcome_coloured_resetsBeforeTheMessage() {
-        assertEquals("\u001b[32m[OK]\u001b[0m Loan 001 issued.",
-                ConsoleOutput.formatOutcome("[OK]", "Loan 001 issued.", false, true));
+        // @@author yarnieee
+        assertEquals("\u001b[32m[OK]\u001b[0m Loan L001 issued.",
+                ConsoleOutput.formatOutcome("[OK]", "Loan L001 issued.", false, true));
+        // @@author
         assertEquals("\u001b[31m[ERROR]\u001b[0m Invalid ID.",
                 ConsoleOutput.formatOutcome("[ERROR]", "Invalid ID.", true, true));
     }

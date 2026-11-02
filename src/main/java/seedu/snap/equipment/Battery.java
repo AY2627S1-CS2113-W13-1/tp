@@ -7,7 +7,7 @@ import java.util.logging.Logger;
 /** Represents a battery in the equipment inventory. */
 public class Battery extends Equipment {
     private static final String TYPE = "battery";
-// @@author
+    // @@author
     private static final Logger LOGGER =
             Logger.getLogger(Battery.class.getName());
 
@@ -35,16 +35,16 @@ public class Battery extends Equipment {
 
     // @@author
 
-    // @@author yarnieee
     /**
-    // @@author
      * Creates a battery with unspecified details and no recorded damage.
      *
      * @param name name of the battery
-     * @param id three-digit equipment ID
+     * @param id typed equipment ID from E001 to E999
      * @param condition condition of the battery from 1 to 10
      */
+    // @@author yarnieee
     public Battery(String name, String id, int condition) {
+        // @@author
         this(
                 name,
                 id,
@@ -57,7 +57,7 @@ public class Battery extends Equipment {
      * Creates a battery with its existing type-specific details.
      *
      * @param name name of the battery
-     * @param id three-digit equipment ID
+     * @param id typed equipment ID from E001 to E999
      * @param condition condition of the battery from 1 to 10
      * @param capacity battery capacity description
      * @param damage damage recorded for the battery
@@ -75,7 +75,7 @@ public class Battery extends Equipment {
      * Creates a battery with type-specific details and optional remarks.
      *
      * @param name name of the battery
-     * @param id three-digit equipment ID
+     * @param id typed equipment ID from E001 to E999
      * @param condition condition of the battery from 1 to 10
      * @param capacity battery capacity description
      * @param damage damage recorded for the battery
@@ -104,7 +104,7 @@ public class Battery extends Equipment {
      * Creates a battery with all compatibility attributes.
      *
      * @param name name of the battery
-     * @param id three-digit equipment ID
+     * @param id typed equipment ID from E001 to E999
      * @param condition condition of the battery from 1 to 10
      * @param capacity battery capacity description
      * @param damage damage recorded for the battery
@@ -192,6 +192,6 @@ public class Battery extends Equipment {
     }
 
     // @@author
-// @@author yarnieee
+    // @@author yarnieee
 }
 // @@author

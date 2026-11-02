@@ -1,0 +1,85 @@
+@startuml MaintenanceRecordSequence
+!include style.puml
+' @@author MatthewLeon888
+hide footbox
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 170
+
+title eqm-maintain e/E001 date/27-10-26 work/Repair outcome/Completed
+
+participant ":Parser" as Parser
+participant ":EqmManager" as Manager
+participant ":MaintenanceHandler" as Handler
+participant ":EquipmentHandler" as Inventory
+participant "item:Equipment" as Item
+participant "record:MaintenanceRecord" as Record
+participant "MaintenanceStorage" as Storage <<utility>>
+
+note over Parser, Manager
+One iteration of run(); startup succeeded.
+Maintenance storage is configured.
+end note
+Manager -> Parser : getInput()
+[-> Parser : user input
+Parser --> Manager : input
+Manager -> Manager : executeInput(input)
+Manager -> Manager : recordMaintenance(...)
+Manager -> Handler : addMaintenanceRecord(input)
+activate Handler
+
+alt validation fails (details summarised)
+    note over Handler, Item
+    Stop at the first rejection: parseCommand(input),
+    isFutureDate(parsed.date()), missing equipment,
+    or MaintenanceRecord constructor validation.
+    No save; existing records and file unchanged.
+    end note
+    Handler --> Manager : throws MaintenanceRecordUnsuccessful
+    Manager -> Manager : ConsoleOutput.error(message)
+else validation succeeds
+    Handler -> Handler : parseCommand(input)
+    Handler -> Handler : isFutureDate(\nparsed.date())
+    Handler -> Inventory : getEquipmentById(\nparsed.itemId())
+    Inventory --> Handler : item
+    Handler -> Item : getRecordId()
+    Item --> Handler : permanent UUID string
+    create Record
+    Handler -> Record : new MaintenanceRecord(...)
+    note over Record
+    UUID from item.getRecordId();
+    date, work, outcome from parsed.
+    Constructor validates values.
+    end note
+    Handler -> Handler : copy records; add record to proposedRecords
+    Handler -> Handler : save(proposedRecords)
+    Handler -> Storage : save(storageFile, proposedRecords)
+    activate Storage
+    note over Storage
+    Files.createDirectories(parent)
+    Files.createTempFile(...)
+    toStorageLine(record) for each entry
+    Files.write(..., UTF_8)
+    Files.move(..., REPLACE_EXISTING)
+    Finally: Files.deleteIfExists(...).
+    end note
+    alt save returns normally
+        Storage --> Handler : saved
+        Handler -> Handler : records.add(record)
+        Handler --> Manager : record
+        Manager -> Manager : ConsoleOutput.success(...)
+        Manager -> Manager : display item, date, work and outcome
+    else IOException during save
+        Storage --> Handler : throws IOException
+        note over Handler, Storage
+        Live records unchanged; log WARNING.
+        A failure before replacement preserves the old file.
+        Replacement is not atomic; no file rollback is implemented.
+        end note
+        Handler --> Manager : throws MaintenanceRecordUnsuccessful
+        Manager -> Manager : ConsoleOutput.error(message)
+    end
+    deactivate Storage
+end
+deactivate Handler
+' @@author
+@enduml

@@ -3,8 +3,9 @@
 snAp is a command-line application for photography-club equipment officers. It tracks equipment,
 loans, returns, bundles and maintenance records.
 
-This repository contains the development build. Use documentation from the same version as your JAR;
-older releases may not support every command described here.
+The [User Guide Quick Start](docs/UserGuide.md#quick-start) explains how to run the v2.1 JAR.
+The setup below is for building and testing from source. Use documentation from the same version as your JAR;
+older releases may not support every command described in the guides.
 
 ## Setup
 
@@ -22,8 +23,9 @@ To run from a terminal in the project folder:
 | Run tests and Checkstyle | `.\gradlew.bat clean check --no-daemon` | `./gradlew clean check --no-daemon` |
 | Build the JAR | `.\gradlew.bat shadowJar` | `./gradlew shadowJar` |
 
-The application opens with a command menu. Enter `help` to see it again, `help loan` for one command,
-or `help all` for the complete reference. Enter `bye` to save and exit.
+The application opens with a command menu. Enter `help` to see it again, `help loan-add` for one command,
+or `help all` for the complete reference. Full command names are recommended for new users; short aliases are
+available for experienced or power users after the longer names become cumbersome. Enter `exit` to save and exit.
 
 The packaged application is `build/libs/snAp.jar`. Run it with `java -jar build/libs/snAp.jar`.
 Saved records are stored in `data` relative to the working folder. Use a separate working folder

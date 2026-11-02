@@ -23,7 +23,9 @@ class EquipmentStorageTest {
     @Test
     void load_malformedRecord_reportsTheLineNumber() throws IOException {
         Path file = temporaryDirectory.resolve("equipment.txt");
-        Files.writeString(file, "add i/Camera id/001 type/camera cond/1\nnot an equipment record\n");
+        // @@author yarnieee
+        Files.writeString(file, "add i/Camera id/E001 type/camera cond/1\nnot an equipment record\n");
+        // @@author
 
         IOException exception = assertThrows(IOException.class, () -> EquipmentStorage.load(file));
 
@@ -33,12 +35,112 @@ class EquipmentStorageTest {
     @Test
     void load_duplicateId_rejectsTheSavedFile() throws IOException {
         Path file = temporaryDirectory.resolve("equipment.txt");
-        String record = "add i/Camera id/001 type/camera cond/1";
+        // @@author yarnieee
+        String record = "add i/Camera id/E001 type/camera cond/1";
+        // @@author
         Files.writeString(file, record + System.lineSeparator() + record + System.lineSeparator());
 
         IOException exception = assertThrows(IOException.class, () -> EquipmentStorage.load(file));
 
-        assertTrue(exception.getMessage().contains("Duplicate equipment ID 001"));
+        // @@author yarnieee
+        assertTrue(exception.getMessage().contains("Duplicate equipment ID E001"));
+    }
+
+    @Test
+    void load_legacyBareItemId_migratesAndPersistsCanonicalValue() throws IOException {
+        // @@author
+        Path file = temporaryDirectory.resolve("equipment.txt");
+        // @@author yarnieee
+        Files.writeString(file, "add i/Camera id/001 type/camera cond/1\n");
+        // @@author
+
+        List<Equipment> loaded = EquipmentStorage.load(file);
+
+        // @@author yarnieee
+        assertEquals("E001", loaded.getFirst().getItemId());
+        assertTrue(Files.readString(file).contains("id/E001"));
+    }
+
+    @Test
+    void load_lowercaseItemId_migratesAndPersistsUppercaseValue() throws IOException {
+        // @@author
+        Path file = temporaryDirectory.resolve("equipment.txt");
+        // @@author yarnieee
+        Files.writeString(file, "add i/Camera id/e001 type/camera cond/1\n");
+        // @@author
+
+        List<Equipment> loaded = EquipmentStorage.load(file);
+
+        // @@author yarnieee
+        assertEquals("E001", loaded.getFirst().getItemId());
+        assertTrue(Files.readString(file).contains("id/E001"));
+    }
+
+    // @@author
+    // @@author Rohita-29
+
+    @Test
+    void load_legacyIdWithSupportedWhitespaceBeforeCondition_migratesId() throws IOException {
+        Path file = temporaryDirectory.resolve("equipment.txt");
+
+        for (String whitespace : List.of("\t", "\u2003")) {
+            Files.writeString(file, "add i/Camera id/001 type/camera" + whitespace + "cond/1\n");
+
+            List<Equipment> loaded = EquipmentStorage.load(file);
+
+            assertEquals("E001", loaded.getFirst().getItemId());
+            assertTrue(Files.readString(file).contains("id/E001"));
+        }
+    }
+
+    @Test
+    void load_canonicalIdLikeRemarks_preservesRecordWithoutRewriting() throws Exception {
+        Path file = temporaryDirectory.resolve("equipment.txt");
+        String remarks = "Keep literal id/123 type/camera";
+        EquipmentHandler handler = new EquipmentHandler(file);
+        handler.addEquipment(
+                "eqm-add name/Camera e/E001 type/camera cond/1 remarks/" + remarks);
+        String recordBeforeLoad = Files.readString(file);
+
+        List<Equipment> loaded = EquipmentStorage.load(file);
+
+        assertEquals("E001", loaded.getFirst().getItemId());
+        assertEquals(remarks, loaded.getFirst().getRemarks());
+        assertEquals(recordBeforeLoad, Files.readString(file));
+    }
+
+    @Test
+    void load_legacyIdWithIdLikeRemarks_migratesOnlyItemId() throws IOException {
+        Path file = temporaryDirectory.resolve("equipment.txt");
+        String remarks = "Keep literal id/123 type/camera";
+        Files.writeString(file, "add i/Camera id/001 type/camera cond/1 remarks/" + remarks + "\n");
+
+        List<Equipment> loaded = EquipmentStorage.load(file);
+
+        assertEquals("E001", loaded.getFirst().getItemId());
+        assertEquals(remarks, loaded.getFirst().getRemarks());
+        String savedRecord = Files.readString(file);
+        assertTrue(savedRecord.contains("id/E001"));
+        assertTrue(savedRecord.contains("remarks/" + remarks));
+    }
+
+    // @@author
+
+    // @@author yarnieee
+    @Test
+    void load_collidingLegacyAndCanonicalIds_rejectsFile() throws IOException {
+        // @@author
+        Path file = temporaryDirectory.resolve("equipment.txt");
+        // @@author yarnieee
+        Files.writeString(file, "add i/Legacy camera id/001 type/camera cond/1\n"
+                + "add i/Canonical camera id/E001 type/camera cond/1\n");
+        // @@author
+
+        IOException exception = assertThrows(IOException.class, () -> EquipmentStorage.load(file));
+
+        // @@author yarnieee
+        assertTrue(exception.getMessage().contains("Duplicate equipment ID E001"));
+        // @@author
     }
 
     @Test
@@ -46,10 +148,12 @@ class EquipmentStorageTest {
         Path file = temporaryDirectory.resolve("equipment.txt");
         EquipmentHandler handler = new EquipmentHandler(file);
         String[] commands = {
-            "add i/Camera id/001 type/CAMERA cond/7 sensor/Full frame damage/SHUTTER_FAULT",
-            "add i/Lens id/002 type/lens cond/6 zoom/24 to 70 mm damage/AUTOFOCUS_FAULT",
-            "add i/Battery id/003 type/battery cond/5 capacity/2000 mAh damage/CONTACT_DAMAGE",
-            "add i/Tripod id/004 type/tripod cond/4 thread/Quarter inch damage/HEAD_FAULT"
+            // @@author yarnieee
+            "eqm-add name/Camera e/E001 type/CAMERA cond/7 sensor/Full frame damage/SHUTTER_FAULT",
+            "eqm-add name/Lens e/E002 type/lens cond/6 zoom/24 to 70 mm damage/AUTOFOCUS_FAULT",
+            "eqm-add name/Battery e/E003 type/battery cond/5 capacity/2000 mAh damage/CONTACT_DAMAGE",
+            "eqm-add name/Tripod e/E004 type/tripod cond/4 thread/Quarter inch damage/HEAD_FAULT"
+            // @@author
         };
         for (String command : commands) {
             handler.addEquipment(command);
@@ -77,10 +181,12 @@ class EquipmentStorageTest {
     @Test
     void load_recordsWithoutSubtypeFields_usesDefaults() throws IOException {
         Path file = temporaryDirectory.resolve("equipment.txt");
-        Files.writeString(file, "add i/Camera id/001 type/camera cond/1\n"
-                + "add i/Lens id/002 type/lens cond/2\n"
-                + "add i/Battery id/003 type/battery cond/3\n"
-                + "add i/Tripod id/004 type/tripod cond/4\n");
+        // @@author yarnieee
+        Files.writeString(file, "add i/Camera id/E001 type/camera cond/1\n"
+                + "add i/Lens id/E002 type/lens cond/2\n"
+                + "add i/Battery id/E003 type/battery cond/3\n"
+                + "add i/Tripod id/E004 type/tripod cond/4\n");
+        // @@author
 
         List<Equipment> loaded = EquipmentStorage.load(file);
 
@@ -93,11 +199,13 @@ class EquipmentStorageTest {
     void load_oldRecordsWithDetailMarkersInNames_preservesNamesAndTypesAfterSaving() throws IOException {
         Path file = temporaryDirectory.resolve("equipment.txt");
         Files.write(file, List.of(
-                "add i/Camera sensor/cleaning kit id/001 type/camera cond/1",
-                "add i/Lens zoom/range guide id/002 type/lens cond/2",
-                "add i/Battery capacity/test unit id/003 type/battery cond/3",
-                "add i/Tripod thread/adapter id/004 type/tripod cond/4",
-                "add i/Camera damage/check unit id/005 type/camera cond/5"));
+                // @@author yarnieee
+                "add i/Camera sensor/cleaning kit id/E001 type/camera cond/1",
+                "add i/Lens zoom/range guide id/E002 type/lens cond/2",
+                "add i/Battery capacity/test unit id/E003 type/battery cond/3",
+                "add i/Tripod thread/adapter id/E004 type/tripod cond/4",
+                "add i/Camera damage/check unit id/E005 type/camera cond/5"));
+        // @@author
         List<String> expectedNames = List.of("Camera sensor/cleaning kit", "Lens zoom/range guide",
                 "Battery capacity/test unit", "Tripod thread/adapter", "Camera damage/check unit");
         List<Class<? extends Equipment>> expectedClasses = List.of(Camera.class, Lens.class,
@@ -119,9 +227,11 @@ class EquipmentStorageTest {
     void load_invalidSubtypeDetails_reportsLineAndPreservesCurrentInventory() throws Exception {
         Path file = temporaryDirectory.resolve("equipment.txt");
         EquipmentHandler handler = new EquipmentHandler(file);
-        Equipment original = handler.addEquipment("add i/Original camera id/001 type/camera cond/1");
-        Files.writeString(file, "add i/Camera id/001 type/camera cond/1\n"
-                + "add i/Lens id/002 type/lens cond/5 damage/SHUTTER_FAULT\n");
+        // @@author yarnieee
+        Equipment original = handler.addEquipment("eqm-add name/Original camera e/E001 type/camera cond/1");
+        Files.writeString(file, "add i/Camera id/E001 type/camera cond/1\n"
+                + "add i/Lens id/E002 type/lens cond/5 damage/SHUTTER_FAULT\n");
+        // @@author
 
         IOException exception = assertThrows(IOException.class, handler::loadFromStorage);
 
@@ -137,7 +247,9 @@ class EquipmentStorageTest {
         EquipmentHandler handler = new EquipmentHandler(destination);
 
         assertThrows(EquipmentAdditionUnsuccessful.class,
-                () -> handler.addEquipment("add i/Camera id/001 type/camera cond/5 sensor/Full frame"));
+                // @@author yarnieee
+                () -> handler.addEquipment("eqm-add name/Camera e/E001 type/camera cond/5 sensor/Full frame"));
+        // @@author
 
         assertTrue(handler.getEquipmentList().isEmpty());
         assertEquals("keep this record", Files.readString(destination.resolve("keep.txt")));
@@ -146,7 +258,9 @@ class EquipmentStorageTest {
     @Test
     void load_legacyRecordWithRemarksMarkerInName_preservesName() throws IOException {
         Path file = temporaryDirectory.resolve("equipment.txt");
-        Files.writeString(file, "add i/Camera remarks/adapter id/001 type/camera cond/1");
+        // @@author yarnieee
+        Files.writeString(file, "add i/Camera remarks/adapter id/E001 type/camera cond/1");
+        // @@author
 
         Equipment loaded = EquipmentStorage.load(file).getFirst();
 
@@ -159,7 +273,9 @@ class EquipmentStorageTest {
         Path destination = temporaryDirectory.resolve("equipment.txt");
         Files.createDirectory(destination);
         Files.writeString(destination.resolve("keep.txt"), "keep this record");
-        Equipment equipment = new Camera("Camera", "001", 1);
+        // @@author yarnieee
+        Equipment equipment = new Camera("Camera", "E001", 1);
+        // @@author
 
         assertThrows(IOException.class, () -> EquipmentStorage.save(destination, List.of(equipment)));
 
