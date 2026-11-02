@@ -16,6 +16,8 @@ import org.junit.jupiter.api.Test;
 public class LoanTest {
     private static final LocalDate REFERENCE_DATE = LocalDate.of(2026, 10, 24);
 
+    // @@author
+
     @Test
     void setters_validateBorrowerAndIssueDateWithoutPartialUpdates() {
         Loan loan = createLoan(REFERENCE_DATE);
@@ -30,6 +32,8 @@ public class LoanTest {
                 () -> loan.setIssuedDate(REFERENCE_DATE.plusDays(1).atStartOfDay()));
         assertEquals(issued, loan.getIssuedDate());
     }
+
+    // @@author Rohita-29
 
     @Test
     public void isOverdue_activeLoanDueBeforeReferenceDate_returnsTrue() {
