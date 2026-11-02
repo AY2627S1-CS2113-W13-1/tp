@@ -19,6 +19,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+// @@author MatthewLeon888
 /** Tests borrower-loan queries through command routing and user-facing output. */
 class LoanBorrowerIntegrationTest {
     private static final Clock FIXED_CLOCK = Clock.fixed(Instant.parse("2026-10-27T12:00:00Z"), ZoneOffset.UTC);
@@ -143,3 +144,4 @@ class LoanBorrowerIntegrationTest {
                 .map(line -> line.split("\\|", -1)[1].strip()).toList();
     }
 }
+// @@author

@@ -21,6 +21,7 @@ import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.MaintenanceRecordUnsuccessful;
 
+// @@author MatthewLeon888
 /** Tests maintenance command validation, equipment identity binding, and persistence boundaries. */
 class MaintenanceHandlerTest {
     private static final String ADD_CAMERA = "eqm-add name/Camera e/E001 type/camera cond/5";
@@ -178,3 +179,4 @@ class MaintenanceHandlerTest {
         assertEquals("keep this record", Files.readString(destination.resolve("keep.txt")));
     }
 }
+// @@author

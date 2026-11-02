@@ -15,6 +15,8 @@ import java.util.regex.Pattern;
 import seedu.snap.Identifier;
 import seedu.snap.exceptions.EquipmentAdditionUnsuccessful;
 
+// @@author MatthewLeon888
+
 /** Loads and saves equipment records in a readable UTF-8 text file. */
 final class EquipmentStorage {
     /** Permanent physical-item identity appears before any existing storage metadata. */
@@ -177,3 +179,5 @@ final class EquipmentStorage {
         return record;
     }
 }
+
+// @@author

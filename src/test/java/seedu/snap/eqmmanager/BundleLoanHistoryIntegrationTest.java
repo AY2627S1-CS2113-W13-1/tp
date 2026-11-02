@@ -13,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+// @@author MatthewLeon888
 /** Exercises bundle-history command routing and user-visible output. */
 class BundleLoanHistoryIntegrationTest {
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -88,3 +89,4 @@ class BundleLoanHistoryIntegrationTest {
         assertTrue(printed.indexOf("U111") < printed.indexOf("U222"));
     }
 }
+// @@author

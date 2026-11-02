@@ -217,6 +217,7 @@ public class LoanHandler {
         return loan;
     }
 
+    // @@author MatthewLeon888
     /** Updates one active loan after validating every supplied field and saving the proposal first. */
     public Loan updateLoan(String input) throws LoanUpdateUnsuccessful {
         LoanUpdate update;
@@ -304,6 +305,7 @@ public class LoanHandler {
         logger.log(Level.WARNING, "Loan update rejected: {0}", message);
         return new LoanUpdateUnsuccessful(message);
     }
+    // @@author
 
     /** Finds one matching item without changing its availability, including during reload validation. */
     private Equipment findEquipment(String itemId) throws LoanAdditionUnsuccessful {
@@ -879,6 +881,7 @@ public class LoanHandler {
         return history;
     }
 
+    // @@author MatthewLeon888
     /**
      * Selects all active and returned loans belonging to one physical equipment record.
      *
@@ -902,6 +905,7 @@ public class LoanHandler {
                 : "Equipment history must contain attributed loan records";
         return List.copyOf(history);
     }
+    // @@author
 
     /** Displays a physical item's history and explains any older returned records that cannot be attributed. */
     public void viewLoanHistory(String input) throws LoanHistoryUnsuccessful {
@@ -917,6 +921,7 @@ public class LoanHandler {
         }
     }
 
+    // @@author MatthewLeon888
     /**
      * Returns active loans held by the borrower in a borrower query.
      * A borrower is known when at least one current or returned loan uses the ID.
@@ -973,6 +978,7 @@ public class LoanHandler {
                 new Object[]{activeLoans.size(), query.borrowerId()});
         return List.copyOf(activeLoans);
     }
+    // @@author
 
     /** Checks history syntax without reading or writing any record. */
     private static String parseHistoryItemId(String input) throws LoanHistoryUnsuccessful {

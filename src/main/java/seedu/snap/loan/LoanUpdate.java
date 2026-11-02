@@ -11,6 +11,8 @@ import java.util.Set;
 import seedu.snap.Identifier;
 import seedu.snap.exceptions.LoanUpdateUnsuccessful;
 
+// @@author MatthewLeon888
+
 /** Holds validated optional changes from an update-loan command before any records change. */
 record LoanUpdate(String loanId, String itemId, String borrowerId,
         LocalDateTime issuedDate, LocalDateTime dueDate) {
@@ -113,3 +115,5 @@ record LoanUpdate(String loanId, String itemId, String borrowerId,
         }
     }
 }
+
+// @@author

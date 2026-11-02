@@ -285,6 +285,7 @@ public class Loan {
                 issueConditionSnapshot, assessment, issueServiceability);
     }
 
+    // @@author MatthewLeon888
     /**
      * Creates a detached active proposal for a validated loan update.
      * Reassigning equipment captures the replacement's condition instead of reusing the old item's snapshot.
@@ -333,6 +334,7 @@ public class Loan {
         assert replacement.isLoaned() && loanId.equals(replacement.getLoanId())
                 : "Updated loan must own loaned replacement equipment";
     }
+    // @@author
 
     /** Associates a saved or fully validated active record with its equipment. */
     void attachEquipment(Equipment equipment) {

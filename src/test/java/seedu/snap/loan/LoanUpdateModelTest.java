@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.EquipmentHandler;
 
+// @@author MatthewLeon888
 /** Tests the model transition used after a loan update has been validated and saved. */
 class LoanUpdateModelTest {
     @Test
@@ -75,3 +76,4 @@ class LoanUpdateModelTest {
         assertFalse(originalEquipment.isLoaned());
     }
 }
+// @@author
