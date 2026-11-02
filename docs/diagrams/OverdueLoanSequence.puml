@@ -1,0 +1,50 @@
+@startuml
+!include style.puml
+hide footbox
+skinparam sequenceMessageAlign center
+skinparam maxMessageSize 190
+
+actor User
+participant ":EqmManager" as Manager
+participant ":LoanHandler" as Handler
+participant "loan:Loan" as Loan
+participant "LoanView" as View
+
+User -> Manager: executeInput("list overdue")
+activate Manager
+note right of Manager: Reads referenceDate from the configured clock.
+Manager -> Handler: viewOverdueLoans(referenceDate)
+activate Handler
+
+Handler -> Handler: getOverdueLoans(referenceDate)
+activate Handler
+loop each managed loan
+    Handler -> Loan: isOverdue(referenceDate)
+    activate Loan
+    Loan --> Handler: active AND due before referenceDate
+    deactivate Loan
+    opt result is true
+        note right of Handler: Add loan to selected list.
+    end
+end
+Handler --> Handler: unmodifiable selected list
+deactivate Handler
+
+Handler -> View: print(selected, referenceDate, ...)
+activate View
+note over Handler, View
+Print the shared loan table or
+an empty-result message and count.
+end note
+View --> Handler: printing completed
+deactivate View
+Handler --> Manager: viewing completed
+deactivate Handler
+Manager --> User: command completed
+deactivate Manager
+
+note over Manager, Handler
+The same reference date is used throughout the command.
+No managed loan or saved record is changed.
+end note
+@enduml
