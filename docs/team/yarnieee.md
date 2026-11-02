@@ -87,7 +87,7 @@ The following PR statuses reflect the repository at the time of this update.
   partial success and saving bundle membership on exit.
   ([PR #181](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/181),
   [Issue #176](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/176))
-- **Loan update UML (open):** Added a dedicated Developer Guide subsection, sequence diagram and SVG for
+- **Loan update UML (merged):** Added a dedicated Developer Guide subsection, sequence diagram and SVG for
   metadata updates and equipment reassignment. Documented ownership validation, preserving or recapturing
   issue-condition snapshots, saving before live mutation and retaining original state after save failures.
   ([PR #182](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/182),
@@ -103,6 +103,11 @@ The following PR statuses reflect the repository at the time of this update.
   tracking.
 - Implemented the issue-backed fixes for unique loan targeting and loan-addition invariants through [PR #76](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/76)
   and [PR #28](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/28), respectively.
+- Resolved [Issue #176](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/176) with the bundle compatibility
+  sequence diagram in merged [PR #181](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/181), and
+  [Issue #177](https://github.com/AY2627S1-CS2113-W13-1/tp/issues/177) with the loan update and equipment
+  reassignment documentation and UML diagram in merged
+  [PR #182](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/182).
 
 ### Team contributions and reviews
 
