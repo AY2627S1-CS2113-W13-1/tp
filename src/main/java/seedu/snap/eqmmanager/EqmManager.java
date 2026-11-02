@@ -34,6 +34,7 @@ import seedu.snap.loan.LoanHandler;
 import seedu.snap.exceptions.MaintenanceRecordUnsuccessful;
 import seedu.snap.maintenance.MaintenanceHandler;
 import seedu.snap.maintenance.MaintenanceRecord;
+import seedu.snap.parser.CommandAliases;
 import seedu.snap.parser.Parser;
 import seedu.snap.ui.Help;
 import seedu.snap.ui.Welcome;
@@ -123,6 +124,7 @@ public class EqmManager {
      */
     public void executeInput(String input) {
         String normalizedInput = input == null ? "" : input.replaceAll("(?U)^\\s+|\\s+$", "");
+        normalizedInput = CommandAliases.normalizeInput(normalizedInput);
         if (normalizedInput.equals("restore") || normalizedInput.startsWith("restore ")) {
             restoreBackup(normalizedInput);
         } else if (startupError != null) {

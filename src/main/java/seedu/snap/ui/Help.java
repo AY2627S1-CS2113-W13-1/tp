@@ -11,6 +11,7 @@ import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.Lens;
 import seedu.snap.equipment.Tripod;
 import seedu.snap.maintenance.MaintenanceRecord;
+import seedu.snap.parser.CommandAliases;
 
 /** Provides command help without reading or changing application records. */
 public final class Help {
@@ -51,9 +52,10 @@ public final class Help {
         if (normalised.equals("all")) {
             return TEXT;
         }
+        String canonicalTopic = CommandAliases.canonicalCommand(normalised);
         for (CommandHelp command : COMMANDS) {
-            if (command.command().equals(normalised)) {
-                return formatReference(command.text(), true) + LINE_SEPARATOR + OVERVIEW;
+            if (command.command().equals(canonicalTopic)) {
+                return formatReference(command.text(), true, command.alias()) + LINE_SEPARATOR + OVERVIEW;
             }
         }
         return ConsoleOutput.formatError("Unknown help topic. Choose a command from the menu.", colourErrors)
@@ -77,6 +79,9 @@ public final class Help {
                 <VALUE> is a placeholder. [field/<VALUE>] is optional. Do not type angle or square brackets.
 
                 Commands and field prefixes use exact lowercase spelling. Use spaces as shown in each format.
+
+                Full command names are recommended for new users and discoverability. Short aliases are provided for
+                experienced or power users who find the full names cumbersome after learning the command set.
 
                 Equipment, loan and bundle IDs: exactly three digits, 001-999. Borrower IDs: 000-999.
                 Equipment names: 1-%d characters; condition: %d-%d; remarks: 0-%d characters after trimming.
@@ -394,8 +399,8 @@ public final class Help {
                         Format: help <COMMAND>
                         Example: help add-loan
                         Shows one command's syntax, examples, required and optional fields, defaults and restrictions.
-                        Use the full command name for command topics, such as help list-loan-overdue or
-                        help loan-delete.
+                        Use either a full command name or its alias for command topics, such as help list-loan-overdue
+                        or help llo.
                         Format: help all
                         Example: help all
                         Shows the complete command guide.
@@ -417,7 +422,8 @@ public final class Help {
     private static String createText() {
         String commandGap = LINE_SEPARATOR.repeat(2);
         return OVERVIEW + commandGap + COMMANDS.stream()
-                .map(command -> formatReference(command.text(), true)).collect(Collectors.joining(commandGap));
+                .map(command -> formatReference(command.text(), true, command.alias()))
+                .collect(Collectors.joining(commandGap));
     }
 
     /** Groups command names from the reference so the menu cannot omit an existing entry. */
@@ -428,11 +434,11 @@ public final class Help {
         menu.append(border);
         for (String group : List.of("Equipment", "Loans", "Bundles", "General")) {
             List<String> groupCommands = COMMANDS.stream().filter(command -> command.group().equals(group))
-                    .map(CommandHelp::command).toList();
+                    .map(CommandHelp::menuLabel).toList();
             appendMenuGroup(menu, group, groupCommands);
         }
         appendMenuRow(menu, "");
-        appendMenuRow(menu, "Type help <COMMAND> for details (for example, help add-loan or help list-loan-overdue).");
+        appendMenuRow(menu, "Type help <COMMAND OR ALIAS> for details (for example, help add-loan or help al).");
         appendMenuRow(menu, "Type help all for the complete reference.");
         return menu.append(border).toString();
     }
@@ -462,6 +468,11 @@ public final class Help {
 
     /** Separates headings, command examples and note paragraphs while preserving their content. */
     private static String formatReference(String text, boolean showNotesHeading) {
+        return formatReference(text, showNotesHeading, null);
+    }
+
+    /** Separates a command's alias from its title and command syntax. */
+    private static String formatReference(String text, boolean showNotesHeading, String alias) {
         List<String> lines = text.lines().toList();
         String title = lines.getFirst();
         StringBuilder formatted = new StringBuilder();
@@ -470,7 +481,11 @@ public final class Help {
         }
         formatted.append(title).append(LINE_SEPARATOR)
                 .append(showNotesHeading ? COMMAND_DIVIDER : "-".repeat(title.length()))
-                .append(LINE_SEPARATOR).append(LINE_SEPARATOR);
+                .append(LINE_SEPARATOR);
+        if (alias != null) {
+            formatted.append("Alias: ").append(alias).append(LINE_SEPARATOR);
+        }
+        formatted.append(LINE_SEPARATOR);
         boolean needsNotesHeading = showNotesHeading;
         int index = 1;
         while (index < lines.size()) {
@@ -547,5 +562,12 @@ public final class Help {
 
     /** Associates one exact command with its menu group and complete reference. */
     private record CommandHelp(String command, String group, String text) {
+        private String alias() {
+            return CommandAliases.aliasFor(command);
+        }
+
+        private String menuLabel() {
+            return command + " (" + alias() + ")";
+        }
     }
 }
