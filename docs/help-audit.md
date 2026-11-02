@@ -40,10 +40,22 @@ For each command, compare field spelling and order, required and optional fields
 values, conditional restrictions and examples. Damage choices are still generated from the four
 equipment subtype enums. Examples require suitable existing records; they are not one continuous session.
 
+The command aliases are also audited as exact, lowercase alternatives for every command. They are intended for
+experienced or power users after the canonical command names become cumbersome; canonical names remain the
+discoverable form for new users.
+
+| Area | Canonical command -> alias |
+| --- | --- |
+| Equipment | `add-eqm` -> `ae`, `list-eqm` -> `le`, `eqm-show` -> `es`, `eqm-delete` -> `ed`, `filter-eqm` -> `fe`, `eqm-update` -> `eu`, `eqm-maintain` -> `em`, `eqm-loan-history` -> `elh` |
+| Loans | `add-loan` -> `al`, `loan-return` -> `lr`, `loan-delete` -> `ld`, `loan-update` -> `lu`, `list-loan` -> `ll`, `loan-show` -> `ls`, `list-loan-borrower` -> `llb`, `list-loan-overdue` -> `llo` |
+| Bundles | `add-bundle` -> `ab`, `bundle-add-eqm` -> `bae`, `bundle-remove-eqm` -> `bre`, `list-bundle` -> `lb`, `bundle-history` -> `bh` |
+| General | `backup` -> `bk`, `restore` -> `rs`, `help` -> `h`, `exit` -> `x` |
+
 The automated checks cover:
 
 * Help content, menu completeness, rejection of the old borrower alias, wrapping and subtype-specific damage lists.
-* Execution of every displayed help example through `EqmManager` with isolated records and a fixed clock,
+* Execution of every displayed help example through `EqmManager` using both canonical commands and aliases,
+  with isolated records and a fixed clock,
   including the updated success messages, shared loan columns, dates, states and result counts from #140.
 * Repeated help requests against populated, empty and blocked storage, comparing equipment, loans,
   bundles, maintenance, identifiers, file contents and modification times.
