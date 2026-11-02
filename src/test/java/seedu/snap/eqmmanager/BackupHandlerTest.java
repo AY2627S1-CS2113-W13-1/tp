@@ -22,6 +22,7 @@ import seedu.snap.exceptions.BackupUnsuccessful;
 import seedu.snap.loan.Loan;
 import seedu.snap.loan.LoanHandler;
 
+// @@author MatthewLeon888
 /** Verifies backup format creation, destination validation and non-destructive behavior. */
 class BackupHandlerTest {
     @TempDir
@@ -331,3 +332,4 @@ class BackupHandlerTest {
         return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(path)));
     }
 }
+// @@author

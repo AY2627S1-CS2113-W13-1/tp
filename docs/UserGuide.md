@@ -118,6 +118,7 @@ filter type/camera cond/1-3 status/available
 The first filter displays item `010`. The update changes its condition to `5`, so the repeated filter prints
 `No equipment matches the filters.` Its ID, name and `Available` status stay the same.
 
+<!-- @@author MatthewLeon888 -->
 ## Recording maintenance: `maintain`
 
 Format: `maintain id/<ITEM ID> date/<DD-MM-YY> work/<DESCRIPTION> outcome/<OUTCOME>`
@@ -137,6 +138,7 @@ maintenance records from being attached to a replacement item if an Item ID is r
 
 Invalid commands, unknown Item IDs, invalid dates and failed saves leave existing maintenance records unchanged.
 A successful command shows an `[OK]` label, the Item ID and name, maintenance date, work description and outcome.
+<!-- @@author -->
 
 ## Adding equipment: `add`
 
@@ -343,6 +345,7 @@ For example:
 
 An empty list displays `No loans recorded. Type help loan for the command format.` and `0 loans.`.
 
+<!-- @@author MatthewLeon888 -->
 ## Viewing equipment held by a borrower: `list borrower`
 
 Format: `list borrower/<BORROWER ID>`
@@ -353,6 +356,7 @@ Use exactly three digits from `000` to `999`. The result shows only equipment cu
 with its loan details. Returned loans are excluded. An unknown borrower or one with no active loans produces
 a clear message. The query leaves records unchanged.
 Dates, states and columns match `list loans`. Results end with a loan count, including `0 loans.` for an empty result.
+<!-- @@author -->
 
 <a id="viewing-the-issue-time-equipment-condition-view-loan"></a>
 
@@ -478,6 +482,7 @@ Deleting an active loan releases its equipment without changing its serviceabili
 Deleting returned loan history leaves any
 newer active loan and the equipment's `Loaned` status unchanged.
 
+<!-- @@author MatthewLeon888 -->
 ## Updating loan details: `update loan`
 
 Format: `update loan/<LOAN ID> [id/<ITEM ID>] [b/<BORROWER ID>] [issued/<DD-MM-YY>] [due/<DD-MM-YY>]`
@@ -506,6 +511,7 @@ borrower profiles, so borrower validation is limited to the documented three-dig
 The complete proposed loan list is saved before the live loan and equipment associations change. If validation or
 saving fails, the original loan, equipment availability and saved file remain unchanged. Successful edits remain after
 restarting the application.
+<!-- @@author -->
 
 ## Filtering equipment: `filter`
 
@@ -651,6 +657,7 @@ An empty list suggests `add-bundle name/Camera kit` and displays `0 bundles.`. T
 new bundles and additions with `bye`; successful removals are saved immediately. Saved bundles are restored
 at startup.
 
+<!-- @@author MatthewLeon888 -->
 ## Viewing a bundle's loan history: `history bundle`
 
 Format: `history bundle/id/<BUNDLE ID>` or `history bundle/name/<NAME>`
@@ -664,6 +671,7 @@ Results are ordered by issue date from earliest to latest, then by loan ID. An e
 bundle are reported clearly. Bundle memberships are matched using each equipment record's permanent identity,
 so a reused visible Item ID cannot inherit the wrong historical membership.
 Dates, states, columns and result counts use the same format as `list loans` and item histories.
+<!-- @@author -->
 
 ## Saving application data
 
@@ -727,6 +735,7 @@ or contains invalid or duplicate records, the application reports the problem an
 Use `restore` to recover from a valid backup, or `bye` to exit before correcting the saved files. In this state,
 `bye` exits without saving over the damaged files.
 
+<!-- @@author MatthewLeon888 -->
 ## Backing up and restoring records
 
 Format: `backup path/<DIRECTORY>`
@@ -755,6 +764,7 @@ because bundles are not included in the backup. Maintenance records are left unc
 If maintenance failed to load, `restore` is rejected before any live files change because the backup does not
 contain maintenance records. Other commands remain blocked, and `bye` exits without saving. Preserve a copy of
 the damaged file, then repair or recover `data/maintenance.txt` separately before restarting.
+<!-- @@author -->
 
 ## Current limitations
 

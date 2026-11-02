@@ -632,6 +632,7 @@ existing equipment loan and serviceability state. They do not create a second eq
 messages. The read-only integration fixture also repeats list, filter and show requests against populated,
 empty, reloaded and blocked storage, comparing record references, values, counters, file bytes and timestamps.
 
+<!-- @@author MatthewLeon888 -->
 ### Recording maintenance records
 
 #### Purpose and responsibilities
@@ -704,7 +705,9 @@ covers round-trip persistence, malformed records, missing files and failure-safe
 `MaintenanceHandlerTest` covers valid commands, invalid values, future dates, unknown equipment, save failures,
 restart loading and reused visible IDs. `MaintenanceIntegrationTest` covers command output, persistence, restart
 behaviour and startup handling for invalid saved data.
+<!-- @@author -->
 
+<!-- @@author MatthewLeon888 -->
 ### Backing up and restoring equipment and loan records
 
 #### Purpose and responsibilities
@@ -793,6 +796,7 @@ history remains unchanged in its separate persistence file.
 inconsistent records, and rollback after a replacement failure. `BackupIntegrationTest` covers command routing and
 non-overwriting behaviour. `RestoreIntegrationTest` covers valid restoration, restart persistence, invalid sources,
 startup recovery, bundle clearing and preservation of live state after a failed restore.
+<!-- @@author -->
 
 <a id="preserving-equipment-condition-when-a-loan-is-issued"></a>
 

@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+// @@author MatthewLeon888
 /** Exercises backup creation through the public application command interface. */
 class BackupIntegrationTest {
     private final ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -88,3 +89,4 @@ class BackupIntegrationTest {
         return output.toString(StandardCharsets.UTF_8);
     }
 }
+// @@author

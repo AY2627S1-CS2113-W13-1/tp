@@ -5,6 +5,8 @@ import java.util.regex.Pattern;
 
 import seedu.snap.exceptions.LoanBorrowerUnsuccessful;
 
+// @@author MatthewLeon888
+
 /** Represents a validated command for finding equipment held by one borrower. */
 public record LoanBorrowerQuery(String borrowerId) {
     private static final Pattern COMMAND = Pattern.compile(
@@ -36,3 +38,5 @@ public record LoanBorrowerQuery(String borrowerId) {
                 "Invalid format. Use: list borrower/[BORROWER ID], from 000 to 999.");
     }
 }
+
+// @@author

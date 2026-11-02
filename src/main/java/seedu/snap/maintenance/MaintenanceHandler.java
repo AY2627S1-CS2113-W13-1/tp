@@ -20,6 +20,8 @@ import seedu.snap.equipment.Equipment;
 import seedu.snap.equipment.EquipmentHandler;
 import seedu.snap.exceptions.MaintenanceRecordUnsuccessful;
 
+// @@author MatthewLeon888
+
 /** Handles validated maintenance-record commands and their persistent records. */
 public class MaintenanceHandler {
     private static final Logger logger = Logger.getLogger(MaintenanceHandler.class.getName());
@@ -187,3 +189,5 @@ public class MaintenanceHandler {
     private record ParsedCommand(String itemId, LocalDate date, String work, String outcome) {
     }
 }
+
+// @@author

@@ -15,6 +15,8 @@ import java.util.stream.Collectors;
 
 import seedu.snap.equipment.Equipment;
 
+// @@author MatthewLeon888
+
 /** Loads and saves bundle definitions and their physical equipment references. */
 final class BundleStorage {
     private static final String RECORD_PREFIX = "bundle";
@@ -189,3 +191,5 @@ final class BundleStorage {
     /** Parsed reference to one physical equipment record. */
     record StoredItem(String itemId, String recordId) { }
 }
+
+// @@author

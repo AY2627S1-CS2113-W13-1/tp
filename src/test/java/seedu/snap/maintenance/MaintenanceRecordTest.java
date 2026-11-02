@@ -14,6 +14,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
+// @@author MatthewLeon888
 /** Tests maintenance-record validation and immutable values. */
 class MaintenanceRecordTest {
     private static final String EQUIPMENT_RECORD_ID = UUID.randomUUID().toString();
@@ -68,3 +69,4 @@ class MaintenanceRecordTest {
         assertFalse(MaintenanceRecord.isValidEquipmentRecordId("123"));
     }
 }
+// @@author
