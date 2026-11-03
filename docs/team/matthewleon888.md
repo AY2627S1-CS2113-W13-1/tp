@@ -1,9 +1,9 @@
 ---
 layout: default
-title: Matthew Leon - Project Portfolio
+title: Leon Matthew Wei - Project Portfolio
 ---
 
-# Matthew Leon - Project Portfolio Page
+# Leon Matthew Wei - Project Portfolio Page
 
 ## Overview
 
@@ -64,6 +64,16 @@ when a command or storage operation fails.
   [PR #143](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/143),
   [PR #174](https://github.com/AY2627S1-CS2113-W13-1/tp/pull/174))
 - Updated the diagram index and kept the written design consistent with the implemented command and storage flows.
+
+### Contributions to the Developer Guide (UML extracts)
+
+The following extracts show the two diagrams I added to the Developer Guide. The sequence diagram traces a maintenance
+record from command parsing through validation, object creation and persistent storage. The class diagram shows the
+maintenance and backup components and their relationships with `EqmManager`, equipment and loan data.
+
+![Maintenance-record sequence diagram](../images/MaintenanceRecordSequence.svg)
+
+![Maintenance and backup class diagram](../images/MaintenanceBackupClasses.svg)
 
 ### Contributions to team-based tasks
 
