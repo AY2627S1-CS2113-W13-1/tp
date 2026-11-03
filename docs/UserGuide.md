@@ -43,9 +43,7 @@ Building from source requires JDK 25 and internet access on the first Gradle run
 | Format | What it displays | Example |
 | --- | --- | --- |
 | `help` | The same boxed command menu shown at startup | `help` |
-<!-- @@author yarnieee -->
-| `help <command>` | The format, example, fields, defaults and restrictions for one command | `help loan-add` |
-<!-- @@author -->
+| <!-- @@author yarnieee --> `help <command>` | The format, example, fields, defaults and restrictions for one command | `help loan-add` | <!-- @@author -->
 | `help all` | The complete command reference | `help all` |
 
 Replace `<command>` with one of these exact lowercase topics:
@@ -96,16 +94,14 @@ except that empty remarks are valid unless damage is `OTHER`.
 
 | Command | Optional field | When omitted |
 | --- | --- | --- |
-<!-- @@author yarnieee -->
-| `eqm-add` | Subtype and compatibility details | `unspecified` |
+| <!-- @@author yarnieee --> `eqm-add` | Subtype and compatibility details | `unspecified` |
 | `eqm-add` | `damage/` | `NONE` |
 | `eqm-add` | `remarks/` | Empty text; rejected if damage is `OTHER` |
 | `loan-add` | `issued/` | Today's date in the application's local time zone, at midnight |
 | `loan-return` | `remarks/` | Empty text, replacing previous remarks; rejected if damage is `OTHER` |
 | `eqm-update` | Name, type or condition | Keep the existing value; supply an ID and at least one field |
 | `loan-update` | Item, borrower, issue date or due date | Keep the existing value; supply a loan ID and at least one field |
-| `eqm-filter` | Any individual criterion | No restriction for that criterion; supply at least one criterion |
-<!-- @@author -->
+| `eqm-filter` | Any individual criterion | No restriction for that criterion; supply at least one criterion | <!-- @@author -->
 
 Equipment name, Item ID, type and numeric condition remain required when adding equipment.
 Loans require Item ID, borrower ID and due date. Returns require loan ID, serviceability and damage.
@@ -186,10 +182,8 @@ For example, with Item ID `E001` already present:
 
 | Command | Error |
 | --- | --- |
-<!-- @@author yarnieee -->
-| `eqm-add name/Lens e/E001 type/lens cond/3` | `Item ID E001 already exists.` |
-| `eqm-add name/Tripod e/E002 type/tripod cond/11` | `Condition must be a whole number from 1 to 10.` |
-<!-- @@author -->
+| <!-- @@author yarnieee --> `eqm-add name/Lens e/E001 type/lens cond/3` | `Item ID E001 already exists.` |
+| `eqm-add name/Tripod e/E002 type/tripod cond/11` | `Condition must be a whole number from 1 to 10.` | <!-- @@author -->
 
 Rejected additions and failed saves leave the existing equipment unchanged. Correct the input or storage
 problem and enter the command again.
@@ -245,9 +239,7 @@ Names may contain spaces and slashes. A field prefix after whitespace normally s
 
 | Name fragment | Allowed? | Explanation |
 | --- | --- | --- |
-<!-- @@author yarnieee -->
-| `USB e/card reader` | Yes | The nonnumeric `e/card` fragment stays in the name. |
-<!-- @@author -->
+| <!-- @@author yarnieee --> `USB e/card reader` | Yes | The nonnumeric `e/card` fragment stays in the name. | <!-- @@author -->
 | `fluid/head tripod` | Yes | A slash within a word does not start a field. |
 | `Spare id/E001 camera` | Yes | `id/` is not an interactive command field and stays in the name. |
 | `Camera type/lens` | No | `type/` starts a type field after whitespace. |
@@ -683,10 +675,8 @@ With `E001` registered as a camera, these commands are rejected:
 
 | Command | Error |
 | --- | --- |
-<!-- @@author yarnieee -->
-| `eqm-update e/E001 name/Film Camera cond/11` | `Condition must be a whole number from 1 to 10.` |
-| `eqm-update e/E001 type/lens` | `Equipment type cannot be changed. Item ID E001 must remain camera.` |
-<!-- @@author -->
+| <!-- @@author yarnieee --> `eqm-update e/E001 name/Film Camera cond/11` | `Condition must be a whole number from 1 to 10.` |
+| `eqm-update e/E001 type/lens` | `Equipment type cannot be changed. Item ID E001 must remain camera.` | <!-- @@author -->
 
 The [name and field-marker rules](#names-and-field-markers) apply. `status/` cannot be updated manually.
 Invalid commands or failed saves leave all existing details unchanged. In the first rejected example,
@@ -945,8 +935,7 @@ Successful changes start with `[OK]`; rejected commands and save failures start 
 | Show the compact command menu | `help` |
 | Show one command's format, example and defaults | `help <command>` |
 | Show the complete command reference | `help all` |
-<!-- @@author yarnieee -->
-| Add equipment | `eqm-add name/<NAME> e/<ITEM ID> type/<TYPE> cond/<CONDITION>` with optional details, damage and remarks |
+| <!-- @@author yarnieee --> Add equipment | `eqm-add name/<NAME> e/<ITEM ID> type/<TYPE> cond/<CONDITION>` with optional details, damage and remarks |
 | Delete equipment | `eqm-delete e/<ITEM ID>` |
 | Add loan | `loan-add e/<ITEM ID> u/<BORROWER ID> [issued/<DD-MM-YY>] due/<DD-MM-YY>` |
 | Return equipment | `loan-return l/<LOAN ID> serviceable/<yes\|no> damage/<DAMAGE> [cond/<CONDITION>] [remarks/<REMARKS>]` |
@@ -957,12 +946,10 @@ Successful changes start with `[OK]`; rejected commands and save failures start 
 | List loans | `loan-list` |
 | View a borrower's current equipment | `loan-list-borrower u/<BORROWER ID>` |
 | Compare loan condition assessments | `loan-view l/<LOAN ID>` |
-| Show issue-time loan condition | `loan-show l/<LOAN ID>` |
-<!-- @@author -->
+| Show issue-time loan condition | `loan-show l/<LOAN ID>` | <!-- @@author -->
 | Back up equipment and loan records | `backup path/<DIRECTORY>` |
 | Restore equipment and loan records | `restore path/<DIRECTORY>` |
-<!-- @@author yarnieee -->
-| View item loan history | `eqm-loan-history e/<ITEM ID>` |
+| <!-- @@author yarnieee --> View item loan history | `eqm-loan-history e/<ITEM ID>` |
 | View bundle loan history | `bundle-history b/<BUNDLE ID>` or `bundle-history name/<NAME>` |
 | Record maintenance work | `eqm-maintain e/<ITEM ID> date/<DD-MM-YY> work/<DESCRIPTION> outcome/<OUTCOME>` |
 | List overdue loans | `loan-list-overdue` |

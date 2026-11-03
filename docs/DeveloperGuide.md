@@ -483,8 +483,7 @@ parts match. Command field prefixes determine where each identifier is used:
 
 | Prefix | Value identified | Main uses |
 | --- | --- | --- |
-<!-- @@author yarnieee -->
-| `e/` | Equipment ID | `eqm-show`, `eqm-delete`, `eqm-filter`, `eqm-update`, `eqm-maintain` |
+| <!-- @@author yarnieee --> `e/` | Equipment ID | `eqm-show`, `eqm-delete`, `eqm-filter`, `eqm-update`, `eqm-maintain` |
 | `l/` | Loan ID | `loan-return`, `loan-delete`, `loan-update`, `loan-view` |
 | `u/` | Borrower ID | `loan-add`, `loan-update`, `loan-list-borrower` |
 | `b/` | Bundle ID | `bundle-add-eqm`, `bundle-remove-eqm`, `bundle-history` |
@@ -894,9 +893,7 @@ Loan ID and remain unchanged after equipment updates or later borrowing.
 | `EquipmentConditionSnapshot` | Stores an immutable copy of the equipment type, numeric condition, damage and remarks. |
 | `LoanReturnAssessment` | Combines a return-condition snapshot with the assessed serviceability. |
 | `Loan` | Owns optional issue and return assessments and permits a return to be recorded only once. |
-<!-- @@author yarnieee -->
-| `LoanHandler` | Captures return proposals and compares saved assessments for `loan-view l/<LOAN ID>`. |
-<!-- @@author -->
+| <!-- @@author yarnieee --> `LoanHandler` | Captures return proposals and compares saved assessments for `loan-view l/<LOAN ID>`. | <!-- @@author -->
 | `EqmManager` | Routes the view command and displays validation errors without changing records. |
 | `EquipmentConditionSnapshotCodec` | Converts snapshots between model values and their saved representation. |
 | `LoanStorage` | Saves and restores optional snapshots while continuing to accept legacy loan records. |
@@ -1462,14 +1459,10 @@ These requirements apply to a single user running one local instance of snAp.
 
 | Term | Meaning in snAp |
 | --- | --- |
-<!-- @@author yarnieee -->
-| Item ID | The visible equipment identifier from `E001` to `E999`; it may be reused after equipment deletion. |
-<!-- @@author -->
+| <!-- @@author yarnieee --> Item ID | The visible equipment identifier from `E001` to `E999`; it may be reused after equipment deletion. | <!-- @@author -->
 | Permanent record identity | A UUID identifying one physical equipment record, even when its visible Item ID is later reused. |
-<!-- @@author yarnieee -->
-| Loan ID | The identifier of one borrowing record, from `L001` to `L999`; it is not reused within that data set. |
-| Borrower ID | A user identifier from `U000` to `U999`; snAp does not maintain member profiles. |
-<!-- @@author -->
+| <!-- @@author yarnieee --> Loan ID | The identifier of one borrowing record, from `L001` to `L999`; it is not reused within that data set. |
+| Borrower ID | A user identifier from `U000` to `U999`; snAp does not maintain member profiles. | <!-- @@author -->
 | Active loan | A loan that has not been returned and currently reserves equipment. |
 | Condition | The descriptive numeric rating from `1` to `10`; it does not itself determine availability. |
 | Serviceability | The return assessment deciding whether an item may be borrowed when it has no active loan. |
